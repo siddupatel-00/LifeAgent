@@ -285,7 +285,6 @@ export default function App() {
   const handleWaitlistSubmit = (e) => {
     e.preventDefault();
     if (!waitlistEmail.trim()) return;
-    confetti({ particleCount: 110, spread: 75, origin: { y: 0.6 } });
     setWaitlistSuccess(true);
     
     const db = JSON.parse(localStorage.getItem('lifeagent_waitlist_database') || '[]');
@@ -735,9 +734,6 @@ export default function App() {
                   We have saved <strong>{waitlistEmail}</strong> directly into our waitlist database. We will notify you the moment early access invites open up!
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <button className="blue-btn" style={{ width: '100%', justifyContent: 'center', padding: '16px' }} onClick={handleStartTrial}>
-                    Preview 6-Tab Interactive Dashboard <ChevronRight size={20} />
-                  </button>
                   <button className="secondary-btn" style={{ width: '100%', justifyContent: 'center', padding: '14px' }} onClick={() => navigate('landing', '/')}>
                     Back to Storefront Landing
                   </button>
