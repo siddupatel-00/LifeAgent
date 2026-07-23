@@ -17,7 +17,7 @@ export default async function handler(req, res) {
       const { id, streak, checked_today, target, paused_until } = req.body;
       await db.execute({
         sql: 'UPDATE habits SET streak = ?, checked_today = ?, target = COALESCE(?, target), paused_until = COALESCE(?, paused_until) WHERE id = ? AND user_id = ?',
-        args: [streak, checked_today ? 1 : 0, target || null, id, userId]
+        args: [streak, checked_today ? 1 : 0, target || null, paused_until || null, id, userId]
       });
       return res.status(200).json({ success: true });
     }

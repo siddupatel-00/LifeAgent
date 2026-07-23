@@ -543,16 +543,13 @@ const handleDeleteHabitDb = async (id) => {
     setAiMessages(prev => [...prev, newMsg]);
     if (!customText) setInputMessage('');
 
-    if (aiProvider === 'gemini' && !geminiApiKey) {
-      const fallbackReply = "Please provide your Gemini API key in the settings to use the AI Assistant.";
-      const aiMsg = { id: Date.now() + 1, sender: 'ai', text: fallbackReply, time: nowTime };
-      setAiMessages(prev => [...prev, aiMsg]);
-      fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify([newMsg, aiMsg]) }).catch(err => console.error(err));
-      return;
-    }
+    const effectiveProvider = (aiProvider === 'groq' && groqApiKey) ? 'groq' :
+                              (aiProvider === 'gemini' && geminiApiKey) ? 'gemini' :
+                              groqApiKey ? 'groq' :
+                              geminiApiKey ? 'gemini' : null;
 
-    if (aiProvider === 'groq' && !groqApiKey) {
-      const fallbackReply = "Please provide your Groq API key in the settings to use the AI Assistant.";
+    if (!effectiveProvider) {
+      const fallbackReply = "Please provide your Gemini or Groq API key in the settings to use the AI Assistant.";
       const aiMsg = { id: Date.now() + 1, sender: 'ai', text: fallbackReply, time: nowTime };
       setAiMessages(prev => [...prev, aiMsg]);
       fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify([newMsg, aiMsg]) }).catch(err => console.error(err));
@@ -578,7 +575,7 @@ const handleDeleteHabitDb = async (id) => {
       
       let responseText = "";
 
-      if (aiProvider === 'groq') {
+      if (effectiveProvider === 'groq') {
         const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
           method: "POST",
           headers: {
@@ -774,9 +771,8 @@ const handleDeleteHabitDb = async (id) => {
             >
               Sign Up <ArrowRight size={16} />
             </button>
-        {/* Delete habit button */}
-        
-      </div>
+          </div>
+        </nav>
       )}
 
       {/* LANDING PAGE (Storefront at /) */}
@@ -1605,18 +1601,6 @@ const handleDeleteHabitDb = async (id) => {
                     ))
                     )}
                   </div>
-
-// Add Routine Item UI removed
-
-// Add Routine Item form removed
-                          style={{ padding: '10px 18px', height: '39px', fontSize: '0.85rem' }}
-                        >
-                          <Plus size={16} /> Add
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
 
 
                 </div>

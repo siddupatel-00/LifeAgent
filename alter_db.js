@@ -20,6 +20,12 @@ async function run() {
     console.log("target:", e.message);
   }
   try {
+    await db.execute("ALTER TABLE habits ADD COLUMN paused_until TEXT");
+    console.log("paused_until added to habits successfully!");
+  } catch (e) {
+    console.log("paused_until:", e.message);
+  }
+  try {
     await db.execute("ALTER TABLE users ADD COLUMN ai_tone TEXT DEFAULT 'friendly'");
     console.log("ai_tone added successfully!");
   } catch (e) {
