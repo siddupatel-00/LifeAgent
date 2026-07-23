@@ -1070,9 +1070,9 @@ export default function App() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.5px', marginBottom: '12px' }}>
                       <CheckCircle2 size={16} /> OVERALL CONSISTENCY
                     </div>
-                    <div style={{ fontSize: '2.5rem', fontWeight: 900, letterSpacing: '-1px', marginBottom: '8px' }}>88%</div>
-                    <div style={{ fontSize: '0.82rem', color: '#22c55e', fontWeight: 700 }}>
-                      ↗ +12% vs last period
+                    <div style={{ fontSize: '2.5rem', fontWeight: 900, letterSpacing: '-1px', marginBottom: '8px' }}>{habits.length > 0 ? Math.round((habits.filter(h => h.checkedToday).length / habits.length) * 100) : 0}%</div>
+                    <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 700 }}>
+                      - No data yet
                     </div>
                   </div>
 
@@ -1080,9 +1080,9 @@ export default function App() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem', fontWeight: 800, color: 'var(--accent-blue)', letterSpacing: '0.5px', marginBottom: '12px' }}>
                       <DollarSign size={16} /> NET MONEY SAVINGS
                     </div>
-                    <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--accent-blue)', letterSpacing: '-1px', marginBottom: '8px' }}>+$818</div>
-                    <div style={{ fontSize: '0.82rem', color: '#22c55e', fontWeight: 700 }}>
-                      ↗ +42% vs last period
+                    <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--accent-blue)', letterSpacing: '-1px', marginBottom: '8px' }}>${transactions.reduce((acc, t) => acc + (t.type === 'earn' ? t.amount : -t.amount), 0)}</div>
+                    <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 700 }}>
+                      - No data yet
                     </div>
                   </div>
 
@@ -1090,9 +1090,9 @@ export default function App() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.5px', marginBottom: '12px' }}>
                       <SleepIcon size={16} /> SLEEP & RECOVERY
                     </div>
-                    <div style={{ fontSize: '2.5rem', fontWeight: 900, letterSpacing: '-1px', marginBottom: '8px' }}>91 <span style={{ fontSize: '1.2rem', fontWeight: 600 }}>/ 100</span></div>
-                    <div style={{ fontSize: '0.82rem', color: '#22c55e', fontWeight: 700 }}>
-                      ↗ +8% vs last period
+                    <div style={{ fontSize: '2.5rem', fontWeight: 900, letterSpacing: '-1px', marginBottom: '8px' }}>0 <span style={{ fontSize: '1.2rem', fontWeight: 600 }}>/ 100</span></div>
+                    <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 700 }}>
+                      - No data yet
                     </div>
                   </div>
                 </div>
@@ -1252,9 +1252,9 @@ export default function App() {
                 </div>
               )}
 
-              {/* 1) AI CHAT MODE (Redesigned with Autonomous Triggers, Schedule Briefing & Real-time Audits) */}
+              {/* 1) AI CHAT MODE */}
               {activeTab === 'ai' && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '24px', height: 'calc(100vh - 160px)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px', height: 'calc(100vh - 160px)' }}>
                   
                   {/* LEFT PANE: LIVE AI CHAT INTERACTION */}
                   <div style={{ background: 'var(--bg-main)', borderRadius: '20px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
@@ -1340,59 +1340,6 @@ export default function App() {
                       </button>
                     </form>
                   </div>
-
-                  {/* RIGHT PANE: AUTONOMOUS RULES & SCHEDULE COMMAND BOX */}
-                  <div style={{ background: 'var(--bg-main)', borderRadius: '20px', border: '1px solid var(--border-color)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', overflowY: 'auto' }}>
-                    <div>
-                      <h4 style={{ fontSize: '1.1rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-blue)', marginBottom: '4px' }}>
-                        <Bot size={18} /> Autonomous Triggers
-                      </h4>
-                      <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Active schedule triggers & permissions</p>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                      <div style={{ padding: '14px', borderRadius: '14px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                          <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-main)' }}>☀️ 7:00 AM Gym Briefing</span>
-                          <span style={{ fontSize: '0.7rem', background: 'var(--accent-blue)', color: '#fff', padding: '2px 8px', borderRadius: '12px', fontWeight: 700 }}>ACTIVE</span>
-                        </div>
-                        <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
-                          Fires at 7:00 AM while at gym. Briefs: College (9-5), Meeting (5-6), Work (6-7), Eat (7-8), DSA (8-11), Sleep (11pm).
-                        </p>
-                      </div>
-
-                      <div style={{ padding: '14px', borderRadius: '14px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                          <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#f59e0b' }}>⏰ 10:50 PM Sleep Reminder</span>
-                          <span style={{ fontSize: '0.7rem', background: '#f59e0b', color: '#fff', padding: '2px 8px', borderRadius: '12px', fontWeight: 700 }}>ARMED</span>
-                        </div>
-                        <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
-                          Fires exactly 10 minutes before 11:00 PM sleep time to wrap up DSA & start wind-down.
-                        </p>
-                      </div>
-
-                      <div style={{ padding: '14px', borderRadius: '14px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                          <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#a855f7' }}>🌕 Pournami & Amavasya</span>
-                          <span style={{ fontSize: '0.7rem', background: '#a855f7', color: '#fff', padding: '2px 8px', borderRadius: '12px', fontWeight: 700 }}>GUARDED</span>
-                        </div>
-                        <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
-                          Auto-sends day-before warning and 7:00 AM day-of reminder to avoid black clothing on lunar dates.
-                        </p>
-                      </div>
-
-                      <div style={{ padding: '14px', borderRadius: '14px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                          <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#22c55e' }}>📊 Real-Time DB Access</span>
-                          <span style={{ fontSize: '0.7rem', background: '#22c55e', color: '#fff', padding: '2px 8px', borderRadius: '12px', fontWeight: 700 }}>GRANTED</span>
-                        </div>
-                        <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
-                          Agent holds full read/write access to user profile @siddu to compare daily, weekly, and monthly performance curves.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
                 </div>
               )}
 
@@ -2127,7 +2074,7 @@ export default function App() {
                     {sleepLogs.map(s => (
                       <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)' }}>
                         <div>
-                          <div style={{ fontWeight: 700, fontSize: '1.05rem' }}>{s.date} — {s.totalHours} Hours Total</div>
+                        <div style={{ fontWeight: 700, fontSize: '1.05rem' }}>{s.date} — {s.totalHours} Hours Total</div>
                           <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '4px' }}>Deep Sleep: <strong style={{ color: 'var(--text-main)' }}>{s.deepSleep}</strong> • REM Sleep: <strong style={{ color: 'var(--text-main)' }}>{s.remSleep}</strong></div>
                         </div>
                         <div style={{ textAlign: 'right' }}>
@@ -2140,7 +2087,7 @@ export default function App() {
                 </div>
               )}
 
-              {/* 6) MASTER ANALYTICS HUB WITH RICH GRAPH VISUALIZATIONS */}
+              {/* 6) MASTER ANALYTICS HUB */}
               {activeTab === 'analytics' && (
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
@@ -2148,131 +2095,16 @@ export default function App() {
                       <h3 style={{ fontSize: '1.5rem', fontWeight: 800 }}>Comparative Performance Graphs</h3>
                       <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: '4px' }}>Visual trajectory and trend curves for timeframe: <strong style={{ color: 'var(--accent-blue)' }}>{timeOptions.find(o => o.id === timeRange)?.label}</strong></p>
                     </div>
-                    <span className="pill-tag" style={{ background: 'var(--accent-blue-dim)', color: 'var(--accent-blue)', borderColor: 'var(--accent-blue)', padding: '8px 16px', fontSize: '0.85rem' }}>
-                      ● AI Assessment: Optimal Trajectory (+18% Surge)
-                    </span>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px', marginBottom: '24px' }}>
-                    
-                    {/* GRAPH 1: Net Cash Flow Area Chart */}
-                    <div style={{ background: 'var(--bg-main)', padding: '24px', borderRadius: '18px', border: '1px solid var(--border-color)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                        <div>
-                          <span style={{ fontWeight: 800, fontSize: '0.82rem', color: 'var(--accent-blue)', letterSpacing: '0.5px' }}>MONEY SURPLUS & CASH FLOW</span>
-                          <div style={{ fontSize: '1.7rem', fontWeight: 900, marginTop: '2px' }}>+$818.00 <span style={{ fontSize: '0.82rem', color: '#22c55e', fontWeight: 700 }}>↗ +42%</span></div>
-                        </div>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', background: 'var(--bg-card)', padding: '4px 10px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>{timeRange.toUpperCase()} Curve</span>
-                      </div>
-                      
-                      <div style={{ height: '140px', width: '100%', position: 'relative' }}>
-                        <svg viewBox="0 0 400 120" style={{ width: '100%', height: '100%', overflow: 'visible' }}>
-                          <defs>
-                            <linearGradient id="blueArea" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="var(--accent-blue)" stopOpacity="0.4" />
-                              <stop offset="100%" stopColor="var(--accent-blue)" stopOpacity="0.0" />
-                            </linearGradient>
-                          </defs>
-                          <path d="M 0,100 Q 60,80 120,85 T 240,45 T 340,30 L 400,15 L 400,120 L 0,120 Z" fill="url(#blueArea)" />
-                          <path d="M 0,100 Q 60,80 120,85 T 240,45 T 340,30 L 400,15" fill="none" stroke="var(--accent-blue)" strokeWidth="3.5" strokeLinecap="round" />
-                          <circle cx="120" cy="85" r="4" fill="var(--bg-card)" stroke="var(--accent-blue)" strokeWidth="2.5" />
-                          <circle cx="240" cy="45" r="4" fill="var(--bg-card)" stroke="var(--accent-blue)" strokeWidth="2.5" />
-                          <circle cx="340" cy="30" r="4" fill="var(--bg-card)" stroke="var(--accent-blue)" strokeWidth="2.5" />
-                          <circle cx="400" cy="15" r="5" fill="var(--accent-blue)" />
-                        </svg>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '8px', borderTop: '1px dashed var(--border-color)', paddingTop: '8px' }}>
-                        <span>Start of Period</span>
-                        <span>Midpoint Audit</span>
-                        <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>Peak Savings</span>
+                  <div style={{ textAlign: 'center', padding: '60px', background: 'var(--bg-card)', borderRadius: '18px', border: '1px solid var(--border-color)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+                      <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'var(--bg-main)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px dashed var(--text-muted)' }}>
+                        <Activity size={24} color="var(--text-muted)" />
                       </div>
                     </div>
-
-                    {/* GRAPH 2: Deep Work & Pomodoro Daily Bar Graph */}
-                    <div style={{ background: 'var(--bg-main)', padding: '24px', borderRadius: '18px', border: '1px solid var(--border-color)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                        <div>
-                          <span style={{ fontWeight: 800, fontSize: '0.82rem', color: '#f59e0b', letterSpacing: '0.5px' }}>STUDY HOURS vs POMODORO TARGET</span>
-                          <div style={{ fontSize: '1.7rem', fontWeight: 900, marginTop: '2px' }}>34.5 Hrs <span style={{ fontSize: '0.82rem', color: '#22c55e', fontWeight: 700 }}>↗ 88% Goal Rate</span></div>
-                        </div>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', background: 'var(--bg-card)', padding: '4px 10px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>Daily Bars</span>
-                      </div>
-
-                      <div style={{ height: '140px', width: '100%', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', padding: '0 10px', gap: '12px' }}>
-                        {[
-                          { day: 'Mon', hrs: 4.2, height: '75%', active: false },
-                          { day: 'Tue', hrs: 5.0, height: '90%', active: false },
-                          { day: 'Wed', hrs: 3.5, height: '60%', active: false },
-                          { day: 'Thu', hrs: 4.8, height: '85%', active: false },
-                          { day: 'Fri', hrs: 5.5, height: '100%', active: true },
-                          { day: 'Sat', hrs: 4.0, height: '70%', active: false },
-                          { day: 'Sun', hrs: 4.5, height: '80%', active: false },
-                        ].map((item, idx) => (
-                          <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, height: '100%', justifyContent: 'flex-end', gap: '6px' }}>
-                            <span style={{ fontSize: '0.72rem', fontWeight: 700, color: item.active ? 'var(--accent-blue)' : 'var(--text-muted)' }}>{item.hrs}h</span>
-                            <div style={{
-                              width: '100%',
-                              height: item.height,
-                              background: item.active ? 'var(--accent-blue)' : 'rgba(128,128,128,0.2)',
-                              borderRadius: '6px',
-                              transition: 'all 0.3s',
-                              boxShadow: item.active ? '0 0 12px rgba(59,130,246,0.4)' : 'none'
-                            }}></div>
-                            <span style={{ fontSize: '0.75rem', fontWeight: item.active ? 800 : 500, color: item.active ? 'var(--text-main)' : 'var(--text-muted)' }}>{item.day}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* GRAPH 3: Circadian Sleep Quality & Recovery Line Chart */}
-                    <div style={{ background: 'var(--bg-main)', padding: '24px', borderRadius: '18px', border: '1px solid var(--border-color)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                        <div>
-                          <span style={{ fontWeight: 800, fontSize: '0.82rem', color: '#a855f7', letterSpacing: '0.5px' }}>CIRCADIAN SLEEP RECOVERY CURVE</span>
-                          <div style={{ fontSize: '1.7rem', fontWeight: 900, marginTop: '2px' }}>91 / 100 <span style={{ fontSize: '0.82rem', color: '#22c55e', fontWeight: 700 }}>↗ Deep REM Stable</span></div>
-                        </div>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', background: 'var(--bg-card)', padding: '4px 10px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>Phase Index</span>
-                      </div>
-
-                      <div style={{ height: '140px', width: '100%', position: 'relative' }}>
-                        <svg viewBox="0 0 400 120" style={{ width: '100%', height: '100%', overflow: 'visible' }}>
-                          <path d="M 0,80 Q 80,40 160,50 T 320,25 L 400,20" fill="none" stroke="#a855f7" strokeWidth="3" strokeLinecap="round" />
-                          <circle cx="160" cy="50" r="4" fill="var(--bg-card)" stroke="#a855f7" strokeWidth="2.5" />
-                          <circle cx="320" cy="25" r="4" fill="var(--bg-card)" stroke="#a855f7" strokeWidth="2.5" />
-                          <circle cx="400" cy="20" r="5" fill="#a855f7" />
-                        </svg>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '8px', borderTop: '1px dashed var(--border-color)', paddingTop: '8px' }}>
-                        <span>Avg Sleep: 7.6h</span>
-                        <span>Deep Phase: 2.4h</span>
-                        <span style={{ fontWeight: 700, color: '#a855f7' }}>96% Peak Score</span>
-                      </div>
-                    </div>
-
-                    {/* GRAPH 4: Gym Intensity & Calories Burned Progress */}
-                    <div style={{ background: 'var(--bg-main)', padding: '24px', borderRadius: '18px', border: '1px solid var(--border-color)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                        <div>
-                          <span style={{ fontWeight: 800, fontSize: '0.82rem', color: '#22c55e', letterSpacing: '0.5px' }}>GYM WORKOUT CALORIES BURNED</span>
-                          <div style={{ fontSize: '1.7rem', fontWeight: 900, marginTop: '2px' }}>910 kcal <span style={{ fontSize: '0.82rem', color: '#22c55e', fontWeight: 700 }}>↗ +15% Output</span></div>
-                        </div>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', background: 'var(--bg-card)', padding: '4px 10px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>Output Curve</span>
-                      </div>
-
-                      <div style={{ height: '140px', width: '100%', position: 'relative' }}>
-                        <svg viewBox="0 0 400 120" style={{ width: '100%', height: '100%', overflow: 'visible' }}>
-                          <path d="M 0,90 C 100,85 150,30 250,45 C 320,55 350,15 400,25" fill="none" stroke="#22c55e" strokeWidth="3" strokeLinecap="round" />
-                          <circle cx="250" cy="45" r="4" fill="var(--bg-card)" stroke="#22c55e" strokeWidth="2.5" />
-                          <circle cx="400" cy="25" r="5" fill="#22c55e" />
-                        </svg>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '8px', borderTop: '1px dashed var(--border-color)', paddingTop: '8px' }}>
-                        <span>Mobility & Cardio</span>
-                        <span>HIIT Circuit</span>
-                        <span style={{ fontWeight: 700, color: '#22c55e' }}>Heavy Lift Peak</span>
-                      </div>
-                    </div>
-
+                    <h4 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '8px' }}>Not enough data collected</h4>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>Your performance graphs will generate automatically once you start logging your daily habits and spending.</p>
                   </div>
                 </div>
               )}
