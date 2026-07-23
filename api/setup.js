@@ -12,9 +12,11 @@ export default async function handler(req, res) {
         password_hash TEXT NOT NULL,
         theme TEXT DEFAULT 'light',
         ai_name TEXT DEFAULT 'AI',
-        gemini_api_key TEXT DEFAULT '',
+        gemini_api_key TEXT,
+        groq_api_key TEXT,
+        ai_provider TEXT DEFAULT 'gemini',
         currency TEXT DEFAULT '$',
-        created_at TEXT DEFAULT (datetime('now'))
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`,
       `CREATE TABLE IF NOT EXISTS habits (
         id INTEGER PRIMARY KEY AUTOINCREMENT,

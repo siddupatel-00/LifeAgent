@@ -219,8 +219,10 @@ export default function App() {
   const [calendarSubTab, setCalendarSubTab] = useState('this_month');
   const [selectedCalendarDate, setSelectedCalendarDate] = useState(null);
 
-  // 9) Gemini API Key (persisted in localStorage)
+  // 9) AI API Keys (persisted in localStorage)
   const [geminiApiKey, setGeminiApiKey] = useState(() => localStorage.getItem('gemini_api_key') || '');
+  const [groqApiKey, setGroqApiKey] = useState(() => localStorage.getItem('groq_api_key') || '');
+  const [aiProvider, setAiProvider] = useState(() => localStorage.getItem('ai_provider') || 'gemini');
   const [aiLoading, setAiLoading] = useState(false);
 
   const fetchDashboardData = async () => {
@@ -254,6 +256,14 @@ export default function App() {
           if (sData.gemini_api_key) {
             setGeminiApiKey(sData.gemini_api_key);
             localStorage.setItem('gemini_api_key', sData.gemini_api_key);
+          }
+          if (sData.groq_api_key) {
+            setGroqApiKey(sData.groq_api_key);
+            localStorage.setItem('groq_api_key', sData.groq_api_key);
+          }
+          if (sData.ai_provider) {
+            setAiProvider(sData.ai_provider);
+            localStorage.setItem('ai_provider', sData.ai_provider);
           }
           if (sData.ai_name) setAiName(sData.ai_name);
         }
@@ -341,10 +351,10 @@ export default function App() {
   }, [isAuthenticated, token]);
 
   useEffect(() => {
-    if (geminiApiKey) {
-      localStorage.setItem('gemini_api_key', geminiApiKey);
-    }
-  }, [geminiApiKey]);
+    if (geminiApiKey) localStorage.setItem('gemini_api_key', geminiApiKey);
+    if (groqApiKey) localStorage.setItem('groq_api_key', groqApiKey);
+    localStorage.setItem('ai_provider', aiProvider);
+  }, [geminiApiKey, groqApiKey, aiProvider]);
 
   // Universal sync helpers between Today routine and Daily Works (habits)
   const handleToggleTodayItem = (targetId) => {
@@ -473,7 +483,7 @@ export default function App() {
         await fetch('/api/settings', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ ...userProfile, ai_name: aiName, gemini_api_key: geminiApiKey, currency: userProfile.currency })
+          body: JSON.stringify({ ...userProfile, ai_name: aiName, gemini_api_key: geminiApiKey, groq_api_key: groqApiKey, ai_provider: aiProvider, currency: userProfile.currency })
         });
       } catch (err) {
         console.error('Settings save failed:', err);
@@ -495,15 +505,17 @@ export default function App() {
     setAiMessages(prev => [...prev, newMsg]);
     if (!customText) setInputMessage('');
 
-    if (!geminiApiKey) {
-      const fallbackReply = "Please provide your API key in the settings to use the AI Assistant.";
+    if (aiProvider === 'gemini' && !geminiApiKey) {
+      const fallbackReply = "Please provide your Gemini API key in the settings to use the AI Assistant.";
       const aiMsg = { id: Date.now() + 1, sender: 'ai', text: fallbackReply, time: nowTime };
       setAiMessages(prev => [...prev, aiMsg]);
-      fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify([newMsg, aiMsg])
-      }).catch(err => console.error(err));
+      return;
+    }
+
+    if (aiProvider === 'groq' && !groqApiKey) {
+      const fallbackReply = "Please provide your Groq API key in the settings to use the AI Assistant.";
+      const aiMsg = { id: Date.now() + 1, sender: 'ai', text: fallbackReply, time: nowTime };
+      setAiMessages(prev => [...prev, aiMsg]);
       return;
     }
 
@@ -511,9 +523,6 @@ export default function App() {
     setAiMessages(prev => [...prev, { id: 'loading', sender: 'ai', text: 'Thinking...', time: nowTime }]);
     
     try {
-      const genAI = new GoogleGenerativeAI(geminiApiKey);
-      const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash"];
-      
       const systemPrompt = `
         You are an autonomous AI assistant in a personal dashboard.
         User's calendar events: ${JSON.stringify(calendarEvents)}
@@ -526,19 +535,43 @@ export default function App() {
         Provide a helpful text response as well.
       `;
       
-      let result = null;
-      let lastErr = null;
-      for (const mName of modelsToTry) {
-        try {
-          const model = genAI.getGenerativeModel({ model: mName });
-          result = await model.generateContent(`${systemPrompt}\n\nUser: ${userMsgText}`);
-          if (result) break;
-        } catch (err) {
-          lastErr = err;
+      let responseText = "";
+
+      if (aiProvider === 'groq') {
+        const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${groqApiKey}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: "llama3-70b-8192",
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: userMsgText }
+            ]
+          })
+        });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error.message);
+        responseText = data.choices[0].message.content;
+      } else {
+        const genAI = new GoogleGenerativeAI(geminiApiKey);
+        const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash"];
+        let result = null;
+        let lastErr = null;
+        for (const mName of modelsToTry) {
+          try {
+            const model = genAI.getGenerativeModel({ model: mName });
+            result = await model.generateContent(`${systemPrompt}\n\nUser: ${userMsgText}`);
+            if (result) break;
+          } catch (err) {
+            lastErr = err;
+          }
         }
+        if (!result && lastErr) throw lastErr;
+        responseText = result.response.text();
       }
-      if (!result && lastErr) throw lastErr;
-      const responseText = result.response.text();
       
       // Parse calendar event
       const eventMatch = responseText.match(/\[CALENDAR_EVENT\](.*?)\[\/CALENDAR_EVENT\]/s);
@@ -564,8 +597,8 @@ export default function App() {
       }).catch(err => console.error(err));
       
     } catch (error) {
-      console.error("Gemini API Error:", error);
-      const aiMsg = { id: Date.now() + 1, sender: 'ai', text: `Error calling Gemini API: ${error.message}`, time: nowTime };
+      console.error("AI API Error:", error);
+      const aiMsg = { id: Date.now() + 1, sender: 'ai', text: `Error calling API: ${error.message}`, time: nowTime };
       setAiMessages(prev => prev.map(m => m.id === 'loading' ? aiMsg : m));
       
       fetch('/api/chat', {
@@ -2661,6 +2694,21 @@ export default function App() {
 
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
                           <div>
+                            <div style={{ fontWeight: 700, fontSize: '1rem' }}>Preferred AI Provider</div>
+                            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Choose which AI brain powers your dashboard assistant.</div>
+                          </div>
+                          <select 
+                            value={aiProvider} 
+                            onChange={(e) => setAiProvider(e.target.value)} 
+                            style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600, outline: 'none', appearance: 'none' }}
+                          >
+                            <option value="gemini">Google Gemini</option>
+                            <option value="groq">Groq (Llama 3)</option>
+                          </select>
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
+                          <div>
                             <div style={{ fontWeight: 700, fontSize: '1rem' }}>Gemini API Key</div>
                             <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Enter your free Google Gemini API key to enable real AI responses. Get one at aistudio.google.com</div>
                           </div>
@@ -2673,6 +2721,23 @@ export default function App() {
                               style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600, outline: 'none' }}
                             />
                             {geminiApiKey && <span style={{ color: '#22c55e', fontWeight: 700, fontSize: '0.85rem' }}>● Connected</span>}
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
+                          <div>
+                            <div style={{ fontWeight: 700, fontSize: '1rem' }}>Groq API Key</div>
+                            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Enter your free Groq API key for ultra-fast Llama 3 responses. Get one at console.groq.com</div>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <input 
+                              type="password" 
+                              value={groqApiKey} 
+                              placeholder="gsk_..."
+                              onChange={(e) => setGroqApiKey(e.target.value)} 
+                              style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600, outline: 'none' }}
+                            />
+                            {groqApiKey && <span style={{ color: '#22c55e', fontWeight: 700, fontSize: '0.85rem' }}>● Connected</span>}
                           </div>
                         </div>
 
