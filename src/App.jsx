@@ -66,9 +66,9 @@ export default function App() {
 
   // User Profile & Settings State
   const [userProfile, setUserProfile] = useState({
-    name: 'Lena Vance',
-    handle: '@lena_vance',
-    email: 'lena.vance@gmail.com',
+    name: '',
+    handle: '',
+    email: '',
     aiTone: 'Analytical & Direct',
     morningAudit: true,
     smartAlerts: true
@@ -95,7 +95,7 @@ export default function App() {
       id: 1,
       sender: 'ai',
       time: '07:00 AM',
-      text: "🤖 **Autonomous Executive Agent Online • Full Account & Real-Time DB Access Active**\n\nGood morning, Siddu! ☀️ I am your proactive AI partner with full permissions. I hold your exact rules and daily alarms locked in:\n\n📅 **Your Daily Schedule & Alarms:**\n• **07:00 AM**: Morning Gym Briefing (Showing all tasks for today)\n• **09:00 AM – 05:00 PM**: College\n• **05:00 PM – 06:00 PM**: Meeting with XYZ person\n• **06:00 PM – 07:00 PM**: College Work & Assignments\n• **07:00 PM – 08:00 PM**: Eat / Dinner\n• **08:00 PM – 11:00 PM**: DSA & Problem Solving (LeetCode)\n• **11:00 PM**: Sleep Routine *(Scheduled 10-min pre-sleep alarm for 10:50 PM)*\n\n🌕 **Astronomical Lunar Protocol (Pournami / Amavasya):**\n• Auto-sends day-before warning (8:00 PM) and day-of reminder (7:00 AM) to ensure you wear non-black clothing on lunar dates!\n\n*(Click a quick trigger button below or ask me about your real-time performance right now!)*"
+      text: "🤖 **Autonomous Executive Agent Online • Full Account & Real-Time DB Access Active**\n\nGood morning! ☀️ I am your proactive AI partner with full permissions. I am ready to help you manage your daily schedule and habits."
     }
   ]);
   const [inputMessage, setInputMessage] = useState('');
@@ -121,57 +121,29 @@ export default function App() {
 
   // 2) Habit Tracker state
   // Habits state with exact daily tracking items: Gym, Study, Code, DSA Problems
-  const [habits, setHabits] = useState([
-    { id: 1, title: 'Gym & Strength Workout', category: 'Body & Gym', streak: 12, target: '60 mins/day', completionRate: 90, checkedToday: false },
-    { id: 2, title: 'Focused Study Blocks', category: 'Study', streak: 14, target: '4 hrs/day', completionRate: 92, checkedToday: false },
-    { id: 3, title: 'Deep Work Project Coding', category: 'Coding', streak: 21, target: '2 hrs/day', completionRate: 95, checkedToday: false },
-    { id: 4, title: 'Solve DSA Problems (LeetCode)', category: 'DSA & Algorithms', streak: 8, target: '3 problems/day', completionRate: 85, checkedToday: false },
-  ]);
+  const [habits, setHabits] = useState([]);
   const [isAddHabitModalOpen, setIsAddHabitModalOpen] = useState(false);
   const [newHabitData, setNewHabitData] = useState({ title: '', category: 'Coding', target: '' });
-  const [todayItems, setTodayItems] = useState([
-    { id: 1, time: '06:30 AM', title: 'Wake up at exact time & hydrate', category: 'Routine', checked: false },
-    { id: 2, time: '07:00 AM', title: 'Gym & Strength Workout (60 mins)', category: 'Body & Gym', checked: false },
-    { id: 3, time: '09:00 AM – 07:00 PM', title: 'Focused Study & College Blocks', category: 'Study', checked: false },
-    { id: 4, time: '08:00 PM – 11:00 PM', title: 'Solve 3 DSA / LeetCode Problems', category: 'Coding', checked: false },
-    { id: 5, time: '11:00 PM', title: 'Sleep Routine at exact time', category: 'Sleep', checked: false },
-  ]);
+  const [todayItems, setTodayItems] = useState([]);
 
   // 3) Finance state
-  const [transactions, setTransactions] = useState([
-    { id: 1, title: 'Freelance Software Client Payment', amount: 850, type: 'earn', category: 'Work', date: '2026-07-22' },
-    { id: 2, title: 'Cloud Server & AI API Usage', amount: 32, type: 'spend', category: 'Tech', date: '2026-07-21' },
-    { id: 3, title: 'Gym Membership & Protein Supplement', amount: 65, type: 'spend', category: 'Body', date: '2026-07-20' },
-    { id: 4, title: 'Coffee & Books for Study', amount: 18, type: 'spend', category: 'Study', date: '2026-07-19' },
-  ]);
+  const [transactions, setTransactions] = useState([]);
   const [newTitle, setNewTitle] = useState('');
   const [newAmount, setNewAmount] = useState('');
   const [newType, setNewType] = useState('spend');
 
   // 4) Body & Gym state
-  const [workouts, setWorkouts] = useState([
-    { id: 1, exercise: 'Heavy Compound Lift (Squat/Bench)', duration: '55 mins', caloriesBurned: 480, intensity: 'High', date: 'Today' },
-    { id: 2, exercise: 'HIIT Cardio & Core Circuit', duration: '30 mins', caloriesBurned: 320, intensity: 'Max', date: 'Yesterday' },
-    { id: 3, exercise: 'Morning Mobility & Yoga Flow', duration: '20 mins', caloriesBurned: 110, intensity: 'Low', date: '2 Days Ago' },
-  ]);
-  const [bodyStats, setBodyStats] = useState({ currentWeight: '72.4 kg', targetWeight: '70.0 kg', dailyProtein: '145g / 150g', hydration: '2.8L / 3.0L' });
+  const [workouts, setWorkouts] = useState([]);
+  const [bodyStats, setBodyStats] = useState({ currentWeight: '', targetWeight: '', dailyProtein: '', hydration: '' });
 
   // 5) Sleep state
-  const [sleepLogs, setSleepLogs] = useState([
-    { id: 1, date: 'Last Night', totalHours: 7.8, qualityScore: 94, deepSleep: '2.4 hrs', remSleep: '1.8 hrs' },
-    { id: 2, date: '2 Nights Ago', totalHours: 6.9, qualityScore: 82, deepSleep: '1.9 hrs', remSleep: '1.5 hrs' },
-    { id: 3, date: '3 Nights Ago', totalHours: 8.1, qualityScore: 96, deepSleep: '2.7 hrs', remSleep: '2.0 hrs' },
-  ]);
+  const [sleepLogs, setSleepLogs] = useState([]);
 
   // 6) Notes & Diary state (with AI sharing permissions)
-  const [notesList, setNotesList] = useState([
-    { id: 1, title: '📖 Daily Diary & Personal Journal', category: 'Diary', content: "Hey buddy, today is the best day for me, I met my gf... 😂 Crushing my workout at 7 AM right on schedule too!", date: new Date().toISOString().split('T')[0], shareWithAi: true },
-    { id: 2, title: '🎯 Master Goals of 2026', category: 'Goals', content: "1. Land Senior Software Engineer role ($180k+ pkg)\n2. Hit 75kg lean muscle weight at the gym\n3. Solve 300+ LeetCode problems consistently\n4. Maintain 92%+ consistency on study blocks", date: '2026-07-20', shareWithAi: true },
-    { id: 3, title: '🛒 Things to Buy in 2026 (Wishlist)', category: 'Wishlist', content: "• MacBook Pro M4 Max (64GB RAM)\n• Herman Miller Aeron Ergonomic Chair\n• Sony WH-1000XM5 Headphones\n• Premium gym lifting belt & straps", date: '2026-07-18', shareWithAi: true },
-  ]);
+  const [notesList, setNotesList] = useState([]);
   const [activeNoteId, setActiveNoteId] = useState(1);
   const [isFloatingDiaryOpen, setIsFloatingDiaryOpen] = useState(false);
-  const [floatingDiaryContent, setFloatingDiaryContent] = useState("Hey buddy, today is the best day for me, I met my gf... 😂");
+  const [floatingDiaryContent, setFloatingDiaryContent] = useState("");
   const [floatingDiaryShare, setFloatingDiaryShare] = useState(true);
   const [trashNotes, setTrashNotes] = useState([]);
   const [notesViewMode, setNotesViewMode] = useState('active'); // 'active' | 'trash'
@@ -192,11 +164,7 @@ export default function App() {
   const [isAiSidePanelOpen, setIsAiSidePanelOpen] = useState(true);
 
   // 8) Calendar state
-  const [calendarEvents, setCalendarEvents] = useState([
-    { id: 1, title: 'Computer Network Exam', date: '2026-07-25', color: '#ef4444' },
-    { id: 2, title: 'Team Meeting with XYZ', date: '2026-07-26', color: '#3b82f6' },
-    { id: 3, title: 'Visit to Heritage Place', date: '2026-07-27', color: '#22c55e' },
-  ]);
+  const [calendarEvents, setCalendarEvents] = useState([]);
   const [calendarSubTab, setCalendarSubTab] = useState('this_month');
   const [selectedCalendarDate, setSelectedCalendarDate] = useState(null);
 
@@ -951,7 +919,7 @@ export default function App() {
             </div>
 
             <div style={{ paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
-              {/* Settings Tab inside the bottom place where Mera Progress v2.4 was */}
+              {/* Settings Tab inside the bottom place where LifeAgent v2.4 was */}
               <button
                 onClick={() => setActiveTab('settings')}
                 style={{
@@ -975,7 +943,7 @@ export default function App() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
               <div>
                 <h2 style={{ fontSize: '1.9rem', fontWeight: 900, letterSpacing: '-0.5px' }}>
-                  Hey {userProfile.name.split(' ')[0]} – welcome back!
+                  Hey {userProfile.name ? userProfile.name.split(' ')[0] : 'User'} – welcome back!
                 </h2>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '4px' }}>
                   Unified workspace and real-time trackers for your daily performance.
