@@ -10,7 +10,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@libsql/client": "^0.17.4",
+    "bcryptjs": "^3.0.3",
     "canvas-confetti": "^1.9.4",
+    "dotenv": "^17.4.2",
+    "jsonwebtoken": "^9.0.3",
     "lucide-react": "^1.25.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"

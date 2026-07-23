@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { 
   Sparkles, TrendingUp, Calendar, BookOpen, Bot, DollarSign, 
   CheckCircle2, ArrowRight, XCircle, ShieldCheck, Mail, User, 
@@ -180,12 +181,34 @@ export default function App() {
     if (trashNotes.length > 0) {
       const now = Date.now();
       const fortyNineDaysMs = 49 * 24 * 60 * 60 * 1000;
-      setTrashNotes(prev => prev.filter(note => (now - (note.deletedAt || now)) <= fortyNineDaysMs));
+      const validNotes = trashNotes.filter(note => (now - (note.deletedAt || now)) <= fortyNineDaysMs);
+      if (validNotes.length !== trashNotes.length) {
+        setTrashNotes(validNotes);
+      }
     }
   }, [trashNotes]);
 
   // 7) Persistent Side AI Coach Panel state
   const [isAiSidePanelOpen, setIsAiSidePanelOpen] = useState(true);
+
+  // 8) Calendar state
+  const [calendarEvents, setCalendarEvents] = useState([
+    { id: 1, title: 'Computer Network Exam', date: '2026-07-25', color: '#ef4444' },
+    { id: 2, title: 'Team Meeting with XYZ', date: '2026-07-26', color: '#3b82f6' },
+    { id: 3, title: 'Visit to Heritage Place', date: '2026-07-27', color: '#22c55e' },
+  ]);
+  const [calendarSubTab, setCalendarSubTab] = useState('this_month');
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState(null);
+
+  // 9) Gemini API Key (persisted in localStorage)
+  const [geminiApiKey, setGeminiApiKey] = useState(() => localStorage.getItem('gemini_api_key') || '');
+  const [aiLoading, setAiLoading] = useState(false);
+
+  useEffect(() => {
+    if (geminiApiKey) {
+      localStorage.setItem('gemini_api_key', geminiApiKey);
+    }
+  }, [geminiApiKey]);
 
   // Universal sync helpers between Today routine and Daily Works (habits)
   const handleToggleTodayItem = (targetId) => {
@@ -284,32 +307,81 @@ export default function App() {
     setTimeout(() => setSettingsSaved(false), 3000);
   };
 
-  const handleSendAi = (e) => {
+  const handleSendAi = async (e) => {
     e?.preventDefault();
-    if (!inputMessage.trim()) return;
+    if (!inputMessage.trim() || aiLoading) return;
+    
     const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const newMsg = { id: Date.now(), sender: 'user', text: inputMessage, time: nowTime };
-    const userMsg = inputMessage.toLowerCase();
+    const userMsgText = inputMessage;
+    const newMsg = { id: Date.now(), sender: 'user', text: userMsgText, time: nowTime };
+    
+    setAiMessages(prev => [...prev, newMsg]);
     setInputMessage('');
 
-    let aiReply = "I am analyzing your real-time database telemetry across your account permissions... ";
-    if (userMsg.includes('performance') || userMsg.includes('time') || userMsg.includes('right now') || userMsg.includes('today')) {
-      aiReply = "🔍 **Looked at real-time telemetry (Live Time Check & Audit):**\n\nSiddu, checking against your locked schedule:\n• **09:00 AM – 05:00 PM (College)**: ✅ Completed\n• **05:00 PM – 06:00 PM (Meeting with XYZ)**: ✅ Completed\n• **06:00 PM – 07:00 PM (College Work)**: ✅ Completed\n• **07:00 PM – 08:00 PM (Eat/Dinner)**: ✅ Completed\n\n⚡ **Right Now (8:00 PM – 11:00 PM Block):**\nYou are ALL DONE till now! Only your **DSA / LeetCode Problem Solving** block is left for today, then sleep at 11:00 PM. Let's conquer those algorithms, do it! 🚀\n\n*(Pre-sleep notification armed for exactly 10:50 PM)*";
-    } else if (userMsg.includes('gym') || userMsg.includes('7 am') || userMsg.includes('schedule') || userMsg.includes('briefing')) {
-      aiReply = "☀️ **7:00 AM Gym Briefing & Daily Itinerary:**\n\nGood morning, Siddu! While you crush your 7:00 AM gym session, here is your locked itinerary for today:\n1) **09:00 AM – 05:00 PM**: College Lectures\n2) **05:00 PM – 06:00 PM**: Meeting with XYZ Person\n3) **06:00 PM – 07:00 PM**: College Assignments & Work\n4) **07:00 PM – 08:00 PM**: Dinner / Recharge\n5) **08:00 PM – 11:00 PM**: DSA & Algorithms\n6) **11:00 PM**: Sleep Wind-down *(10:50 PM reminder set)*";
-    } else if (userMsg.includes('amavasya') || userMsg.includes('pournami') || userMsg.includes('moon') || userMsg.includes('black')) {
-      aiReply = "🌕 **Astronomical Lunar Protocol (Pournami & Amavasya Guard):**\n\n• **Day-Before Alert (8:00 PM)**: *'Hello @siddu, tomorrow is Pournami, be ready with clothes other than black!'*\n• **Day-Of Alert (7:00 AM)**: *'Hello Siddu, just a reminder, do not wear black clothes today.'*\n\n*(Your autonomous agent holds full calendar permissions and will trigger these alerts automatically)*";
-    } else if (userMsg.includes('compare') || userMsg.includes('yesterday') || userMsg.includes('last month') || userMsg.includes('last week')) {
-      aiReply = "📊 **Comparative Database Audit (Today vs Historical Telemetry):**\n\n• **Today vs Yesterday**: You are at **92% schedule adherence** (+14% higher than yesterday's 78% rate).\n• **Today vs Last Week**: Your Gym and DSA consistency is +20% above your weekly average.\n• **Today vs Last Month**: You've maintained a record 21-day streak on Coding, far exceeding last month's 9-day best!";
-    } else if (userMsg.includes('spend') || userMsg.includes('money')) {
-      const totalSpend = transactions.filter(t => t.type === 'spend').reduce((a, b) => a + b.amount, 0);
-      const totalEarn = transactions.filter(t => t.type === 'earn').reduce((a, b) => a + b.amount, 0);
-      aiReply = `For the timeframe (${timeRange.toUpperCase()}), you have earned $${totalEarn} and spent $${totalSpend}. Your net savings efficiency is healthy (+${Math.round((totalEarn - totalSpend) / (totalEarn || 1) * 100)}%).`;
+    if (geminiApiKey) {
+      setAiLoading(true);
+      setAiMessages(prev => [...prev, { id: 'loading', sender: 'ai', text: 'Thinking...', time: nowTime }]);
+      
+      try {
+        const genAI = new GoogleGenerativeAI(geminiApiKey);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        
+        const systemPrompt = `
+          You are an autonomous AI assistant in a personal dashboard.
+          User's calendar events: ${JSON.stringify(calendarEvents)}
+          User's habits/todayItems: ${JSON.stringify(todayItems)}
+          User's transactions summary: ${JSON.stringify(transactions)}
+          
+          If the user asks to add an event to the calendar, respond with an optional JSON block:
+          [CALENDAR_EVENT]{"title":"...","date":"YYYY-MM-DD","endDate":"YYYY-MM-DD or null","color":"#hex"}[/CALENDAR_EVENT]
+          Make the color a valid hex code (e.g. #3b82f6 for blue, #ef4444 for red).
+          Provide a helpful text response as well.
+        `;
+        
+        const result = await model.generateContent(`${systemPrompt}\n\nUser: ${userMsgText}`);
+        const responseText = result.response.text();
+        
+        // Parse calendar event
+        const eventMatch = responseText.match(/\[CALENDAR_EVENT\](.*?)\[\/CALENDAR_EVENT\]/s);
+        let finalReply = responseText;
+        
+        if (eventMatch && eventMatch[1]) {
+          try {
+            const eventData = JSON.parse(eventMatch[1]);
+            setCalendarEvents(prev => [...prev, { id: Date.now(), ...eventData }]);
+            finalReply = finalReply.replace(eventMatch[0], '').trim();
+          } catch (err) {
+            console.error("Failed to parse calendar event JSON", err);
+          }
+        }
+        
+        setAiMessages(prev => prev.map(m => m.id === 'loading' ? { id: Date.now() + 1, sender: 'ai', text: finalReply, time: nowTime } : m));
+      } catch (error) {
+        console.error("Gemini API Error:", error);
+        setAiMessages(prev => prev.map(m => m.id === 'loading' ? { id: Date.now() + 1, sender: 'ai', text: `Error calling Gemini API: ${error.message}`, time: nowTime } : m));
+      } finally {
+        setAiLoading(false);
+      }
     } else {
-      aiReply = `🤖 Siddu, I hold full access to your account and real-time database. Your overall productivity rating is 93/100 across Gym, College, and DSA! How can I optimize your next task?`;
+      const userMsg = userMsgText.toLowerCase();
+      let aiReply = "I am analyzing your real-time database telemetry across your account permissions... ";
+      if (userMsg.includes('performance') || userMsg.includes('time') || userMsg.includes('right now') || userMsg.includes('today')) {
+        aiReply = "🔍 **Looked at real-time telemetry (Live Time Check & Audit):**\n\nSiddu, checking against your locked schedule:\n• **09:00 AM – 05:00 PM (College)**: ✅ Completed\n• **05:00 PM – 06:00 PM (Meeting with XYZ)**: ✅ Completed\n• **06:00 PM – 07:00 PM (College Work)**: ✅ Completed\n• **07:00 PM – 08:00 PM (Eat/Dinner)**: ✅ Completed\n\n⚡ **Right Now (8:00 PM – 11:00 PM Block):**\nYou are ALL DONE till now! Only your **DSA / LeetCode Problem Solving** block is left for today, then sleep at 11:00 PM. Let's conquer those algorithms, do it! 🚀\n\n*(Pre-sleep notification armed for exactly 10:50 PM)*";
+      } else if (userMsg.includes('gym') || userMsg.includes('7 am') || userMsg.includes('schedule') || userMsg.includes('briefing')) {
+        aiReply = "☀️ **7:00 AM Gym Briefing & Daily Itinerary:**\n\nGood morning, Siddu! While you crush your 7:00 AM gym session, here is your locked itinerary for today:\n1) **09:00 AM – 05:00 PM**: College Lectures\n2) **05:00 PM – 06:00 PM**: Meeting with XYZ Person\n3) **06:00 PM – 07:00 PM**: College Assignments & Work\n4) **07:00 PM – 08:00 PM**: Dinner / Recharge\n5) **08:00 PM – 11:00 PM**: DSA & Algorithms\n6) **11:00 PM**: Sleep Wind-down *(10:50 PM reminder set)*";
+      } else if (userMsg.includes('amavasya') || userMsg.includes('pournami') || userMsg.includes('moon') || userMsg.includes('black')) {
+        aiReply = "🌕 **Astronomical Lunar Protocol (Pournami & Amavasya Guard):**\n\n• **Day-Before Alert (8:00 PM)**: *'Hello @siddu, tomorrow is Pournami, be ready with clothes other than black!'*\n• **Day-Of Alert (7:00 AM)**: *'Hello Siddu, just a reminder, do not wear black clothes today.'*\n\n*(Your autonomous agent holds full calendar permissions and will trigger these alerts automatically)*";
+      } else if (userMsg.includes('compare') || userMsg.includes('yesterday') || userMsg.includes('last month') || userMsg.includes('last week')) {
+        aiReply = "📊 **Comparative Database Audit (Today vs Historical Telemetry):**\n\n• **Today vs Yesterday**: You are at **92% schedule adherence** (+14% higher than yesterday's 78% rate).\n• **Today vs Last Week**: Your Gym and DSA consistency is +20% above your weekly average.\n• **Today vs Last Month**: You've maintained a record 21-day streak on Coding, far exceeding last month's 9-day best!";
+      } else if (userMsg.includes('spend') || userMsg.includes('money')) {
+        const totalSpend = transactions.filter(t => t.type === 'spend').reduce((a, b) => a + b.amount, 0);
+        const totalEarn = transactions.filter(t => t.type === 'earn').reduce((a, b) => a + b.amount, 0);
+        aiReply = `For the timeframe (${timeRange.toUpperCase()}), you have earned $${totalEarn} and spent $${totalSpend}. Your net savings efficiency is healthy (+${Math.round((totalEarn - totalSpend) / (totalEarn || 1) * 100)}%).`;
+      } else {
+        aiReply = `🤖 Siddu, I hold full access to your account and real-time database. Your overall productivity rating is 93/100 across Gym, College, and DSA! How can I optimize your next task?`;
+      }
+      setAiMessages(prev => [...prev, { id: Date.now() + 1, sender: 'ai', text: aiReply, time: nowTime }]);
     }
-
-    setAiMessages(prev => [...prev, newMsg, { id: Date.now() + 1, sender: 'ai', text: aiReply, time: nowTime }]);
   };
 
   const addTransaction = (e) => {
@@ -799,6 +871,20 @@ export default function App() {
                 </button>
 
                 <button
+                  onClick={() => setActiveTab('calendar')}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '12px',
+                    padding: '12px 14px', borderRadius: '12px', border: 'none',
+                    background: activeTab === 'calendar' ? 'rgba(59, 130, 246, 0.14)' : 'transparent',
+                    color: activeTab === 'calendar' ? 'var(--accent-blue)' : 'var(--text-muted)',
+                    fontWeight: activeTab === 'calendar' ? 700 : 500, cursor: 'pointer',
+                    fontSize: '0.92rem', transition: 'all 0.2s', textAlign: 'left'
+                  }}
+                >
+                  <Calendar size={18} /> Calendar
+                </button>
+
+                <button
                   onClick={() => setActiveTab('finance')}
                   style={{
                     display: 'flex', alignItems: 'center', gap: '12px',
@@ -962,7 +1048,7 @@ export default function App() {
             </div>
 
             {/* Timeframe Dropdown Selector & KPI Cards (Hide when on Settings or AI Chat tab) */}
-            {activeTab !== 'settings' && activeTab !== 'ai' && (
+            {activeTab !== 'settings' && activeTab !== 'ai' && activeTab !== 'calendar' && (
               <>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', ref: timeDropdownRef, position: 'relative' }} ref={timeDropdownRef}>
@@ -1549,6 +1635,135 @@ export default function App() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 2.5) CALENDAR TAB */}
+              {activeTab === 'calendar' && (
+                <div className="animate-entrance">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px', flexWrap: 'wrap', gap: '16px' }}>
+                    <div>
+                      <h3 style={{ fontSize: '1.55rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <Calendar size={24} color="var(--accent-blue)" /> Universal Calendar
+                      </h3>
+                      <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: '4px' }}>
+                        Manage your events, meetings, and deadlines. Let your AI know what's coming up.
+                      </p>
+                    </div>
+                    <button 
+                      className="blue-btn" 
+                      onClick={() => {
+                        const newEvent = {
+                          id: Date.now(),
+                          title: 'New Event',
+                          date: new Date().toISOString().split('T')[0],
+                          color: '#3b82f6'
+                        };
+                        setCalendarEvents([...calendarEvents, newEvent]);
+                      }}
+                      style={{ padding: '12px 22px', fontSize: '0.92rem' }}
+                    >
+                      <Plus size={18} /> Add Event
+                    </button>
+                  </div>
+
+                  {/* Sub-tabs */}
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', overflowX: 'auto', paddingBottom: '8px' }}>
+                    {['This Week', 'Next Week', 'This Month', 'Next Month', 'This Year'].map(tab => {
+                      const tabKey = tab.toLowerCase().replace(' ', '_');
+                      const isActive = calendarSubTab === tabKey;
+                      return (
+                        <button
+                          key={tabKey}
+                          onClick={() => setCalendarSubTab(tabKey)}
+                          style={{
+                            padding: '8px 16px', borderRadius: '50px', border: 'none',
+                            background: isActive ? 'var(--accent-blue)' : 'var(--bg-card)',
+                            color: isActive ? '#fff' : 'var(--text-muted)',
+                            fontWeight: isActive ? 700 : 500, cursor: 'pointer',
+                            fontSize: '0.85rem', transition: 'all 0.2s', whiteSpace: 'nowrap'
+                          }}
+                        >
+                          {tab}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '24px', minHeight: '460px' }}>
+                    {/* Left: Mini Calendar Grid */}
+                    <div style={{ background: 'var(--bg-card)', borderRadius: '18px', border: '1px solid var(--border-color)', padding: '24px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                        <h4 style={{ fontSize: '1.2rem', fontWeight: 800 }}>July 2026</h4>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button style={{ background: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: '8px', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-main)', cursor: 'pointer' }}>&lt;</button>
+                          <button style={{ background: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: '8px', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-main)', cursor: 'pointer' }}>&gt;</button>
+                        </div>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', textAlign: 'center', marginBottom: '8px' }}>
+                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+                          <div key={d} style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>{d}</div>
+                        ))}
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', textAlign: 'center' }}>
+                        {Array.from({ length: 31 }, (_, i) => {
+                          const date = i + 1;
+                          const dateStr = `2026-07-${date.toString().padStart(2, '0')}`;
+                          const dayEvents = calendarEvents.filter(e => e.date === dateStr);
+                          const isSelected = selectedCalendarDate === dateStr;
+                          return (
+                            <div 
+                              key={i} 
+                              onClick={() => setSelectedCalendarDate(dateStr)}
+                              style={{ 
+                                padding: '10px 0', 
+                                borderRadius: '10px', 
+                                background: isSelected ? 'var(--accent-blue)' : 'var(--bg-main)', 
+                                color: isSelected ? '#fff' : 'var(--text-main)',
+                                cursor: 'pointer',
+                                position: 'relative',
+                                fontWeight: isSelected ? 800 : 500,
+                                fontSize: '0.9rem',
+                                border: '1px solid var(--border-color)'
+                              }}
+                            >
+                              {date}
+                              {dayEvents.length > 0 && (
+                                <div style={{ display: 'flex', justifyContent: 'center', gap: '2px', position: 'absolute', bottom: '4px', left: 0, right: 0 }}>
+                                  {dayEvents.slice(0, 3).map((e, idx) => (
+                                    <div key={idx} style={{ width: '4px', height: '4px', borderRadius: '50%', background: isSelected ? '#fff' : e.color || 'var(--accent-blue)' }} />
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    
+                    {/* Right: Event List */}
+                    <div style={{ background: 'var(--bg-card)', borderRadius: '18px', border: '1px solid var(--border-color)', padding: '24px' }}>
+                      <h4 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '16px' }}>
+                        {selectedCalendarDate ? `Events for ${selectedCalendarDate}` : 'Upcoming Events'}
+                      </h4>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        {calendarEvents
+                          .filter(e => !selectedCalendarDate || e.date === selectedCalendarDate)
+                          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                          .map(e => (
+                          <div key={e.id} style={{ padding: '12px 16px', background: 'var(--bg-main)', borderRadius: '12px', border: '1px solid var(--border-color)', borderLeft: `4px solid ${e.color || 'var(--accent-blue)'}` }}>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '4px' }}>{e.date}</div>
+                            <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)' }}>{e.title}</div>
+                          </div>
+                        ))}
+                        {calendarEvents.filter(e => !selectedCalendarDate || e.date === selectedCalendarDate).length === 0 && (
+                          <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem', background: 'var(--bg-main)', borderRadius: '12px', border: '1px dashed var(--border-color)' }}>
+                            No events found.
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -2172,6 +2387,23 @@ export default function App() {
                             onChange={(e) => setAiName(e.target.value || 'AI')} 
                             style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600, outline: 'none' }}
                           />
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
+                          <div>
+                            <div style={{ fontWeight: 700, fontSize: '1rem' }}>Gemini API Key</div>
+                            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Enter your free Google Gemini API key to enable real AI responses. Get one at aistudio.google.com</div>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <input 
+                              type="password" 
+                              value={geminiApiKey} 
+                              placeholder="AIzaSy..."
+                              onChange={(e) => setGeminiApiKey(e.target.value)} 
+                              style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600, outline: 'none' }}
+                            />
+                            {geminiApiKey && <span style={{ color: '#22c55e', fontWeight: 700, fontSize: '0.85rem' }}>● Connected</span>}
+                          </div>
                         </div>
 
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
