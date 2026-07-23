@@ -18,7 +18,10 @@ export default function App() {
   // Sync initial page with URL pathname (/dashboard, /waitlist, /contact, or /)
   const [currentPage, setCurrentPage] = useState(() => {
     const path = window.location.pathname;
-    if (path.includes('/dashboard')) return 'dashboard';
+    const isAuth = !!localStorage.getItem('token');
+    
+    if (path.includes('/dashboard')) return isAuth ? 'dashboard' : 'auth';
+    if (path.includes('/auth')) return 'auth';
     if (path.includes('/waitlist')) return 'waitlist';
     if (path.includes('/contact')) return 'contact';
     return 'landing';
@@ -34,7 +37,10 @@ export default function App() {
   useEffect(() => {
     const handlePopState = () => {
       const path = window.location.pathname;
-      if (path.includes('/dashboard')) setCurrentPage('dashboard');
+      const isAuth = !!localStorage.getItem('token');
+      
+      if (path.includes('/dashboard')) setCurrentPage(isAuth ? 'dashboard' : 'auth');
+      else if (path.includes('/auth')) setCurrentPage('auth');
       else if (path.includes('/waitlist')) setCurrentPage('waitlist');
       else if (path.includes('/contact')) setCurrentPage('contact');
       else setCurrentPage('landing');
@@ -74,6 +80,54 @@ export default function App() {
     smartAlerts: true
   });
   const [settingsSaved, setSettingsSaved] = useState(false);
+
+  // Authentication State
+  const [isAuthenticated, setIsAuthenticated] = useState(() => !!localStorage.getItem('token'));
+  const [token, setToken] = useState(() => localStorage.getItem('token') || '');
+  const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
+  const [authForm, setAuthForm] = useState({ name: '', handle: '', email: '', password: '', phone: '' });
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState('');
+
+  const handleAuth = async (e) => {
+    e.preventDefault();
+    setAuthLoading(true);
+    setAuthError('');
+    try {
+      const endpoint = authMode === 'login' ? '/api/auth/login' : '/api/auth/register';
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(authForm)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Authentication failed');
+      
+      localStorage.setItem('token', data.token);
+      setToken(data.token);
+      setIsAuthenticated(true);
+      setUserProfile(prev => ({
+        ...prev,
+        name: data.user.name || '',
+        email: data.user.email || '',
+        handle: data.user.handle || '',
+      }));
+      setAuthForm({ name: '', handle: '', email: '', password: '', phone: '' });
+      navigate('dashboard', '/dashboard');
+    } catch (err) {
+      setAuthError(err.message);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    setToken('');
+    setIsAuthenticated(false);
+    setUserProfile({ name: '', handle: '', email: '', aiTone: 'Analytical & Direct', morningAudit: true, smartAlerts: true });
+    navigate('landing', '/');
+  };
 
   const timeOptions = [
     { id: 'today', label: 'Today' },
@@ -160,7 +214,7 @@ export default function App() {
     }
   }, [trashNotes]);
 
-  // 7) Persistent Side AI Coach Panel state
+  // 7) Persistent Side Personal AI Assistant Panel state
   const [isAiSidePanelOpen, setIsAiSidePanelOpen] = useState(true);
 
   // 8) Calendar state
@@ -171,6 +225,51 @@ export default function App() {
   // 9) Gemini API Key (persisted in localStorage)
   const [geminiApiKey, setGeminiApiKey] = useState(() => localStorage.getItem('gemini_api_key') || '');
   const [aiLoading, setAiLoading] = useState(false);
+
+  const fetchDashboardData = async () => {
+    if (!token) return;
+    try {
+      const headers = { 'Authorization': `Bearer ${token}` };
+      
+      const habitsRes = await fetch('/api/habits', { headers });
+      if (habitsRes.ok) {
+        const hData = await habitsRes.json();
+        setHabits(hData.map(h => ({ id: h.id, title: h.label, category: h.category, streak: h.streak, checkedToday: !!h.checked_today })));
+      }
+
+      const todayRes = await fetch('/api/today', { headers });
+      if (todayRes.ok) {
+        const tData = await todayRes.json();
+        setTodayItems(tData.map(t => ({ id: t.id, time: t.time, label: t.label, category: t.category, checked: !!t.checked })));
+      }
+
+      const txRes = await fetch('/api/transactions', { headers });
+      if (txRes.ok) {
+        const txData = await txRes.json();
+        setTransactions(txData.map(t => ({ id: t.id, title: t.title, amount: t.amount, type: t.type, date: t.date })));
+      }
+      
+      const settingsRes = await fetch('/api/settings', { headers });
+      if (settingsRes.ok) {
+        const sData = await settingsRes.json();
+        if (sData.user) {
+          setUserProfile(prev => ({ ...prev, ...sData.user }));
+          if (sData.user.gemini_api_key) {
+            setGeminiApiKey(sData.user.gemini_api_key);
+            localStorage.setItem('gemini_api_key', sData.user.gemini_api_key);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch dashboard data:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchDashboardData();
+    }
+  }, [isAuthenticated, token]);
 
   useEffect(() => {
     if (geminiApiKey) {
@@ -415,7 +514,7 @@ export default function App() {
               <h1 style={{ fontSize: '1.35rem', fontWeight: 800, letterSpacing: '-0.5px' }}>
                 LIFE <span className="serif-italic">AGENT</span>
               </h1>
-              <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 500 }}>All-in-One Personal & AI Coach</p>
+              <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 500 }}>All-in-One Personal & Personal AI Assistant</p>
             </div>
           </div>
 
@@ -460,17 +559,17 @@ export default function App() {
             <button 
               className="secondary-btn" 
               style={{ padding: '8px 18px', fontSize: '0.9rem' }}
-              onClick={() => navigate('contact', '/contact')}
+              onClick={() => { setAuthMode('login'); navigate('auth', '/auth'); }}
             >
-              Contact Us
+              Sign In
             </button>
             
             <button 
               className="blue-btn" 
               style={{ padding: '9px 22px', fontSize: '0.9rem' }}
-              onClick={() => { setWaitlistSuccess(false); navigate('waitlist', '/waitlist'); }}
+              onClick={() => { setAuthMode('signup'); navigate('auth', '/auth'); }}
             >
-              Join Waitlist <ArrowRight size={16} />
+              Sign Up <ArrowRight size={16} />
             </button>
           </div>
         </nav>
@@ -505,7 +604,7 @@ export default function App() {
             <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', alignItems: 'center', fontSize: '0.85rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
               <span className="pill-tag"><Check size={14} color="var(--accent-blue)" /> 0% Commission & Extra Fees</span>
               <span className="pill-tag"><Check size={14} color="var(--accent-blue)" /> Instant Early Access Priority</span>
-              <span className="pill-tag"><Check size={14} color="var(--accent-blue)" /> Built-in AI Agent Coach</span>
+              <span className="pill-tag"><Check size={14} color="var(--accent-blue)" /> Built-in Personal AI Assistant</span>
             </div>
           </section>
 
@@ -580,7 +679,7 @@ export default function App() {
                       <CheckCircle2 color="var(--accent-blue)" size={20} /> Deep Work Pomodoro & Study Tracker
                     </li>
                     <li style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.98rem' }}>
-                      <CheckCircle2 color="var(--accent-blue)" size={20} /> Built-in AI Agent Companion & Coach
+                      <CheckCircle2 color="var(--accent-blue)" size={20} /> Built-in Personal AI Assistant
                     </li>
                     <li style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.98rem' }}>
                       <CheckCircle2 color="var(--accent-blue)" size={20} /> Body, Gym & Sleep Quality Analytics
@@ -751,6 +850,75 @@ export default function App() {
             <div style={{ textAlign: 'left', color: 'var(--text-muted)', fontSize: '0.95rem' }}>
               <h5 style={{ color: 'var(--text-main)', fontSize: '1.1rem', marginBottom: '8px' }}>Direct Support & Custom Licensing</h5>
               <p>For custom inquiries, feature requests, or enterprise licensing beyond the $4/mo all-in-one tier, drop a direct message on X to <strong>@Zenitsu_T7</strong>. We reply within 24 hours!</p>
+            </div>
+          </div>
+        </main>
+      )}
+
+      {/* AUTHENTICATION PAGE (At /auth) */}
+      {currentPage === 'auth' && (
+        <main className="animate-entrance" style={{ display: 'flex', minHeight: '80vh', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ background: 'var(--bg-card)', padding: '40px', borderRadius: '24px', border: '1px solid var(--border-color)', width: '100%', maxWidth: '440px', boxShadow: '0 8px 30px rgba(0,0,0,0.1)' }}>
+            <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+              <div style={{
+                background: 'var(--accent-blue)', width: '48px', height: '48px', borderRadius: '14px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px'
+              }}>
+                <Lock size={24} color="#fff" />
+              </div>
+              <h2 style={{ fontSize: '1.8rem', fontWeight: 800 }}>{authMode === 'login' ? 'Welcome Back' : 'Create Account'}</h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', marginTop: '8px' }}>
+                {authMode === 'login' ? 'Sign in to access your AI workspace.' : 'Sign up to get your Personal AI Assistant.'}
+              </p>
+            </div>
+
+            {authError && (
+              <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', color: '#ef4444', padding: '12px 16px', borderRadius: '12px', marginBottom: '20px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <XCircle size={18} /> {authError}
+              </div>
+            )}
+
+            <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {authMode === 'signup' && (
+                <>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Full Name</label>
+                    <input type="text" required value={authForm.name} onChange={e => setAuthForm({...authForm, name: e.target.value})} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', outline: 'none' }} placeholder="John Doe" />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Handle / Username</label>
+                    <input type="text" value={authForm.handle} onChange={e => setAuthForm({...authForm, handle: e.target.value})} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', outline: 'none' }} placeholder="@johndoe" />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Phone (Optional)</label>
+                    <input type="tel" value={authForm.phone} onChange={e => setAuthForm({...authForm, phone: e.target.value})} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', outline: 'none' }} placeholder="+1 234 567 890" />
+                  </div>
+                </>
+              )}
+              
+              <div>
+                <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Email Address</label>
+                <input type="email" required value={authForm.email} onChange={e => setAuthForm({...authForm, email: e.target.value})} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', outline: 'none' }} placeholder="you@example.com" />
+              </div>
+              
+              <div>
+                <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Password</label>
+                <input type="password" required value={authForm.password} onChange={e => setAuthForm({...authForm, password: e.target.value})} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', outline: 'none' }} placeholder="••••••••" />
+              </div>
+
+              <button type="submit" className="blue-btn" disabled={authLoading} style={{ width: '100%', padding: '14px', fontSize: '1rem', marginTop: '8px', opacity: authLoading ? 0.7 : 1 }}>
+                {authLoading ? 'Please wait...' : (authMode === 'login' ? 'Sign In' : 'Create Account')}
+              </button>
+            </form>
+
+            <div style={{ textAlign: 'center', marginTop: '24px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+              {authMode === 'login' ? "Don't have an account? " : "Already have an account? "}
+              <button 
+                onClick={() => { setAuthMode(authMode === 'login' ? 'signup' : 'login'); setAuthError(''); }} 
+                style={{ background: 'none', border: 'none', color: 'var(--accent-blue)', fontWeight: 600, cursor: 'pointer', padding: 0 }}
+              >
+                {authMode === 'login' ? 'Sign Up' : 'Sign In'}
+              </button>
             </div>
           </div>
         </main>
@@ -1234,7 +1402,7 @@ export default function App() {
                           onChange={(e) => setFloatingDiaryShare(e.target.checked)}
                           style={{ accentColor: '#22c55e', cursor: 'pointer' }}
                         />
-                        <span>🤖 Shared with AI Coach (Memory Active)</span>
+                        <span>🤖 Shared with Personal AI Assistant (Memory Active)</span>
                       </label>
                     </div>
                     <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '14px' }}>
@@ -1669,7 +1837,7 @@ export default function App() {
                 </div>
               )}
 
-              {/* 2.5) NOTES & DIARY TAB (With AI Coach Permission Sharing) */}
+              {/* 2.5) NOTES & DIARY TAB (With Personal AI Assistant Permission Sharing) */}
               {activeTab === 'notes' && (
                 <div className="animate-entrance">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px', flexWrap: 'wrap', gap: '16px' }}>
@@ -1883,7 +2051,7 @@ export default function App() {
                                       onChange={(e) => setNotesList(notesList.map(n => n.id === currentNote.id ? { ...n, shareWithAi: e.target.checked } : n))}
                                       style={{ accentColor: '#22c55e', cursor: 'pointer', width: '16px', height: '16px' }}
                                     />
-                                    <span>{currentNote.shareWithAi ? '🤖 Shared with AI Coach (Allowed)' : '🔒 Private Note (AI Blocked)'}</span>
+                                    <span>{currentNote.shareWithAi ? '🤖 Shared with Personal AI Assistant (Allowed)' : '🔒 Private Note (AI Blocked)'}</span>
                                   </label>
 
                                   <button
@@ -1950,7 +2118,7 @@ export default function App() {
                           />
 
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                            <span>{notesViewMode === 'active' ? '💡 Tip: Any note with "🤖 Shared with AI Coach" checked can be queried directly in your AI Assistant!' : '🗑️ Viewing note in Trash. Restore it to edit or keep permanently.'}</span>
+                            <span>{notesViewMode === 'active' ? '💡 Tip: Any note with "🤖 Shared with Personal AI Assistant" checked can be queried directly in your AI Assistant!' : '🗑️ Viewing note in Trash. Restore it to edit or keep permanently.'}</span>
                             <span style={{ fontWeight: 700, color: notesViewMode === 'active' ? 'var(--accent-blue)' : '#ef4444' }}>{notesViewMode === 'active' ? 'Auto-Saved ✓' : 'In Trash Bin'}</span>
                           </div>
                         </div>
@@ -2157,7 +2325,7 @@ export default function App() {
                     {/* SECTION 2: AI Agent & Features */}
                     <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '24px' }}>
                       <h4 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-blue)' }}>
-                        <Bot size={18} /> AI Agent & Coach Features
+                        <Bot size={18} /> Personal AI Assistant Features
                       </h4>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                         
@@ -2220,7 +2388,7 @@ export default function App() {
 
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
                           <div>
-                            <div style={{ fontWeight: 700, fontSize: '1rem' }}>AI Coach Tone & Personality</div>
+                            <div style={{ fontWeight: 700, fontSize: '1rem' }}>Personal AI Assistant Tone & Personality</div>
                             <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Choose how strict, encouraging, or concise the AI audits your metrics.</div>
                           </div>
                           <select 
