@@ -270,9 +270,68 @@ export default function App() {
         const calData = await calRes.json();
         setCalendarEvents(calData.map(c => ({ id: c.id, title: c.title, date: c.date, color: c.color })));
       }
+      
+      const notesRes = await fetch('/api/notes', { headers });
+      if (notesRes.ok) {
+        const notesData = await notesRes.json();
+        setNotesList(notesData.filter(n => !n.is_trashed).map(n => ({ id: n.id, title: n.title, content: n.content, category: n.category, date: n.date, shareWithAi: !!n.share_with_ai })));
+        setTrashNotes(notesData.filter(n => !!n.is_trashed).map(n => ({ id: n.id, title: n.title, content: n.content, category: n.category, date: n.date, shareWithAi: !!n.share_with_ai })));
+      }
     } catch (err) {
       console.error('Failed to fetch dashboard data:', err);
     }
+  };
+
+  const handleUpdateNoteDb = async (note) => {
+    if (!token || !note.id) return;
+    try {
+      await fetch('/api/notes', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ id: note.id, title: note.title, content: note.content, share_with_ai: note.shareWithAi, is_trashed: note.is_trashed, deleted_at: note.deletedAt })
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleCreateNoteDb = async (title, content, shareWithAi, callback) => {
+    if (!token) return;
+    try {
+      const res = await fetch('/api/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ title, content, share_with_ai: shareWithAi })
+      });
+      if (res.ok) {
+        const newNote = await res.json();
+        callback({ ...newNote, shareWithAi: !!newNote.share_with_ai });
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleUpdateTodayDb = async (id, checked) => {
+    if (!token || !id) return;
+    try {
+      await fetch('/api/today', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ id, checked })
+      });
+    } catch(e) {}
+  };
+
+  const handleUpdateHabitDb = async (id, streak, checked_today) => {
+    if (!token || !id) return;
+    try {
+      await fetch('/api/habits', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ id, streak, checked_today })
+      });
+    } catch(e) {}
   };
 
   useEffect(() => {
@@ -295,12 +354,19 @@ export default function App() {
       
       // Sync corresponding habits (Daily Works)
       setHabits(prevHabits => prevHabits.map(h => {
-        if (i.category === 'Body & Gym' && h.category.includes('Body & Gym')) return { ...h, checkedToday: nextChecked, streak: nextChecked ? h.streak + 1 : Math.max(0, h.streak - 1) };
-        if (i.category === 'Study' && h.category.includes('Study')) return { ...h, checkedToday: nextChecked, streak: nextChecked ? h.streak + 1 : Math.max(0, h.streak - 1) };
-        if (i.category === 'Coding' && (h.category.includes('Coding') || h.category.includes('DSA'))) return { ...h, checkedToday: nextChecked, streak: nextChecked ? h.streak + 1 : Math.max(0, h.streak - 1) };
-        return h;
+        let newStreak = h.streak;
+        let newChecked = h.checkedToday;
+        let updated = false;
+        
+        if (i.category === 'Body & Gym' && h.category.includes('Body & Gym')) { newChecked = nextChecked; newStreak = nextChecked ? h.streak + 1 : Math.max(0, h.streak - 1); updated = true; }
+        else if (i.category === 'Study' && h.category.includes('Study')) { newChecked = nextChecked; newStreak = nextChecked ? h.streak + 1 : Math.max(0, h.streak - 1); updated = true; }
+        else if (i.category === 'Coding' && (h.category.includes('Coding') || h.category.includes('DSA'))) { newChecked = nextChecked; newStreak = nextChecked ? h.streak + 1 : Math.max(0, h.streak - 1); updated = true; }
+        
+        if (updated) handleUpdateHabitDb(h.id, newStreak, newChecked);
+        return updated ? { ...h, checkedToday: newChecked, streak: newStreak } : h;
       }));
 
+      handleUpdateTodayDb(i.id, nextChecked);
       return { ...i, checked: nextChecked };
     }));
   };
@@ -308,24 +374,36 @@ export default function App() {
   const handleToggleAllToday = () => {
     const allAreChecked = todayItems.every(i => i.checked);
     const targetState = !allAreChecked;
-    setTodayItems(prev => prev.map(i => ({ ...i, checked: targetState })));
-    setHabits(prevHabits => prevHabits.map(h => ({ ...h, checkedToday: targetState, streak: targetState ? h.streak + (h.checkedToday ? 0 : 1) : Math.max(0, h.streak - 1) })));
+    setTodayItems(prev => prev.map(i => {
+      handleUpdateTodayDb(i.id, targetState);
+      return { ...i, checked: targetState };
+    }));
+    setHabits(prevHabits => prevHabits.map(h => {
+      const newStreak = targetState ? h.streak + (h.checkedToday ? 0 : 1) : Math.max(0, h.streak - 1);
+      handleUpdateHabitDb(h.id, newStreak, targetState);
+      return { ...h, checkedToday: targetState, streak: newStreak };
+    }));
   };
 
   const handleToggleHabitItem = (targetHabitId) => {
     setHabits(prev => prev.map(h => {
       if (h.id !== targetHabitId) return h;
       const nextChecked = !h.checkedToday;
+      const newStreak = nextChecked ? h.streak + 1 : Math.max(0, h.streak - 1);
       
       // Sync corresponding todayItem
       setTodayItems(prevToday => prevToday.map(ti => {
-        if (h.category.includes('Body & Gym') && ti.category === 'Body & Gym') return { ...ti, checked: nextChecked };
-        if (h.category.includes('Study') && ti.category === 'Study') return { ...ti, checked: nextChecked };
-        if ((h.category.includes('Coding') || h.category.includes('DSA')) && ti.category === 'Coding') return { ...ti, checked: nextChecked };
-        return ti;
+        let updated = false;
+        if (h.category.includes('Body & Gym') && ti.category === 'Body & Gym') updated = true;
+        else if (h.category.includes('Study') && ti.category === 'Study') updated = true;
+        else if ((h.category.includes('Coding') || h.category.includes('DSA')) && ti.category === 'Coding') updated = true;
+        
+        if (updated) handleUpdateTodayDb(ti.id, nextChecked);
+        return updated ? { ...ti, checked: nextChecked } : ti;
       }));
 
-      return { ...h, checkedToday: nextChecked, streak: nextChecked ? h.streak + 1 : Math.max(0, h.streak - 1) };
+      handleUpdateHabitDb(h.id, newStreak, nextChecked);
+      return { ...h, checkedToday: nextChecked, streak: newStreak };
     }));
   };
 
@@ -499,22 +577,35 @@ export default function App() {
     }
   };
 
-  const addTransaction = (e) => {
+  const addTransaction = async (e) => {
     e.preventDefault();
     if (!newTitle || !newAmount) return;
-    setTransactions(prev => [
-      {
-        id: Date.now(),
-        title: newTitle,
-        amount: parseFloat(newAmount),
-        type: newType,
-        category: newType === 'spend' ? 'Personal' : 'Income',
-        date: new Date().toISOString().split('T')[0]
-      },
-      ...prev
-    ]);
-    setNewTitle('');
-    setNewAmount('');
+    
+    try {
+      const res = await fetch('/api/transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ title: newTitle, amount: parseFloat(newAmount), type: newType })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setTransactions(prev => [
+          {
+            id: data.id,
+            title: data.title,
+            amount: data.amount,
+            type: data.type,
+            category: data.type === 'spend' ? 'Personal' : 'Income',
+            date: new Date().toISOString().split('T')[0]
+          },
+          ...prev
+        ]);
+        setNewTitle('');
+        setNewAmount('');
+      }
+    } catch(err) {
+      console.error(err);
+    }
   };
 
   const fragmentedApps = [
@@ -2205,6 +2296,7 @@ export default function App() {
                                     setNotesList(notesList.map(n => n.id === currentNote.id ? { ...n, title: e.target.value, date: new Date().toISOString().split('T')[0] } : n));
                                   }
                                 }}
+                                onBlur={() => handleUpdateNoteDb(currentNote)}
                                 style={{ width: '100%', fontSize: '1.3rem', fontWeight: 800, background: 'transparent', border: 'none', color: 'var(--text-main)', outline: 'none' }}
                               />
                             </div>
@@ -2215,7 +2307,11 @@ export default function App() {
                                     <input
                                       type="checkbox"
                                       checked={currentNote.shareWithAi}
-                                      onChange={(e) => setNotesList(notesList.map(n => n.id === currentNote.id ? { ...n, shareWithAi: e.target.checked } : n))}
+                                      onChange={(e) => {
+                                        const nextState = e.target.checked;
+                                        setNotesList(notesList.map(n => n.id === currentNote.id ? { ...n, shareWithAi: nextState } : n));
+                                        handleUpdateNoteDb({ ...currentNote, shareWithAi: nextState });
+                                      }}
                                       style={{ accentColor: '#22c55e', cursor: 'pointer', width: '16px', height: '16px' }}
                                     />
                                     <span>{currentNote.shareWithAi ? '🤖 Shared with Personal AI Assistant (Allowed)' : '🔒 Private Note (AI Blocked)'}</span>
@@ -2223,9 +2319,11 @@ export default function App() {
 
                                   <button
                                     onClick={() => {
-                                      setTrashNotes([{ ...currentNote, deletedAt: Date.now() }, ...trashNotes]);
+                                      const trashedNote = { ...currentNote, deletedAt: Date.now(), is_trashed: 1 };
+                                      setTrashNotes([trashedNote, ...trashNotes]);
                                       const nextList = notesList.filter(n => n.id !== currentNote.id);
                                       setNotesList(nextList);
+                                      handleUpdateNoteDb(trashedNote);
                                       if (nextList.length > 0) {
                                         setActiveNoteId(nextList[0].id);
                                       } else {
@@ -2249,10 +2347,12 @@ export default function App() {
                                 <div style={{ display: 'flex', gap: '10px' }}>
                                   <button
                                     onClick={() => {
-                                      setNotesList([currentNote, ...notesList]);
+                                      const restoredNote = { ...currentNote, is_trashed: 0, deletedAt: null };
+                                      setNotesList([restoredNote, ...notesList]);
                                       setTrashNotes(trashNotes.filter(n => n.id !== currentNote.id));
                                       setActiveNoteId(currentNote.id);
                                       setNotesViewMode('active');
+                                      handleUpdateNoteDb(restoredNote);
                                     }}
                                     className="blue-btn"
                                     style={{ padding: '8px 16px', fontSize: '0.85rem' }}
@@ -2260,8 +2360,15 @@ export default function App() {
                                     ♻️ Restore Note
                                   </button>
                                   <button
-                                    onClick={() => {
+                                    onClick={async () => {
                                       setTrashNotes(trashNotes.filter(n => n.id !== currentNote.id));
+                                      try {
+                                        await fetch('/api/notes', {
+                                          method: 'DELETE',
+                                          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                          body: JSON.stringify({ id: currentNote.id })
+                                        });
+                                      } catch(e){}
                                     }}
                                     style={{ padding: '8px 16px', borderRadius: '20px', background: '#ef4444', color: '#fff', border: 'none', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}
                                   >
@@ -2280,6 +2387,7 @@ export default function App() {
                                 setNotesList(notesList.map(n => n.id === currentNote.id ? { ...n, content: e.target.value, date: new Date().toISOString().split('T')[0] } : n));
                               }
                             }}
+                            onBlur={() => handleUpdateNoteDb(currentNote)}
                             placeholder="Write your diary entry, personal reflection, or goals..."
                             style={{ flex: 1, width: '100%', minHeight: '280px', padding: '18px', borderRadius: '14px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '1rem', lineHeight: '1.6', outline: 'none', resize: 'none', opacity: notesViewMode === 'trash' ? 0.7 : 1 }}
                           />
@@ -2728,18 +2836,12 @@ export default function App() {
                     </label>
                     <button 
                       onClick={() => {
-                        // Save note into master list
-                        const newEntry = {
-                          id: Date.now(),
-                          title: `📖 Diary Entry (${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`,
-                          category: 'Diary',
-                          content: floatingDiaryContent,
-                          date: new Date().toISOString().split('T')[0],
-                          shareWithAi: floatingDiaryShare
-                        };
-                        setNotesList([newEntry, ...notesList]);
-                        setIsFloatingDiaryOpen(false);
-                        confetti({ particleCount: 35, spread: 60, origin: { y: 0.85 } });
+                        const titleStr = `📖 Diary Entry (${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`;
+                        handleCreateNoteDb(titleStr, floatingDiaryContent, floatingDiaryShare, (newNote) => {
+                          setNotesList([newNote, ...notesList]);
+                          setIsFloatingDiaryOpen(false);
+                          confetti({ particleCount: 35, spread: 60, origin: { y: 0.85 } });
+                        });
                       }}
                       className="blue-btn" 
                       style={{ padding: '8px 16px', fontSize: '0.82rem' }}
