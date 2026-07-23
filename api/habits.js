@@ -14,9 +14,9 @@ export default async function handler(req, res) {
     }
     
     if (req.method === 'PUT') {
-      const { id, streak, checked_today, target } = req.body;
+      const { id, streak, checked_today, target, paused_until } = req.body;
       await db.execute({
-        sql: 'UPDATE habits SET streak = ?, checked_today = ?, target = COALESCE(?, target) WHERE id = ? AND user_id = ?',
+        sql: 'UPDATE habits SET streak = ?, checked_today = ?, target = COALESCE(?, target), paused_until = COALESCE(?, paused_until) WHERE id = ? AND user_id = ?',
         args: [streak, checked_today ? 1 : 0, target || null, id, userId]
       });
       return res.status(200).json({ success: true });

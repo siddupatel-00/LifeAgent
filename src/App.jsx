@@ -6,7 +6,8 @@ import {
   Send, Plus, Clock, Award, Trash2, ChevronRight, LogIn, ExternalLink,
   Sun, Moon, Monitor, ChevronDown, Lock, Phone, AtSign, Activity, Zap, Check, X,
   Dumbbell, Moon as SleepIcon, BarChart3, PieChart, Flame, Heart, Target, Filter,
-  Home, LayoutDashboard, LogOut, Sliders, Settings, Save, Bell, Shield, PenTool, MessageSquare, Sidebar as SidebarIcon, FileText, Unlock, Smile
+  Home, LayoutDashboard, LogOut, Sliders, Settings, Save, Bell, Shield, PenTool, MessageSquare, Sidebar as SidebarIcon, FileText, Unlock, Smile,
+  Play, Pause
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -244,7 +245,7 @@ export default function App() {
       const habitsRes = await fetch('/api/habits', { headers });
       if (habitsRes.ok) {
         const hData = await habitsRes.json();
-        setHabits(hData.map(h => ({ id: h.id, title: h.label, category: h.category, streak: h.streak, target: h.target || '', checkedToday: !!h.checked_today })));
+        setHabits(hData.map(h => ({ id: h.id, title: h.label, category: h.category, streak: h.streak, target: h.target || '', checkedToday: !!h.checked_today, pausedUntil: h.paused_until || null })));
       }
       const clientDate = new Date().toISOString().split('T')[0];
       const todayRes = await fetch(`/api/today?client_date=${clientDate}`, { headers });
@@ -339,24 +340,22 @@ export default function App() {
     } catch(e) {}
   };
 
-  const handleUpdateHabitDb = async (id, streak, checked_today) => {
-    if (!token || !id) return;
-    try {
-      await fetch('/api/habits', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ id, streak, checked_today })
-      });
-    } catch(e) {}
-  };
+  const handleUpdateHabitDb = async (id, streak, checked_today, paused_until) => {
+      if (!token || !id) return;
+      try {
+        await fetch('/api/habits', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ id, streak, checked_today, paused_until })
+        });
+      } catch(e) {}
+    };
 
   useEffect(() => {
     if (isAuthenticated) {
       fetchDashboardData();
     }
   }, [isAuthenticated, token]);
-
-  // API keys are stored in DB via /api/settings — no localStorage duplication
 
   // Universal sync helpers between Today routine and Daily Works (habits)
   // Sync is now 1:1 via habitId linkage
@@ -370,7 +369,7 @@ export default function App() {
         setHabits(prevHabits => prevHabits.map(h => {
           if (h.id !== i.habitId) return h;
           const newStreak = nextChecked ? h.streak + 1 : Math.max(0, h.streak - 1);
-          handleUpdateHabitDb(h.id, newStreak, nextChecked);
+          handleUpdateHabitDb(h.id, newStreak, nextChecked, h.pausedUntil);
           return { ...h, checkedToday: nextChecked, streak: newStreak };
         }));
       }
@@ -392,7 +391,7 @@ export default function App() {
       const linkedToday = todayItems.find(ti => ti.habitId === h.id);
       if (!linkedToday) return h;
       const newStreak = targetState ? h.streak + (h.checkedToday ? 0 : 1) : Math.max(0, h.streak - 1);
-      handleUpdateHabitDb(h.id, newStreak, targetState);
+      handleUpdateHabitDb(h.id, newStreak, targetState, h.pausedUntil);
       return { ...h, checkedToday: targetState, streak: newStreak };
     }));
   };
@@ -410,10 +409,43 @@ export default function App() {
         return { ...ti, checked: nextChecked };
       }));
 
-      handleUpdateHabitDb(h.id, newStreak, nextChecked);
+      handleUpdateHabitDb(h.id, newStreak, nextChecked, h.pausedUntil);
       return { ...h, checkedToday: nextChecked, streak: newStreak };
     }));
   };
+
+  // Delete habit from DB and UI
+const handleDeleteHabitDb = async (id) => {
+      if (!token) return;
+      try {
+        await fetch('/api/habits', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ id })
+        });
+        setHabits(prev => prev.filter(h => h.id !== id));
+        // Remove any linked today items
+        setTodayItems(prev => prev.filter(ti => ti.habitId !== id));
+      } catch (err) {
+        console.error('Failed to delete habit:', err);
+      }
+    };
+
+    // Toggle pause/resume for a habit
+    const handleTogglePauseHabit = async (id, currentPausedUntil) => {
+      if (!token) return;
+      const newPaused = currentPausedUntil ? null : new Date().toISOString();
+      try {
+        await fetch('/api/habits', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ id, paused_until: newPaused })
+        });
+        setHabits(prev => prev.map(h => h.id === id ? { ...h, pausedUntil: newPaused } : h));
+      } catch (e) {
+        console.error('Failed to toggle pause habit:', e);
+      }
+    };
 
   // Handle PC/System vs explicit Dark/Light mode
   useEffect(() => {
@@ -742,8 +774,9 @@ export default function App() {
             >
               Sign Up <ArrowRight size={16} />
             </button>
-          </div>
-        </nav>
+        {/* Delete habit button */}
+        
+      </div>
       )}
 
       {/* LANDING PAGE (Storefront at /) */}
@@ -1573,81 +1606,9 @@ export default function App() {
                     )}
                   </div>
 
-                  {/* Add Routine Item Button */}
-                  <div style={{ marginTop: '16px' }}>
-                    <button 
-                      className="blue-btn" 
-                      onClick={() => setIsAddTodayItemOpen(!isAddTodayItemOpen)}
-                      style={{ padding: '10px 18px', fontSize: '0.85rem' }}
-                    >
-                      <Plus size={16} /> {isAddTodayItemOpen ? 'Close Form' : 'Add Routine Item'}
-                    </button>
-                  </div>
+// Add Routine Item UI removed
 
-                  {/* Add Routine Item Form */}
-                  {isAddTodayItemOpen && (
-                    <div className="animate-entrance" style={{ background: 'var(--bg-main)', padding: '20px', borderRadius: '16px', border: '1px solid var(--accent-blue)', marginTop: '16px' }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: '12px', alignItems: 'end' }}>
-                        <div>
-                          <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '6px', display: 'block' }}>Routine Title</label>
-                          <input 
-                            type="text" 
-                            placeholder="e.g., Morning Run"
-                            value={newTodayItemData.title}
-                            onChange={(e) => setNewTodayItemData({ ...newTodayItemData, title: e.target.value })}
-                            style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-main)', fontSize: '0.85rem' }}
-                          />
-                        </div>
-                        <div>
-                          <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '6px', display: 'block' }}>Category</label>
-                          <select 
-                            value={newTodayItemData.category}
-                            onChange={(e) => setNewTodayItemData({ ...newTodayItemData, category: e.target.value })}
-                            style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-main)', fontSize: '0.85rem' }}
-                          >
-                            <option value="Health">Health</option>
-                            <option value="Work">Work</option>
-                            <option value="Study">Study</option>
-                            <option value="Coding">Coding</option>
-                            <option value="Body & Gym">Body & Gym</option>
-                            <option value="Personal">Personal</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '6px', display: 'block' }}>Time (optional)</label>
-                          <input 
-                            type="text" 
-                            placeholder="e.g., 07:00 AM"
-                            value={newTodayItemData.time}
-                            onChange={(e) => setNewTodayItemData({ ...newTodayItemData, time: e.target.value })}
-                            style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-main)', fontSize: '0.85rem' }}
-                          />
-                        </div>
-                        <button 
-                          className="blue-btn"
-                          onClick={async () => {
-                            if (!newTodayItemData.title.trim()) return alert('Please enter a title');
-                            try {
-                              const res = await fetch('/api/today', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                body: JSON.stringify({
-                                  label: newTodayItemData.title.trim(),
-                                  category: newTodayItemData.category,
-                                  time: newTodayItemData.time.trim(),
-                                  date: new Date().toISOString().split('T')[0]
-                                })
-                              });
-                              if (res.ok) {
-                                const data = await res.json();
-                                setTodayItems([...todayItems, { id: data.id, title: data.label, category: data.category, time: data.time, checked: false }]);
-                                setNewTodayItemData({ title: '', category: 'Coding', time: '10:00 AM' });
-                                setIsAddTodayItemOpen(false);
-                              }
-                            } catch (err) {
-                              console.error(err);
-                            }
-                          }}
+// Add Routine Item form removed
                           style={{ padding: '10px 18px', height: '39px', fontSize: '0.85rem' }}
                         >
                           <Plus size={16} /> Add
@@ -1907,11 +1868,12 @@ export default function App() {
                         onClick={() => handleToggleHabitItem(item.id)}
                         className="motion-card" 
                         style={{ 
-                          background: item.checkedToday ? 'var(--accent-blue-dim)' : 'var(--bg-main)', 
+                          background: item.checkedToday ? 'var(--accent-blue-dim)' : 'var(--bg-main)',
+                           opacity: item.pausedUntil ? 0.5 : 1, 
                           padding: '22px', borderRadius: '16px', 
                           border: `1px solid ${item.checkedToday ? 'var(--accent-blue)' : 'var(--border-color)'}`, 
                           display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-                          cursor: 'pointer', userSelect: 'none'
+                          cursor: 'pointer', userSelect: 'none', position: 'relative'
                         }}
                       >
                         <div>
@@ -1923,6 +1885,46 @@ export default function App() {
                               <Flame size={16} /> {item.streak} Day Streak
                             </span>
                           </div>
+                        {/* Delete Habit Button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (window.confirm('Are you sure you want to delete this habit?')) {
+                              handleDeleteHabitDb(item.id);
+                            }
+                          }}
+                          style={{
+                            position: 'absolute',
+                            top: '8px',
+                            right: '8px',
+                            background: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: 'var(--text-muted)',
+                          }}
+                          aria-label="Delete habit"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                        {/* Pause/Resume Button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleTogglePauseHabit(item.id, item.pausedUntil);
+                          }}
+                          style={{
+                            position: 'absolute',
+                            top: '8px',
+                            right: '36px',
+                            background: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: 'var(--accent-blue)',
+                          }}
+                          aria-label={item.pausedUntil ? 'Resume habit' : 'Pause habit'}
+                        >
+                          {item.pausedUntil ? <Play size={18} /> : <Pause size={18} />}
+                        </button>
 
                           <h5 style={{ fontWeight: 800, fontSize: '1.15rem', marginBottom: '6px', textDecoration: item.checkedToday ? 'line-through' : 'none' }}>{item.title}</h5>
                           <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '16px' }}>Daily Goal: <strong style={{ color: 'var(--text-main)' }}>{item.target}</strong></p>
@@ -1974,6 +1976,26 @@ export default function App() {
                           >
                             <CheckCircle2 size={18} color={item.checkedToday ? "#fff" : "var(--accent-blue)"} />
                             {item.checkedToday ? "Completed Today ✓" : "Quick Check-In Today"}
+                          </button>
+                          
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteHabitDb(item.id);
+                            }}
+                            style={{
+                              position: 'absolute',
+                              top: '12px',
+                              right: '12px',
+                              background: 'transparent',
+                              border: 'none',
+                              cursor: 'pointer',
+                              color: 'var(--text-muted)',
+                              padding: '4px'
+                            }}
+                            aria-label="Delete habit"
+                          >
+                            <Trash2 size={18} />
                           </button>
                         </div>
                       </div>
