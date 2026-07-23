@@ -2518,6 +2518,38 @@ export default function App() {
               {/* 6) MASTER ANALYTICS HUB */}
               {activeTab === 'analytics' && (
                 <div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', marginBottom: '32px' }}>
+                    <div className="glass-card" style={{ padding: '24px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.5px', marginBottom: '12px' }}>
+                        <CheckCircle2 size={16} /> OVERALL CONSISTENCY
+                      </div>
+                      <div style={{ fontSize: '2.5rem', fontWeight: 900, letterSpacing: '-1px', marginBottom: '8px' }}>{habits.length > 0 ? Math.round((habits.filter(h => h.checkedToday).length / habits.length) * 100) : 0}%</div>
+                      <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 700 }}>
+                        - No data yet
+                      </div>
+                    </div>
+
+                    <div className="glass-card" style={{ padding: '24px', background: 'var(--bg-card)', border: '2px solid var(--accent-blue)', boxShadow: '0 0 25px rgba(59, 130, 246, 0.15)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem', fontWeight: 800, color: 'var(--accent-blue)', letterSpacing: '0.5px', marginBottom: '12px' }}>
+                        <DollarSign size={16} /> NET MONEY SAVINGS
+                      </div>
+                      <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--accent-blue)', letterSpacing: '-1px', marginBottom: '8px' }}>${transactions.reduce((acc, t) => acc + (t.type === 'earn' ? t.amount : -t.amount), 0)}</div>
+                      <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 700 }}>
+                        - No data yet
+                      </div>
+                    </div>
+
+                    <div className="glass-card" style={{ padding: '24px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.5px', marginBottom: '12px' }}>
+                        <SleepIcon size={16} /> SLEEP & RECOVERY
+                      </div>
+                      <div style={{ fontSize: '2.5rem', fontWeight: 900, letterSpacing: '-1px', marginBottom: '8px' }}>0 <span style={{ fontSize: '1.2rem', fontWeight: 600 }}>/ 100</span></div>
+                      <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 700 }}>
+                        - No data yet
+                      </div>
+                    </div>
+                  </div>
+
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
                     <div>
                       <h3 style={{ fontSize: '1.5rem', fontWeight: 800 }}>Comparative Performance Graphs</h3>
