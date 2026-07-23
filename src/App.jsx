@@ -262,6 +262,12 @@ export default function App() {
         const cData = await chatRes.json();
         setAiMessages(cData.map(c => ({ id: c.id, sender: c.sender, text: c.text, time: c.time })));
       }
+
+      const calRes = await fetch('/api/calendar', { headers });
+      if (calRes.ok) {
+        const calData = await calRes.json();
+        setCalendarEvents(calData.map(c => ({ id: c.id, title: c.title, date: c.date, color: c.color })));
+      }
     } catch (err) {
       console.error('Failed to fetch dashboard data:', err);
     }
@@ -1824,14 +1830,23 @@ export default function App() {
                     </div>
                     <button 
                       className="blue-btn" 
-                      onClick={() => {
-                        const newEvent = {
-                          id: Date.now(),
-                          title: 'New Event',
-                          date: new Date().toISOString().split('T')[0],
-                          color: '#3b82f6'
-                        };
-                        setCalendarEvents([...calendarEvents, newEvent]);
+                      onClick={async () => {
+                        const title = window.prompt("Enter new event title:");
+                        if (!title) return;
+                        const date = selectedCalendarDate || new Date().toISOString().split('T')[0];
+                        try {
+                          const res = await fetch('/api/calendar', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                            body: JSON.stringify({ title, date, color: '#3b82f6' })
+                          });
+                          if (res.ok) {
+                            const newEvent = await res.json();
+                            setCalendarEvents([...calendarEvents, newEvent]);
+                          }
+                        } catch (e) {
+                          console.error('Failed to add event:', e);
+                        }
                       }}
                       style={{ padding: '12px 22px', fontSize: '0.92rem' }}
                     >
@@ -1923,9 +1938,27 @@ export default function App() {
                           .filter(e => !selectedCalendarDate || e.date === selectedCalendarDate)
                           .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
                           .map(e => (
-                          <div key={e.id} style={{ padding: '12px 16px', background: 'var(--bg-main)', borderRadius: '12px', border: '1px solid var(--border-color)', borderLeft: `4px solid ${e.color || 'var(--accent-blue)'}` }}>
+                          <div key={e.id} style={{ padding: '12px 16px', background: 'var(--bg-main)', borderRadius: '12px', border: '1px solid var(--border-color)', borderLeft: `4px solid ${e.color || 'var(--accent-blue)'}`, position: 'relative' }}>
                             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '4px' }}>{e.date}</div>
                             <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)' }}>{e.title}</div>
+                            <button 
+                              onClick={async () => {
+                                if (window.confirm('Delete this event?')) {
+                                  try {
+                                    const res = await fetch('/api/calendar', {
+                                      method: 'DELETE',
+                                      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                      body: JSON.stringify({ id: e.id })
+                                    });
+                                    if (res.ok) setCalendarEvents(calendarEvents.filter(ev => ev.id !== e.id));
+                                  } catch(err) { console.error(err); }
+                                }
+                              }}
+                              style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', color: '#ff5252', cursor: 'pointer', padding: '4px' }}
+                              title="Delete Event"
+                            >
+                              <Trash2 size={16} />
+                            </button>
                           </div>
                         ))}
                         {calendarEvents.filter(e => !selectedCalendarDate || e.date === selectedCalendarDate).length === 0 && (
