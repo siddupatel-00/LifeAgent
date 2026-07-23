@@ -7,7 +7,15 @@ export default async function handler(req, res) {
   
   try {
     if (req.method === 'GET') {
-      const items = await db.execute({ sql: 'SELECT * FROM today_items WHERE user_id = ? AND date = date("now")', args: [userId] });
+      // Use client_date query param if provided, otherwise fallback to UTC date
+      const clientDate = req.query?.client_date;
+      let items;
+      if (clientDate) {
+        items = await db.execute({ sql: 'SELECT * FROM today_items WHERE user_id = ? AND date = ?', args: [userId, clientDate] });
+      } else {
+        // Fallback: get items from today or yesterday (handles timezone edge cases)
+        items = await db.execute({ sql: 'SELECT * FROM today_items WHERE user_id = ? AND date >= date("now", "-1 day")', args: [userId] });
+      }
       return res.status(200).json(items.rows);
     }
     
@@ -20,12 +28,14 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true });
     }
     if (req.method === 'POST') {
-      const { label, category, time, habit_id } = req.body;
+      const { label, category, time, habit_id, date } = req.body;
+      // Use client-provided date or default to server's date
+      const itemDate = date || new Date().toISOString().split('T')[0];
       const result = await db.execute({
-        sql: 'INSERT INTO today_items (user_id, label, category, time, habit_id) VALUES (?, ?, ?, ?, ?)',
-        args: [userId, label, category || '', time || '', habit_id || null]
+        sql: 'INSERT INTO today_items (user_id, label, category, time, habit_id, date) VALUES (?, ?, ?, ?, ?, ?)',
+        args: [userId, label, category || '', time || '', habit_id || null, itemDate]
       });
-      return res.status(201).json({ id: Number(result.lastInsertRowid), label, category, time, habit_id: habit_id || null });
+      return res.status(201).json({ id: Number(result.lastInsertRowid), label, category, time, habit_id: habit_id || null, date: itemDate });
     }
     if (req.method === 'DELETE') {
       const { id } = req.body;

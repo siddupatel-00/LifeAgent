@@ -246,8 +246,8 @@ export default function App() {
         const hData = await habitsRes.json();
         setHabits(hData.map(h => ({ id: h.id, title: h.label, category: h.category, streak: h.streak, target: h.target || '', checkedToday: !!h.checked_today })));
       }
-
-      const todayRes = await fetch('/api/today', { headers });
+      const clientDate = new Date().toISOString().split('T')[0];
+      const todayRes = await fetch(`/api/today?client_date=${clientDate}`, { headers });
       if (todayRes.ok) {
         const tData = await todayRes.json();
         setTodayItems(tData.map(t => ({ id: t.id, time: t.time, title: t.label, category: t.category, checked: !!t.checked, habitId: t.habit_id || null })));
@@ -1634,7 +1634,8 @@ export default function App() {
                                 body: JSON.stringify({
                                   label: newTodayItemData.title.trim(),
                                   category: newTodayItemData.category,
-                                  time: newTodayItemData.time.trim()
+                                  time: newTodayItemData.time.trim(),
+                                  date: new Date().toISOString().split('T')[0]
                                 })
                               });
                               if (res.ok) {
@@ -1839,7 +1840,8 @@ export default function App() {
                                       label: newHabitData.title.trim(),
                                       category: newHabitData.category,
                                       time: '',
-                                      habit_id: data.id
+                                      habit_id: data.id,
+                                      date: new Date().toISOString().split('T')[0]
                                     })
                                   });
                                   if (todayRes.ok) {
