@@ -64,6 +64,12 @@ export default async function handler(req, res) {
         checked INTEGER DEFAULT 0,
         date TEXT DEFAULT (date('now')),
         FOREIGN KEY (user_id) REFERENCES users(id)
+      )`,
+      `CREATE TABLE IF NOT EXISTS waitlist (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT DEFAULT '',
+        email TEXT UNIQUE NOT NULL,
+        joined_at TEXT DEFAULT (datetime('now'))
       )`
     ]);
     res.status(200).json({ success: true, message: 'All tables created successfully!' });

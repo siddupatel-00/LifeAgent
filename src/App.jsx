@@ -61,6 +61,7 @@ export default function App() {
   }, []);
 
   // Form state for Waitlist Only
+  const [waitlistName, setWaitlistName] = useState('');
   const [waitlistEmail, setWaitlistEmail] = useState('');
   const [waitlistSuccess, setWaitlistSuccess] = useState(false);
 
@@ -349,17 +350,28 @@ export default function App() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleWaitlistSubmit = (e) => {
+  const handleWaitlistSubmit = async (e) => {
     e.preventDefault();
-    if (!waitlistEmail.trim()) return;
-    setWaitlistSuccess(true);
+    if (!waitlistEmail.trim() || !waitlistName.trim()) return;
     
-    const db = JSON.parse(localStorage.getItem('lifeagent_waitlist_database') || '[]');
-    db.push({
-      email: waitlistEmail,
-      timestamp: new Date().toISOString()
-    });
-    localStorage.setItem('lifeagent_waitlist_database', JSON.stringify(db));
+    try {
+      const response = await fetch('/api/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: waitlistName, email: waitlistEmail })
+      });
+      
+      if (response.ok) {
+        setWaitlistSuccess(true);
+      } else {
+        const errorData = await response.json();
+        console.error('Waitlist error:', errorData.error);
+        alert(errorData.error || 'Failed to join waitlist. Please try again.');
+      }
+    } catch (err) {
+      console.error('Network error during waitlist submission:', err);
+      alert('Network error. Please try again later.');
+    }
   };
 
   const handleStartTrial = () => {
@@ -768,6 +780,24 @@ export default function App() {
 
             {!waitlistSuccess ? (
               <form onSubmit={handleWaitlistSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                <div style={{ textAlign: 'left' }}>
+                  <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Your Name *</label>
+                  <div style={{ position: 'relative' }}>
+                    <User size={20} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                    <input 
+                      type="text" 
+                      placeholder="Enter your name..."
+                      value={waitlistName} 
+                      onChange={(e) => setWaitlistName(e.target.value)} 
+                      required
+                      style={{ 
+                        width: '100%', padding: '16px 16px 16px 48px', borderRadius: '16px', 
+                        border: '1px solid var(--border-color)', background: 'var(--bg-main)', 
+                        color: 'var(--text-main)', fontSize: '1.05rem', outline: 'none' 
+                      }}
+                    />
+                  </div>
+                </div>
                 <div style={{ textAlign: 'left' }}>
                   <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Email Address *</label>
                   <div style={{ position: 'relative' }}>
