@@ -1611,7 +1611,7 @@ export default function App() {
                       rows={3}
                       value={floatingDiaryContent}
                       onChange={(e) => setFloatingDiaryContent(e.target.value)}
-                      placeholder="e.g., Hey buddy, today is the best day for me, I met my gf... 😂"
+                      placeholder="Save your notes..."
                       style={{ width: '100%', padding: '16px 18px', borderRadius: '14px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', lineHeight: '1.6', outline: 'none', resize: 'vertical' }}
                     />
                   </div>
@@ -2852,7 +2852,7 @@ export default function App() {
                     rows={4}
                     value={floatingDiaryContent}
                     onChange={(e) => setFloatingDiaryContent(e.target.value)}
-                    placeholder="Hey buddy, today is the best day for me, I met my gf... 😂"
+                    placeholder="Save your notes..."
                     style={{ width: '100%', padding: '14px', borderRadius: '12px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.92rem', outline: 'none', resize: 'none' }}
                   />
 
