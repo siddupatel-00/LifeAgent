@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'meraprogress_secret';
+const JWT_SECRET = process.env.JWT_SECRET || 'lifeagent_secret';
 
 export function signToken(userId) {
   return jwt.sign({ userId }, JWT_SECRET, { expiresIn: '30d' });

@@ -288,12 +288,12 @@ export default function App() {
     confetti({ particleCount: 110, spread: 75, origin: { y: 0.6 } });
     setWaitlistSuccess(true);
     
-    const db = JSON.parse(localStorage.getItem('mera_waitlist_database') || '[]');
+    const db = JSON.parse(localStorage.getItem('lifeagent_waitlist_database') || '[]');
     db.push({
       email: waitlistEmail,
       timestamp: new Date().toISOString()
     });
-    localStorage.setItem('mera_waitlist_database', JSON.stringify(db));
+    localStorage.setItem('lifeagent_waitlist_database', JSON.stringify(db));
   };
 
   const handleStartTrial = () => {
@@ -435,7 +435,7 @@ export default function App() {
             </div>
             <div>
               <h1 style={{ fontSize: '1.35rem', fontWeight: 800, letterSpacing: '-0.5px' }}>
-                MERA <span className="serif-italic">PROGRESS</span>
+                LIFE <span className="serif-italic">AGENT</span>
               </h1>
               <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 500 }}>All-in-One Personal & AI Coach</p>
             </div>
@@ -537,7 +537,7 @@ export default function App() {
                 Why pay for 6+ separate apps?
               </h3>
               <p style={{ color: 'var(--text-muted)', fontSize: '1.15rem' }}>
-                The average person pays $21+ across fragmented tools. Mera Progress replaces all of them.
+                The average person pays $21+ across fragmented tools. LifeAgent replaces all of them.
               </p>
             </div>
 
@@ -585,7 +585,7 @@ export default function App() {
               <div className="glass-card motion-card" style={{ padding: '36px', border: '2px solid var(--accent-blue)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'var(--bg-card)' }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-                    <span className="badge" style={{ marginBottom: 0 }}>● Mera Progress</span>
+                    <span className="badge" style={{ marginBottom: 0 }}>● LifeAgent</span>
                     <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--accent-blue)' }}>ALL-IN-ONE SOLUTION</span>
                   </div>
 
@@ -748,7 +748,7 @@ export default function App() {
               Contact & Connect With Me
             </h2>
             <p style={{ color: 'var(--text-muted)', marginBottom: '36px', fontSize: '1.1rem', lineHeight: 1.6 }}>
-              Mera Progress is personal software built with passion. If anyone is interested, they can buy or reach out directly via X (formerly Twitter).
+              LifeAgent is personal software built with passion. If anyone is interested, they can buy or reach out directly via X (formerly Twitter).
             </p>
 
             <div className="glass-card" style={{ padding: '28px', background: 'var(--bg-main)', border: '1px solid var(--accent-blue)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
@@ -810,7 +810,7 @@ export default function App() {
                   <Sparkles size={18} color="#fff" />
                 </div>
                 <h1 style={{ fontSize: '1.15rem', fontWeight: 900, letterSpacing: '-0.5px' }}>
-                  mera<span style={{ fontWeight: 400 }}>progress</span>
+                  life<span style={{ fontWeight: 400 }}>agent</span>
                 </h1>
               </div>
 
@@ -2477,13 +2477,13 @@ export default function App() {
                         transition: 'all 0.2s'
                       }}
                     >
-                      <LogOut size={18} /> Log Out of Mera Progress
+                      <LogOut size={18} /> Log Out of LifeAgent
                     </button>
                   </div>
 
-                  {/* MERA PROGRESS V2.4 FOOTER INSIDE SETTINGS */}
+                  {/* LIFEAGENT V2.4 FOOTER INSIDE SETTINGS */}
                   <div style={{ marginTop: '48px', paddingTop: '24px', borderTop: '1px solid var(--border-color)', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600, opacity: 0.8 }}>
-                    Mera Progress v2.4 • Pro Edition
+                    LifeAgent v2.4 • Pro Edition
                   </div>
 
                 </div>
