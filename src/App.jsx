@@ -1434,7 +1434,7 @@ export default function App() {
                     </div>
                   )}
 
-                  {/* FULL-WIDTH TODAY INTENSITY GRAPH (Removed AI Suggestions per request) */}
+                  {/* FULL-WIDTH TODAY INTENSITY GRAPH (Empty State) */}
                   <div style={{ background: 'var(--bg-main)', padding: '24px 32px', borderRadius: '18px', border: '1px solid var(--border-color)', marginBottom: '32px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
                       <div>
@@ -1450,29 +1450,8 @@ export default function App() {
                       </div>
                     </div>
 
-                    <div style={{ height: '140px', width: '100%', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '14px', padding: '0 8px' }}>
-                      {[
-                        { label: '6:30 AM Wake', val: 100, active: true },
-                        { label: '7:00 AM Gym', val: 95, active: true },
-                        { label: '11:00 AM Study', val: 85, active: true },
-                        { label: '02:00 PM Code', val: 90, active: true },
-                        { label: '06:00 PM Review', val: 75, active: habits.some(h => h.checkedToday) },
-                        { label: '09:00 PM DSA', val: 100, active: habits.filter(h => h.checkedToday).length >= 2 },
-                        { label: '11:00 PM Sleep', val: 90, active: habits.filter(h => h.checkedToday).length >= 3 },
-                      ].map((d, idx) => (
-                        <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, height: '100%', justifyContent: 'flex-end', gap: '8px' }}>
-                          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: d.active ? 'var(--accent-blue)' : 'var(--text-muted)' }}>{d.val}%</span>
-                          <div style={{
-                            width: '100%',
-                            height: `${d.val}%`,
-                            background: d.active ? 'var(--accent-blue)' : 'rgba(128,128,128,0.2)',
-                            borderRadius: '8px',
-                            boxShadow: d.active ? '0 0 14px rgba(59,130,246,0.35)' : 'none',
-                            transition: 'all 0.3s'
-                          }}></div>
-                          <span style={{ fontSize: '0.75rem', fontWeight: d.active ? 800 : 500, color: d.active ? 'var(--text-main)' : 'var(--text-muted)', textAlign: 'center', whiteSpace: 'nowrap' }}>{d.label}</span>
-                        </div>
-                      ))}
+                    <div style={{ textAlign: 'center', padding: '30px', background: 'var(--bg-card)', borderRadius: '14px', border: '1px dashed var(--border-color)' }}>
+                      <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', fontWeight: 600 }}>No daily works added yet. Add a pillar to see your progress curve.</p>
                     </div>
                   </div>
 
