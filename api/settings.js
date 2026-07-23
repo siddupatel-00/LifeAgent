@@ -7,16 +7,16 @@ export default async function handler(req, res) {
   
   try {
     if (req.method === 'GET') {
-      const result = await db.execute({ sql: 'SELECT name, email, phone, handle, theme, ai_name, gemini_api_key FROM users WHERE id = ?', args: [userId] });
+      const result = await db.execute({ sql: 'SELECT name, email, phone, handle, theme, ai_name, gemini_api_key, currency FROM users WHERE id = ?', args: [userId] });
       if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
       return res.status(200).json(result.rows[0]);
     }
     
     if (req.method === 'PUT') {
-      const { name, phone, handle, theme, ai_name, gemini_api_key } = req.body;
+      const { name, phone, handle, theme, ai_name, gemini_api_key, currency } = req.body;
       await db.execute({
-        sql: 'UPDATE users SET name = ?, phone = ?, handle = ?, theme = ?, ai_name = ?, gemini_api_key = ? WHERE id = ?',
-        args: [name, phone, handle, theme, ai_name, gemini_api_key || '', userId]
+        sql: 'UPDATE users SET name = ?, phone = ?, handle = ?, theme = ?, ai_name = ?, gemini_api_key = ?, currency = ? WHERE id = ?',
+        args: [name, phone, handle, theme, ai_name, gemini_api_key || '', currency || '$', userId]
       });
       return res.status(200).json({ success: true });
     }

@@ -13,6 +13,7 @@ export default async function handler(req, res) {
         theme TEXT DEFAULT 'light',
         ai_name TEXT DEFAULT 'AI',
         gemini_api_key TEXT DEFAULT '',
+        currency TEXT DEFAULT '$',
         created_at TEXT DEFAULT (datetime('now'))
       )`,
       `CREATE TABLE IF NOT EXISTS habits (

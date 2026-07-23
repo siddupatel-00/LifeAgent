@@ -78,7 +78,8 @@ export default function App() {
     email: '',
     aiTone: 'Analytical & Direct',
     morningAudit: true,
-    smartAlerts: true
+    smartAlerts: true,
+    currency: '$'
   });
   const [settingsSaved, setSettingsSaved] = useState(false);
 
@@ -248,12 +249,13 @@ export default function App() {
       const settingsRes = await fetch('/api/settings', { headers });
       if (settingsRes.ok) {
         const sData = await settingsRes.json();
-        if (sData.user) {
-          setUserProfile(prev => ({ ...prev, ...sData.user }));
-          if (sData.user.gemini_api_key) {
-            setGeminiApiKey(sData.user.gemini_api_key);
-            localStorage.setItem('gemini_api_key', sData.user.gemini_api_key);
+        if (sData) {
+          setUserProfile(prev => ({ ...prev, ...sData, currency: sData.currency || '$' }));
+          if (sData.gemini_api_key) {
+            setGeminiApiKey(sData.gemini_api_key);
+            localStorage.setItem('gemini_api_key', sData.gemini_api_key);
           }
+          if (sData.ai_name) setAiName(sData.ai_name);
         }
       }
 
@@ -386,8 +388,19 @@ export default function App() {
     navigate('dashboard', '/dashboard');
   };
 
-  const handleSaveSettings = (e) => {
+  const handleSaveSettings = async (e) => {
     e.preventDefault();
+    if (token) {
+      try {
+        await fetch('/api/settings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ ...userProfile, ai_name: aiName, gemini_api_key: geminiApiKey, currency: userProfile.currency })
+        });
+      } catch (err) {
+        console.error('Settings save failed:', err);
+      }
+    }
     setSettingsSaved(true);
     setTimeout(() => setSettingsSaved(false), 3000);
   };
@@ -2287,7 +2300,7 @@ export default function App() {
                               <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>{item.category} • {item.date}</div>
                             </div>
                             <div style={{ fontSize: '1.2rem', fontWeight: 800, color: item.type === 'earn' ? 'var(--accent-blue)' : 'var(--text-main)' }}>
-                              {item.type === 'earn' ? '+' : '-'}${item.amount}
+                              {item.type === 'earn' ? '+' : '-'}{userProfile.currency || '$'}{item.amount}
                             </div>
                           </div>
                         ))
@@ -2310,7 +2323,7 @@ export default function App() {
                         <input type="text" placeholder="e.g. Server usage..." value={newTitle} onChange={(e) => setNewTitle(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
                       </div>
                       <div>
-                        <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Amount ($)</label>
+                        <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Amount ({userProfile.currency || '$'})</label>
                         <input type="number" placeholder="0.00" value={newAmount} onChange={(e) => setNewAmount(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
                       </div>
                       <button type="submit" className="blue-btn" style={{ justifyContent: 'center', marginTop: '6px' }}><Plus size={18} /> Record Entry</button>
@@ -2464,6 +2477,23 @@ export default function App() {
                             onChange={(e) => setUserProfile({ ...userProfile, email: e.target.value })} 
                             style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600, outline: 'none' }}
                           />
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
+                          <div>
+                            <div style={{ fontWeight: 700, fontSize: '1rem' }}>Currency Preference</div>
+                            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Choose your default currency for the Money Tracker.</div>
+                          </div>
+                          <select 
+                            value={userProfile.currency || '$'} 
+                            onChange={(e) => setUserProfile({ ...userProfile, currency: e.target.value })} 
+                            style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600, outline: 'none', appearance: 'none' }}
+                          >
+                            <option value="$">Dollar ($)</option>
+                            <option value="₹">Rupee (₹)</option>
+                            <option value="€">Euro (€)</option>
+                            <option value="£">Pound (£)</option>
+                          </select>
                         </div>
 
                       </div>
