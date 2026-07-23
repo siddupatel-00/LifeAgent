@@ -1158,12 +1158,25 @@ export default function App() {
             
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
               <div>
-                <h2 style={{ fontSize: '1.9rem', fontWeight: 900, letterSpacing: '-0.5px' }}>
-                  Hey {userProfile.handle ? `@${userProfile.handle.replace('@', '')}` : (userProfile.name ? userProfile.name.split(' ')[0] : 'User')} – welcome!
-                </h2>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '4px' }}>
-                  Unified workspace and real-time trackers for your daily performance.
-                </p>
+                {activeTab === 'today' ? (
+                  <>
+                    <h2 style={{ fontSize: '1.9rem', fontWeight: 900, letterSpacing: '-0.5px' }}>
+                      Hey {userProfile.handle ? `@${userProfile.handle.replace('@', '')}` : (userProfile.name ? userProfile.name.split(' ')[0] : 'User')} – welcome!
+                    </h2>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '4px' }}>
+                      Unified workspace and real-time trackers for your daily performance.
+                    </p>
+                  </>
+                ) : (
+                  <h2 style={{ fontSize: '1.9rem', fontWeight: 900, letterSpacing: '-0.5px', color: 'var(--text-main)' }}>
+                    {activeTab === 'gym' ? 'Body & Gym' : 
+                     activeTab === 'sleep' ? 'Sleep & Recovery' : 
+                     activeTab === 'finance' ? 'Finance & Money' : 
+                     activeTab === 'notes' ? 'Notes & Diary' : 
+                     activeTab === 'calendar' ? 'Calendar' :
+                     activeTab === 'settings' ? 'Settings' : 'Dashboard'}
+                  </h2>
+                )}
               </div>
 
               {!isAiSidePanelOpen && (
@@ -1238,8 +1251,8 @@ export default function App() {
               )}
             </div>
 
-            {/* Timeframe Dropdown Selector & KPI Cards (Hide when on Settings or AI Chat tab) */}
-            {activeTab !== 'settings' && activeTab !== 'ai' && activeTab !== 'calendar' && (
+            {/* Timeframe Dropdown Selector (Hide when on Settings or AI Chat tab) */}
+            {(activeTab === 'today' || activeTab === 'finance') && (
               <>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', ref: timeDropdownRef, position: 'relative' }} ref={timeDropdownRef}>
