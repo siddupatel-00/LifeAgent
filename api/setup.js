@@ -1,6 +1,9 @@
 import db from '../lib/db.js';
 
 export default async function handler(req, res) {
+  if (process.env.NODE_ENV === 'production' && req.headers.authorization !== `Bearer ${process.env.ADMIN_SECRET}`) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
   try {
     await db.batch([
       `CREATE TABLE IF NOT EXISTS users (

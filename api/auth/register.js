@@ -21,7 +21,7 @@ export default async function handler(req, res) {
     const userId = Number(result.lastInsertRowid);
     const token = signToken(userId);
     
-    res.status(201).json({ token, user: { id: userId, name, email, handle: handle || `@${email.split('@')[0]}` } });
+    res.status(201).json({ token, user: { id: userId, name, email, handle: handle || `@${email.split('@')[0]}`, theme: 'light', ai_name: 'AI', gemini_api_key: '', groq_api_key: '', ai_provider: 'gemini', currency: '$' } });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

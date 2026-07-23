@@ -7,26 +7,35 @@ export default async function handler(req, res) {
   
   try {
     if (req.method === 'GET') {
-      const habits = await db.execute({ sql: 'SELECT * FROM habits WHERE user_id = ?', args: [userId] });
+      const habits = await db.execute({ sql: 'SELECT * FROM habits WHERE user_id = ? AND date = date("now")', args: [userId] });
       return res.status(200).json(habits.rows);
     }
     
     if (req.method === 'PUT') {
-      const { id, streak, checked_today } = req.body;
+      const { id, streak, checked_today, target } = req.body;
       await db.execute({
-        sql: 'UPDATE habits SET streak = ?, checked_today = ?, date = date("now") WHERE id = ? AND user_id = ?',
-        args: [streak, checked_today ? 1 : 0, id, userId]
+        sql: 'UPDATE habits SET streak = ?, checked_today = ?, target = ?, date = date("now") WHERE id = ? AND user_id = ?',
+        args: [streak, checked_today ? 1 : 0, target || null, id, userId]
       });
       return res.status(200).json({ success: true });
     }
     
     if (req.method === 'POST') {
-      const { label, category } = req.body;
+      const { label, category, target } = req.body;
       const result = await db.execute({
-        sql: 'INSERT INTO habits (user_id, label, category) VALUES (?, ?, ?)',
-        args: [userId, label, category || '']
+        sql: 'INSERT INTO habits (user_id, label, category, target) VALUES (?, ?, ?, ?)',
+        args: [userId, label, category || '', target || '']
       });
-      return res.status(201).json({ id: Number(result.lastInsertRowid), label, category });
+      return res.status(201).json({ id: Number(result.lastInsertRowid), label, category, target });
+    }
+    
+    if (req.method === 'DELETE') {
+      const { id } = req.body;
+      await db.execute({
+        sql: 'DELETE FROM habits WHERE id = ? AND user_id = ?',
+        args: [id, userId]
+      });
+      return res.status(200).json({ success: true });
     }
     
     res.status(405).json({ error: 'Method not allowed' });

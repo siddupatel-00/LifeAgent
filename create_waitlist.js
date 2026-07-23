@@ -1,11 +1,4 @@
-import { createClient } from '@libsql/client';
-import dotenv from 'dotenv';
-dotenv.config();
-
-const db = createClient({
-  url: process.env.VITE_TURSO_DATABASE_URL,
-  authToken: process.env.VITE_TURSO_AUTH_TOKEN
-});
+import db from './lib/db.js';
 
 async function main() {
   await db.execute(`

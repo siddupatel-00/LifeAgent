@@ -192,7 +192,7 @@ export default function App() {
 
   // 6) Notes & Diary state (with AI sharing permissions)
   const [notesList, setNotesList] = useState([]);
-  const [activeNoteId, setActiveNoteId] = useState(1);
+  const [activeNoteId, setActiveNoteId] = useState(null);
   const [isFloatingDiaryOpen, setIsFloatingDiaryOpen] = useState(false);
   const [floatingDiaryContent, setFloatingDiaryContent] = useState("");
   const [floatingDiaryShare, setFloatingDiaryShare] = useState(true);
@@ -218,11 +218,15 @@ export default function App() {
   const [calendarEvents, setCalendarEvents] = useState([]);
   const [calendarSubTab, setCalendarSubTab] = useState('this_month');
   const [selectedCalendarDate, setSelectedCalendarDate] = useState(null);
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() };
+  });
 
-  // 9) AI API Keys (persisted in localStorage)
-  const [geminiApiKey, setGeminiApiKey] = useState(() => localStorage.getItem('gemini_api_key') || '');
-  const [groqApiKey, setGroqApiKey] = useState(() => localStorage.getItem('groq_api_key') || '');
-  const [aiProvider, setAiProvider] = useState(() => localStorage.getItem('ai_provider') || 'gemini');
+  // 9) AI API Keys (loaded from DB via /api/settings)
+  const [geminiApiKey, setGeminiApiKey] = useState('');
+  const [groqApiKey, setGroqApiKey] = useState('');
+  const [aiProvider, setAiProvider] = useState('gemini');
   const [aiLoading, setAiLoading] = useState(false);
 
   const fetchDashboardData = async () => {
@@ -233,13 +237,13 @@ export default function App() {
       const habitsRes = await fetch('/api/habits', { headers });
       if (habitsRes.ok) {
         const hData = await habitsRes.json();
-        setHabits(hData.map(h => ({ id: h.id, title: h.label, category: h.category, streak: h.streak, checkedToday: !!h.checked_today })));
+        setHabits(hData.map(h => ({ id: h.id, title: h.label, category: h.category, streak: h.streak, target: h.target || '', checkedToday: !!h.checked_today })));
       }
 
       const todayRes = await fetch('/api/today', { headers });
       if (todayRes.ok) {
         const tData = await todayRes.json();
-        setTodayItems(tData.map(t => ({ id: t.id, time: t.time, label: t.label, category: t.category, checked: !!t.checked })));
+        setTodayItems(tData.map(t => ({ id: t.id, time: t.time, title: t.label, category: t.category, checked: !!t.checked })));
       }
 
       const txRes = await fetch('/api/transactions', { headers });
@@ -253,19 +257,11 @@ export default function App() {
         const sData = await settingsRes.json();
         if (sData) {
           setUserProfile(prev => ({ ...prev, ...sData, currency: sData.currency || '$' }));
-          if (sData.gemini_api_key) {
-            setGeminiApiKey(sData.gemini_api_key);
-            localStorage.setItem('gemini_api_key', sData.gemini_api_key);
-          }
-          if (sData.groq_api_key) {
-            setGroqApiKey(sData.groq_api_key);
-            localStorage.setItem('groq_api_key', sData.groq_api_key);
-          }
-          if (sData.ai_provider) {
-            setAiProvider(sData.ai_provider);
-            localStorage.setItem('ai_provider', sData.ai_provider);
-          }
+          if (sData.gemini_api_key) setGeminiApiKey(sData.gemini_api_key);
+          if (sData.groq_api_key) setGroqApiKey(sData.groq_api_key);
+          if (sData.ai_provider) setAiProvider(sData.ai_provider);
           if (sData.ai_name) setAiName(sData.ai_name);
+          if (sData.theme) setThemeMode(sData.theme);
         }
       }
 
@@ -285,10 +281,13 @@ export default function App() {
       if (notesRes.ok) {
         const notesData = await notesRes.json();
         setNotesList(notesData.filter(n => !n.is_trashed).map(n => ({ id: n.id, title: n.title, content: n.content, category: n.category, date: n.date, shareWithAi: !!n.share_with_ai })));
-        setTrashNotes(notesData.filter(n => !!n.is_trashed).map(n => ({ id: n.id, title: n.title, content: n.content, category: n.category, date: n.date, shareWithAi: !!n.share_with_ai })));
+        setTrashNotes(notesData.filter(n => !!n.is_trashed).map(n => ({ id: n.id, title: n.title, content: n.content, category: n.category, date: n.date, shareWithAi: !!n.share_with_ai, deletedAt: n.deleted_at ? new Date(n.deleted_at).getTime() : Date.now() })));
       }
     } catch (err) {
       console.error('Failed to fetch dashboard data:', err);
+      if (err?.status === 401 || err?.message?.includes('401')) {
+        handleLogout();
+      }
     }
   };
 
@@ -350,11 +349,7 @@ export default function App() {
     }
   }, [isAuthenticated, token]);
 
-  useEffect(() => {
-    if (geminiApiKey) localStorage.setItem('gemini_api_key', geminiApiKey);
-    if (groqApiKey) localStorage.setItem('groq_api_key', groqApiKey);
-    localStorage.setItem('ai_provider', aiProvider);
-  }, [geminiApiKey, groqApiKey, aiProvider]);
+  // API keys are stored in DB via /api/settings — no localStorage duplication
 
   // Universal sync helpers between Today routine and Daily Works (habits)
   const handleToggleTodayItem = (targetId) => {
@@ -389,6 +384,14 @@ export default function App() {
       return { ...i, checked: targetState };
     }));
     setHabits(prevHabits => prevHabits.map(h => {
+      // Only sync habits whose category matches a today item
+      const hasMatchingTodayItem = todayItems.some(ti => {
+        if (h.category.includes('Body & Gym') && ti.category === 'Body & Gym') return true;
+        if (h.category.includes('Study') && ti.category === 'Study') return true;
+        if ((h.category.includes('Coding') || h.category.includes('DSA')) && ti.category === 'Coding') return true;
+        return false;
+      });
+      if (!hasMatchingTodayItem) return h;
       const newStreak = targetState ? h.streak + (h.checkedToday ? 0 : 1) : Math.max(0, h.streak - 1);
       handleUpdateHabitDb(h.id, newStreak, targetState);
       return { ...h, checkedToday: targetState, streak: newStreak };
@@ -473,24 +476,32 @@ export default function App() {
 
   const handleStartTrial = () => {
     confetti({ particleCount: 120, spread: 80, origin: { y: 0.5 } });
-    navigate('dashboard', '/dashboard');
+    if (isAuthenticated) {
+      navigate('dashboard', '/dashboard');
+    } else {
+      navigate('auth', '/auth');
+    }
   };
 
   const handleSaveSettings = async (e) => {
     e.preventDefault();
     if (token) {
       try {
-        await fetch('/api/settings', {
+        const res = await fetch('/api/settings', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ ...userProfile, ai_name: aiName, gemini_api_key: geminiApiKey, groq_api_key: groqApiKey, ai_provider: aiProvider, currency: userProfile.currency })
+          body: JSON.stringify({ ...userProfile, ai_name: aiName, gemini_api_key: geminiApiKey, groq_api_key: groqApiKey, ai_provider: aiProvider, theme: themeMode, currency: userProfile.currency })
         });
+        if (res.ok) {
+          setSettingsSaved(true);
+          setTimeout(() => setSettingsSaved(false), 3000);
+        } else {
+          console.error('Settings save failed:', res.status);
+        }
       } catch (err) {
         console.error('Settings save failed:', err);
       }
     }
-    setSettingsSaved(true);
-    setTimeout(() => setSettingsSaved(false), 3000);
   };
 
   const handleSendAi = async (e, customText = null) => {
@@ -509,6 +520,7 @@ export default function App() {
       const fallbackReply = "Please provide your Gemini API key in the settings to use the AI Assistant.";
       const aiMsg = { id: Date.now() + 1, sender: 'ai', text: fallbackReply, time: nowTime };
       setAiMessages(prev => [...prev, aiMsg]);
+      fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify([newMsg, aiMsg]) }).catch(err => console.error(err));
       return;
     }
 
@@ -516,6 +528,7 @@ export default function App() {
       const fallbackReply = "Please provide your Groq API key in the settings to use the AI Assistant.";
       const aiMsg = { id: Date.now() + 1, sender: 'ai', text: fallbackReply, time: nowTime };
       setAiMessages(prev => [...prev, aiMsg]);
+      fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify([newMsg, aiMsg]) }).catch(err => console.error(err));
       return;
     }
 
@@ -528,6 +541,7 @@ export default function App() {
         User's calendar events: ${JSON.stringify(calendarEvents)}
         User's habits/todayItems: ${JSON.stringify(todayItems)}
         User's transactions summary: ${JSON.stringify(transactions)}
+        User's shared notes: ${JSON.stringify(notesList.filter(n => n.shareWithAi))}
         
         If the user asks to add an event to the calendar, respond with an optional JSON block:
         [CALENDAR_EVENT]{"title":"...","date":"YYYY-MM-DD","endDate":"YYYY-MM-DD or null","color":"#hex"}[/CALENDAR_EVENT]
@@ -545,7 +559,7 @@ export default function App() {
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            model: "llama3-70b-8192",
+            model: "llama-3.3-70b-versatile",
             messages: [
               { role: "system", content: systemPrompt },
               { role: "user", content: userMsgText }
@@ -580,7 +594,14 @@ export default function App() {
       if (eventMatch && eventMatch[1]) {
         try {
           const eventData = JSON.parse(eventMatch[1]);
-          setCalendarEvents(prev => [...prev, { id: Date.now(), ...eventData }]);
+          const newEvent = { id: Date.now(), title: eventData.title, date: eventData.date, end_date: eventData.endDate || null, color: eventData.color };
+          setCalendarEvents(prev => [...prev, newEvent]);
+          // Persist to API
+          fetch('/api/calendar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(newEvent)
+          }).catch(err => console.error('Failed to persist AI calendar event:', err));
           finalReply = finalReply.replace(eventMatch[0], '').trim();
         } catch (err) {
           console.error("Failed to parse calendar event JSON", err);
@@ -753,6 +774,9 @@ export default function App() {
             <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '36px' }}>
               <button className="blue-btn" style={{ fontSize: '1.15rem', padding: '16px 42px' }} onClick={() => { setWaitlistSuccess(false); navigate('waitlist', '/waitlist'); }}>
                 Join VIP Waitlist <ArrowRight size={18} />
+              </button>
+              <button className="secondary-btn" style={{ fontSize: '1.15rem', padding: '16px 42px' }} onClick={() => navigate('auth', '/auth')}>
+                <LogIn size={18} /> Sign In
               </button>
             </div>
 
@@ -1097,8 +1121,22 @@ export default function App() {
         </main>
       )}
 
+      {/* Redirect unauthenticated users trying to access /dashboard */}
+      {currentPage === 'dashboard' && !isAuthenticated && (
+        <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-main)' }}>
+          <div style={{ textAlign: 'center', padding: '40px', background: 'var(--bg-card)', borderRadius: '20px', border: '1px solid var(--border-color)', maxWidth: '400px' }}>
+            <Lock size={40} color="var(--accent-blue)" style={{ marginBottom: '16px' }} />
+            <h3 style={{ fontSize: '1.3rem', fontWeight: 800, marginBottom: '8px' }}>Sign in Required</h3>
+            <p style={{ color: 'var(--text-muted)', marginBottom: '24px', fontSize: '0.9rem' }}>You need to sign in to access your dashboard.</p>
+            <button className="blue-btn" style={{ padding: '12px 32px' }} onClick={() => navigate('auth', '/auth')}>
+              <LogIn size={18} /> Sign In
+            </button>
+          </div>
+        </main>
+      )}
+
       {/* MERABAAZAR / LINEAR INSPIRED 2-COLUMN SIDEBAR WORKSPACE DASHBOARD (At /dashboard) */}
-      {currentPage === 'dashboard' && (
+      {currentPage === 'dashboard' && isAuthenticated && (
         <div className="animate-entrance" style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg-main)' }}>
           
           {/* FIXED / STICKY LEFT SIDEBAR THAT NEVER SCROLLS */}
@@ -1380,7 +1418,7 @@ export default function App() {
             {(activeTab === 'today' || activeTab === 'finance') && (
               <>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', ref: timeDropdownRef, position: 'relative' }} ref={timeDropdownRef}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', position: 'relative' }} ref={timeDropdownRef}>
                     <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)' }}>Active Timeframe:</span>
                     
                     <button
@@ -1576,6 +1614,7 @@ export default function App() {
                             <option value="Work">Work</option>
                             <option value="Study">Study</option>
                             <option value="Coding">Coding</option>
+                            <option value="Body & Gym">Body & Gym</option>
                             <option value="Personal">Personal</option>
                           </select>
                         </div>
@@ -1605,7 +1644,7 @@ export default function App() {
                               });
                               if (res.ok) {
                                 const data = await res.json();
-                                setTodayItems([...todayItems, { id: data.id, label: data.label, category: data.category, time: data.time, checked: false }]);
+                                setTodayItems([...todayItems, { id: data.id, title: data.label, category: data.category, time: data.time, checked: false }]);
                                 setNewTodayItemData({ title: '', category: 'Coding', time: '10:00 AM' });
                                 setIsAddTodayItemOpen(false);
                               }
@@ -1648,6 +1687,20 @@ export default function App() {
                       placeholder="Save your notes..."
                       style={{ width: '100%', padding: '16px 18px', borderRadius: '14px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', lineHeight: '1.6', outline: 'none', resize: 'vertical' }}
                     />
+                    <button 
+                      className="blue-btn" 
+                      style={{ marginTop: '12px', padding: '10px 24px', fontSize: '0.88rem' }}
+                      onClick={() => {
+                        if (!floatingDiaryContent.trim()) return;
+                        const titleStr = floatingDiaryContent.substring(0, 40) + (floatingDiaryContent.length > 40 ? '...' : '');
+                        handleCreateNoteDb(titleStr, floatingDiaryContent, floatingDiaryShare, (newNote) => {
+                          setNotesList(prev => [newNote, ...prev]);
+                          setFloatingDiaryContent('');
+                        });
+                      }}
+                    >
+                      <Save size={16} /> Save Note
+                    </button>
                   </div>
 
                 </div>
@@ -1906,7 +1959,7 @@ export default function App() {
                           {/* 7-Day Activity Pill Heatmap */}
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px', marginBottom: '16px' }}>
                             {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((dayLetter, dIdx) => {
-                              const isCompleted = dIdx === 6 ? item.checkedToday : dIdx !== 2;
+                              const isCompleted = dIdx === 6 ? item.checkedToday : false; // Only today's status is real data
                               return (
                                 <div key={dIdx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
                                   <div style={{
@@ -2017,10 +2070,10 @@ export default function App() {
                     {/* Left: Mini Calendar Grid */}
                     <div style={{ background: 'var(--bg-card)', borderRadius: '18px', border: '1px solid var(--border-color)', padding: '24px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                        <h4 style={{ fontSize: '1.2rem', fontWeight: 800 }}>July 2026</h4>
+                        <h4 style={{ fontSize: '1.2rem', fontWeight: 800 }}>{new Date(calendarMonth.year, calendarMonth.month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</h4>
                         <div style={{ display: 'flex', gap: '8px' }}>
-                          <button style={{ background: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: '8px', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-main)', cursor: 'pointer' }}>&lt;</button>
-                          <button style={{ background: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: '8px', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-main)', cursor: 'pointer' }}>&gt;</button>
+                          <button onClick={() => setCalendarMonth(prev => { const d = new Date(prev.year, prev.month - 1); return { year: d.getFullYear(), month: d.getMonth() }; })} style={{ background: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: '8px', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-main)', cursor: 'pointer' }}>&lt;</button>
+                          <button onClick={() => setCalendarMonth(prev => { const d = new Date(prev.year, prev.month + 1); return { year: d.getFullYear(), month: d.getMonth() }; })} style={{ background: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: '8px', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-main)', cursor: 'pointer' }}>&gt;</button>
                         </div>
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', textAlign: 'center', marginBottom: '8px' }}>
@@ -2029,38 +2082,43 @@ export default function App() {
                         ))}
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', textAlign: 'center' }}>
-                        {Array.from({ length: 31 }, (_, i) => {
-                          const date = i + 1;
-                          const dateStr = `2026-07-${date.toString().padStart(2, '0')}`;
-                          const dayEvents = calendarEvents.filter(e => e.date === dateStr);
-                          const isSelected = selectedCalendarDate === dateStr;
-                          return (
-                            <div 
-                              key={i} 
-                              onClick={() => setSelectedCalendarDate(dateStr)}
-                              style={{ 
-                                padding: '10px 0', 
-                                borderRadius: '10px', 
-                                background: isSelected ? 'var(--accent-blue)' : 'var(--bg-main)', 
-                                color: isSelected ? '#fff' : 'var(--text-main)',
-                                cursor: 'pointer',
-                                position: 'relative',
-                                fontWeight: isSelected ? 800 : 500,
-                                fontSize: '0.9rem',
-                                border: '1px solid var(--border-color)'
-                              }}
-                            >
-                              {date}
-                              {dayEvents.length > 0 && (
-                                <div style={{ display: 'flex', justifyContent: 'center', gap: '2px', position: 'absolute', bottom: '4px', left: 0, right: 0 }}>
-                                  {dayEvents.slice(0, 3).map((e, idx) => (
-                                    <div key={idx} style={{ width: '4px', height: '4px', borderRadius: '50%', background: isSelected ? '#fff' : e.color || 'var(--accent-blue)' }} />
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
+                        {(() => {
+                          const firstDay = new Date(calendarMonth.year, calendarMonth.month, 1).getDay();
+                          const daysInMonth = new Date(calendarMonth.year, calendarMonth.month + 1, 0).getDate();
+                          const cells = [];
+                          for (let i = 0; i < firstDay; i++) cells.push(<div key={`empty-${i}`} />);
+                          for (let d = 1; d <= daysInMonth; d++) {
+                            const dateStr = `${calendarMonth.year}-${(calendarMonth.month + 1).toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
+                            const dayEvents = calendarEvents.filter(e => e.date === dateStr);
+                            const isSelected = selectedCalendarDate === dateStr;
+                            const isToday = dateStr === new Date().toISOString().split('T')[0];
+                            cells.push(
+                              <div 
+                                key={d} 
+                                onClick={() => setSelectedCalendarDate(dateStr)}
+                                style={{ 
+                                  padding: '10px 0', borderRadius: '10px', 
+                                  background: isSelected ? 'var(--accent-blue)' : isToday ? 'rgba(59, 130, 246, 0.15)' : 'var(--bg-main)', 
+                                  color: isSelected ? '#fff' : 'var(--text-main)',
+                                  cursor: 'pointer', position: 'relative',
+                                  fontWeight: isSelected || isToday ? 800 : 500,
+                                  fontSize: '0.9rem',
+                                  border: isToday && !isSelected ? '2px solid var(--accent-blue)' : '1px solid var(--border-color)'
+                                }}
+                              >
+                                {d}
+                                {dayEvents.length > 0 && (
+                                  <div style={{ display: 'flex', justifyContent: 'center', gap: '2px', position: 'absolute', bottom: '4px', left: 0, right: 0 }}>
+                                    {dayEvents.slice(0, 3).map((e, idx) => (
+                                      <div key={idx} style={{ width: '4px', height: '4px', borderRadius: '50%', background: isSelected ? '#fff' : e.color || 'var(--accent-blue)' }} />
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          }
+                          return cells;
+                        })()}
                       </div>
                     </div>
                     
@@ -2122,17 +2180,13 @@ export default function App() {
                     </div>
                     <button 
                       className="blue-btn" 
-                      onClick={() => {
-                        const newNote = {
-                          id: Date.now(),
-                          title: '📝 New Personal Note & Diary Entry',
-                          category: 'General',
-                          content: 'Type your daily reflection, thoughts, or goals here...',
-                          date: new Date().toISOString().split('T')[0],
-                          shareWithAi: true
-                        };
-                        setNotesList([newNote, ...notesList]);
-                        setActiveNoteId(newNote.id);
+                      onClick={async () => {
+                        const defaultTitle = '📝 New Personal Note & Diary Entry';
+                        const defaultContent = 'Type your daily reflection, thoughts, or goals here...';
+                        handleCreateNoteDb(defaultTitle, defaultContent, true, (newNote) => {
+                          setNotesList([newNote, ...notesList]);
+                          setActiveNoteId(newNote.id);
+                        });
                       }}
                       style={{ padding: '12px 22px', fontSize: '0.92rem' }}
                     >
@@ -2203,6 +2257,7 @@ export default function App() {
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation();
+                                        handleUpdateNoteDb({ id: note.id, is_trashed: 1, deleted_at: new Date().toISOString() });
                                         setTrashNotes([{ ...note, deletedAt: Date.now() }, ...trashNotes]);
                                         const next = notesList.filter(n => n.id !== note.id);
                                         setNotesList(next);
@@ -2256,6 +2311,7 @@ export default function App() {
                                       <button
                                         onClick={(e) => {
                                           e.stopPropagation();
+                                          handleUpdateNoteDb({ id: tNote.id, is_trashed: 0, deleted_at: null });
                                           setNotesList([tNote, ...notesList]);
                                           setTrashNotes(trashNotes.filter(n => n.id !== tNote.id));
                                           setActiveNoteId(tNote.id);
@@ -2474,63 +2530,21 @@ export default function App() {
 
               {/* 4) BODY & GYM */}
               {activeTab === 'body' && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '28px' }}>
-                  <div>
-                    <h3 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '16px' }}>Body & Gym Workouts ({timeOptions.find(o => o.id === timeRange)?.label})</h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                      {workouts.map(w => (
-                        <div key={w.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)' }}>
-                          <div>
-                            <div style={{ fontWeight: 700, fontSize: '1.05rem' }}>{w.exercise}</div>
-                            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '4px' }}>Duration: {w.duration} • Intensity: <strong style={{ color: 'var(--text-main)' }}>{w.intensity}</strong> • {w.date}</div>
-                          </div>
-                          <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--accent-blue)' }}>{w.caloriesBurned} kcal</div>
-                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Burned</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div style={{ background: 'var(--bg-main)', padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)', height: 'fit-content' }}>
-                    <h4 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '16px' }}>Vitals & Nutrition</h4>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                      <div style={{ background: 'var(--bg-card)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Body Weight</span>
-                        <div style={{ fontSize: '1.35rem', fontWeight: 800, marginTop: '4px' }}>{bodyStats.currentWeight}</div>
-                      </div>
-                      <div style={{ background: 'var(--bg-card)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Daily Protein Target</span>
-                        <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--accent-blue)', marginTop: '4px' }}>{bodyStats.dailyProtein}</div>
-                      </div>
-                      <div style={{ background: 'var(--bg-card)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Hydration Level</span>
-                        <div style={{ fontSize: '1.35rem', fontWeight: 800, marginTop: '4px' }}>{bodyStats.hydration}</div>
-                      </div>
-                    </div>
-                  </div>
+                <div style={{ textAlign: 'center', padding: '80px 40px', background: 'var(--bg-card)', borderRadius: '18px', border: '1px solid var(--border-color)' }}>
+                  <Dumbbell size={48} color="var(--text-muted)" style={{ marginBottom: '16px' }} />
+                  <h3 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '8px' }}>Body & Gym</h3>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '1rem', marginBottom: '24px' }}>Track workouts, body stats, nutrition and more.</p>
+                  <span style={{ display: 'inline-block', padding: '8px 20px', borderRadius: '20px', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--accent-blue)', fontWeight: 700, fontSize: '0.85rem', border: '1px solid rgba(59, 130, 246, 0.3)' }}>🚀 Coming Soon</span>
                 </div>
               )}
 
               {/* 5) SLEEP & RECOVERY */}
               {activeTab === 'sleep' && (
-                <div>
-                  <h3 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '20px' }}>Sleep Quality & Phase Analysis ({timeOptions.find(o => o.id === timeRange)?.label})</h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                    {sleepLogs.map(s => (
-                      <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)' }}>
-                        <div>
-                        <div style={{ fontWeight: 700, fontSize: '1.05rem' }}>{s.date} — {s.totalHours} Hours Total</div>
-                          <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '4px' }}>Deep Sleep: <strong style={{ color: 'var(--text-main)' }}>{s.deepSleep}</strong> • REM Sleep: <strong style={{ color: 'var(--text-main)' }}>{s.remSleep}</strong></div>
-                        </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <span style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--accent-blue)' }}>{s.qualityScore}%</span>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Circadian Score</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                <div style={{ textAlign: 'center', padding: '80px 40px', background: 'var(--bg-card)', borderRadius: '18px', border: '1px solid var(--border-color)' }}>
+                  <SleepIcon size={48} color="var(--text-muted)" style={{ marginBottom: '16px' }} />
+                  <h3 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '8px' }}>Sleep & Recovery</h3>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '1rem', marginBottom: '24px' }}>Track sleep phases, quality scores and circadian rhythm.</p>
+                  <span style={{ display: 'inline-block', padding: '8px 20px', borderRadius: '20px', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--accent-blue)', fontWeight: 700, fontSize: '0.85rem', border: '1px solid rgba(59, 130, 246, 0.3)' }}>🚀 Coming Soon</span>
                 </div>
               )}
 
@@ -2544,7 +2558,7 @@ export default function App() {
                       </div>
                       <div style={{ fontSize: '2.5rem', fontWeight: 900, letterSpacing: '-1px', marginBottom: '8px' }}>{habits.length > 0 ? Math.round((habits.filter(h => h.checkedToday).length / habits.length) * 100) : 0}%</div>
                       <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 700 }}>
-                        - No data yet
+                        {habits.length > 0 ? `${habits.filter(h => h.checkedToday).length} of ${habits.length} habits completed today` : 'No habits tracked yet'}
                       </div>
                     </div>
 
@@ -2554,7 +2568,7 @@ export default function App() {
                       </div>
                       <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--accent-blue)', letterSpacing: '-1px', marginBottom: '8px' }}>${transactions.reduce((acc, t) => acc + (t.type === 'earn' ? t.amount : -t.amount), 0)}</div>
                       <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 700 }}>
-                        - No data yet
+                        {transactions.length > 0 ? `From ${transactions.length} transactions` : 'No transactions yet'}
                       </div>
                     </div>
 
@@ -2564,7 +2578,7 @@ export default function App() {
                       </div>
                       <div style={{ fontSize: '2.5rem', fontWeight: 900, letterSpacing: '-1px', marginBottom: '8px' }}>0 <span style={{ fontSize: '1.2rem', fontWeight: 600 }}>/ 100</span></div>
                       <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 700 }}>
-                        - No data yet
+                        Coming soon — connect sleep tracker
                       </div>
                     </div>
                   </div>
@@ -2803,7 +2817,7 @@ export default function App() {
                       Logging out will close your active dashboard session and return you to the public storefront.
                     </p>
                     <button 
-                      onClick={() => navigate('landing', '/')}
+                      onClick={handleLogout}
                       style={{
                         display: 'flex', alignItems: 'center', gap: '10px',
                         padding: '14px 24px', borderRadius: '14px',

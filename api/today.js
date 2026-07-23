@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   
   try {
     if (req.method === 'GET') {
-      const items = await db.execute({ sql: 'SELECT * FROM today_items WHERE user_id = ?', args: [userId] });
+      const items = await db.execute({ sql: 'SELECT * FROM today_items WHERE user_id = ? AND date = date("now")', args: [userId] });
       return res.status(200).json(items.rows);
     }
     
@@ -26,6 +26,14 @@ export default async function handler(req, res) {
         args: [userId, label, category || '', time || '']
       });
       return res.status(201).json({ id: Number(result.lastInsertRowid), label, category, time });
+    }
+    if (req.method === 'DELETE') {
+      const { id } = req.body;
+      await db.execute({
+        sql: 'DELETE FROM today_items WHERE id = ? AND user_id = ?',
+        args: [id, userId]
+      });
+      return res.status(200).json({ success: true });
     }
     
     res.status(405).json({ error: 'Method not allowed' });

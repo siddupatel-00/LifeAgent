@@ -28,7 +28,10 @@ export default async function handler(req, res) {
         handle: user.handle,
         theme: user.theme,
         ai_name: user.ai_name,
-        gemini_api_key: user.gemini_api_key
+        gemini_api_key: user.gemini_api_key,
+        groq_api_key: user.groq_api_key,
+        ai_provider: user.ai_provider,
+        currency: user.currency
       }
     });
   } catch (error) {
