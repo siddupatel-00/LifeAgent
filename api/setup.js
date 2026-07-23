@@ -70,6 +70,15 @@ export default async function handler(req, res) {
         name TEXT DEFAULT '',
         email TEXT UNIQUE NOT NULL,
         joined_at TEXT DEFAULT (datetime('now'))
+      )`,
+      `CREATE TABLE IF NOT EXISTS chat_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        sender TEXT NOT NULL,
+        text TEXT NOT NULL,
+        time TEXT NOT NULL,
+        created_at TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (user_id) REFERENCES users(id)
       )`
     ]);
     res.status(200).json({ success: true, message: 'All tables created successfully!' });

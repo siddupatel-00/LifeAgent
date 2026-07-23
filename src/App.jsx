@@ -145,14 +145,7 @@ export default function App() {
   ];
 
   // 1) AI Chat state with Autonomous Executive Engine
-  const [aiMessages, setAiMessages] = useState([
-    {
-      id: 1,
-      sender: 'ai',
-      time: '07:00 AM',
-      text: "🤖 **Autonomous Executive Agent Online • Full Account & Real-Time DB Access Active**\n\nGood morning! ☀️ I am your proactive AI partner with full permissions. I am ready to help you manage your daily schedule and habits."
-    }
-  ]);
+  const [aiMessages, setAiMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [aiName, setAiName] = useState('AI');
   const mainAiChatScrollRef = useRef(null);
@@ -179,6 +172,8 @@ export default function App() {
   const [habits, setHabits] = useState([]);
   const [isAddHabitModalOpen, setIsAddHabitModalOpen] = useState(false);
   const [newHabitData, setNewHabitData] = useState({ title: '', category: 'Coding', target: '' });
+  const [newTodayItemData, setNewTodayItemData] = useState({ title: '', category: 'Coding', time: '10:00 AM' });
+  const [isAddTodayItemOpen, setIsAddTodayItemOpen] = useState(false);
   const [todayItems, setTodayItems] = useState([]);
 
   // 3) Finance state
@@ -260,6 +255,12 @@ export default function App() {
             localStorage.setItem('gemini_api_key', sData.user.gemini_api_key);
           }
         }
+      }
+
+      const chatRes = await fetch('/api/chat', { headers });
+      if (chatRes.ok) {
+        const cData = await chatRes.json();
+        setAiMessages(cData.map(c => ({ id: c.id, sender: c.sender, text: c.text, time: c.time })));
       }
     } catch (err) {
       console.error('Failed to fetch dashboard data:', err);
@@ -396,80 +397,86 @@ export default function App() {
     setAiMessages(prev => [...prev, newMsg]);
     setInputMessage('');
 
-    if (geminiApiKey) {
-      setAiLoading(true);
-      setAiMessages(prev => [...prev, { id: 'loading', sender: 'ai', text: 'Thinking...', time: nowTime }]);
+    if (!geminiApiKey) {
+      const fallbackReply = "Please provide your API key in the settings to use the AI Assistant.";
+      const aiMsg = { id: Date.now() + 1, sender: 'ai', text: fallbackReply, time: nowTime };
+      setAiMessages(prev => [...prev, aiMsg]);
+      fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify([newMsg, aiMsg])
+      }).catch(err => console.error(err));
+      return;
+    }
+
+    setAiLoading(true);
+    setAiMessages(prev => [...prev, { id: 'loading', sender: 'ai', text: 'Thinking...', time: nowTime }]);
+    
+    try {
+      const genAI = new GoogleGenerativeAI(geminiApiKey);
+      const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash"];
       
-      try {
-        const genAI = new GoogleGenerativeAI(geminiApiKey);
-        const modelsToTry = ["gemini-1.5-flash-latest", "gemini-1.5-flash-001", "gemini-2.0-flash-exp", "gemini-1.5-pro-latest"];
+      const systemPrompt = `
+        You are an autonomous AI assistant in a personal dashboard.
+        User's calendar events: ${JSON.stringify(calendarEvents)}
+        User's habits/todayItems: ${JSON.stringify(todayItems)}
+        User's transactions summary: ${JSON.stringify(transactions)}
         
-        const systemPrompt = `
-          You are an autonomous AI assistant in a personal dashboard.
-          User's calendar events: ${JSON.stringify(calendarEvents)}
-          User's habits/todayItems: ${JSON.stringify(todayItems)}
-          User's transactions summary: ${JSON.stringify(transactions)}
-          
-          If the user asks to add an event to the calendar, respond with an optional JSON block:
-          [CALENDAR_EVENT]{"title":"...","date":"YYYY-MM-DD","endDate":"YYYY-MM-DD or null","color":"#hex"}[/CALENDAR_EVENT]
-          Make the color a valid hex code (e.g. #3b82f6 for blue, #ef4444 for red).
-          Provide a helpful text response as well.
-        `;
-        
-        let result = null;
-        let lastErr = null;
-        for (const mName of modelsToTry) {
-          try {
-            const model = genAI.getGenerativeModel({ model: mName });
-            result = await model.generateContent(`${systemPrompt}\n\nUser: ${userMsgText}`);
-            if (result) break;
-          } catch (err) {
-            lastErr = err;
-          }
+        If the user asks to add an event to the calendar, respond with an optional JSON block:
+        [CALENDAR_EVENT]{"title":"...","date":"YYYY-MM-DD","endDate":"YYYY-MM-DD or null","color":"#hex"}[/CALENDAR_EVENT]
+        Make the color a valid hex code (e.g. #3b82f6 for blue, #ef4444 for red).
+        Provide a helpful text response as well.
+      `;
+      
+      let result = null;
+      let lastErr = null;
+      for (const mName of modelsToTry) {
+        try {
+          const model = genAI.getGenerativeModel({ model: mName });
+          result = await model.generateContent(`${systemPrompt}\n\nUser: ${userMsgText}`);
+          if (result) break;
+        } catch (err) {
+          lastErr = err;
         }
-        if (!result && lastErr) throw lastErr;
-        const responseText = result.response.text();
-        
-        // Parse calendar event
-        const eventMatch = responseText.match(/\[CALENDAR_EVENT\](.*?)\[\/CALENDAR_EVENT\]/s);
-        let finalReply = responseText;
-        
-        if (eventMatch && eventMatch[1]) {
-          try {
-            const eventData = JSON.parse(eventMatch[1]);
-            setCalendarEvents(prev => [...prev, { id: Date.now(), ...eventData }]);
-            finalReply = finalReply.replace(eventMatch[0], '').trim();
-          } catch (err) {
-            console.error("Failed to parse calendar event JSON", err);
-          }
+      }
+      if (!result && lastErr) throw lastErr;
+      const responseText = result.response.text();
+      
+      // Parse calendar event
+      const eventMatch = responseText.match(/\[CALENDAR_EVENT\](.*?)\[\/CALENDAR_EVENT\]/s);
+      let finalReply = responseText;
+      
+      if (eventMatch && eventMatch[1]) {
+        try {
+          const eventData = JSON.parse(eventMatch[1]);
+          setCalendarEvents(prev => [...prev, { id: Date.now(), ...eventData }]);
+          finalReply = finalReply.replace(eventMatch[0], '').trim();
+        } catch (err) {
+          console.error("Failed to parse calendar event JSON", err);
         }
-        
-        setAiMessages(prev => prev.map(m => m.id === 'loading' ? { id: Date.now() + 1, sender: 'ai', text: finalReply, time: nowTime } : m));
-      } catch (error) {
-        console.error("Gemini API Error:", error);
-        setAiMessages(prev => prev.map(m => m.id === 'loading' ? { id: Date.now() + 1, sender: 'ai', text: `Error calling Gemini API: ${error.message}`, time: nowTime } : m));
-      } finally {
-        setAiLoading(false);
       }
-    } else {
-      const userMsg = userMsgText.toLowerCase();
-      let aiReply = "I am analyzing your real-time database telemetry across your account permissions... ";
-      if (userMsg.includes('performance') || userMsg.includes('time') || userMsg.includes('right now') || userMsg.includes('today')) {
-        aiReply = "🔍 **Looked at real-time telemetry (Live Time Check & Audit):**\n\nSiddu, checking against your locked schedule:\n• **09:00 AM – 05:00 PM (College)**: ✅ Completed\n• **05:00 PM – 06:00 PM (Meeting with XYZ)**: ✅ Completed\n• **06:00 PM – 07:00 PM (College Work)**: ✅ Completed\n• **07:00 PM – 08:00 PM (Eat/Dinner)**: ✅ Completed\n\n⚡ **Right Now (8:00 PM – 11:00 PM Block):**\nYou are ALL DONE till now! Only your **DSA / LeetCode Problem Solving** block is left for today, then sleep at 11:00 PM. Let's conquer those algorithms, do it! 🚀\n\n*(Pre-sleep notification armed for exactly 10:50 PM)*";
-      } else if (userMsg.includes('gym') || userMsg.includes('7 am') || userMsg.includes('schedule') || userMsg.includes('briefing')) {
-        aiReply = "☀️ **7:00 AM Gym Briefing & Daily Itinerary:**\n\nGood morning, Siddu! While you crush your 7:00 AM gym session, here is your locked itinerary for today:\n1) **09:00 AM – 05:00 PM**: College Lectures\n2) **05:00 PM – 06:00 PM**: Meeting with XYZ Person\n3) **06:00 PM – 07:00 PM**: College Assignments & Work\n4) **07:00 PM – 08:00 PM**: Dinner / Recharge\n5) **08:00 PM – 11:00 PM**: DSA & Algorithms\n6) **11:00 PM**: Sleep Wind-down *(10:50 PM reminder set)*";
-      } else if (userMsg.includes('amavasya') || userMsg.includes('pournami') || userMsg.includes('moon') || userMsg.includes('black')) {
-        aiReply = "🌕 **Astronomical Lunar Protocol (Pournami & Amavasya Guard):**\n\n• **Day-Before Alert (8:00 PM)**: *'Hello @siddu, tomorrow is Pournami, be ready with clothes other than black!'*\n• **Day-Of Alert (7:00 AM)**: *'Hello Siddu, just a reminder, do not wear black clothes today.'*\n\n*(Your autonomous agent holds full calendar permissions and will trigger these alerts automatically)*";
-      } else if (userMsg.includes('compare') || userMsg.includes('yesterday') || userMsg.includes('last month') || userMsg.includes('last week')) {
-        aiReply = "📊 **Comparative Database Audit (Today vs Historical Telemetry):**\n\n• **Today vs Yesterday**: You are at **92% schedule adherence** (+14% higher than yesterday's 78% rate).\n• **Today vs Last Week**: Your Gym and DSA consistency is +20% above your weekly average.\n• **Today vs Last Month**: You've maintained a record 21-day streak on Coding, far exceeding last month's 9-day best!";
-      } else if (userMsg.includes('spend') || userMsg.includes('money')) {
-        const totalSpend = transactions.filter(t => t.type === 'spend').reduce((a, b) => a + b.amount, 0);
-        const totalEarn = transactions.filter(t => t.type === 'earn').reduce((a, b) => a + b.amount, 0);
-        aiReply = `For the timeframe (${timeRange.toUpperCase()}), you have earned $${totalEarn} and spent $${totalSpend}. Your net savings efficiency is healthy (+${Math.round((totalEarn - totalSpend) / (totalEarn || 1) * 100)}%).`;
-      } else {
-        aiReply = `🤖 Siddu, I hold full access to your account and real-time database. Your overall productivity rating is 93/100 across Gym, College, and DSA! How can I optimize your next task?`;
-      }
-      setAiMessages(prev => [...prev, { id: Date.now() + 1, sender: 'ai', text: aiReply, time: nowTime }]);
+      
+      const aiMsg = { id: Date.now() + 1, sender: 'ai', text: finalReply, time: nowTime };
+      setAiMessages(prev => prev.map(m => m.id === 'loading' ? aiMsg : m));
+      
+      fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify([newMsg, aiMsg])
+      }).catch(err => console.error(err));
+      
+    } catch (error) {
+      console.error("Gemini API Error:", error);
+      const aiMsg = { id: Date.now() + 1, sender: 'ai', text: `Error calling Gemini API: ${error.message}`, time: nowTime };
+      setAiMessages(prev => prev.map(m => m.id === 'loading' ? aiMsg : m));
+      
+      fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify([newMsg, aiMsg])
+      }).catch(err => console.error(err));
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -571,7 +578,7 @@ export default function App() {
             <button 
               className="blue-btn" 
               style={{ padding: '9px 22px', fontSize: '0.9rem' }}
-              onClick={() => { setAuthMode('signup'); navigate('auth', '/auth'); }}
+              onClick={() => { setWaitlistSuccess(false); navigate('waitlist', '/waitlist'); }}
             >
               Sign Up <ArrowRight size={16} />
             </button>
@@ -1133,7 +1140,7 @@ export default function App() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
               <div>
                 <h2 style={{ fontSize: '1.9rem', fontWeight: 900, letterSpacing: '-0.5px' }}>
-                  Hey {userProfile.name ? userProfile.name.split(' ')[0] : 'User'} – welcome back!
+                  Hey {userProfile.handle ? `@${userProfile.handle.replace('@', '')}` : (userProfile.name ? userProfile.name.split(' ')[0] : 'User')} – welcome!
                 </h2>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '4px' }}>
                   Unified workspace and real-time trackers for your daily performance.
@@ -1254,38 +1261,6 @@ export default function App() {
                     Showing live audited metrics across 4 core pillars
                   </div>
                 </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', marginBottom: '32px' }}>
-                  <div className="glass-card" style={{ padding: '24px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.5px', marginBottom: '12px' }}>
-                      <CheckCircle2 size={16} /> OVERALL CONSISTENCY
-                    </div>
-                    <div style={{ fontSize: '2.5rem', fontWeight: 900, letterSpacing: '-1px', marginBottom: '8px' }}>{habits.length > 0 ? Math.round((habits.filter(h => h.checkedToday).length / habits.length) * 100) : 0}%</div>
-                    <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 700 }}>
-                      - No data yet
-                    </div>
-                  </div>
-
-                  <div className="glass-card" style={{ padding: '24px', background: 'var(--bg-card)', border: '2px solid var(--accent-blue)', boxShadow: '0 0 25px rgba(59, 130, 246, 0.15)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem', fontWeight: 800, color: 'var(--accent-blue)', letterSpacing: '0.5px', marginBottom: '12px' }}>
-                      <DollarSign size={16} /> NET MONEY SAVINGS
-                    </div>
-                    <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--accent-blue)', letterSpacing: '-1px', marginBottom: '8px' }}>${transactions.reduce((acc, t) => acc + (t.type === 'earn' ? t.amount : -t.amount), 0)}</div>
-                    <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 700 }}>
-                      - No data yet
-                    </div>
-                  </div>
-
-                  <div className="glass-card" style={{ padding: '24px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.5px', marginBottom: '12px' }}>
-                      <SleepIcon size={16} /> SLEEP & RECOVERY
-                    </div>
-                    <div style={{ fontSize: '2.5rem', fontWeight: 900, letterSpacing: '-1px', marginBottom: '8px' }}>0 <span style={{ fontSize: '1.2rem', fontWeight: 600 }}>/ 100</span></div>
-                    <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 700 }}>
-                      - No data yet
-                    </div>
-                  </div>
-                </div>
               </>
             )}
 
@@ -1340,9 +1315,14 @@ export default function App() {
 
                   {/* Clean List of Today Items */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                    {todayItems.map(item => (
-                      <div 
-                        key={item.id} 
+                    {todayItems.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '30px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px dashed var(--border-color)' }}>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', fontWeight: 600 }}>No routine items scheduled for today.</p>
+                      </div>
+                    ) : (
+                      todayItems.map(item => (
+                        <div 
+                          key={item.id} 
                         onClick={() => handleToggleTodayItem(item.id)}
                         style={{
                           background: item.checked ? 'var(--accent-blue-dim)' : 'var(--bg-main)',
@@ -1407,8 +1387,90 @@ export default function App() {
                           {item.checked ? 'Checked Today ✓' : 'Tick Today Progress'}
                         </button>
                       </div>
-                    ))}
+                    ))
+                    )}
                   </div>
+
+                  {/* Add Routine Item Button */}
+                  <div style={{ marginTop: '16px' }}>
+                    <button 
+                      className="blue-btn" 
+                      onClick={() => setIsAddTodayItemOpen(!isAddTodayItemOpen)}
+                      style={{ padding: '10px 18px', fontSize: '0.85rem' }}
+                    >
+                      <Plus size={16} /> {isAddTodayItemOpen ? 'Close Form' : 'Add Routine Item'}
+                    </button>
+                  </div>
+
+                  {/* Add Routine Item Form */}
+                  {isAddTodayItemOpen && (
+                    <div className="animate-entrance" style={{ background: 'var(--bg-main)', padding: '20px', borderRadius: '16px', border: '1px solid var(--accent-blue)', marginTop: '16px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: '12px', alignItems: 'end' }}>
+                        <div>
+                          <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '6px', display: 'block' }}>Routine Title</label>
+                          <input 
+                            type="text" 
+                            placeholder="e.g., Morning Run"
+                            value={newTodayItemData.title}
+                            onChange={(e) => setNewTodayItemData({ ...newTodayItemData, title: e.target.value })}
+                            style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-main)', fontSize: '0.85rem' }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '6px', display: 'block' }}>Category</label>
+                          <select 
+                            value={newTodayItemData.category}
+                            onChange={(e) => setNewTodayItemData({ ...newTodayItemData, category: e.target.value })}
+                            style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-main)', fontSize: '0.85rem' }}
+                          >
+                            <option value="Health">Health</option>
+                            <option value="Work">Work</option>
+                            <option value="Study">Study</option>
+                            <option value="Coding">Coding</option>
+                            <option value="Personal">Personal</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '6px', display: 'block' }}>Time (optional)</label>
+                          <input 
+                            type="text" 
+                            placeholder="e.g., 07:00 AM"
+                            value={newTodayItemData.time}
+                            onChange={(e) => setNewTodayItemData({ ...newTodayItemData, time: e.target.value })}
+                            style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-main)', fontSize: '0.85rem' }}
+                          />
+                        </div>
+                        <button 
+                          className="blue-btn"
+                          onClick={async () => {
+                            if (!newTodayItemData.title.trim()) return alert('Please enter a title');
+                            try {
+                              const res = await fetch('/api/today', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                body: JSON.stringify({
+                                  label: newTodayItemData.title.trim(),
+                                  category: newTodayItemData.category,
+                                  time: newTodayItemData.time.trim()
+                                })
+                              });
+                              if (res.ok) {
+                                const data = await res.json();
+                                setTodayItems([...todayItems, { id: data.id, label: data.label, category: data.category, time: data.time, checked: false }]);
+                                setNewTodayItemData({ title: '', category: 'Coding', time: '10:00 AM' });
+                                setIsAddTodayItemOpen(false);
+                              }
+                            } catch (err) {
+                              console.error(err);
+                            }
+                          }}
+                          style={{ padding: '10px 18px', height: '39px', fontSize: '0.85rem' }}
+                        >
+                          <Plus size={16} /> Add
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   {/* TODAY'S DAILY DIARY & QUICK NOTES SECTION */}
                   <div style={{ marginTop: '36px', background: 'var(--bg-main)', padding: '24px 28px', borderRadius: '18px', border: '1px solid var(--border-color)' }}>
@@ -1598,23 +1660,41 @@ export default function App() {
 
                         <button 
                           className="blue-btn"
-                          onClick={() => {
+                          onClick={async () => {
                             if (!newHabitData.title.trim()) {
                               alert('Please enter a title for your daily item.');
                               return;
                             }
-                            const newItem = {
-                              id: Date.now(),
-                              title: newHabitData.title.trim(),
-                              category: newHabitData.category,
-                              target: newHabitData.target.trim() || '30 mins/day',
-                              streak: 1,
-                              completionRate: 100,
-                              checkedToday: false
-                            };
-                            setHabits([newItem, ...habits]);
-                            setNewHabitData({ title: '', category: 'Coding', target: '' });
-                            setIsAddHabitModalOpen(false);
+                            
+                            try {
+                              const res = await fetch('/api/habits', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                body: JSON.stringify({
+                                  label: newHabitData.title.trim(),
+                                  category: newHabitData.category
+                                })
+                              });
+                              if (res.ok) {
+                                const data = await res.json();
+                                const newItem = {
+                                  id: data.id,
+                                  title: data.label,
+                                  category: data.category,
+                                  target: newHabitData.target.trim() || '30 mins/day',
+                                  streak: 0,
+                                  completionRate: 100,
+                                  checkedToday: false
+                                };
+                                setHabits([newItem, ...habits]);
+                                setNewHabitData({ title: '', category: 'Coding', target: '' });
+                                setIsAddHabitModalOpen(false);
+                              } else {
+                                console.error('Failed to create habit');
+                              }
+                            } catch (err) {
+                              console.error(err);
+                            }
                           }}
                           style={{ padding: '13px 24px', height: '46px' }}
                         >
@@ -1640,16 +1720,23 @@ export default function App() {
                       </div>
                     </div>
 
-                    <div style={{ textAlign: 'center', padding: '30px', background: 'var(--bg-card)', borderRadius: '14px', border: '1px dashed var(--border-color)' }}>
-                      <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', fontWeight: 600 }}>No daily works added yet. Add a pillar to see your progress curve.</p>
-                    </div>
+                    {habits.length === 0 && (
+                      <div style={{ textAlign: 'center', padding: '30px', background: 'var(--bg-card)', borderRadius: '14px', border: '1px dashed var(--border-color)' }}>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', fontWeight: 600 }}>No daily works added yet. Add a pillar to see your progress curve.</p>
+                      </div>
+                    )}
                   </div>
 
                   {/* GRID OF HABIT CARDS WITH ACTIVITY PILL HEATMAPS */}
                   <h4 style={{ fontSize: '1.15rem', fontWeight: 800, marginBottom: '16px' }}>Your Daily Items & 7-Day Activity Matrix</h4>
                   
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '18px' }}>
-                    {habits.map(item => (
+                  {habits.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)' }}>
+                      No pillars exist yet.
+                    </div>
+                  ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '18px' }}>
+                      {habits.map(item => (
                       <div 
                         key={item.id} 
                         onClick={() => handleToggleHabitItem(item.id)}
@@ -1725,8 +1812,9 @@ export default function App() {
                           </button>
                         </div>
                       </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1921,54 +2009,60 @@ export default function App() {
 
                       {notesViewMode === 'active' ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto' }}>
-                          {notesList.map(note => (
-                            <div
-                              key={note.id}
-                              onClick={() => setActiveNoteId(note.id)}
-                              style={{
-                                padding: '14px 16px',
-                                borderRadius: '14px',
-                                background: activeNoteId === note.id ? 'var(--accent-blue)' : 'var(--bg-card)',
-                                color: activeNoteId === note.id ? '#fff' : 'var(--text-main)',
-                                border: `1px solid ${activeNoteId === note.id ? 'var(--accent-blue)' : 'var(--border-color)'}`,
-                                cursor: 'pointer',
-                                transition: 'all 0.2s',
-                                display: 'flex', flexDirection: 'column', gap: '6px'
-                              }}
-                            >
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span style={{ fontSize: '0.7rem', fontWeight: 800, background: activeNoteId === note.id ? 'rgba(255,255,255,0.2)' : 'var(--bg-main)', padding: '2px 8px', borderRadius: '8px' }}>
-                                  {note.category}
-                                </span>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                  {note.shareWithAi && (
-                                    <span title="Shared with AI Agent" style={{ fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '4px', background: activeNoteId === note.id ? 'rgba(255,255,255,0.25)' : 'rgba(34,197,94,0.15)', color: activeNoteId === note.id ? '#fff' : '#22c55e', padding: '2px 8px', borderRadius: '10px', fontWeight: 700 }}>
-                                      🤖 AI Shared
-                                    </span>
-                                  )}
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setTrashNotes([{ ...note, deletedAt: Date.now() }, ...trashNotes]);
-                                      const next = notesList.filter(n => n.id !== note.id);
-                                      setNotesList(next);
-                                      if (activeNoteId === note.id && next.length > 0) setActiveNoteId(next[0].id);
-                                    }}
-                                    style={{ background: 'transparent', border: 'none', color: activeNoteId === note.id ? '#fff' : '#ef4444', cursor: 'pointer', padding: '2px', opacity: 0.8 }}
-                                    title="Move to Trash (Kept for 49 days)"
-                                  >
-                                    <Trash2 size={15} />
-                                  </button>
-                                </div>
-                              </div>
-                              <h5 style={{ fontSize: '0.96rem', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {note.title}
-                              </h5>
-                              <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>
-                                Last updated: {note.date}
-                              </span>
+                          {notesList.length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                              No notes yet. Click + to add one.
                             </div>
-                          ))}
+                          ) : (
+                            notesList.map(note => (
+                              <div
+                                key={note.id}
+                                onClick={() => setActiveNoteId(note.id)}
+                                style={{
+                                  padding: '14px 16px',
+                                  borderRadius: '14px',
+                                  background: activeNoteId === note.id ? 'var(--accent-blue)' : 'var(--bg-card)',
+                                  color: activeNoteId === note.id ? '#fff' : 'var(--text-main)',
+                                  border: `1px solid ${activeNoteId === note.id ? 'var(--accent-blue)' : 'var(--border-color)'}`,
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s',
+                                  display: 'flex', flexDirection: 'column', gap: '6px'
+                                }}
+                              >
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <span style={{ fontSize: '0.7rem', fontWeight: 800, background: activeNoteId === note.id ? 'rgba(255,255,255,0.2)' : 'var(--bg-main)', padding: '2px 8px', borderRadius: '8px' }}>
+                                    {note.category}
+                                  </span>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    {note.shareWithAi && (
+                                      <span title="Shared with AI Agent" style={{ fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '4px', background: activeNoteId === note.id ? 'rgba(255,255,255,0.25)' : 'rgba(34,197,94,0.15)', color: activeNoteId === note.id ? '#fff' : '#22c55e', padding: '2px 8px', borderRadius: '10px', fontWeight: 700 }}>
+                                        🤖 AI Shared
+                                      </span>
+                                    )}
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setTrashNotes([{ ...note, deletedAt: Date.now() }, ...trashNotes]);
+                                        const next = notesList.filter(n => n.id !== note.id);
+                                        setNotesList(next);
+                                        if (activeNoteId === note.id && next.length > 0) setActiveNoteId(next[0].id);
+                                      }}
+                                      style={{ background: 'transparent', border: 'none', color: activeNoteId === note.id ? '#fff' : '#ef4444', cursor: 'pointer', padding: '2px', opacity: 0.8 }}
+                                      title="Move to Trash (Kept for 49 days)"
+                                    >
+                                      <Trash2 size={15} />
+                                    </button>
+                                  </div>
+                                </div>
+                                <h5 style={{ fontSize: '0.96rem', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  {note.title}
+                                </h5>
+                                <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>
+                                  Last updated: {note.date}
+                                </span>
+                              </div>
+                            ))
+                          )}
                         </div>
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', overflowY: 'auto' }}>
@@ -2156,17 +2250,23 @@ export default function App() {
                   <div>
                     <h3 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '16px' }}>Transactions ({timeOptions.find(o => o.id === timeRange)?.label})</h3>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      {transactions.map(item => (
-                        <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)' }}>
-                          <div>
-                            <div style={{ fontWeight: 600, fontSize: '1rem' }}>{item.title}</div>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>{item.category} • {item.date}</div>
-                          </div>
-                          <div style={{ fontSize: '1.2rem', fontWeight: 800, color: item.type === 'earn' ? 'var(--accent-blue)' : 'var(--text-main)' }}>
-                            {item.type === 'earn' ? '+' : '-'}${item.amount}
-                          </div>
+                      {transactions.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '30px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px dashed var(--border-color)' }}>
+                          <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', fontWeight: 600 }}>No transactions recorded yet.</p>
                         </div>
-                      ))}
+                      ) : (
+                        transactions.map(item => (
+                          <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)' }}>
+                            <div>
+                              <div style={{ fontWeight: 600, fontSize: '1rem' }}>{item.title}</div>
+                              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>{item.category} • {item.date}</div>
+                            </div>
+                            <div style={{ fontSize: '1.2rem', fontWeight: 800, color: item.type === 'earn' ? 'var(--accent-blue)' : 'var(--text-main)' }}>
+                              {item.type === 'earn' ? '+' : '-'}${item.amount}
+                            </div>
+                          </div>
+                        ))
+                      )}
                     </div>
                   </div>
 
