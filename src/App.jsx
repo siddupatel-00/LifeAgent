@@ -569,14 +569,6 @@ export default function App() {
             </div>
 
             <button 
-              className="secondary-btn" 
-              style={{ padding: '8px 18px', fontSize: '0.9rem' }}
-              onClick={() => { setAuthMode('login'); navigate('auth', '/auth'); }}
-            >
-              Sign In
-            </button>
-            
-            <button 
               className="blue-btn" 
               style={{ padding: '9px 22px', fontSize: '0.9rem' }}
               onClick={() => { setAuthMode('signup'); navigate('auth', '/auth'); }}
