@@ -37,5 +37,11 @@ async function run() {
   } catch (e) {
     console.log("smart_alerts:", e.message);
   }
+  try {
+    await db.execute("ALTER TABLE today_items ADD COLUMN habit_id INTEGER");
+    console.log("habit_id added to today_items successfully!");
+  } catch (e) {
+    console.log("habit_id:", e.message);
+  }
 }
 run();

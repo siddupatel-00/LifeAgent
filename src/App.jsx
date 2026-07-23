@@ -113,7 +113,14 @@ export default function App() {
         name: data.user.name || '',
         email: data.user.email || '',
         handle: data.user.handle || '',
+        currency: data.user.currency || '$',
       }));
+      // Set AI provider and keys immediately from login response
+      if (data.user.ai_provider) setAiProvider(data.user.ai_provider);
+      if (data.user.gemini_api_key) setGeminiApiKey(data.user.gemini_api_key);
+      if (data.user.groq_api_key) setGroqApiKey(data.user.groq_api_key);
+      if (data.user.ai_name) setAiName(data.user.ai_name);
+      if (data.user.theme) setThemeMode(data.user.theme);
       setAuthForm({ name: '', handle: '', email: '', password: '', phone: '' });
       navigate('dashboard', '/dashboard');
     } catch (err) {
@@ -243,7 +250,7 @@ export default function App() {
       const todayRes = await fetch('/api/today', { headers });
       if (todayRes.ok) {
         const tData = await todayRes.json();
-        setTodayItems(tData.map(t => ({ id: t.id, time: t.time, title: t.label, category: t.category, checked: !!t.checked })));
+        setTodayItems(tData.map(t => ({ id: t.id, time: t.time, title: t.label, category: t.category, checked: !!t.checked, habitId: t.habit_id || null })));
       }
 
       const txRes = await fetch('/api/transactions', { headers });
@@ -257,9 +264,9 @@ export default function App() {
         const sData = await settingsRes.json();
         if (sData) {
           setUserProfile(prev => ({ ...prev, ...sData, currency: sData.currency || '$' }));
-          if (sData.gemini_api_key) setGeminiApiKey(sData.gemini_api_key);
-          if (sData.groq_api_key) setGroqApiKey(sData.groq_api_key);
-          if (sData.ai_provider) setAiProvider(sData.ai_provider);
+          setGeminiApiKey(sData.gemini_api_key || '');
+          setGroqApiKey(sData.groq_api_key || '');
+          setAiProvider(sData.ai_provider || 'gemini');
           if (sData.ai_name) setAiName(sData.ai_name);
           if (sData.theme) setThemeMode(sData.theme);
         }
@@ -352,24 +359,21 @@ export default function App() {
   // API keys are stored in DB via /api/settings — no localStorage duplication
 
   // Universal sync helpers between Today routine and Daily Works (habits)
+  // Sync is now 1:1 via habitId linkage
   const handleToggleTodayItem = (targetId) => {
     setTodayItems(prev => prev.map(i => {
       if (i.id !== targetId) return i;
       const nextChecked = !i.checked;
       
-      // Sync corresponding habits (Daily Works)
-      setHabits(prevHabits => prevHabits.map(h => {
-        let newStreak = h.streak;
-        let newChecked = h.checkedToday;
-        let updated = false;
-        
-        if (i.category === 'Body & Gym' && h.category.includes('Body & Gym')) { newChecked = nextChecked; newStreak = nextChecked ? h.streak + 1 : Math.max(0, h.streak - 1); updated = true; }
-        else if (i.category === 'Study' && h.category.includes('Study')) { newChecked = nextChecked; newStreak = nextChecked ? h.streak + 1 : Math.max(0, h.streak - 1); updated = true; }
-        else if (i.category === 'Coding' && (h.category.includes('Coding') || h.category.includes('DSA'))) { newChecked = nextChecked; newStreak = nextChecked ? h.streak + 1 : Math.max(0, h.streak - 1); updated = true; }
-        
-        if (updated) handleUpdateHabitDb(h.id, newStreak, newChecked);
-        return updated ? { ...h, checkedToday: newChecked, streak: newStreak } : h;
-      }));
+      // Sync the linked habit by habitId
+      if (i.habitId) {
+        setHabits(prevHabits => prevHabits.map(h => {
+          if (h.id !== i.habitId) return h;
+          const newStreak = nextChecked ? h.streak + 1 : Math.max(0, h.streak - 1);
+          handleUpdateHabitDb(h.id, newStreak, nextChecked);
+          return { ...h, checkedToday: nextChecked, streak: newStreak };
+        }));
+      }
 
       handleUpdateTodayDb(i.id, nextChecked);
       return { ...i, checked: nextChecked };
@@ -383,15 +387,10 @@ export default function App() {
       handleUpdateTodayDb(i.id, targetState);
       return { ...i, checked: targetState };
     }));
+    // Sync all linked habits
     setHabits(prevHabits => prevHabits.map(h => {
-      // Only sync habits whose category matches a today item
-      const hasMatchingTodayItem = todayItems.some(ti => {
-        if (h.category.includes('Body & Gym') && ti.category === 'Body & Gym') return true;
-        if (h.category.includes('Study') && ti.category === 'Study') return true;
-        if ((h.category.includes('Coding') || h.category.includes('DSA')) && ti.category === 'Coding') return true;
-        return false;
-      });
-      if (!hasMatchingTodayItem) return h;
+      const linkedToday = todayItems.find(ti => ti.habitId === h.id);
+      if (!linkedToday) return h;
       const newStreak = targetState ? h.streak + (h.checkedToday ? 0 : 1) : Math.max(0, h.streak - 1);
       handleUpdateHabitDb(h.id, newStreak, targetState);
       return { ...h, checkedToday: targetState, streak: newStreak };
@@ -404,15 +403,11 @@ export default function App() {
       const nextChecked = !h.checkedToday;
       const newStreak = nextChecked ? h.streak + 1 : Math.max(0, h.streak - 1);
       
-      // Sync corresponding todayItem
+      // Sync the linked today item
       setTodayItems(prevToday => prevToday.map(ti => {
-        let updated = false;
-        if (h.category.includes('Body & Gym') && ti.category === 'Body & Gym') updated = true;
-        else if (h.category.includes('Study') && ti.category === 'Study') updated = true;
-        else if ((h.category.includes('Coding') || h.category.includes('DSA')) && ti.category === 'Coding') updated = true;
-        
-        if (updated) handleUpdateTodayDb(ti.id, nextChecked);
-        return updated ? { ...ti, checked: nextChecked } : ti;
+        if (ti.habitId !== targetHabitId) return ti;
+        handleUpdateTodayDb(ti.id, nextChecked);
+        return { ...ti, checked: nextChecked };
       }));
 
       handleUpdateHabitDb(h.id, newStreak, nextChecked);
@@ -1660,48 +1655,7 @@ export default function App() {
                     </div>
                   )}
 
-                  {/* TODAY'S DAILY DIARY & QUICK NOTES SECTION */}
-                  <div style={{ marginTop: '36px', background: 'var(--bg-main)', padding: '24px 28px', borderRadius: '18px', border: '1px solid var(--border-color)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '12px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <BookOpen size={20} color="var(--accent-blue)" />
-                        <h4 style={{ fontSize: '1.15rem', fontWeight: 800 }}>Today's Daily Diary & Personal Notes</h4>
-                      </div>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', fontWeight: 700, color: '#22c55e', cursor: 'pointer', background: 'rgba(34, 197, 94, 0.1)', padding: '6px 14px', borderRadius: '20px', border: '1px solid rgba(34, 197, 94, 0.3)' }}>
-                        <input 
-                          type="checkbox" 
-                          checked={floatingDiaryShare}
-                          onChange={(e) => setFloatingDiaryShare(e.target.checked)}
-                          style={{ accentColor: '#22c55e', cursor: 'pointer' }}
-                        />
-                        <span>🤖 Shared with Personal AI Assistant (Memory Active)</span>
-                      </label>
-                    </div>
-                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '14px' }}>
-                      Jot down your daily thoughts, highlights, or feelings. When shared with AI, your agent remembers and references this in real-time chats!
-                    </p>
-                    <textarea 
-                      rows={3}
-                      value={floatingDiaryContent}
-                      onChange={(e) => setFloatingDiaryContent(e.target.value)}
-                      placeholder="Save your notes..."
-                      style={{ width: '100%', padding: '16px 18px', borderRadius: '14px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', lineHeight: '1.6', outline: 'none', resize: 'vertical' }}
-                    />
-                    <button 
-                      className="blue-btn" 
-                      style={{ marginTop: '12px', padding: '10px 24px', fontSize: '0.88rem' }}
-                      onClick={() => {
-                        if (!floatingDiaryContent.trim()) return;
-                        const titleStr = floatingDiaryContent.substring(0, 40) + (floatingDiaryContent.length > 40 ? '...' : '');
-                        handleCreateNoteDb(titleStr, floatingDiaryContent, floatingDiaryShare, (newNote) => {
-                          setNotesList(prev => [newNote, ...prev]);
-                          setFloatingDiaryContent('');
-                        });
-                      }}
-                    >
-                      <Save size={16} /> Save Note
-                    </button>
-                  </div>
+
 
                 </div>
               )}
@@ -1859,7 +1813,8 @@ export default function App() {
                                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                                 body: JSON.stringify({
                                   label: newHabitData.title.trim(),
-                                  category: newHabitData.category
+                                  category: newHabitData.category,
+                                  target: newHabitData.target.trim() || '30 mins/day'
                                 })
                               });
                               if (res.ok) {
@@ -1874,6 +1829,27 @@ export default function App() {
                                   checkedToday: false
                                 };
                                 setHabits([newItem, ...habits]);
+
+                                // Also create a linked today item
+                                try {
+                                  const todayRes = await fetch('/api/today', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                    body: JSON.stringify({
+                                      label: newHabitData.title.trim(),
+                                      category: newHabitData.category,
+                                      time: '',
+                                      habit_id: data.id
+                                    })
+                                  });
+                                  if (todayRes.ok) {
+                                    const todayData = await todayRes.json();
+                                    setTodayItems(prev => [...prev, { id: todayData.id, title: todayData.label, category: todayData.category, time: todayData.time, checked: false, habitId: data.id }]);
+                                  }
+                                } catch (linkErr) {
+                                  console.error('Failed to create linked today item:', linkErr);
+                                }
+
                                 setNewHabitData({ title: '', category: 'Coding', target: '' });
                                 setIsAddHabitModalOpen(false);
                               } else {
@@ -2585,19 +2561,143 @@ export default function App() {
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
                     <div>
-                      <h3 style={{ fontSize: '1.5rem', fontWeight: 800 }}>Comparative Performance Graphs</h3>
-                      <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: '4px' }}>Visual trajectory and trend curves for timeframe: <strong style={{ color: 'var(--accent-blue)' }}>{timeOptions.find(o => o.id === timeRange)?.label}</strong></p>
+                      <h3 style={{ fontSize: '1.5rem', fontWeight: 800 }}>Performance Overview</h3>
+                      <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: '4px' }}>Real-time analysis of your daily habits and finances</p>
                     </div>
                   </div>
 
-                  <div style={{ textAlign: 'center', padding: '60px', background: 'var(--bg-card)', borderRadius: '18px', border: '1px solid var(--border-color)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
-                      <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'var(--bg-main)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px dashed var(--text-muted)' }}>
-                        <Activity size={24} color="var(--text-muted)" />
+                  {/* Habit Completion Bar Chart */}
+                  <div style={{ background: 'var(--bg-card)', padding: '28px', borderRadius: '18px', border: '1px solid var(--border-color)', marginBottom: '28px' }}>
+                    <h4 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <CheckCircle2 size={18} color="var(--accent-blue)" /> Habit Completion
+                    </h4>
+                    {habits.length > 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                        {habits.map(h => {
+                          const pct = h.checkedToday ? 100 : 0;
+                          return (
+                            <div key={h.id} style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                              <div style={{ width: '140px', fontSize: '0.85rem', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{h.title}</div>
+                              <div style={{ flex: 1, height: '28px', background: 'var(--bg-main)', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color)', position: 'relative' }}>
+                                <div style={{ height: '100%', width: `${pct}%`, background: h.checkedToday ? 'linear-gradient(90deg, #3b82f6, #22c55e)' : 'transparent', borderRadius: '8px', transition: 'width 0.5s ease', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: '8px' }}>
+                                  {h.checkedToday && <Check size={14} color="#fff" />}
+                                </div>
+                              </div>
+                              <div style={{ width: '80px', textAlign: 'right' }}>
+                                <span style={{ fontSize: '0.82rem', fontWeight: 800, color: h.checkedToday ? '#22c55e' : 'var(--text-muted)' }}>{h.checkedToday ? 'Done' : 'Pending'}</span>
+                              </div>
+                              <div style={{ width: '70px', textAlign: 'right' }}>
+                                <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--accent-blue)' }}>🔥 {h.streak}</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        <div style={{ marginTop: '12px', padding: '14px', background: 'var(--bg-main)', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-around', textAlign: 'center' }}>
+                          <div>
+                            <div style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--accent-blue)' }}>{habits.filter(h => h.checkedToday).length}/{habits.length}</div>
+                            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 700 }}>Completed Today</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '1.8rem', fontWeight: 900 }}>{Math.round((habits.filter(h => h.checkedToday).length / habits.length) * 100)}%</div>
+                            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 700 }}>Consistency</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#f59e0b' }}>{Math.max(...habits.map(h => h.streak), 0)}</div>
+                            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 700 }}>Best Streak</div>
+                          </div>
+                        </div>
                       </div>
+                    ) : (
+                      <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>No habits tracked yet. Add habits in Daily Works to see analytics.</div>
+                    )}
+                  </div>
+
+                  {/* Financial Overview */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '28px' }}>
+                    <div style={{ background: 'var(--bg-card)', padding: '28px', borderRadius: '18px', border: '1px solid var(--border-color)' }}>
+                      <h4 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <DollarSign size={18} color="#22c55e" /> Income vs Spending
+                      </h4>
+                      {transactions.length > 0 ? (
+                        <div>
+                          {(() => {
+                            const totalEarn = transactions.filter(t => t.type === 'earn').reduce((s, t) => s + t.amount, 0);
+                            const totalSpend = transactions.filter(t => t.type === 'spend').reduce((s, t) => s + t.amount, 0);
+                            const maxVal = Math.max(totalEarn, totalSpend, 1);
+                            return (
+                              <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-end', height: '180px' }}>
+                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                                  <span style={{ fontSize: '1.2rem', fontWeight: 900, color: '#22c55e' }}>{userProfile.currency}{totalEarn.toFixed(0)}</span>
+                                  <div style={{ width: '100%', background: 'linear-gradient(180deg, #22c55e, #16a34a)', borderRadius: '10px 10px 4px 4px', height: `${Math.max((totalEarn / maxVal) * 140, 8)}px`, transition: 'height 0.5s ease' }} />
+                                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)' }}>Earned</span>
+                                </div>
+                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                                  <span style={{ fontSize: '1.2rem', fontWeight: 900, color: '#ef4444' }}>{userProfile.currency}{totalSpend.toFixed(0)}</span>
+                                  <div style={{ width: '100%', background: 'linear-gradient(180deg, #ef4444, #dc2626)', borderRadius: '10px 10px 4px 4px', height: `${Math.max((totalSpend / maxVal) * 140, 8)}px`, transition: 'height 0.5s ease' }} />
+                                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)' }}>Spent</span>
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      ) : (
+                        <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>No transactions yet</div>
+                      )}
                     </div>
-                    <h4 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '8px' }}>Not enough data collected</h4>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>Your performance graphs will generate automatically once you start logging your daily habits and spending.</p>
+
+                    <div style={{ background: 'var(--bg-card)', padding: '28px', borderRadius: '18px', border: '1px solid var(--border-color)' }}>
+                      <h4 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Activity size={18} color="var(--accent-blue)" /> Category Breakdown
+                      </h4>
+                      {habits.length > 0 ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          {(() => {
+                            const cats = {};
+                            habits.forEach(h => {
+                              if (!cats[h.category]) cats[h.category] = { total: 0, done: 0 };
+                              cats[h.category].total++;
+                              if (h.checkedToday) cats[h.category].done++;
+                            });
+                            return Object.entries(cats).map(([cat, data]) => {
+                              const pct = Math.round((data.done / data.total) * 100);
+                              return (
+                                <div key={cat}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                                    <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{cat}</span>
+                                    <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent-blue)' }}>{data.done}/{data.total} ({pct}%)</span>
+                                  </div>
+                                  <div style={{ height: '10px', background: 'var(--bg-main)', borderRadius: '5px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                                    <div style={{ height: '100%', width: `${pct}%`, background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)', borderRadius: '5px', transition: 'width 0.5s ease' }} />
+                                  </div>
+                                </div>
+                              );
+                            });
+                          })()}
+                        </div>
+                      ) : (
+                        <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>No habits to analyze</div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Summary Stats */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+                    <div style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: '14px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
+                      <div style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--accent-blue)' }}>{todayItems.filter(t => t.checked).length}/{todayItems.length}</div>
+                      <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', marginTop: '4px' }}>Today Tasks Done</div>
+                    </div>
+                    <div style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: '14px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
+                      <div style={{ fontSize: '2rem', fontWeight: 900, color: '#22c55e' }}>{userProfile.currency}{transactions.reduce((a, t) => a + (t.type === 'earn' ? t.amount : -t.amount), 0).toFixed(0)}</div>
+                      <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', marginTop: '4px' }}>Net Balance</div>
+                    </div>
+                    <div style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: '14px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
+                      <div style={{ fontSize: '2rem', fontWeight: 900, color: '#f59e0b' }}>{habits.reduce((a, h) => a + h.streak, 0)}</div>
+                      <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', marginTop: '4px' }}>Total Streaks</div>
+                    </div>
+                    <div style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: '14px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
+                      <div style={{ fontSize: '2rem', fontWeight: 900, color: '#8b5cf6' }}>{notesList.length}</div>
+                      <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', marginTop: '4px' }}>Notes & Diary</div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -2899,73 +2999,7 @@ export default function App() {
             </aside>
           )}
 
-          {/* FLOATING FRIENDLY DIARY / QUICK NOTE BUTTON ON BOTTOM RIGHT (ONLY IN TODAY TAB) */}
-          {activeTab === 'today' && (
-            <div style={{ position: 'fixed', bottom: '28px', right: isAiSidePanelOpen && activeTab !== 'ai' ? '395px' : '32px', zIndex: 1000, transition: 'right 0.3s ease' }}>
-              {isFloatingDiaryOpen && (
-                <div className="animate-entrance" style={{ position: 'absolute', bottom: '64px', right: 0, width: '360px', background: 'var(--bg-card)', padding: '22px', borderRadius: '20px', border: '1px solid var(--accent-blue)', boxShadow: '0 12px 40px rgba(0,0,0,0.4)', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1rem', fontWeight: 800, color: 'var(--accent-blue)' }}>
-                      <BookOpen size={18} /> Quick Diary & Notes
-                    </div>
-                    <button onClick={() => setIsFloatingDiaryOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                      <X size={18} />
-                    </button>
-                  </div>
 
-                  <textarea 
-                    rows={4}
-                    value={floatingDiaryContent}
-                    onChange={(e) => setFloatingDiaryContent(e.target.value)}
-                    placeholder="Save your notes..."
-                    style={{ width: '100%', padding: '14px', borderRadius: '12px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.92rem', outline: 'none', resize: 'none' }}
-                  />
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: '#22c55e', fontWeight: 700, cursor: 'pointer' }}>
-                      <input 
-                        type="checkbox" 
-                        checked={floatingDiaryShare}
-                        onChange={(e) => setFloatingDiaryShare(e.target.checked)}
-                        style={{ accentColor: '#22c55e' }}
-                      />
-                      <span>🤖 Shared with AI</span>
-                    </label>
-                    <button 
-                      onClick={() => {
-                        const titleStr = `📖 Diary Entry (${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`;
-                        handleCreateNoteDb(titleStr, floatingDiaryContent, floatingDiaryShare, (newNote) => {
-                          setNotesList([newNote, ...notesList]);
-                          setIsFloatingDiaryOpen(false);
-                          confetti({ particleCount: 35, spread: 60, origin: { y: 0.85 } });
-                        });
-                      }}
-                      className="blue-btn" 
-                      style={{ padding: '8px 16px', fontSize: '0.82rem' }}
-                    >
-                      Save Note ✓
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              <button 
-                onClick={() => setIsFloatingDiaryOpen(!isFloatingDiaryOpen)}
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  width: '60px', height: '60px', borderRadius: '50%',
-                  background: 'var(--accent-blue)', color: '#fff',
-                  border: 'none',
-                  cursor: 'pointer', boxShadow: '0 8px 24px rgba(59,130,246,0.45)',
-                  transition: 'all 0.2s transform',
-                  padding: 0
-                }}
-                title="Open Quick Diary & Notes"
-              >
-                <PenTool size={26} />
-              </button>
-            </div>
-          )}
 
         </div>
       )}

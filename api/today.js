@@ -20,12 +20,12 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true });
     }
     if (req.method === 'POST') {
-      const { label, category, time } = req.body;
+      const { label, category, time, habit_id } = req.body;
       const result = await db.execute({
-        sql: 'INSERT INTO today_items (user_id, label, category, time) VALUES (?, ?, ?, ?)',
-        args: [userId, label, category || '', time || '']
+        sql: 'INSERT INTO today_items (user_id, label, category, time, habit_id) VALUES (?, ?, ?, ?, ?)',
+        args: [userId, label, category || '', time || '', habit_id || null]
       });
-      return res.status(201).json({ id: Number(result.lastInsertRowid), label, category, time });
+      return res.status(201).json({ id: Number(result.lastInsertRowid), label, category, time, habit_id: habit_id || null });
     }
     if (req.method === 'DELETE') {
       const { id } = req.body;

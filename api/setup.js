@@ -68,6 +68,7 @@ export default async function handler(req, res) {
         time TEXT DEFAULT '',
         category TEXT DEFAULT '',
         checked INTEGER DEFAULT 0,
+        habit_id INTEGER,
         date TEXT DEFAULT (date('now')),
         FOREIGN KEY (user_id) REFERENCES users(id)
       )`,
