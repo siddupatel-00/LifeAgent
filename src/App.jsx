@@ -1270,28 +1270,20 @@ export default function App() {
               {/* 0) TODAY DAILY ROUTINE & HABITS CHECKLIST (Ultra-neat & clean UI) */}
               {activeTab === 'today' && (
                 <div className="animate-entrance">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px', flexWrap: 'wrap', gap: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px', gap: '16px' }}>
                     <div>
                       <h3 style={{ fontSize: '1.55rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <Clock size={24} color="var(--accent-blue)" /> Today's Routine & Schedule
                       </h3>
                       <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: '4px' }}>Neat, minimalist 1-click progress tracking for your required daily pillars</p>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 700 }}>TODAY'S COMPLETION RATE</div>
-                        <div style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--accent-blue)' }}>
-                          {Math.round((todayItems.filter(i => i.checked).length / (todayItems.length || 1)) * 100)}%
-                        </div>
-                      </div>
-                      <button 
-                        className="blue-btn"
-                        onClick={handleToggleAllToday}
-                        style={{ padding: '12px 20px', fontSize: '0.9rem' }}
-                      >
-                        <Check size={18} /> Tick All Today
-                      </button>
-                    </div>
+                    <button 
+                      className="blue-btn"
+                      onClick={handleToggleAllToday}
+                      style={{ padding: '12px 20px', fontSize: '0.9rem', flexShrink: 0, whiteSpace: 'nowrap' }}
+                    >
+                      <Check size={18} /> Tick All Today
+                    </button>
                   </div>
 
                   {/* Clean Top Progress Bar */}
