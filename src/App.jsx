@@ -2753,16 +2753,17 @@ export default function App() {
               <button 
                 onClick={() => setIsFloatingDiaryOpen(!isFloatingDiaryOpen)}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: '10px',
-                  padding: '14px 24px', borderRadius: '50px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: '60px', height: '60px', borderRadius: '50%',
                   background: 'var(--accent-blue)', color: '#fff',
-                  border: 'none', fontWeight: 800, fontSize: '0.95rem',
+                  border: 'none',
                   cursor: 'pointer', boxShadow: '0 8px 24px rgba(59,130,246,0.45)',
-                  transition: 'all 0.2s transform'
+                  transition: 'all 0.2s transform',
+                  padding: 0
                 }}
                 title="Open Quick Diary & Notes"
               >
-                <Smile size={20} /> Quick Diary & Notes
+                <PenTool size={26} />
               </button>
             </div>
           )}
