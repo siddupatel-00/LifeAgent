@@ -324,7 +324,7 @@ export default function App() {
       
       try {
         const genAI = new GoogleGenerativeAI(geminiApiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const modelsToTry = ["gemini-1.5-flash-latest", "gemini-1.5-flash-001", "gemini-2.0-flash-exp", "gemini-1.5-pro-latest"];
         
         const systemPrompt = `
           You are an autonomous AI assistant in a personal dashboard.
@@ -338,7 +338,18 @@ export default function App() {
           Provide a helpful text response as well.
         `;
         
-        const result = await model.generateContent(`${systemPrompt}\n\nUser: ${userMsgText}`);
+        let result = null;
+        let lastErr = null;
+        for (const mName of modelsToTry) {
+          try {
+            const model = genAI.getGenerativeModel({ model: mName });
+            result = await model.generateContent(`${systemPrompt}\n\nUser: ${userMsgText}`);
+            if (result) break;
+          } catch (err) {
+            lastErr = err;
+          }
+        }
+        if (!result && lastErr) throw lastErr;
         const responseText = result.response.text();
         
         // Parse calendar event
