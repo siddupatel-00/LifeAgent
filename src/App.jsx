@@ -483,16 +483,17 @@ export default function App() {
     setTimeout(() => setSettingsSaved(false), 3000);
   };
 
-  const handleSendAi = async (e) => {
+  const handleSendAi = async (e, customText = null) => {
     e?.preventDefault();
-    if (!inputMessage.trim() || aiLoading) return;
+    const textToProcess = customText || inputMessage;
+    if (!textToProcess.trim() || aiLoading) return;
     
     const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const userMsgText = inputMessage;
+    const userMsgText = textToProcess;
     const newMsg = { id: Date.now(), sender: 'user', text: userMsgText, time: nowTime };
     
     setAiMessages(prev => [...prev, newMsg]);
-    setInputMessage('');
+    if (!customText) setInputMessage('');
 
     if (!geminiApiKey) {
       const fallbackReply = "Please provide your API key in the settings to use the AI Assistant.";
@@ -1658,36 +1659,21 @@ export default function App() {
                     {/* Quick Trigger Pill Prompts */}
                     <div style={{ padding: '12px 24px', background: 'var(--bg-main)', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '8px', overflowX: 'auto', whiteSpace: 'nowrap' }}>
                       <button 
-                        onClick={() => {
-                          const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                          const newMsg = { id: Date.now(), sender: 'user', text: "Tell my today performance against my live schedule right now!", time: nowTime };
-                          const aiReply = { id: Date.now() + 1, sender: 'ai', text: "🔍 Looked at real-time telemetry (Current Time: 8:00 PM Simulation):\n\nSiddu, checking against your locked schedule:\n• **09:00 AM – 05:00 PM (College)**: ✅ Completed\n• **05:00 PM – 06:00 PM (Meeting with XYZ)**: ✅ Completed\n• **06:00 PM – 07:00 PM (College Work)**: ✅ Completed\n• **07:00 PM – 08:00 PM (Eat/Dinner)**: ✅ Completed\n\n⚡ **Right Now (8:00 PM – 11:00 PM Block):**\nYou are ALL DONE till now! Only your **DSA / LeetCode Problem Solving** block is left for today, then sleep at 11:00 PM. Let's conquer those algorithms, do it! 🚀\n\n*(Pre-sleep notification armed for exactly 10:50 PM)*", time: nowTime };
-                          setAiMessages([...aiMessages, newMsg, aiReply]);
-                        }}
+                        onClick={() => handleSendAi(null, "Tell my today performance against my live schedule right now!")}
                         style={{ padding: '6px 14px', borderRadius: '20px', border: '1px solid var(--accent-blue)', background: 'var(--accent-blue-dim)', color: 'var(--accent-blue)', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}
                       >
                         ⚡ Tell My Today Performance (Live Audit)
                       </button>
 
                       <button 
-                        onClick={() => {
-                          const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                          const newMsg = { id: Date.now(), sender: 'user', text: "Show my 7:00 AM Gym Schedule Briefing & Itinerary", time: nowTime };
-                          const aiReply = { id: Date.now() + 1, sender: 'ai', text: "☀️ **Good morning Siddu! While you crush your 7:00 AM Gym Workout, here is your exact locked itinerary for today:**\n\n1) **09:00 AM - 05:00 PM**: College Lectures\n2) **05:00 PM - 06:00 PM**: Meeting with XYZ Person\n3) **06:00 PM - 07:00 PM**: College Assignments & Work\n4) **07:00 PM - 08:00 PM**: Dinner & Recharge\n5) **08:00 PM - 11:00 PM**: DSA & Problem Solving (LeetCode)\n6) **11:00 PM**: Sleep Wind-down\n\n*(Alarm & notification system armed: 10:50 PM sleep alert ready)*", time: nowTime };
-                          setAiMessages([...aiMessages, newMsg, aiReply]);
-                        }}
+                        onClick={() => handleSendAi(null, "Show my 7:00 AM Gym Schedule Briefing & Itinerary")}
                         style={{ padding: '6px 14px', borderRadius: '20px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', color: 'var(--text-main)', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}
                       >
                         📅 7:00 AM Gym Briefing
                       </button>
 
                       <button 
-                        onClick={() => {
-                          const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                          const newMsg = { id: Date.now(), sender: 'user', text: "Verify Pournami & Amavasya Wardrobe Rules", time: nowTime };
-                          const aiReply = { id: Date.now() + 1, sender: 'ai', text: "🌕 **Astronomical Rules Guard Active (Amavasya & Pournami Wardrobe Protocol):**\n\n• **Day-Before Alert (8:00 PM)**: *'Hello @siddu, tomorrow is Pournami, be ready with clothes other than black!'*\n• **Day-Of Alert (7:00 AM)**: *'Hello Siddu, just a reminder, do not wear black clothes today.'*\n\n*(Agent holds full calendar access and will auto-fire notifications on exact lunar dates)*", time: nowTime };
-                          setAiMessages([...aiMessages, newMsg, aiReply]);
-                        }}
+                        onClick={() => handleSendAi(null, "Verify Pournami & Amavasya Wardrobe Rules")}
                         style={{ padding: '6px 14px', borderRadius: '20px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', color: 'var(--text-main)', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}
                       >
                         🌕 Moon Cycle Wardrobe Protocol
