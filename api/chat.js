@@ -1,5 +1,5 @@
-import db from './lib/db.js';
-import { getUserId } from './lib/auth.js';
+import db from '../lib/db.js';
+import { getUserId } from '../lib/auth.js';
 
 export default async function handler(req, res) {
   const userId = getUserId(req);
