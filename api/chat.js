@@ -7,11 +7,16 @@ export default async function handler(req, res) {
   
   try {
     if (req.method === 'GET') {
-      const chat = await db.execute({ 
-        sql: 'SELECT * FROM chat_history WHERE user_id = ? ORDER BY created_at ASC', 
-        args: [userId] 
-      });
-      return res.status(200).json(chat.rows);
+      const chat = await db.execute({
+          sql: 'SELECT * FROM chat_history WHERE user_id = ? AND created_at >= datetime("now", "-24 hours") ORDER BY created_at ASC',
+          args: [userId]
+        });
+        // Prune messages older than 24 hours for this user
+        await db.execute({
+          sql: 'DELETE FROM chat_history WHERE user_id = ? AND created_at < datetime("now", "-24 hours")',
+          args: [userId]
+        });
+        return res.status(200).json(chat.rows);
     }
     
     if (req.method === 'POST') {

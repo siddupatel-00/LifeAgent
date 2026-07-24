@@ -176,6 +176,19 @@ export default function App() {
     }
   }, [aiMessages]);
 
+  // Command+J shortcut to toggle AI side panel
+  useEffect(() => {
+    const handler = (e) => {
+      const isMac = navigator.platform.toUpperCase().includes('MAC');
+      if ((isMac ? e.metaKey : e.ctrlKey) && e.key.toLowerCase() === 'j') {
+        setIsAiSidePanelOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
+
   // 2) Habit Tracker state
   // Habits state with exact daily tracking items: Gym, Study, Code, DSA Problems
   const [habits, setHabits] = useState([]);
@@ -2016,35 +2029,23 @@ const handleDeleteHabitDb = async (id) => {
                     <button 
                       className="blue-btn" 
                       onClick={() => {
-                        setIsAddEventFormOpen(!isAddEventFormOpen);
-                        if (!isAddEventFormOpen) {
-                          setNewEventDate(selectedCalendarDate || new Date().toISOString().split('T')[0]);
-                          setNewEventTitle('');
-                        }
+                        setIsAddEventFormOpen(true);
+                        setNewEventDate(selectedCalendarDate || new Date().toISOString().split('T')[0]);
+                        setNewEventTitle('');
                       }}
                       style={{ padding: '12px 22px', fontSize: '0.92rem' }}
                     >
-                      <Plus size={18} /> {isAddEventFormOpen ? 'Cancel' : 'Add Event'}
+                      <Plus size={18} /> Add Event
                     </button>
                   </div>
-
-                  {/* Modal Add Event Form */}
+{/* Modal Add Event Form */}
                   {isAddEventFormOpen && (
                     <div
-                      className="modal-backdrop"
-                      style={{
-                        position: 'fixed',
-                        inset: 0,
-                        backgroundColor: 'rgba(0,0,0,0.5)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        zIndex: 1000,
-                      }}
+                      className="blur-overlay"
                       onClick={() => setIsAddEventFormOpen(false)}
                     >
                       <div
-                        className="glass-card"
+                        className="glass-card animate-entrance"
                         style={{
                           background: 'var(--bg-card)',
                           border: '1px solid var(--accent-blue)',
@@ -2129,6 +2130,7 @@ const handleDeleteHabitDb = async (id) => {
                             Save Event
                           </button>
                         </div>
+                        <button className="secondary-btn" onClick={() => setIsAddEventFormOpen(false)} style={{ marginTop: '12px', width: '100%' }}>Cancel</button>
                       </div>
                     </div>
                   )}
@@ -3058,7 +3060,9 @@ const handleDeleteHabitDb = async (id) => {
 
           {/* PERSISTENT SIDE-BY-SIDE AI COACH PANEL (Always accessible across any tab) */}
           {isAiSidePanelOpen && activeTab !== 'ai' && (
-            <aside className="animate-entrance" style={{ width: '370px', height: '100vh', background: 'var(--bg-main)', borderLeft: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', overflow: 'hidden', flexShrink: 0 }}>
+            <>
+              <div className="blur-overlay" onClick={() => setIsAiSidePanelOpen(false)}></div>
+              <aside className="animate-entrance ai-sidebar" style={{ width: '370px', height: '100vh', background: 'var(--bg-main)', borderLeft: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', overflow: 'hidden', flexShrink: 0 }}>
               <div style={{ padding: '20px 24px', background: 'var(--bg-card)', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 8px #22c55e' }}></div>

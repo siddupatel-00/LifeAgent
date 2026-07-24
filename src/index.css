@@ -224,6 +224,30 @@ body {
 .glass-card:hover {
   border-color: rgba(59, 130, 246, 0.4);
   box-shadow: 0 12px 32px rgba(0,0,0,0.15);
+} 
+
+/* Blur overlay for modals and side panel */
+.blur-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(8px);
+  z-index: 998;
+  animation: fadeInOverlay 0.2s ease;
+}
+
+@keyframes fadeInOverlay {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Side panel slide animation */
+.ai-sidebar {
+  animation: slideIn 0.3s ease forwards;
+}
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
 }
 
 /* Pill Badges */
