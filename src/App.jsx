@@ -440,6 +440,20 @@ const handleDeleteHabitDb = async (id) => {
       const habit = habits.find(h => h.id === id);
       if (!habit) return;
       const newPaused = currentPausedUntil ? null : new Date().toISOString();
+      try {
+        const res = await fetch(`/api/habits/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({
+            streak: habit.streak,
+            checked_today: habit.checkedToday ? 1 : 0,
+            target: habit.target || null,
+            paused_until: newPaused
+          })
+        });
+        if (res.ok) {
+          setHabits(prev => prev.map(h => h.id === id ? { ...h, pausedUntil: newPaused } : h));
+        }
       } catch (e) {
         console.error('Failed to toggle pause habit:', e);
       }
@@ -2014,82 +2028,107 @@ const handleDeleteHabitDb = async (id) => {
                     </button>
                   </div>
 
-                  {/* Inline Add Event Form */}
+                  {/* Modal Add Event Form */}
                   {isAddEventFormOpen && (
-                    <div className="glass-card animate-entrance" style={{ padding: '20px', marginBottom: '24px', border: '1px solid var(--accent-blue)', borderRadius: '16px', background: 'var(--bg-card)' }}>
-                      <h4 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Plus size={18} color="var(--accent-blue)" /> New Event
-                      </h4>
-                      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-                        <div style={{ flex: '2', minWidth: '200px' }}>
-                          <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Enter event title</label>
-                          <input
-                            type="text"
-                            value={newEventTitle}
-                            onChange={(e) => setNewEventTitle(e.target.value)}
-                            placeholder="e.g. Team meeting, Dentist appointment..."
-                            autoFocus
-                            style={{
-                              width: '100%', padding: '12px 16px', borderRadius: '12px',
-                              border: '1px solid var(--border-color)', background: 'var(--bg-main)',
-                              color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none'
+                    <div
+                      className="modal-backdrop"
+                      style={{
+                        position: 'fixed',
+                        inset: 0,
+                        backgroundColor: 'rgba(0,0,0,0.5)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 1000,
+                      }}
+                      onClick={() => setIsAddEventFormOpen(false)}
+                    >
+                      <div
+                        className="glass-card"
+                        style={{
+                          background: 'var(--bg-card)',
+                          border: '1px solid var(--accent-blue)',
+                          borderRadius: '16px',
+                          padding: '24px',
+                          minWidth: '300px',
+                          maxWidth: '90%',
+                        }}
+                        onClick={e => e.stopPropagation()}
+                      >
+                        <h4 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Plus size={18} color="var(--accent-blue)" /> New Event
+                        </h4>
+                        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                          <div style={{ flex: '2', minWidth: '200px' }}>
+                            <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Enter event title</label>
+                            <input
+                              type="text"
+                              value={newEventTitle}
+                              onChange={(e) => setNewEventTitle(e.target.value)}
+                              placeholder="e.g. Team meeting, Dentist appointment..."
+                              autoFocus
+                              style={{
+                                width: '100%', padding: '12px 16px', borderRadius: '12px',
+                                border: '1px solid var(--border-color)', background: 'var(--bg-main)',
+                                color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none'
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && newEventTitle.trim()) {
+                                  (async () => {
+                                    try {
+                                      const res = await fetch('/api/calendar', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                        body: JSON.stringify({ title: newEventTitle.trim(), date: newEventDate, color: '#3b82f6' })
+                                      });
+                                      if (res.ok) {
+                                        const ev = await res.json();
+                                        setCalendarEvents([...calendarEvents, ev]);
+                                        setNewEventTitle('');
+                                        setIsAddEventFormOpen(false);
+                                      }
+                                    } catch (err) { console.error(err); }
+                                  })();
+                                }
+                              }}
+                            />
+                          </div>
+                          <div style={{ flex: '1', minWidth: '160px' }}>
+                            <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Date</label>
+                            <input
+                              type="date"
+                              value={newEventDate}
+                              onChange={(e) => setNewEventDate(e.target.value)}
+                              style={{
+                                width: '100%', padding: '12px 16px', borderRadius: '12px',
+                                border: '1px solid var(--border-color)', background: 'var(--bg-main)',
+                                color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none'
+                              }}
+                            />
+                          </div>
+                          <button
+                            className="blue-btn"
+                            disabled={!newEventTitle.trim()}
+                            onClick={async () => {
+                              try {
+                                const res = await fetch('/api/calendar', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                  body: JSON.stringify({ title: newEventTitle.trim(), date: newEventDate, color: '#3b82f6' })
+                                });
+                                if (res.ok) {
+                                  const ev = await res.json();
+                                  setCalendarEvents([...calendarEvents, ev]);
+                                  setNewEventTitle('');
+                                  setIsAddEventFormOpen(false);
+                                }
+                              } catch (err) { console.error(err); }
                             }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' && newEventTitle.trim()) {
-                                (async () => {
-                                  try {
-                                    const res = await fetch('/api/calendar', {
-                                      method: 'POST',
-                                      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                      body: JSON.stringify({ title: newEventTitle.trim(), date: newEventDate, color: '#3b82f6' })
-                                    });
-                                    if (res.ok) {
-                                      const ev = await res.json();
-                                      setCalendarEvents([...calendarEvents, ev]);
-                                      setNewEventTitle('');
-                                      setIsAddEventFormOpen(false);
-                                    }
-                                  } catch (err) { console.error(err); }
-                                })();
-                              }
-                            }}
-                          />
+                            style={{ padding: '12px 24px', fontSize: '0.92rem', whiteSpace: 'nowrap' }}
+                          >
+                            Save Event
+                          </button>
                         </div>
-                        <div style={{ flex: '1', minWidth: '160px' }}>
-                          <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Date</label>
-                          <input
-                            type="date"
-                            value={newEventDate}
-                            onChange={(e) => setNewEventDate(e.target.value)}
-                            style={{
-                              width: '100%', padding: '12px 16px', borderRadius: '12px',
-                              border: '1px solid var(--border-color)', background: 'var(--bg-main)',
-                              color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none'
-                            }}
-                          />
-                        </div>
-                        <button
-                          className="blue-btn"
-                          disabled={!newEventTitle.trim()}
-                          onClick={async () => {
-                            try {
-                              const res = await fetch('/api/calendar', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                body: JSON.stringify({ title: newEventTitle.trim(), date: newEventDate, color: '#3b82f6' })
-                              });
-                              if (res.ok) {
-                                const ev = await res.json();
-                                setCalendarEvents([...calendarEvents, ev]);
-                                setNewEventTitle('');
-                                setIsAddEventFormOpen(false);
-                              }
-                            } catch (err) { console.error(err); }
-                          }}
-                          style={{ padding: '12px 24px', fontSize: '0.92rem', whiteSpace: 'nowrap' }}
-                        >
-                          Save Event
-                        </button>
                       </div>
                     </div>
                   )}
