@@ -1698,7 +1698,13 @@ const handleDeleteHabitDb = async (id) => {
                           <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Pillar / Category</label>
                           <select 
                             value={newHabitData.category}
-                            onChange={(e) => setNewHabitData({ ...newHabitData, category: e.target.value })}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setNewHabitData({ ...newHabitData, category: val });
+                              if (val === 'Body & Gym') {
+                                setActiveTab('body');
+                              }
+                            }}
                             style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.92rem', fontWeight: 600, outline: 'none', cursor: 'pointer' }}
                           >
                             <option value="Coding">Coding Pillar</option>
@@ -1837,7 +1843,22 @@ const handleDeleteHabitDb = async (id) => {
                       >
                         <div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                            <span className="pill-tag" style={{ background: 'var(--accent-blue-dim)', color: 'var(--accent-blue)', borderColor: 'var(--accent-blue)', fontWeight: 700 }}>
+                            <span 
+                              className="pill-tag" 
+                              onClick={(e) => {
+                                if (item.category === 'Body & Gym') {
+                                  e.stopPropagation();
+                                  setActiveTab('body');
+                                }
+                              }}
+                              style={{ 
+                                background: 'var(--accent-blue-dim)', 
+                                color: 'var(--accent-blue)', 
+                                borderColor: 'var(--accent-blue)', 
+                                fontWeight: 700,
+                                cursor: item.category === 'Body & Gym' ? 'pointer' : 'default'
+                              }}
+                            >
                               {item.category} Pillar
                             </span>
                             <span style={{ fontSize: '0.85rem', color: '#f59e0b', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px' }}>
