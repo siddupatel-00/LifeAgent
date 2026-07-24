@@ -656,14 +656,18 @@ const handleDeleteHabitDb = async (id) => {
               end_date: eventData.endDate || null, 
               color: eventData.color || '#3b82f6' 
             };
-            newEvents.push(newEvent);
-
-            // Persist to API
-            fetch('/api/calendar', {
+            // Persist to API and push created DB object
+            const res = await fetch('/api/calendar', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
               body: JSON.stringify(newEvent)
-            }).catch(err => console.error('Failed to persist AI calendar event:', err));
+            });
+            if (res.ok) {
+              const createdEv = await res.json();
+              newEvents.push(createdEv);
+            } else {
+              newEvents.push(newEvent);
+            }
 
             finalReply = finalReply.replace(match[0], '').trim();
           } catch (err) {

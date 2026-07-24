@@ -1,3 +1,5 @@
+import dotenv from 'dotenv';
+dotenv.config();
 import db from '../lib/db.js';
 import { getUserId } from '../lib/auth.js';
 
@@ -14,7 +16,7 @@ export default async function handler(req, res) {
       });
 
       const events = await db.execute({ sql: 'SELECT * FROM calendar_events WHERE user_id = ? ORDER BY date ASC', args: [userId] });
-      return res.status(200).json(events.rows);
+      return res.status(200).json(events.rows || []);
     }
     
     if (req.method === 'POST') {
