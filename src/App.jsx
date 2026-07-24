@@ -1642,30 +1642,6 @@ const handleDeleteHabitDb = async (id) => {
                       ))}
                     </div>
 
-                    {/* Quick Trigger Pill Prompts */}
-                    <div style={{ padding: '12px 24px', background: 'var(--bg-main)', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '8px', overflowX: 'auto', whiteSpace: 'nowrap' }}>
-                      <button 
-                        onClick={() => handleSendAi(null, "Tell my today performance against my live schedule right now!")}
-                        style={{ padding: '6px 14px', borderRadius: '20px', border: '1px solid var(--accent-blue)', background: 'var(--accent-blue-dim)', color: 'var(--accent-blue)', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}
-                      >
-                        ⚡ Tell My Today Performance (Live Audit)
-                      </button>
-
-                      <button 
-                        onClick={() => handleSendAi(null, "Show my 7:00 AM Gym Schedule Briefing & Itinerary")}
-                        style={{ padding: '6px 14px', borderRadius: '20px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', color: 'var(--text-main)', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}
-                      >
-                        📅 7:00 AM Gym Briefing
-                      </button>
-
-                      <button 
-                        onClick={() => handleSendAi(null, "Verify Pournami & Amavasya Wardrobe Rules")}
-                        style={{ padding: '6px 14px', borderRadius: '20px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', color: 'var(--text-main)', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}
-                      >
-                        🌕 Moon Cycle Wardrobe Protocol
-                      </button>
-                    </div>
-
                     <form onSubmit={handleSendAi} style={{ padding: '16px 24px', background: 'var(--bg-card)', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '12px' }}>
                       <input 
                         type="text" 
