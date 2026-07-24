@@ -1941,26 +1941,6 @@ const handleDeleteHabitDb = async (id) => {
                             <CheckCircle2 size={18} color={item.checkedToday ? "#fff" : "var(--accent-blue)"} />
                             {item.checkedToday ? "Completed Today ✓" : "Quick Check-In Today"}
                           </button>
-                          
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteHabitDb(item.id);
-                            }}
-                            style={{
-                              position: 'absolute',
-                              top: '12px',
-                              right: '12px',
-                              background: 'transparent',
-                              border: 'none',
-                              cursor: 'pointer',
-                              color: 'var(--text-muted)',
-                              padding: '4px'
-                            }}
-                            aria-label="Delete habit"
-                          >
-                            <Trash2 size={18} />
-                          </button>
                         </div>
                       </div>
                       ))}
