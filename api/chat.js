@@ -6,19 +6,6 @@ export default async function handler(req, res) {
   if (!userId) return res.status(401).json({ error: 'Unauthorized' });
   
   try {
-    if (req.method === 'GET') {
-      const chat = await db.execute({
-          sql: 'SELECT * FROM chat_history WHERE user_id = ? AND created_at >= datetime("now", "-24 hours") ORDER BY created_at ASC',
-          args: [userId]
-        });
-        // Prune messages older than 24 hours for this user
-        await db.execute({
-          sql: 'DELETE FROM chat_history WHERE user_id = ? AND created_at < datetime("now", "-24 hours")',
-          args: [userId]
-        });
-        return res.status(200).json(chat.rows);
-    }
-    
     if (req.method === 'POST') {
       // Allow batch inserting multiple messages (e.g., user + ai response together)
       const messages = Array.isArray(req.body) ? req.body : [req.body];

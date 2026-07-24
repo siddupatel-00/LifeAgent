@@ -3115,6 +3115,7 @@ const handleDeleteHabitDb = async (id) => {
                 </button>
               </form>
             </aside>
+          </>
           )}
 
 

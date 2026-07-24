@@ -19,8 +19,25 @@ export default async function handler(req, res) {
         groq_api_key TEXT,
         ai_provider TEXT DEFAULT 'gemini',
         currency TEXT DEFAULT '$',
+        timezone TEXT DEFAULT '',
+        ai_chat_reset_time TEXT DEFAULT '12:00 AM',
+        last_ai_reset_date TEXT DEFAULT '',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`,
+      `CREATE TABLE IF NOT EXISTS user_settings (\
+        id INTEGER PRIMARY KEY AUTOINCREMENT,\
+        user_id INTEGER NOT NULL UNIQUE,\
+        timezone TEXT DEFAULT '',\
+        ai_chat_reset_time TEXT DEFAULT '12:00 AM',\
+        last_ai_reset_date TEXT DEFAULT '',\
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,\
+        FOREIGN KEY (user_id) REFERENCES users(id)\
+      )`,
+      `INSERT INTO user_settings (user_id, timezone, ai_chat_reset_time, last_ai_reset_date)\
+        SELECT id, timezone, ai_chat_reset_time, last_ai_reset_date FROM users`,
+      `ALTER TABLE users DROP COLUMN timezone`,
+      `ALTER TABLE users DROP COLUMN ai_chat_reset_time`,
+      `ALTER TABLE users DROP COLUMN last_ai_reset_date`,
       `CREATE TABLE IF NOT EXISTS habits (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
@@ -28,9 +45,13 @@ export default async function handler(req, res) {
         category TEXT DEFAULT '',
         streak INTEGER DEFAULT 0,
         checked_today INTEGER DEFAULT 0,
+        target TEXT,
+        paused_until TEXT,
         date TEXT DEFAULT (date('now')),
         FOREIGN KEY (user_id) REFERENCES users(id)
       )`,
+      `ALTER TABLE habits ADD COLUMN IF NOT EXISTS target TEXT`,
+      `ALTER TABLE habits ADD COLUMN IF NOT EXISTS paused_until TEXT`,
       `CREATE TABLE IF NOT EXISTS notes (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
