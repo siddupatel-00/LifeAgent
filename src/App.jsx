@@ -561,17 +561,24 @@ const handleDeleteHabitDb = async (id) => {
     setAiMessages(prev => [...prev, { id: 'loading', sender: 'ai', text: 'Thinking...', time: nowTime }]);
     
     try {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const currentYear = new Date().getFullYear();
+
       const systemPrompt = `
         You are an autonomous AI assistant in a personal dashboard.
+        CRITICAL TIME CONTEXT: Today's current date is ${todayStr} (Year: ${currentYear}).
+        ALWAYS calculate dates relative to today's date ${todayStr} and year ${currentYear}. Do NOT use 2024 or past years unless explicitly requested by user.
+
         User's calendar events: ${JSON.stringify(calendarEvents)}
         User's habits/todayItems: ${JSON.stringify(todayItems)}
         User's transactions summary: ${JSON.stringify(transactions)}
         User's shared notes: ${JSON.stringify(notesList.filter(n => n.shareWithAi))}
         
-        If the user asks to add an event to the calendar, respond with an optional JSON block:
+        If the user asks to add event(s) to the calendar, respond with one [CALENDAR_EVENT] block for EACH event requested:
         [CALENDAR_EVENT]{"title":"...","date":"YYYY-MM-DD","endDate":"YYYY-MM-DD or null","color":"#hex"}[/CALENDAR_EVENT]
         Make the color a valid hex code (e.g. #3b82f6 for blue, #ef4444 for red).
-        Provide a helpful text response as well.
+        You can output multiple [CALENDAR_EVENT]...[/CALENDAR_EVENT] blocks if multiple events are requested.
+        Provide a helpful natural language text response as well.
       `;
       
       let responseText = "";
@@ -612,24 +619,40 @@ const handleDeleteHabitDb = async (id) => {
         responseText = result.response.text();
       }
       
-      // Parse calendar event
-      const eventMatch = responseText.match(/\[CALENDAR_EVENT\](.*?)\[\/CALENDAR_EVENT\]/s);
+      // Parse ALL calendar events
+      const eventRegex = /\[CALENDAR_EVENT\](.*?)\[\/CALENDAR_EVENT\]/gs;
+      const matches = [...responseText.matchAll(eventRegex)];
       let finalReply = responseText;
       
-      if (eventMatch && eventMatch[1]) {
-        try {
-          const eventData = JSON.parse(eventMatch[1]);
-          const newEvent = { id: Date.now(), title: eventData.title, date: eventData.date, end_date: eventData.endDate || null, color: eventData.color };
-          setCalendarEvents(prev => [...prev, newEvent]);
-          // Persist to API
-          fetch('/api/calendar', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify(newEvent)
-          }).catch(err => console.error('Failed to persist AI calendar event:', err));
-          finalReply = finalReply.replace(eventMatch[0], '').trim();
-        } catch (err) {
-          console.error("Failed to parse calendar event JSON", err);
+      if (matches.length > 0) {
+        const newEvents = [];
+        for (const match of matches) {
+          try {
+            const eventData = JSON.parse(match[1]);
+            const newEvent = { 
+              id: Date.now() + Math.floor(Math.random() * 1000), 
+              title: eventData.title, 
+              date: eventData.date, 
+              end_date: eventData.endDate || null, 
+              color: eventData.color || '#3b82f6' 
+            };
+            newEvents.push(newEvent);
+
+            // Persist to API
+            fetch('/api/calendar', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              body: JSON.stringify(newEvent)
+            }).catch(err => console.error('Failed to persist AI calendar event:', err));
+
+            finalReply = finalReply.replace(match[0], '').trim();
+          } catch (err) {
+            console.error("Failed to parse calendar event JSON", err);
+          }
+        }
+
+        if (newEvents.length > 0) {
+          setCalendarEvents(prev => [...prev, ...newEvents]);
         }
       }
       
