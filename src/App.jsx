@@ -2029,7 +2029,9 @@ const handleDeleteHabitDb = async (id) => {
                           borderRadius: '16px',
                           padding: '24px',
                           minWidth: '300px',
-                          maxWidth: '90%',
+                          maxWidth: '440px',
+                          maxHeight: '90vh',
+                          overflowY: 'auto',
                         }}
                         onClick={e => e.stopPropagation()}
                       >

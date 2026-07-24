@@ -201,7 +201,7 @@ export default function HabitsPanel({
       {isAddHabitModalOpen && habits.length > 0 && (
         <div className="blur-overlay" onClick={() => setIsAddHabitModalOpen(false)}>
           <div className="glass-card animate-entrance" onClick={e => e.stopPropagation()}
-            style={{ padding: '32px', width: '90%', maxWidth: '400px', margin: 'auto', position: 'relative', top: '50%', transform: 'translateY(-50%)' }}>
+            style={{ padding: '32px', width: '90%', maxWidth: '400px', maxHeight: '90vh', overflowY: 'auto' }}>
             <h3 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '24px' }}>Add New Habit</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <input 

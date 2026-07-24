@@ -478,7 +478,7 @@ export default function SleepTracker({ token, showToast }) {
             onClick={e => e.stopPropagation()}
             style={{
               padding: '28px', borderRadius: '20px', width: '90%', maxWidth: '440px',
-              margin: 'auto', position: 'relative', top: '50%', transform: 'translateY(-50%)',
+              maxHeight: '90vh', overflowY: 'auto',
               background: 'var(--bg-card)', border: '1px solid var(--border-color)'
             }}
           >
