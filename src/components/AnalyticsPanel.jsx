@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  CheckCircle2, DollarSign, Activity, Check, Moon as SleepIcon 
+  CheckCircle2, DollarSign, Activity, Check, Moon as SleepIcon, RefreshCw 
 } from 'lucide-react';
 
 export default function AnalyticsPanel({ token, showToast, currency = '$' }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [range, setRange] = useState('7d');
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     let mounted = true;
@@ -21,7 +22,7 @@ export default function AnalyticsPanel({ token, showToast, currency = '$' }) {
         });
         
         if (!res.ok) {
-          throw new Error('Failed to fetch analytics');
+          throw new Error('Failed to fetch analytics data');
         }
         
         const result = await res.json();
@@ -30,7 +31,7 @@ export default function AnalyticsPanel({ token, showToast, currency = '$' }) {
         }
       } catch (err) {
         if (mounted) {
-          showToast?.(err.message, 'error');
+          showToast?.(err.message || 'Analytics fetch error', 'error');
         }
       } finally {
         if (mounted) {
@@ -39,12 +40,16 @@ export default function AnalyticsPanel({ token, showToast, currency = '$' }) {
       }
     };
     
-    fetchAnalytics();
+    if (token) {
+      fetchAnalytics();
+    } else {
+      setLoading(false);
+    }
     
     return () => {
       mounted = false;
     };
-  }, [token, range, showToast]);
+  }, [token, range, retryCount]);
 
   const renderFilterButtons = () => {
     const ranges = [
@@ -65,7 +70,7 @@ export default function AnalyticsPanel({ token, showToast, currency = '$' }) {
               borderRadius: '20px',
               border: '1px solid',
               borderColor: range === r.value ? 'var(--accent-blue)' : 'var(--border-color)',
-              background: range === r.value ? 'rgba(59, 130, 246, 0.1)' : 'var(--bg-card)',
+              background: range === r.value ? 'rgba(59, 130, 246, 0.12)' : 'var(--bg-card)',
               color: range === r.value ? 'var(--accent-blue)' : 'var(--text-muted)',
               fontSize: '0.85rem',
               fontWeight: 700,
@@ -82,22 +87,25 @@ export default function AnalyticsPanel({ token, showToast, currency = '$' }) {
 
   if (loading && !data) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
-        <div style={{ color: 'var(--text-muted)', fontSize: '1.2rem', fontWeight: 600 }}>Loading analytics...</div>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '350px', background: 'var(--bg-card)', borderRadius: '18px', border: '1px solid var(--border-color)' }}>
+        <div style={{ color: 'var(--text-muted)', fontSize: '1.1rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <RefreshCw size={20} className="spin" /> Loading Analytics Hub...
+        </div>
       </div>
     );
   }
 
   if (!data) {
     return (
-      <div style={{ textAlign: 'center', padding: '60px 20px', background: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
-        <h3 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '8px' }}>Unable to load analytics</h3>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '20px' }}>Could not fetch analytics data from server.</p>
+      <div style={{ textAlign: 'center', padding: '60px 20px', background: 'var(--bg-card)', borderRadius: '18px', border: '1px solid var(--border-color)' }}>
+        <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '8px' }}>Unable to load analytics</h3>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '20px' }}>Could not fetch performance data from server.</p>
         <button 
-          onClick={() => setRange(r => r)}
-          style={{ padding: '8px 20px', borderRadius: '12px', background: 'var(--accent-blue)', color: '#fff', border: 'none', fontWeight: 700, cursor: 'pointer' }}
+          onClick={() => setRetryCount(c => c + 1)}
+          className="blue-btn"
+          style={{ padding: '10px 24px', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' }}
         >
-          Retry
+          <RefreshCw size={16} /> Retry Connection
         </button>
       </div>
     );
@@ -110,13 +118,13 @@ export default function AnalyticsPanel({ token, showToast, currency = '$' }) {
   const notes = data.notes || {};
 
   return (
-    <div>
+    <div className="animate-entrance">
       {renderFilterButtons()}
       
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', marginBottom: '32px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '28px' }}>
         <div className="glass-card" style={{ padding: '24px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.5px', marginBottom: '12px' }}>
-            <CheckCircle2 size={16} /> OVERALL CONSISTENCY
+            <CheckCircle2 size={16} color="var(--accent-blue)" /> OVERALL CONSISTENCY
           </div>
           <div style={{ fontSize: '2.5rem', fontWeight: 900, letterSpacing: '-1px', marginBottom: '8px' }}>
             {habits.consistency || 0}%
@@ -131,7 +139,7 @@ export default function AnalyticsPanel({ token, showToast, currency = '$' }) {
             <DollarSign size={16} /> NET MONEY SAVINGS
           </div>
           <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--accent-blue)', letterSpacing: '-1px', marginBottom: '8px' }}>
-            {currency}{finance.netBalance || 0}
+            {currency}{(finance.netBalance || 0).toFixed(0)}
           </div>
           <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 700 }}>
             Based on recent transactions
@@ -140,32 +148,34 @@ export default function AnalyticsPanel({ token, showToast, currency = '$' }) {
 
         <div className="glass-card" style={{ padding: '24px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.5px', marginBottom: '12px' }}>
-            <SleepIcon size={16} /> SLEEP & RECOVERY
+            <SleepIcon size={16} color="#8b5cf6" /> SLEEP & RECOVERY
           </div>
           <div style={{ fontSize: '2.5rem', fontWeight: 900, letterSpacing: '-1px', marginBottom: '8px' }}>
-            {sleep.avgHours || 0} <span style={{ fontSize: '1.2rem', fontWeight: 600 }}>h</span>
+            {sleep.avgHours || 0} <span style={{ fontSize: '1.2rem', fontWeight: 600 }}>hrs</span>
           </div>
           <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 700 }}>
-            Average sleep
+            7-day average sleep duration
           </div>
         </div>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <div>
-          <h3 style={{ fontSize: '1.5rem', fontWeight: 800 }}>Performance Overview</h3>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: '4px' }}>Analysis of your habits and finances over {range === '7d' ? '7 days' : range === '14d' ? '14 days' : range === '30d' ? '30 days' : '90 days'}</p>
+          <h3 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0 }}>Performance Overview</h3>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: '4px' }}>
+            Detailed breakdown over past {range === '7d' ? '7 days' : range === '14d' ? '14 days' : range === '30d' ? '30 days' : '90 days'}
+          </p>
         </div>
       </div>
 
       {/* Habit Completion Bar Chart */}
-      <div style={{ background: 'var(--bg-card)', padding: '28px', borderRadius: '18px', border: '1px solid var(--border-color)', marginBottom: '28px' }}>
+      <div style={{ background: 'var(--bg-card)', padding: '24px', borderRadius: '18px', border: '1px solid var(--border-color)', marginBottom: '24px' }}>
         <h4 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <CheckCircle2 size={18} color="var(--accent-blue)" /> Habit Completion
+          <CheckCircle2 size={18} color="var(--accent-blue)" /> Habit Completion Breakdown
         </h4>
-        {data.habits.breakdown && data.habits.breakdown.length > 0 ? (
+        {habits.breakdown && habits.breakdown.length > 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            {data.habits.breakdown.map((h, i) => {
+            {habits.breakdown.map((h, i) => {
               const pct = h.checkedToday ? 100 : 0;
               return (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
@@ -186,35 +196,35 @@ export default function AnalyticsPanel({ token, showToast, currency = '$' }) {
             })}
             <div style={{ marginTop: '12px', padding: '14px', background: 'var(--bg-main)', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-around', textAlign: 'center' }}>
               <div>
-                <div style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--accent-blue)' }}>{data.habits.completedToday}/{data.habits.total}</div>
+                <div style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--accent-blue)' }}>{habits.completedToday || 0}/{habits.total || 0}</div>
                 <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 700 }}>Completed Today</div>
               </div>
               <div>
-                <div style={{ fontSize: '1.8rem', fontWeight: 900 }}>{data.habits.consistency}%</div>
+                <div style={{ fontSize: '1.8rem', fontWeight: 900 }}>{habits.consistency || 0}%</div>
                 <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 700 }}>Consistency</div>
               </div>
               <div>
-                <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#f59e0b' }}>{data.habits.bestStreak}</div>
+                <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#f59e0b' }}>{habits.bestStreak || 0}</div>
                 <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 700 }}>Best Streak</div>
               </div>
             </div>
           </div>
         ) : (
-          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>No habits tracked yet. Add habits in Daily Works to see analytics.</div>
+          <div style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>No habits tracked yet. Add habits in Daily Works to see analytics.</div>
         )}
       </div>
 
-      {/* Financial Overview */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '28px' }}>
-        <div style={{ background: 'var(--bg-card)', padding: '28px', borderRadius: '18px', border: '1px solid var(--border-color)' }}>
+      {/* Financial Overview & Categories */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginBottom: '24px' }}>
+        <div style={{ background: 'var(--bg-card)', padding: '24px', borderRadius: '18px', border: '1px solid var(--border-color)' }}>
           <h4 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <DollarSign size={18} color="#22c55e" /> Income vs Spending
           </h4>
-          {(data.finance.totalEarned > 0 || data.finance.totalSpent > 0) ? (
+          {(finance.totalEarned > 0 || finance.totalSpent > 0) ? (
             <div>
               {(() => {
-                const totalEarn = data.finance.totalEarned;
-                const totalSpend = data.finance.totalSpent;
+                const totalEarn = finance.totalEarned || 0;
+                const totalSpend = finance.totalSpent || 0;
                 const maxVal = Math.max(totalEarn, totalSpend, 1);
                 return (
                   <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-end', height: '180px' }}>
@@ -233,17 +243,17 @@ export default function AnalyticsPanel({ token, showToast, currency = '$' }) {
               })()}
             </div>
           ) : (
-            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>No transactions yet</div>
+            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>No transactions recorded yet</div>
           )}
         </div>
 
-        <div style={{ background: 'var(--bg-card)', padding: '28px', borderRadius: '18px', border: '1px solid var(--border-color)' }}>
+        <div style={{ background: 'var(--bg-card)', padding: '24px', borderRadius: '18px', border: '1px solid var(--border-color)' }}>
           <h4 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Activity size={18} color="var(--accent-blue)" /> Category Breakdown
           </h4>
-          {Object.keys(data.habits.categories || {}).length > 0 ? (
+          {Object.keys(habits.categories || {}).length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {Object.entries(data.habits.categories).map(([cat, catData]) => {
+              {Object.entries(habits.categories).map(([cat, catData]) => {
                 const pct = Math.round((catData.done / catData.total) * 100) || 0;
                 return (
                   <div key={cat}>
@@ -264,23 +274,23 @@ export default function AnalyticsPanel({ token, showToast, currency = '$' }) {
         </div>
       </div>
 
-      {/* Summary Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
-        <div style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: '14px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
-          <div style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--accent-blue)' }}>{today.done || 0}/{today.total || 0}</div>
-          <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', marginTop: '4px' }}>Today Tasks Done</div>
+      {/* Summary KPI Footer */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '16px' }}>
+        <div style={{ background: 'var(--bg-card)', padding: '18px', borderRadius: '14px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
+          <div style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--accent-blue)' }}>{today.done || 0}/{today.total || 0}</div>
+          <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', marginTop: '4px' }}>Today Tasks Done</div>
         </div>
-        <div style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: '14px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
-          <div style={{ fontSize: '2rem', fontWeight: 900, color: '#22c55e' }}>{currency}{(finance.netBalance || 0).toFixed(0)}</div>
-          <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', marginTop: '4px' }}>Net Balance</div>
+        <div style={{ background: 'var(--bg-card)', padding: '18px', borderRadius: '14px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
+          <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#22c55e' }}>{currency}{(finance.netBalance || 0).toFixed(0)}</div>
+          <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', marginTop: '4px' }}>Net Balance</div>
         </div>
-        <div style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: '14px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
-          <div style={{ fontSize: '2rem', fontWeight: 900, color: '#f59e0b' }}>{habits.totalStreaks || 0}</div>
-          <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', marginTop: '4px' }}>Total Streaks</div>
+        <div style={{ background: 'var(--bg-card)', padding: '18px', borderRadius: '14px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
+          <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#f59e0b' }}>{habits.totalStreaks || 0}</div>
+          <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', marginTop: '4px' }}>Total Streaks</div>
         </div>
-        <div style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: '14px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
-          <div style={{ fontSize: '2rem', fontWeight: 900, color: '#8b5cf6' }}>{notes.count || 0}</div>
-          <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', marginTop: '4px' }}>Notes & Diary</div>
+        <div style={{ background: 'var(--bg-card)', padding: '18px', borderRadius: '14px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
+          <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#8b5cf6' }}>{notes.count || 0}</div>
+          <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', marginTop: '4px' }}>Notes & Diary</div>
         </div>
       </div>
     </div>
