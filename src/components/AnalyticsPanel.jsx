@@ -30,7 +30,7 @@ export default function AnalyticsPanel({ token, showToast, currency = '$' }) {
         }
       } catch (err) {
         if (mounted) {
-          showToast(err.message, 'error');
+          showToast?.(err.message, 'error');
         }
       } finally {
         if (mounted) {
@@ -89,8 +89,25 @@ export default function AnalyticsPanel({ token, showToast, currency = '$' }) {
   }
 
   if (!data) {
-    return null; // or error state
+    return (
+      <div style={{ textAlign: 'center', padding: '60px 20px', background: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
+        <h3 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '8px' }}>Unable to load analytics</h3>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '20px' }}>Could not fetch analytics data from server.</p>
+        <button 
+          onClick={() => setRange(r => r)}
+          style={{ padding: '8px 20px', borderRadius: '12px', background: 'var(--accent-blue)', color: '#fff', border: 'none', fontWeight: 700, cursor: 'pointer' }}
+        >
+          Retry
+        </button>
+      </div>
+    );
   }
+
+  const habits = data.habits || {};
+  const finance = data.finance || {};
+  const sleep = data.sleep || {};
+  const today = data.today || {};
+  const notes = data.notes || {};
 
   return (
     <div>
@@ -102,10 +119,10 @@ export default function AnalyticsPanel({ token, showToast, currency = '$' }) {
             <CheckCircle2 size={16} /> OVERALL CONSISTENCY
           </div>
           <div style={{ fontSize: '2.5rem', fontWeight: 900, letterSpacing: '-1px', marginBottom: '8px' }}>
-            {data.habits.consistency}%
+            {habits.consistency || 0}%
           </div>
           <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 700 }}>
-            {data.habits.total > 0 ? `${data.habits.completedToday} of ${data.habits.total} habits completed today` : 'No habits tracked yet'}
+            {habits.total > 0 ? `${habits.completedToday || 0} of ${habits.total} habits completed today` : 'No habits tracked yet'}
           </div>
         </div>
 
@@ -114,7 +131,7 @@ export default function AnalyticsPanel({ token, showToast, currency = '$' }) {
             <DollarSign size={16} /> NET MONEY SAVINGS
           </div>
           <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--accent-blue)', letterSpacing: '-1px', marginBottom: '8px' }}>
-            {currency}{data.finance.netBalance}
+            {currency}{finance.netBalance || 0}
           </div>
           <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 700 }}>
             Based on recent transactions
@@ -126,7 +143,7 @@ export default function AnalyticsPanel({ token, showToast, currency = '$' }) {
             <SleepIcon size={16} /> SLEEP & RECOVERY
           </div>
           <div style={{ fontSize: '2.5rem', fontWeight: 900, letterSpacing: '-1px', marginBottom: '8px' }}>
-            {data.sleep.avgHours} <span style={{ fontSize: '1.2rem', fontWeight: 600 }}>h</span>
+            {sleep.avgHours || 0} <span style={{ fontSize: '1.2rem', fontWeight: 600 }}>h</span>
           </div>
           <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 700 }}>
             Average sleep
@@ -250,19 +267,19 @@ export default function AnalyticsPanel({ token, showToast, currency = '$' }) {
       {/* Summary Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
         <div style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: '14px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
-          <div style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--accent-blue)' }}>{data.today.done}/{data.today.total}</div>
+          <div style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--accent-blue)' }}>{today.done || 0}/{today.total || 0}</div>
           <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', marginTop: '4px' }}>Today Tasks Done</div>
         </div>
         <div style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: '14px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
-          <div style={{ fontSize: '2rem', fontWeight: 900, color: '#22c55e' }}>{currency}{data.finance.netBalance.toFixed(0)}</div>
+          <div style={{ fontSize: '2rem', fontWeight: 900, color: '#22c55e' }}>{currency}{(finance.netBalance || 0).toFixed(0)}</div>
           <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', marginTop: '4px' }}>Net Balance</div>
         </div>
         <div style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: '14px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
-          <div style={{ fontSize: '2rem', fontWeight: 900, color: '#f59e0b' }}>{data.habits.totalStreaks}</div>
+          <div style={{ fontSize: '2rem', fontWeight: 900, color: '#f59e0b' }}>{habits.totalStreaks || 0}</div>
           <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', marginTop: '4px' }}>Total Streaks</div>
         </div>
         <div style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: '14px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
-          <div style={{ fontSize: '2rem', fontWeight: 900, color: '#8b5cf6' }}>{data.notes.count}</div>
+          <div style={{ fontSize: '2rem', fontWeight: 900, color: '#8b5cf6' }}>{notes.count || 0}</div>
           <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', marginTop: '4px' }}>Notes & Diary</div>
         </div>
       </div>

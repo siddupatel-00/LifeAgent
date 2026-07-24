@@ -10,6 +10,7 @@ import {
   Play, Pause
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import AnalyticsPanel from './components/AnalyticsPanel';
 
 export default function App() {
   const [themeMode, setThemeMode] = useState('light'); // 'dark', 'light', 'pc'
