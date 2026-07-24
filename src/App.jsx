@@ -162,10 +162,15 @@ export default function App() {
   const sideAiChatScrollRef = useRef(null);
 
   // Toast notification state and helper
-  const [toast, setToast] = useState({ message: '', type: '', visible: false });
-  const showToast = (msg, type = 'info') => {
-    setToast({ message: msg, type, visible: true });
-    setTimeout(() => setToast({ message: '', type: '', visible: false }), 3000);
+  const [toast, setToast] = useState({ message: '', type: '', visible: false, isHiding: false });
+  const showToast = (msg, type = 'success') => {
+    setToast({ message: msg, type, visible: true, isHiding: false });
+    setTimeout(() => {
+      setToast(prev => ({ ...prev, isHiding: true }));
+      setTimeout(() => {
+        setToast({ message: '', type: '', visible: false, isHiding: false });
+      }, 400);
+    }, 3000);
   };
 
   // Auto-scroll ONLY inside the AI chat box containers whenever new messages arrive (does not scroll website/window)
@@ -2550,7 +2555,7 @@ const handleDeleteHabitDb = async (id) => {
                               <button
                                 onClick={async () => {
                                   await handleUpdateNoteDb(currentNote);
-                                  alert('Note saved to database!');
+                                  showToast('Successfully saved', 'success');
                                 }}
                                 className="blue-btn"
                                 style={{ padding: '8px 20px', fontSize: '0.88rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}
@@ -2945,6 +2950,21 @@ const handleDeleteHabitDb = async (id) => {
 
 
 
+        </div>
+      )}
+
+      {/* Top-Right In-App Toast Notification */}
+      {toast.visible && (
+        <div className="toast-container">
+          <div 
+            className={`toast toast-${toast.type || 'success'} ${toast.isHiding ? 'hiding' : ''}`}
+            onClick={() => setToast({ message: '', type: '', visible: false, isHiding: false })}
+          >
+            <div className="toast-icon">
+              {toast.type === 'error' ? <XCircle size={18} /> : <CheckCircle2 size={18} />}
+            </div>
+            <span className="toast-message">{toast.message}</span>
+          </div>
         </div>
       )}
 
