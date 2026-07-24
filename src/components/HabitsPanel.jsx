@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Flame, CheckCircle2, MoreVertical, Play, Pause, Trash2 } from 'lucide-react';
+import { Plus, Flame, CheckCircle2, MoreVertical, Trash2 } from 'lucide-react';
 
 export default function HabitsPanel({
   habits, setHabits, todayItems, setTodayItems,
@@ -55,31 +55,6 @@ export default function HabitsPanel({
       showToast('Habit Deleted', 'success');
     } catch (err) {
       console.error('Failed to delete habit:', err);
-    }
-  };
-
-  const handleTogglePauseHabit = async (id, currentPausedUntil) => {
-    if (!token) return;
-    const habit = habits.find(h => h.id === id);
-    if (!habit) return;
-    const newPaused = currentPausedUntil ? null : new Date().toISOString();
-    try {
-      const res = await fetch(`/api/habits/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({
-          streak: habit.streak,
-          checked_today: habit.checkedToday ? 1 : 0,
-          target: habit.target || null,
-          paused_until: newPaused
-        })
-      });
-      if (res.ok) {
-        setHabits(prev => prev.map(h => h.id === id ? { ...h, pausedUntil: newPaused } : h));
-        showToast('Habit Updated', 'success');
-      }
-    } catch (e) {
-      console.error('Failed to toggle pause habit:', e);
     }
   };
   
@@ -149,7 +124,6 @@ export default function HabitsPanel({
           {habits.map(h => (
             <div key={h.id} className="motion-card" style={{
               background: h.checkedToday ? 'var(--accent-blue-dim)' : 'var(--bg-main)',
-              opacity: h.pausedUntil ? 0.5 : 1,
               padding: '22px', borderRadius: '16px',
               border: `1px solid ${h.checkedToday ? 'var(--accent-blue)' : 'var(--border-color)'}`,
               display: 'flex', flexDirection: 'column', position: 'relative'
@@ -176,12 +150,6 @@ export default function HabitsPanel({
                     border: '1px solid var(--border-color)', borderRadius: '8px', zIndex: 10,
                     boxShadow: '0 4px 12px rgba(0,0,0,0.1)', overflow: 'hidden', minWidth: '120px'
                   }}>
-                    <button 
-                      onClick={() => { handleTogglePauseHabit(h.id, h.pausedUntil); setMenuOpenId(null); }}
-                      style={{ width: '100%', padding: '10px 16px', background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', color: 'var(--text-main)', borderBottom: '1px solid var(--border-color)' }}
-                    >
-                      {h.pausedUntil ? 'Resume' : 'Pause'}
-                    </button>
                     <button 
                       onClick={() => { handleDeleteHabitDb(h.id); setMenuOpenId(null); }}
                       style={{ width: '100%', padding: '10px 16px', background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', color: 'var(--danger-color, #ef4444)' }}

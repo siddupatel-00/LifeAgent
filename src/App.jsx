@@ -6,8 +6,7 @@ import {
   Send, Plus, Clock, Award, Trash2, ChevronRight, LogIn, ExternalLink,
   Sun, Moon, Monitor, ChevronDown, Lock, Phone, AtSign, Activity, Zap, Check, X,
   Dumbbell, Moon as SleepIcon, BarChart3, PieChart, Flame, Heart, Target, Filter,
-  Home, LayoutDashboard, LogOut, Sliders, Settings, Save, Bell, Shield, PenTool, MessageSquare, Sidebar as SidebarIcon, FileText, Unlock, Smile,
-  Play, Pause
+  Home, LayoutDashboard, LogOut, Sliders, Settings, Save, Bell, Shield, PenTool, MessageSquare, Sidebar as SidebarIcon, FileText, Unlock, Smile
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import AnalyticsPanel from './components/AnalyticsPanel';
@@ -445,31 +444,6 @@ const handleDeleteHabitDb = async (id) => {
         setTodayItems(prev => prev.filter(ti => ti.habitId !== id));
       } catch (err) {
         console.error('Failed to delete habit:', err);
-      }
-    };
-
-    // Toggle pause/resume for a habit
-    const handleTogglePauseHabit = async (id, currentPausedUntil) => {
-      if (!token) return;
-      const habit = habits.find(h => h.id === id);
-      if (!habit) return;
-      const newPaused = currentPausedUntil ? null : new Date().toISOString();
-      try {
-        const res = await fetch(`/api/habits/${id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({
-            streak: habit.streak,
-            checked_today: habit.checkedToday ? 1 : 0,
-            target: habit.target || null,
-            paused_until: newPaused
-          })
-        });
-        if (res.ok) {
-          setHabits(prev => prev.map(h => h.id === id ? { ...h, pausedUntil: newPaused } : h));
-        }
-      } catch (e) {
-        console.error('Failed to toggle pause habit:', e);
       }
     };
 
@@ -1879,7 +1853,6 @@ const handleDeleteHabitDb = async (id) => {
                         className="motion-card" 
                         style={{ 
                           background: item.checkedToday ? 'var(--accent-blue-dim)' : 'var(--bg-main)',
-                           opacity: item.pausedUntil ? 0.5 : 1, 
                           padding: '22px', borderRadius: '16px', 
                           border: `1px solid ${item.checkedToday ? 'var(--accent-blue)' : 'var(--border-color)'}`, 
                           display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
@@ -1915,25 +1888,6 @@ const handleDeleteHabitDb = async (id) => {
                           aria-label="Delete habit"
                         >
                           <Trash2 size={18} />
-                        </button>
-                        {/* Pause/Resume Button */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleTogglePauseHabit(item.id, item.pausedUntil);
-                          }}
-                          style={{
-                            position: 'absolute',
-                            top: '8px',
-                            right: '36px',
-                            background: 'transparent',
-                            border: 'none',
-                            cursor: 'pointer',
-                            color: 'var(--accent-blue)',
-                          }}
-                          aria-label={item.pausedUntil ? 'Resume habit' : 'Pause habit'}
-                        >
-                          {item.pausedUntil ? <Play size={18} /> : <Pause size={18} />}
                         </button>
 
                           <h5 style={{ fontWeight: 800, fontSize: '1.15rem', marginBottom: '6px', textDecoration: item.checkedToday ? 'line-through' : 'none' }}>{item.title}</h5>
