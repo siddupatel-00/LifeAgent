@@ -323,12 +323,19 @@ export default function App() {
   };
 
   const handleUpdateNoteDb = async (note) => {
-    if (!token || !note.id) return;
+    if (!token || !note || !note.id) return;
     try {
       await fetch('/api/notes', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ id: note.id, title: note.title, content: note.content, share_with_ai: note.shareWithAi, is_trashed: note.is_trashed, deleted_at: note.deletedAt })
+        body: JSON.stringify({
+          id: note.id,
+          title: note.title,
+          content: note.content,
+          share_with_ai: note.shareWithAi !== undefined ? note.shareWithAi : note.share_with_ai,
+          is_trashed: note.is_trashed !== undefined ? note.is_trashed : (note.deletedAt ? 1 : 0),
+          deleted_at: note.deletedAt ? new Date(note.deletedAt).toISOString() : (note.deleted_at || null)
+        })
       });
     } catch (err) {
       console.error(err);

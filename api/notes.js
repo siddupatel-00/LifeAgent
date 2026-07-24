@@ -22,9 +22,21 @@ export default async function handler(req, res) {
     
     if (req.method === 'PUT') {
       const { id, title, content, share_with_ai, is_trashed, deleted_at } = req.body;
+      if (!id) return res.status(400).json({ error: 'Note ID required' });
+
+      const currentRes = await db.execute({ sql: 'SELECT * FROM notes WHERE id = ? AND user_id = ?', args: [id, userId] });
+      if (currentRes.rows.length === 0) return res.status(404).json({ error: 'Note not found' });
+      const current = currentRes.rows[0];
+
+      const newTitle = title !== undefined ? title : current.title;
+      const newContent = content !== undefined ? content : current.content;
+      const newShareWithAi = share_with_ai !== undefined ? (share_with_ai ? 1 : 0) : current.share_with_ai;
+      const newIsTrashed = is_trashed !== undefined ? (is_trashed ? 1 : 0) : current.is_trashed;
+      const newDeletedAt = deleted_at !== undefined ? deleted_at : current.deleted_at;
+
       await db.execute({
-        sql: 'UPDATE notes SET title = ?, content = ?, share_with_ai = ?, is_trashed = ?, deleted_at = ?, date = date("now") WHERE id = ? AND user_id = ?',
-        args: [title, content, share_with_ai ? 1 : 0, is_trashed ? 1 : 0, deleted_at || null, id, userId]
+        sql: 'UPDATE notes SET title = ?, content = ?, share_with_ai = ?, is_trashed = ?, deleted_at = ? WHERE id = ? AND user_id = ?',
+        args: [newTitle, newContent, newShareWithAi, newIsTrashed, newDeletedAt, id, userId]
       });
       return res.status(200).json({ success: true });
     }
