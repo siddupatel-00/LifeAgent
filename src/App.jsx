@@ -161,6 +161,13 @@ export default function App() {
   const mainAiChatScrollRef = useRef(null);
   const sideAiChatScrollRef = useRef(null);
 
+  // Toast notification state and helper
+  const [toast, setToast] = useState({ message: '', type: '', visible: false });
+  const showToast = (msg, type = 'info') => {
+    setToast({ message: msg, type, visible: true });
+    setTimeout(() => setToast({ message: '', type: '', visible: false }), 3000);
+  };
+
   // Auto-scroll ONLY inside the AI chat box containers whenever new messages arrive (does not scroll website/window)
   useEffect(() => {
     if (mainAiChatScrollRef.current) {

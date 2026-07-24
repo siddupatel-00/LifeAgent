@@ -1,3 +1,5 @@
+import dotenv from 'dotenv';
+dotenv.config();
 import db from '../lib/db.js';
 import { getUserId } from '../lib/auth.js';
 
