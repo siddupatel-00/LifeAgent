@@ -16,33 +16,48 @@ export default async function handler(req, res) {
 
     if (req.method === 'POST') {
       const { sleep_time, wake_time, quality, notes, date } = req.body;
-      // Calculate duration
-      const sleepDate = new Date(`2000-01-01T${sleep_time}`);
-      let wakeDate = new Date(`2000-01-01T${wake_time}`);
-      if (wakeDate <= sleepDate) wakeDate.setDate(wakeDate.getDate() + 1); // next day
-      const diffMs = wakeDate - sleepDate;
-      const hours = Math.floor(diffMs / (1000 * 60 * 60));
-      const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      let hours = req.body.hours !== undefined ? Number(req.body.hours) : undefined;
+      let minutes = req.body.minutes !== undefined ? Number(req.body.minutes) : undefined;
+
+      const sTime = sleep_time || '23:00';
+      const wTime = wake_time || '07:00';
+
+      if (hours === undefined || minutes === undefined) {
+        const sleepDate = new Date(`2000-01-01T${sTime}`);
+        let wakeDate = new Date(`2000-01-01T${wTime}`);
+        if (wakeDate <= sleepDate) wakeDate.setDate(wakeDate.getDate() + 1);
+        const diffMs = wakeDate - sleepDate;
+        hours = Math.floor(diffMs / (1000 * 60 * 60));
+        minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      }
       
       const result = await db.execute({
         sql: 'INSERT INTO sleep_logs (user_id, sleep_time, wake_time, hours, minutes, quality, notes, date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        args: [userId, sleep_time, wake_time, hours, minutes, quality || 'Good', notes || '', date || new Date().toISOString().split('T')[0]]
+        args: [userId, sTime, wTime, hours, minutes, quality || 'Good', notes || '', date || new Date().toISOString().split('T')[0]]
       });
-      return res.status(201).json({ id: Number(result.lastInsertRowid), sleep_time, wake_time, hours, minutes, quality, notes, date });
+      return res.status(201).json({ id: Number(result.lastInsertRowid), sleep_time: sTime, wake_time: wTime, hours, minutes, quality: quality || 'Good', notes, date: date || new Date().toISOString().split('T')[0] });
     }
 
     if (req.method === 'PUT') {
       const { id, sleep_time, wake_time, quality, notes } = req.body;
-      const sleepDate = new Date(`2000-01-01T${sleep_time}`);
-      let wakeDate = new Date(`2000-01-01T${wake_time}`);
-      if (wakeDate <= sleepDate) wakeDate.setDate(wakeDate.getDate() + 1);
-      const diffMs = wakeDate - sleepDate;
-      const hours = Math.floor(diffMs / (1000 * 60 * 60));
-      const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      let hours = req.body.hours !== undefined ? Number(req.body.hours) : undefined;
+      let minutes = req.body.minutes !== undefined ? Number(req.body.minutes) : undefined;
+
+      const sTime = sleep_time || '23:00';
+      const wTime = wake_time || '07:00';
+
+      if (hours === undefined || minutes === undefined) {
+        const sleepDate = new Date(`2000-01-01T${sTime}`);
+        let wakeDate = new Date(`2000-01-01T${wTime}`);
+        if (wakeDate <= sleepDate) wakeDate.setDate(wakeDate.getDate() + 1);
+        const diffMs = wakeDate - sleepDate;
+        hours = Math.floor(diffMs / (1000 * 60 * 60));
+        minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      }
       
       await db.execute({
         sql: 'UPDATE sleep_logs SET sleep_time = ?, wake_time = ?, hours = ?, minutes = ?, quality = ?, notes = ? WHERE id = ? AND user_id = ?',
-        args: [sleep_time, wake_time, hours, minutes, quality, notes, id, userId]
+        args: [sTime, wTime, hours, minutes, quality, notes, id, userId]
       });
       return res.status(200).json({ success: true });
     }

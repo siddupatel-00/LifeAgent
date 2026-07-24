@@ -1,15 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, X, Trash2, Moon, Clock, Calendar, Activity } from 'lucide-react';
+import { Plus, X, Trash2, Moon, Clock, Calendar, Activity, Filter } from 'lucide-react';
 
 export default function SleepTracker({ token, showToast }) {
   const [logs, setLogs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   
+  // Date range filter mode: '7d' | 'this_month' | 'past_month' | 'custom'
+  const [rangeMode, setRangeMode] = useState('7d');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
+    hours: 7,
+    minutes: 30,
     sleep_time: '23:00',
-    wake_time: '07:00',
+    wake_time: '06:30',
     quality: 'Good',
     notes: ''
   });
@@ -27,10 +34,10 @@ export default function SleepTracker({ token, showToast }) {
         const data = await res.json();
         setLogs(data);
       } else {
-        showToast('Failed to load sleep logs', 'error');
+        showToast?.('Failed to load sleep logs', 'error');
       }
     } catch (error) {
-      showToast('Network error', 'error');
+      showToast?.('Network error', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -39,29 +46,40 @@ export default function SleepTracker({ token, showToast }) {
   const handleAddLog = async (e) => {
     e.preventDefault();
     try {
+      const payload = {
+        ...formData,
+        hours: Number(formData.hours),
+        minutes: Number(formData.minutes)
+      };
+
       const res = await fetch('/api/sleep', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
       
       if (res.ok) {
         const newLog = await res.json();
-        setLogs([newLog, ...logs].sort((a, b) => new Date(b.date) - new Date(a.date)));
+        setLogs(prev => [newLog, ...prev.filter(l => l.id !== newLog.id)].sort((a, b) => new Date(b.date) - new Date(a.date)));
         setShowModal(false);
-        showToast('Sleep Log Added', 'success');
+        showToast?.('Sleep Log Added', 'success');
         setFormData({
-          ...formData,
+          date: new Date().toISOString().split('T')[0],
+          hours: 7,
+          minutes: 30,
+          sleep_time: '23:00',
+          wake_time: '06:30',
+          quality: 'Good',
           notes: ''
         });
       } else {
-        showToast('Failed to add log', 'error');
+        showToast?.('Failed to add log', 'error');
       }
     } catch (error) {
-      showToast('Network error', 'error');
+      showToast?.('Network error', 'error');
     }
   };
 
@@ -79,56 +97,13 @@ export default function SleepTracker({ token, showToast }) {
       
       if (res.ok) {
         setLogs(logs.filter(log => log.id !== id));
-        showToast('Sleep Log Deleted', 'success');
+        showToast?.('Sleep Log Deleted', 'success');
       } else {
-        showToast('Failed to delete log', 'error');
+        showToast?.('Failed to delete log', 'error');
       }
     } catch (error) {
-      showToast('Network error', 'error');
+      showToast?.('Network error', 'error');
     }
-  };
-
-  // Stats calculation
-  const last7Logs = [...logs].slice(0, 7);
-  
-  const calculateAverage = () => {
-    if (last7Logs.length === 0) return '0h 0m';
-    const totalMins = last7Logs.reduce((acc, log) => acc + (log.hours * 60 + log.minutes), 0);
-    const avgMins = Math.round(totalMins / last7Logs.length);
-    return `${Math.floor(avgMins / 60)}h ${avgMins % 60}m`;
-  };
-
-  const calculateStreak = () => {
-    if (logs.length === 0) return 0;
-    let streak = 0;
-    const sortedDates = [...logs].sort((a, b) => new Date(b.date) - new Date(a.date));
-    
-    // Check if streak is active (latest entry must be today or yesterday)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const latestDate = new Date(sortedDates[0].date);
-    const diffDays = Math.floor((today - latestDate) / (1000 * 60 * 60 * 24));
-    
-    if (diffDays > 1) return 0;
-
-    let expectedTime = latestDate.getTime();
-
-    for (const log of sortedDates) {
-      const logTime = new Date(log.date).getTime();
-      const durationHours = log.hours + (log.minutes / 60);
-      
-      if (logTime === expectedTime && durationHours >= 7) {
-        streak++;
-        expectedTime -= (1000 * 60 * 60 * 24); // move to previous day
-      } else if (logTime === expectedTime && durationHours < 7) {
-        break; // streak broken by poor sleep
-      } else if (logTime > expectedTime) {
-        continue; // Multiple entries same day? skip. Should be unique by date typically.
-      } else {
-        break; // streak broken by missing day
-      }
-    }
-    return streak;
   };
 
   const getQualityColor = (quality) => {
@@ -137,100 +112,292 @@ export default function SleepTracker({ token, showToast }) {
       case 'Good': return '#3b82f6';
       case 'Fair': return '#f59e0b';
       case 'Poor': return '#ef4444';
-      default: return '#6b7280';
+      default: return '#3b82f6';
     }
   };
-  
-  // Last 7 days chart data (filling missing days)
-  const getLast7DaysData = () => {
+
+  // Compute graph data & metrics according to selected date range filter
+  const getFilteredChartData = () => {
+    const today = new Date();
+    let startDate, endDate;
+
+    if (rangeMode === '7d') {
+      endDate = new Date(today);
+      startDate = new Date(today);
+      startDate.setDate(today.getDate() - 6);
+    } else if (rangeMode === 'this_month') {
+      startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+      endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    } else if (rangeMode === 'past_month') {
+      startDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      endDate = new Date(today.getFullYear(), today.getMonth(), 0);
+    } else if (rangeMode === 'custom' && customStartDate && customEndDate) {
+      startDate = new Date(customStartDate);
+      endDate = new Date(customEndDate);
+    } else {
+      endDate = new Date(today);
+      startDate = new Date(today);
+      startDate.setDate(today.getDate() - 6);
+    }
+
     const data = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().split('T')[0];
+    const curr = new Date(startDate);
+    
+    // Safety cap max 90 days to prevent rendering overflow
+    let daysCount = 0;
+    while (curr <= endDate && daysCount < 90) {
+      const dateStr = curr.toISOString().split('T')[0];
       const log = logs.find(l => l.date === dateStr);
       data.push({
         date: dateStr,
-        hours: log ? log.hours : 0,
-        minutes: log ? log.minutes : 0
+        hours: log ? (log.hours || 0) : 0,
+        minutes: log ? (log.minutes || 0) : 0,
+        quality: log ? log.quality : null,
+        log: log || null
       });
+      curr.setDate(curr.getDate() + 1);
+      daysCount++;
     }
+
     return data;
   };
 
-  const chartData = getLast7DaysData();
+  const chartData = getFilteredChartData();
 
-  if (isLoading) return <div style={{ padding: '20px', textAlign: 'center' }}>Loading sleep data...</div>;
+  // Summary Metrics calculated from active range
+  const validLogsInRange = chartData.filter(d => d.hours > 0 || d.minutes > 0);
+  
+  const calculateAvgHours = () => {
+    if (validLogsInRange.length === 0) return '0h 0m';
+    const totalMins = validLogsInRange.reduce((sum, d) => sum + (d.hours * 60 + d.minutes), 0);
+    const avgMins = Math.round(totalMins / validLogsInRange.length);
+    return `${Math.floor(avgMins / 60)}h ${avgMins % 60}m`;
+  };
+
+  const calculateTotalSlept = () => {
+    const totalMins = validLogsInRange.reduce((sum, d) => sum + (d.hours * 60 + d.minutes), 0);
+    return `${Math.floor(totalMins / 60)}h ${totalMins % 60}m`;
+  };
+
+  const calculateStreak = () => {
+    if (logs.length === 0) return 0;
+    let streak = 0;
+    const sorted = [...logs].sort((a, b) => new Date(b.date) - new Date(a.date));
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const latestDate = new Date(sorted[0].date);
+    const diffDays = Math.floor((today - latestDate) / (1000 * 60 * 60 * 24));
+    
+    if (diffDays > 1) return 0;
+
+    let expectedTime = latestDate.getTime();
+    for (const log of sorted) {
+      const logTime = new Date(log.date).getTime();
+      const totalHrs = log.hours + (log.minutes / 60);
+      if (logTime === expectedTime && totalHrs >= 7) {
+        streak++;
+        expectedTime -= (1000 * 60 * 60 * 24);
+      } else if (logTime === expectedTime && totalHrs < 7) {
+        break;
+      } else if (logTime > expectedTime) {
+        continue;
+      } else {
+        break;
+      }
+    }
+    return streak;
+  };
+
+  if (isLoading) return <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Loading sleep data...</div>;
 
   return (
-    <div style={{ animation: 'fadeIn 0.4s ease-out' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <h2 style={{ fontSize: '1.5rem', fontWeight: '600' }}>Sleep Tracker</h2>
+    <div className="animate-entrance" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      
+      {/* HEADER BAR */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px', flexWrap: 'wrap', gap: '16px' }}>
+        <div>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <Moon size={22} color="var(--accent-blue)" /> Sleep & Recovery Tracking
+          </h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: '4px' }}>
+            Log sleep duration (hours & minutes), track circadian rhythms, and view past trends.
+          </p>
+        </div>
+
         <button 
           onClick={() => setShowModal(true)}
-          style={{
-            background: 'var(--accent-blue)', color: 'white', border: 'none',
-            padding: '10px 20px', borderRadius: '12px', fontWeight: '600',
-            display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer'
-          }}
+          className="blue-btn"
+          style={{ padding: '10px 20px', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '8px' }}
         >
-          <Plus size={18} /> Add Log
+          <Plus size={18} /> Log Sleep Entry
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-        <div style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: '18px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)' }}>
-            <Moon size={16} /> <span style={{ fontSize: '0.9rem', fontWeight: '500' }}>Avg Sleep (7d)</span>
-          </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: '700' }}>{calculateAverage()}</div>
-        </div>
+      {/* RANGE FILTER & METRICS BAR */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         
-        <div style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: '18px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)' }}>
-            <Activity size={16} /> <span style={{ fontSize: '0.9rem', fontWeight: '500' }}>Last Night</span>
-          </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: '700' }}>
-            {logs.length > 0 ? `${logs[0].hours}h ${logs[0].minutes}m` : '-'}
-          </div>
+        {/* Filter Pills */}
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+          <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', marginRight: '4px' }}>
+            <Filter size={14} /> Time Range:
+          </span>
+
+          <button
+            onClick={() => setRangeMode('7d')}
+            style={{
+              padding: '6px 14px', borderRadius: '20px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer',
+              border: rangeMode === '7d' ? '1px solid var(--accent-blue)' : '1px solid var(--border-color)',
+              background: rangeMode === '7d' ? 'rgba(59, 130, 246, 0.12)' : 'var(--bg-card)',
+              color: rangeMode === '7d' ? 'var(--accent-blue)' : 'var(--text-muted)',
+              transition: 'all 0.2s'
+            }}
+          >
+            Past 7 Days
+          </button>
+
+          <button
+            onClick={() => setRangeMode('this_month')}
+            style={{
+              padding: '6px 14px', borderRadius: '20px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer',
+              border: rangeMode === 'this_month' ? '1px solid var(--accent-blue)' : '1px solid var(--border-color)',
+              background: rangeMode === 'this_month' ? 'rgba(59, 130, 246, 0.12)' : 'var(--bg-card)',
+              color: rangeMode === 'this_month' ? 'var(--accent-blue)' : 'var(--text-muted)',
+              transition: 'all 0.2s'
+            }}
+          >
+            This Month
+          </button>
+
+          <button
+            onClick={() => setRangeMode('past_month')}
+            style={{
+              padding: '6px 14px', borderRadius: '20px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer',
+              border: rangeMode === 'past_month' ? '1px solid var(--accent-blue)' : '1px solid var(--border-color)',
+              background: rangeMode === 'past_month' ? 'rgba(59, 130, 246, 0.12)' : 'var(--bg-card)',
+              color: rangeMode === 'past_month' ? 'var(--accent-blue)' : 'var(--text-muted)',
+              transition: 'all 0.2s'
+            }}
+          >
+            Past Month
+          </button>
+
+          <button
+            onClick={() => setRangeMode('custom')}
+            style={{
+              padding: '6px 14px', borderRadius: '20px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer',
+              border: rangeMode === 'custom' ? '1px solid var(--accent-blue)' : '1px solid var(--border-color)',
+              background: rangeMode === 'custom' ? 'rgba(59, 130, 246, 0.12)' : 'var(--bg-card)',
+              color: rangeMode === 'custom' ? 'var(--accent-blue)' : 'var(--text-muted)',
+              transition: 'all 0.2s'
+            }}
+          >
+            Custom Range
+          </button>
         </div>
 
-        <div style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: '18px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)' }}>
-            <Activity size={16} /> <span style={{ fontSize: '0.9rem', fontWeight: '500' }}>Best Streak</span>
+        {/* Custom Range Picker */}
+        {rangeMode === 'custom' && (
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', background: 'var(--bg-card)', padding: '6px 12px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+            <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)' }}>From:</span>
+            <input 
+              type="date" 
+              value={customStartDate} 
+              onChange={e => setCustomStartDate(e.target.value)}
+              style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', fontSize: '0.82rem', fontWeight: 600 }}
+            />
+            <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)' }}>To:</span>
+            <input 
+              type="date" 
+              value={customEndDate} 
+              onChange={e => setCustomEndDate(e.target.value)}
+              style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', fontSize: '0.82rem', fontWeight: 600 }}
+            />
           </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: '700' }}>{calculateStreak()} days</div>
+        )}
+      </div>
+
+      {/* KPI STATS CARDS */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
+        <div style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 800 }}>
+            <Moon size={16} color="var(--accent-blue)" /> AVERAGE SLEEP DURATION
+          </div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 900, marginTop: '8px', letterSpacing: '-0.5px' }}>
+            {calculateAvgHours()}
+          </div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '4px' }}>For selected period</div>
         </div>
 
-        <div style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: '18px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)' }}>
-            <Calendar size={16} /> <span style={{ fontSize: '0.9rem', fontWeight: '500' }}>Total Logs</span>
+        <div style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 800 }}>
+            <Clock size={16} color="#22c55e" /> TOTAL SLEEP TIME
           </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: '700' }}>{logs.length}</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 900, marginTop: '8px', color: '#22c55e', letterSpacing: '-0.5px' }}>
+            {calculateTotalSlept()}
+          </div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '4px' }}>Accumulated hours</div>
+        </div>
+
+        <div style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 800 }}>
+            <Activity size={16} color="#f59e0b" /> OPTIMAL SLEEP STREAK
+          </div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 900, marginTop: '8px', color: '#f59e0b', letterSpacing: '-0.5px' }}>
+            🔥 {calculateStreak()} Days
+          </div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '4px' }}>Consecutive 7+ hrs logs</div>
+        </div>
+
+        <div style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 800 }}>
+            <Calendar size={16} color="#8b5cf6" /> LOGS IN RANGE
+          </div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 900, marginTop: '8px', color: '#8b5cf6', letterSpacing: '-0.5px' }}>
+            {validLogsInRange.length} / {chartData.length} Days
+          </div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '4px' }}>Logged entries count</div>
         </div>
       </div>
 
-      <div style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: '18px', border: '1px solid var(--border-color)', marginBottom: '24px' }}>
-        <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '16px' }}>Last 7 Days</h3>
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', height: '160px' }}>
+      {/* DYNAMIC SLEEP GRAPH */}
+      <div style={{ background: 'var(--bg-card)', padding: '24px', borderRadius: '18px', border: '1px solid var(--border-color)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <div>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0 }}>
+              Sleep Duration Graph ({rangeMode === '7d' ? 'Past 7 Days' : rangeMode === 'this_month' ? 'This Month' : rangeMode === 'past_month' ? 'Past Month' : 'Custom Range'})
+            </h3>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+              Green (8h+ Excellent) • Blue (7-8h Good) • Orange (5-7h Fair) • Red (&lt;5h Poor)
+            </p>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: chartData.length > 20 ? '4px' : '8px', height: '180px', paddingTop: '10px' }}>
           {chartData.map(day => {
             const totalHrs = day.hours + day.minutes / 60;
             const heightPct = Math.min((totalHrs / 12) * 100, 100); 
-            const color = totalHrs >= 7 ? '#10b981' : totalHrs >= 5 ? '#f59e0b' : totalHrs > 0 ? '#ef4444' : 'var(--border-color)';
-            
+            const color = day.quality ? getQualityColor(day.quality) : totalHrs >= 8 ? '#10b981' : totalHrs >= 7 ? '#3b82f6' : totalHrs >= 5 ? '#f59e0b' : totalHrs > 0 ? '#ef4444' : 'var(--border-color)';
+            const formattedDate = new Date(day.date).toLocaleDateString('en', { month: 'numeric', day: 'numeric' });
+            const dayName = new Date(day.date).toLocaleDateString('en', { weekday: 'short' });
+
             return (
-              <div key={day.date} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
+              <div 
+                key={day.date} 
+                title={`${day.date}: ${day.hours}h ${day.minutes}m (${day.quality || 'Unlogged'})`}
+                style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}
+              >
                 {totalHrs > 0 && (
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>
+                  <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '4px', whiteSpace: 'nowrap' }}>
                     {totalHrs.toFixed(1)}h
                   </span>
                 )}
                 <div style={{
                   width: '100%', background: color, borderRadius: '6px 6px 0 0',
-                  height: `${heightPct || 2}%`, minHeight: '4px', transition: 'height 0.3s ease'
+                  height: `${heightPct || 2}%`, minHeight: '4px', transition: 'height 0.4s ease',
+                  opacity: totalHrs > 0 ? 1 : 0.25
                 }} />
-                <span style={{ fontSize: '0.7rem', marginTop: '4px', color: 'var(--text-muted)' }}>
-                  {new Date(day.date).toLocaleDateString('en', { weekday: 'short' })}
+                <span style={{ fontSize: '0.68rem', marginTop: '6px', color: 'var(--text-muted)', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                  {chartData.length <= 14 ? dayName : formattedDate}
                 </span>
               </div>
             );
@@ -238,138 +405,191 @@ export default function SleepTracker({ token, showToast }) {
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        <h3 style={{ fontSize: '1.1rem', fontWeight: '600' }}>Sleep History</h3>
+      {/* SLEEP LOGS HISTORY TABLE */}
+      <div style={{ background: 'var(--bg-card)', padding: '24px', borderRadius: '18px', border: '1px solid var(--border-color)' }}>
+        <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '16px' }}>Sleep History Logs</h3>
+        
         {logs.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-            No sleep logs yet. Add your first log!
+          <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)' }}>
+            <Moon size={40} style={{ margin: '0 auto 12px', opacity: 0.4 }} />
+            <div style={{ fontSize: '1rem', fontWeight: 700 }}>No sleep logs added yet</div>
+            <div style={{ fontSize: '0.85rem', marginTop: '4px' }}>Click "Log Sleep Entry" above to enter your slept hours & minutes.</div>
           </div>
         ) : (
-          logs.map(log => (
-            <div key={log.id} style={{
-              background: 'var(--bg-card)', padding: '20px', borderRadius: '18px',
-              border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-            }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-                  <span style={{ fontWeight: '600' }}>{new Date(log.date).toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
-                  <span style={{
-                    fontSize: '0.75rem', padding: '4px 8px', borderRadius: '12px', fontWeight: '500', color: '#fff',
-                    background: getQualityColor(log.quality)
-                  }}>
-                    {log.quality}
-                  </span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {logs.map(log => (
+              <div key={log.id} style={{
+                background: 'var(--bg-main)', padding: '16px 20px', borderRadius: '14px',
+                border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px'
+              }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
+                    <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>
+                      {new Date(log.date).toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                    </span>
+                    <span style={{
+                      fontSize: '0.75rem', padding: '3px 10px', borderRadius: '12px', fontWeight: 700, color: '#fff',
+                      background: getQualityColor(log.quality)
+                    }}>
+                      {log.quality}
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Moon size={14} color="var(--accent-blue)" />
+                      <span style={{ fontWeight: 800, color: 'var(--accent-blue)' }}>{log.hours || 0} hrs {log.minutes || 0} mins slept</span>
+                    </div>
+                    {log.sleep_time && log.wake_time && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Clock size={14} />
+                        <span>({log.sleep_time} to {log.wake_time})</span>
+                      </div>
+                    )}
+                  </div>
+                  {log.notes && (
+                    <div style={{ marginTop: '6px', fontSize: '0.83rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                      "{log.notes}"
+                    </div>
+                  )}
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <Clock size={14} />
-                    <span>{log.sleep_time} - {log.wake_time}</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <Moon size={14} />
-                    <span style={{ fontWeight: '600', color: 'var(--text-main)' }}>{log.hours}h {log.minutes}m</span>
-                  </div>
-                </div>
-                {log.notes && (
-                  <div style={{ marginTop: '8px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                    {log.notes}
-                  </div>
-                )}
+
+                <button 
+                  onClick={() => handleDeleteLog(log.id)}
+                  style={{
+                    background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer',
+                    padding: '6px', borderRadius: '8px', transition: 'all 0.2s'
+                  }}
+                  title="Delete log"
+                >
+                  <Trash2 size={18} />
+                </button>
               </div>
-              <button 
-                onClick={() => handleDeleteLog(log.id)}
-                style={{
-                  background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer',
-                  padding: '8px', borderRadius: '8px'
-                }}
-                onMouseOver={(e) => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'; }}
-                onMouseOut={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.background = 'none'; }}
-              >
-                <Trash2 size={18} />
-              </button>
-            </div>
-          ))
+            ))}
+          </div>
         )}
       </div>
 
+      {/* ADD LOG MODAL */}
       {showModal && (
-        <div className="modal-overlay" style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)',
-          display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000
-        }}>
-          <div className="modal-content" style={{
-            background: 'var(--bg-card)', padding: '30px', borderRadius: '24px', width: '90%', maxWidth: '400px',
-            border: '1px solid var(--border-color)', animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: '600', margin: 0 }}>Log Sleep</h3>
-              <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+        <div className="blur-overlay" onClick={() => setShowModal(false)}>
+          <div 
+            className="glass-card animate-entrance" 
+            onClick={e => e.stopPropagation()}
+            style={{
+              padding: '28px', borderRadius: '20px', width: '90%', maxWidth: '440px',
+              margin: 'auto', position: 'relative', top: '50%', transform: 'translateY(-50%)',
+              background: 'var(--bg-card)', border: '1px solid var(--border-color)'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Moon size={20} color="var(--accent-blue)" /> Log Sleep Entry
+              </h3>
+              <button onClick={() => setShowModal(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
                 <X size={20} />
               </button>
             </div>
 
             <form onSubmit={handleAddLog} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '500', marginBottom: '8px', color: 'var(--text-muted)' }}>Date</label>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: '6px', color: 'var(--text-muted)' }}>Date</label>
                 <input 
-                  type="date" required value={formData.date}
+                  type="date" 
+                  required 
+                  value={formData.date}
                   onChange={(e) => setFormData({...formData, date: e.target.value})}
-                  style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', boxSizing: 'border-box' }}
+                  style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.92rem', outline: 'none' }}
                 />
               </div>
 
-              <div style={{ display: 'flex', gap: '16px' }}>
+              {/* DURATION INPUTS: HOURS & MINUTES */}
+              <div style={{ display: 'flex', gap: '12px' }}>
                 <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '500', marginBottom: '8px', color: 'var(--text-muted)' }}>Sleep Time</label>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: '6px', color: 'var(--accent-blue)' }}>Hours Slept</label>
                   <input 
-                    type="time" required value={formData.sleep_time}
-                    onChange={(e) => setFormData({...formData, sleep_time: e.target.value})}
-                    style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', boxSizing: 'border-box' }}
+                    type="number" 
+                    min="0" 
+                    max="24" 
+                    required 
+                    value={formData.hours}
+                    onChange={(e) => setFormData({...formData, hours: e.target.value})}
+                    style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--accent-blue)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '1.1rem', fontWeight: 800, outline: 'none' }}
                   />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '500', marginBottom: '8px', color: 'var(--text-muted)' }}>Wake Time</label>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: '6px', color: 'var(--accent-blue)' }}>Minutes Slept</label>
                   <input 
-                    type="time" required value={formData.wake_time}
+                    type="number" 
+                    min="0" 
+                    max="59" 
+                    required 
+                    value={formData.minutes}
+                    onChange={(e) => setFormData({...formData, minutes: e.target.value})}
+                    style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--accent-blue)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '1.1rem', fontWeight: 800, outline: 'none' }}
+                  />
+                </div>
+              </div>
+
+              {/* SLEEP & WAKE TIME OPTIONAL */}
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: '6px', color: 'var(--text-muted)' }}>Bed Time</label>
+                  <input 
+                    type="time" 
+                    value={formData.sleep_time}
+                    onChange={(e) => setFormData({...formData, sleep_time: e.target.value})}
+                    style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.9rem', outline: 'none' }}
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: '6px', color: 'var(--text-muted)' }}>Wake Time</label>
+                  <input 
+                    type="time" 
+                    value={formData.wake_time}
                     onChange={(e) => setFormData({...formData, wake_time: e.target.value})}
-                    style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', boxSizing: 'border-box' }}
+                    style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.9rem', outline: 'none' }}
                   />
                 </div>
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '500', marginBottom: '8px', color: 'var(--text-muted)' }}>Quality</label>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: '6px', color: 'var(--text-muted)' }}>Sleep Quality</label>
                 <select 
-                  value={formData.quality} onChange={(e) => setFormData({...formData, quality: e.target.value})}
-                  style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', appearance: 'none', boxSizing: 'border-box' }}
+                  value={formData.quality} 
+                  onChange={(e) => setFormData({...formData, quality: e.target.value})}
+                  style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.9rem', outline: 'none', appearance: 'none' }}
                 >
-                  <option value="Excellent">Excellent</option>
-                  <option value="Good">Good</option>
-                  <option value="Fair">Fair</option>
-                  <option value="Poor">Poor</option>
+                  <option value="Excellent">🌟 Excellent (8+ hours, deep sleep)</option>
+                  <option value="Good">😊 Good (7-8 hours, restful)</option>
+                  <option value="Fair">😐 Fair (5-7 hours, light sleep)</option>
+                  <option value="Poor">🥱 Poor (&lt; 5 hours, disrupted)</option>
                 </select>
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '500', marginBottom: '8px', color: 'var(--text-muted)' }}>Notes (Optional)</label>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: '6px', color: 'var(--text-muted)' }}>Notes / Recovery Thoughts (Optional)</label>
                 <textarea 
-                  value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} placeholder="Any dreams, disruptions?" rows="3"
-                  style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', resize: 'vertical', boxSizing: 'border-box' }}
+                  value={formData.notes} 
+                  onChange={(e) => setFormData({...formData, notes: e.target.value})} 
+                  placeholder="e.g. Read 20 mins before bed, no caffeine after 4 PM" 
+                  rows="2"
+                  style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.9rem', outline: 'none', resize: 'vertical' }}
                 />
               </div>
 
-              <button type="submit" style={{
-                background: 'var(--accent-blue)', color: 'white', border: 'none',
-                padding: '16px', borderRadius: '12px', fontWeight: '600',
-                fontSize: '1rem', cursor: 'pointer', marginTop: '8px', width: '100%'
-              }}>
-                Save Sleep Log
+              <button 
+                type="submit" 
+                className="blue-btn"
+                style={{ padding: '14px', fontSize: '1rem', fontWeight: 800, marginTop: '8px', width: '100%' }}
+              >
+                Save Sleep Entry
               </button>
             </form>
           </div>
         </div>
       )}
+
     </div>
   );
 }

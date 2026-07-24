@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import AnalyticsPanel from './components/AnalyticsPanel';
+import SleepTracker from './components/SleepTracker';
 
 export default function App() {
   const [themeMode, setThemeMode] = useState('light'); // 'dark', 'light', 'pc'
@@ -2565,12 +2566,10 @@ const handleDeleteHabitDb = async (id) => {
 
               {/* 5) SLEEP & RECOVERY */}
               {activeTab === 'sleep' && (
-                <div style={{ textAlign: 'center', padding: '80px 40px', background: 'var(--bg-card)', borderRadius: '18px', border: '1px solid var(--border-color)' }}>
-                  <SleepIcon size={48} color="var(--text-muted)" style={{ marginBottom: '16px' }} />
-                  <h3 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '8px' }}>Sleep & Recovery</h3>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '1rem', marginBottom: '24px' }}>Track sleep phases, quality scores and circadian rhythm.</p>
-                  <span style={{ display: 'inline-block', padding: '8px 20px', borderRadius: '20px', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--accent-blue)', fontWeight: 700, fontSize: '0.85rem', border: '1px solid rgba(59, 130, 246, 0.3)' }}>🚀 Coming Soon</span>
-                </div>
+                <SleepTracker
+                  token={token}
+                  showToast={showToast}
+                />
               )}
 
               {/* 6) MASTER ANALYTICS HUB */}
