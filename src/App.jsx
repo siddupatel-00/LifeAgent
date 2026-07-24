@@ -230,6 +230,9 @@ export default function App() {
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() };
   });
+  const [isAddEventFormOpen, setIsAddEventFormOpen] = useState(false);
+  const [newEventTitle, setNewEventTitle] = useState('');
+  const [newEventDate, setNewEventDate] = useState('');
 
   // 9) AI API Keys (loaded from DB via /api/settings)
   const [geminiApiKey, setGeminiApiKey] = useState('');
@@ -434,14 +437,9 @@ const handleDeleteHabitDb = async (id) => {
     // Toggle pause/resume for a habit
     const handleTogglePauseHabit = async (id, currentPausedUntil) => {
       if (!token) return;
+      const habit = habits.find(h => h.id === id);
+      if (!habit) return;
       const newPaused = currentPausedUntil ? null : new Date().toISOString();
-      try {
-        await fetch('/api/habits', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ id, paused_until: newPaused })
-        });
-        setHabits(prev => prev.map(h => h.id === id ? { ...h, pausedUntil: newPaused } : h));
       } catch (e) {
         console.error('Failed to toggle pause habit:', e);
       }
@@ -2003,29 +2001,98 @@ const handleDeleteHabitDb = async (id) => {
                     </div>
                     <button 
                       className="blue-btn" 
-                      onClick={async () => {
-                        const title = window.prompt("Enter new event title:");
-                        if (!title) return;
-                        const date = selectedCalendarDate || new Date().toISOString().split('T')[0];
-                        try {
-                          const res = await fetch('/api/calendar', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                            body: JSON.stringify({ title, date, color: '#3b82f6' })
-                          });
-                          if (res.ok) {
-                            const newEvent = await res.json();
-                            setCalendarEvents([...calendarEvents, newEvent]);
-                          }
-                        } catch (e) {
-                          console.error('Failed to add event:', e);
+                      onClick={() => {
+                        setIsAddEventFormOpen(!isAddEventFormOpen);
+                        if (!isAddEventFormOpen) {
+                          setNewEventDate(selectedCalendarDate || new Date().toISOString().split('T')[0]);
+                          setNewEventTitle('');
                         }
                       }}
                       style={{ padding: '12px 22px', fontSize: '0.92rem' }}
                     >
-                      <Plus size={18} /> Add Event
+                      <Plus size={18} /> {isAddEventFormOpen ? 'Cancel' : 'Add Event'}
                     </button>
                   </div>
+
+                  {/* Inline Add Event Form */}
+                  {isAddEventFormOpen && (
+                    <div className="glass-card animate-entrance" style={{ padding: '20px', marginBottom: '24px', border: '1px solid var(--accent-blue)', borderRadius: '16px', background: 'var(--bg-card)' }}>
+                      <h4 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Plus size={18} color="var(--accent-blue)" /> New Event
+                      </h4>
+                      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                        <div style={{ flex: '2', minWidth: '200px' }}>
+                          <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Enter event title</label>
+                          <input
+                            type="text"
+                            value={newEventTitle}
+                            onChange={(e) => setNewEventTitle(e.target.value)}
+                            placeholder="e.g. Team meeting, Dentist appointment..."
+                            autoFocus
+                            style={{
+                              width: '100%', padding: '12px 16px', borderRadius: '12px',
+                              border: '1px solid var(--border-color)', background: 'var(--bg-main)',
+                              color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none'
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && newEventTitle.trim()) {
+                                (async () => {
+                                  try {
+                                    const res = await fetch('/api/calendar', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                      body: JSON.stringify({ title: newEventTitle.trim(), date: newEventDate, color: '#3b82f6' })
+                                    });
+                                    if (res.ok) {
+                                      const ev = await res.json();
+                                      setCalendarEvents([...calendarEvents, ev]);
+                                      setNewEventTitle('');
+                                      setIsAddEventFormOpen(false);
+                                    }
+                                  } catch (err) { console.error(err); }
+                                })();
+                              }
+                            }}
+                          />
+                        </div>
+                        <div style={{ flex: '1', minWidth: '160px' }}>
+                          <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Date</label>
+                          <input
+                            type="date"
+                            value={newEventDate}
+                            onChange={(e) => setNewEventDate(e.target.value)}
+                            style={{
+                              width: '100%', padding: '12px 16px', borderRadius: '12px',
+                              border: '1px solid var(--border-color)', background: 'var(--bg-main)',
+                              color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none'
+                            }}
+                          />
+                        </div>
+                        <button
+                          className="blue-btn"
+                          disabled={!newEventTitle.trim()}
+                          onClick={async () => {
+                            try {
+                              const res = await fetch('/api/calendar', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                body: JSON.stringify({ title: newEventTitle.trim(), date: newEventDate, color: '#3b82f6' })
+                              });
+                              if (res.ok) {
+                                const ev = await res.json();
+                                setCalendarEvents([...calendarEvents, ev]);
+                                setNewEventTitle('');
+                                setIsAddEventFormOpen(false);
+                              }
+                            } catch (err) { console.error(err); }
+                          }}
+                          style={{ padding: '12px 24px', fontSize: '0.92rem', whiteSpace: 'nowrap' }}
+                        >
+                          Save Event
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Sub-tabs */}
                   <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', overflowX: 'auto', paddingBottom: '8px' }}>
