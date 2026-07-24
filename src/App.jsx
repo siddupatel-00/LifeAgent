@@ -1903,7 +1903,8 @@ const handleDeleteHabitDb = async (id) => {
                           {/* 7-Day Activity Pill Heatmap */}
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px', marginBottom: '16px' }}>
                             {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((dayLetter, dIdx) => {
-                              const isCompleted = dIdx === 6 ? item.checkedToday : false; // Only today's status is real data
+                              const todayIdx = (new Date().getDay() + 6) % 7;
+                              const isCompleted = dIdx === todayIdx ? item.checkedToday : false;
                               return (
                                 <div key={dIdx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
                                   <div style={{
