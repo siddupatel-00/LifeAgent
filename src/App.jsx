@@ -233,6 +233,12 @@ export default function App() {
     }
   }, [trashNotes]);
 
+  useEffect(() => {
+    if (notesViewMode === 'trash' && trashNotes.length === 0) {
+      setNotesViewMode('active');
+    }
+  }, [trashNotes.length, notesViewMode]);
+
   // 7) Persistent Side Personal AI Assistant Panel state
   const [isAiSidePanelOpen, setIsAiSidePanelOpen] = useState(true);
 
@@ -2258,17 +2264,19 @@ const handleDeleteHabitDb = async (id) => {
                         >
                           📖 Active ({notesList.length})
                         </button>
-                        <button
-                          onClick={() => setNotesViewMode('trash')}
-                          style={{
-                            flex: 1, padding: '8px', borderRadius: '10px', border: 'none',
-                            background: notesViewMode === 'trash' ? 'rgba(239, 68, 68, 0.18)' : 'transparent',
-                            color: notesViewMode === 'trash' ? '#ef4444' : 'var(--text-muted)',
-                            fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', transition: 'all 0.2s'
-                          }}
-                        >
-                          🗑️ Trash ({trashNotes.length})
-                        </button>
+                        {trashNotes.length > 0 && (
+                          <button
+                            onClick={() => setNotesViewMode('trash')}
+                            style={{
+                              flex: 1, padding: '8px', borderRadius: '10px', border: 'none',
+                              background: notesViewMode === 'trash' ? 'rgba(239, 68, 68, 0.18)' : 'transparent',
+                              color: notesViewMode === 'trash' ? '#ef4444' : 'var(--text-muted)',
+                              fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', transition: 'all 0.2s'
+                            }}
+                          >
+                            🗑️ Trash ({trashNotes.length})
+                          </button>
+                        )}
                       </div>
 
                       {notesViewMode === 'active' ? (
@@ -2518,7 +2526,20 @@ const handleDeleteHabitDb = async (id) => {
 
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
                             <span>{notesViewMode === 'active' ? '💡 Tip: Any note with "🤖 Shared with Personal AI Assistant" checked can be queried directly in your AI Assistant!' : '🗑️ Viewing note in Trash. Restore it to edit or keep permanently.'}</span>
-                            <span style={{ fontWeight: 700, color: notesViewMode === 'active' ? 'var(--accent-blue)' : '#ef4444' }}>{notesViewMode === 'active' ? 'Auto-Saved ✓' : 'In Trash Bin'}</span>
+                            {notesViewMode === 'active' ? (
+                              <button
+                                onClick={async () => {
+                                  await handleUpdateNoteDb(currentNote);
+                                  alert('Note saved to database!');
+                                }}
+                                className="blue-btn"
+                                style={{ padding: '8px 20px', fontSize: '0.88rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}
+                              >
+                                <Save size={16} /> Save Note
+                              </button>
+                            ) : (
+                              <span style={{ fontWeight: 700, color: '#ef4444' }}>In Trash Bin</span>
+                            )}
                           </div>
                         </div>
                       );
