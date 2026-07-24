@@ -97,7 +97,7 @@ export default function App() {
     setAuthLoading(true);
     setAuthError('');
     try {
-      const endpoint = authMode === 'login' ? '/api/auth/login' : '/api/auth/register';
+      const endpoint = authMode === 'login' ? '/api/auth?action=login' : '/api/auth?action=register';
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

@@ -20,7 +20,7 @@ export default function BodyGym({ token, showToast }) {
 
   const fetchWorkouts = async () => {
     try {
-      const res = await fetch('/api/workouts', {
+      const res = await fetch('/api/fitness?type=workouts', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -34,7 +34,7 @@ export default function BodyGym({ token, showToast }) {
 
   const fetchStats = async () => {
     try {
-      const res = await fetch('/api/body-stats', {
+      const res = await fetch('/api/fitness?type=body-stats', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -63,7 +63,7 @@ export default function BodyGym({ token, showToast }) {
         date: new Date().toISOString().split('T')[0]
       };
       
-      const res = await fetch('/api/workouts', {
+      const res = await fetch('/api/fitness?type=workouts', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -86,7 +86,7 @@ export default function BodyGym({ token, showToast }) {
 
   const handleDeleteWorkout = async (id) => {
     try {
-      const res = await fetch('/api/workouts', {
+      const res = await fetch('/api/fitness?type=workouts', {
         method: 'DELETE',
         headers: { 
           'Content-Type': 'application/json',
@@ -114,7 +114,7 @@ export default function BodyGym({ token, showToast }) {
         date: new Date().toISOString().split('T')[0]
       };
       
-      const res = await fetch('/api/body-stats', {
+      const res = await fetch('/api/fitness?type=body-stats', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -137,7 +137,7 @@ export default function BodyGym({ token, showToast }) {
 
   const handleDeleteStat = async (id) => {
     try {
-      const res = await fetch('/api/body-stats', {
+      const res = await fetch('/api/fitness?type=body-stats', {
         method: 'DELETE',
         headers: { 
           'Content-Type': 'application/json',
