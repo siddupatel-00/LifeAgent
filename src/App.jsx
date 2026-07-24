@@ -792,7 +792,7 @@ const handleDeleteHabitDb = async (id) => {
             <button 
               className="blue-btn" 
               style={{ padding: '9px 22px', fontSize: '0.9rem' }}
-              onClick={() => { setWaitlistSuccess(false); navigate('waitlist', '/waitlist'); }}
+              onClick={() => { setWaitlistSuccess(false); navigate('auth', '/auth'); }}
             >
               Sign Up <ArrowRight size={16} />
             </button>
