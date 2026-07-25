@@ -74,10 +74,54 @@ export default function App() {
 
   // Dashboard state & Global Timeframe Filter
   const [activeTab, setActiveTab] = useState('ai'); // 'ai', 'habits', 'finance', 'body', 'sleep', 'analytics', 'settings'
-  const [previewTab, setPreviewTab] = useState('AI'); // 'Money', 'Sleep', 'Calendar', 'Notes', 'Gym', 'Analytics', 'AI', 'Habits'
+  const [previewTab, setPreviewTab] = useState('Money'); // 'Money', 'Sleep', 'Calendar', 'Notes', 'Gym', 'Analytics', 'AI', 'Habits'
   const [timeRange, setTimeRange] = useState('today'); // 'today', '3d', '7d', '14d', '25d', '30d', '1m', '3m', '6m', '12m', 'lifetime'
   const [isTimeMenuOpen, setIsTimeMenuOpen] = useState(false);
-  const timeDropdownRef = useRef(null);
+  const PREVIEW_TABS = ['Money', 'Sleep', 'Calendar', 'Notes', 'Gym', 'AI', 'Habits', 'Analytics'];
+  const [pauseAutoCycleUntil, setPauseAutoCycleUntil] = useState(0);
+
+  // Auto-cycle landing page preview tabs every 3.5 seconds (pauses 6.5s on click)
+  useEffect(() => {
+    if (currentPage !== 'landing') return;
+
+    const interval = setInterval(() => {
+      if (Date.now() < pauseAutoCycleUntil) return;
+
+      setPreviewTab(prev => {
+        const idx = PREVIEW_TABS.indexOf(prev);
+        const nextIdx = (idx + 1) % PREVIEW_TABS.length;
+        return PREVIEW_TABS[nextIdx];
+      });
+    }, 3500);
+
+    return () => clearInterval(interval);
+  }, [currentPage, pauseAutoCycleUntil]);
+
+  const tabRefs = useRef({});
+  const [pillStyle, setPillStyle] = useState({ left: 0, width: 0, opacity: 0 });
+
+  // Update sliding blue pill indicator position whenever previewTab changes
+  useEffect(() => {
+    if (currentPage !== 'landing') return;
+    const updatePill = () => {
+      const currentBtn = tabRefs.current[previewTab];
+      if (currentBtn) {
+        setPillStyle({
+          left: currentBtn.offsetLeft,
+          width: currentBtn.offsetWidth,
+          opacity: 1
+        });
+      }
+    };
+    updatePill();
+    window.addEventListener('resize', updatePill);
+    return () => window.removeEventListener('resize', updatePill);
+  }, [previewTab, currentPage]);
+
+  const handlePreviewTabClick = (tabId) => {
+    setPreviewTab(tabId);
+    setPauseAutoCycleUntil(Date.now() + 6500);
+  };
 
   // Scroll swipe-up entrance animation observer for landing page elements
   useEffect(() => {
@@ -1158,39 +1202,60 @@ const handleDeleteHabitDb = async (id) => {
                   </span>
                 </div>
 
-                {/* Interactive Tabs Row: Money, Sleep, Calendar, Notes, Gym, Analytics, AI, Habits */}
-                <div style={{ display: 'flex', gap: '4px', overflowX: 'auto', padding: '2px', scrollbarWidth: 'none' }}>
+                {/* Interactive Tabs Row with Physical Sliding Blue Pill */}
+                <div style={{ display: 'flex', gap: '4px', overflowX: 'auto', padding: '2px', scrollbarWidth: 'none', position: 'relative' }}>
+                  {/* Sliding Blue Pill Indicator (Reverse-U Motion) */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '2px',
+                      left: `${pillStyle.left}px`,
+                      width: `${pillStyle.width}px`,
+                      height: '35px',
+                      borderRadius: '10px',
+                      background: 'var(--accent-blue)',
+                      boxShadow: '0 4px 18px rgba(59, 130, 246, 0.45)',
+                      transition: 'all 0.65s cubic-bezier(0.85, 0.05, 0.15, 0.95)',
+                      pointerEvents: 'none',
+                      zIndex: 1,
+                      opacity: pillStyle.opacity
+                    }}
+                  />
+
                   {[
                     { id: 'Money', label: 'Money', icon: DollarSign },
                     { id: 'Sleep', label: 'Sleep', icon: SleepIcon },
                     { id: 'Calendar', label: 'Calendar', icon: Calendar },
                     { id: 'Notes', label: 'Notes', icon: FileText },
                     { id: 'Gym', label: 'Gym', icon: Dumbbell },
-                    { id: 'Analytics', label: 'Analytics', icon: BarChart3 },
                     { id: 'AI', label: 'AI', icon: Bot },
                     { id: 'Habits', label: 'Habits', icon: CheckCircle2 },
+                    { id: 'Analytics', label: 'Analytics', icon: BarChart3 },
                   ].map((tab) => {
                     const Icon = tab.icon;
                     const isActive = previewTab === tab.id;
                     return (
                       <button
                         key={tab.id}
-                        onClick={() => setPreviewTab(tab.id)}
+                        ref={el => (tabRefs.current[tab.id] = el)}
+                        onClick={() => handlePreviewTabClick(tab.id)}
                         style={{
                           display: 'flex',
                           alignItems: 'center',
                           gap: '6px',
-                          padding: '7px 13px',
+                          padding: '7px 14px',
                           borderRadius: '10px',
                           fontSize: '0.85rem',
                           fontWeight: isActive ? 700 : 500,
                           color: isActive ? '#ffffff' : 'var(--text-muted)',
-                          background: isActive ? 'var(--accent-blue)' : 'transparent',
+                          background: 'transparent',
                           border: 'none',
                           cursor: 'pointer',
-                          transition: 'all 0.2s ease',
+                          position: 'relative',
+                          zIndex: 2,
+                          transition: 'color 0.4s ease, transform 0.4s ease',
                           whiteSpace: 'nowrap',
-                          boxShadow: isActive ? '0 4px 14px rgba(59, 130, 246, 0.4)' : 'none'
+                          transform: isActive ? 'scale(1.03)' : 'scale(1)'
                         }}
                       >
                         <Icon size={14} />
@@ -1206,7 +1271,7 @@ const handleDeleteHabitDb = async (id) => {
                 
                 {/* 1. MONEY TAB MOCK */}
                 {previewTab === 'Money' && (
-                  <div className="animate-entrance" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <div className="animate-tab-matter" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
                       <div className="glass-card" style={{ padding: '18px', borderRadius: '16px' }}>
                         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Monthly Income</div>
@@ -1258,7 +1323,7 @@ const handleDeleteHabitDb = async (id) => {
 
                 {/* 2. SLEEP TAB MOCK */}
                 {previewTab === 'Sleep' && (
-                  <div className="animate-entrance" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <div className="animate-tab-matter" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '20px', alignItems: 'stretch' }}>
                       <div className="glass-card" style={{ padding: '22px', borderRadius: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                         <div>
@@ -1309,7 +1374,7 @@ const handleDeleteHabitDb = async (id) => {
 
                 {/* 3. CALENDAR TAB MOCK */}
                 {previewTab === 'Calendar' && (
-                  <div className="animate-entrance" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div className="animate-tab-matter" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
                         <div style={{ fontSize: '1.1rem', fontWeight: 800 }}>Today's Timeline Schedule</div>
@@ -1345,7 +1410,7 @@ const handleDeleteHabitDb = async (id) => {
 
                 {/* 4. NOTES TAB MOCK */}
                 {previewTab === 'Notes' && (
-                  <div className="animate-entrance" style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                  <div className="animate-tab-matter" style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
                     <div className="glass-card" style={{ padding: '22px', borderRadius: '16px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -1376,7 +1441,7 @@ const handleDeleteHabitDb = async (id) => {
 
                 {/* 5. GYM TAB MOCK */}
                 {previewTab === 'Gym' && (
-                  <div className="animate-entrance" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <div className="animate-tab-matter" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
                       <div className="glass-card" style={{ padding: '18px', borderRadius: '16px' }}>
                         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Active Session</div>
@@ -1418,7 +1483,7 @@ const handleDeleteHabitDb = async (id) => {
 
                 {/* 6. ANALYTICS TAB MOCK */}
                 {previewTab === 'Analytics' && (
-                  <div className="animate-entrance" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <div className="animate-tab-matter" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
                       <div className="glass-card" style={{ padding: '18px', borderRadius: '16px' }}>
                         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Habit Consistency</div>
@@ -1426,9 +1491,9 @@ const handleDeleteHabitDb = async (id) => {
                         <div style={{ fontSize: '0.75rem', color: '#10b981', marginTop: '4px' }}>24 day active streak</div>
                       </div>
                       <div className="glass-card" style={{ padding: '18px', borderRadius: '16px' }}>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Sleep-Productivity Score</div>
-                        <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#10b981', marginTop: '4px' }}>+0.91</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>Strong positive correlation</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Monthly Income / Savings</div>
+                        <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#10b981', marginTop: '4px' }}>+$6,450.00</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>71.7% Net Savings Rate</div>
                       </div>
                       <div className="glass-card" style={{ padding: '18px', borderRadius: '16px' }}>
                         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Weekly Deep Work</div>
@@ -1437,23 +1502,53 @@ const handleDeleteHabitDb = async (id) => {
                       </div>
                     </div>
 
-                    <div className="glass-card" style={{ padding: '20px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      <div style={{ fontSize: '0.92rem', fontWeight: 700 }}>30-Day Executive Telemetry</div>
-                      <div style={{ display: 'flex', height: '120px', alignItems: 'flex-end', gap: '8px', paddingTop: '10px' }}>
-                        {[65, 78, 82, 90, 85, 88, 94, 92, 96, 89, 94, 98].map((val, idx) => (
-                          <div key={idx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', height: '100%', justifyContent: 'flex-end' }}>
-                            <div style={{ width: '100%', height: `${val}%`, background: idx === 11 ? 'var(--accent-blue)' : 'rgba(59, 130, 246, 0.3)', borderRadius: '6px', transition: 'all 0.3s' }} />
-                          </div>
-                        ))}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
+                      {/* Executive Telemetry Graph */}
+                      <div className="glass-card" style={{ padding: '20px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <div style={{ fontSize: '0.92rem', fontWeight: 700 }}>30-Day Executive Telemetry</div>
+                        <div style={{ display: 'flex', height: '110px', alignItems: 'flex-end', gap: '6px', paddingTop: '10px' }}>
+                          {[65, 78, 82, 90, 85, 88, 94, 92, 96, 89, 94, 98].map((val, idx) => (
+                            <div key={idx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
+                              <div style={{ width: '100%', height: `${val}%`, background: idx === 11 ? 'var(--accent-blue)' : 'rgba(59, 130, 246, 0.3)', borderRadius: '6px' }} />
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center' }}>Habit & Performance Telemetry (Peak at 98%)</div>
                       </div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center' }}>Daily Progress Telemetry Graph (Peak at 98%)</div>
+
+                      {/* Money & Cash Flow Graph */}
+                      <div className="glass-card" style={{ padding: '20px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.92rem', fontWeight: 700 }}>Money & Cash Flow Graph</span>
+                          <span style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 600 }}>+$4,629.60 Saved</span>
+                        </div>
+                        <div style={{ display: 'flex', height: '110px', alignItems: 'flex-end', gap: '10px', paddingTop: '10px' }}>
+                          {[
+                            { month: 'Jan', inc: 70, exp: 30 },
+                            { month: 'Feb', inc: 80, exp: 35 },
+                            { month: 'Mar', inc: 85, exp: 40 },
+                            { month: 'Apr', inc: 75, exp: 32 },
+                            { month: 'May', inc: 92, exp: 38 },
+                            { month: 'Jun', inc: 100, exp: 42 },
+                          ].map((m, idx) => (
+                            <div key={idx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', height: '100%', justifyContent: 'flex-end' }}>
+                              <div style={{ display: 'flex', gap: '3px', alignItems: 'flex-end', width: '100%', height: '100%' }}>
+                                <div style={{ flex: 1, height: `${m.inc}%`, background: '#10b981', borderRadius: '4px 4px 0 0' }} />
+                                <div style={{ flex: 1, height: `${m.exp}%`, background: '#ff5252', borderRadius: '4px 4px 0 0', opacity: 0.8 }} />
+                              </div>
+                              <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>{m.month}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center' }}>Monthly Income (Green) vs Expenses (Red)</div>
+                      </div>
                     </div>
                   </div>
                 )}
 
                 {/* 7. AI TAB MOCK */}
                 {previewTab === 'AI' && (
-                  <div className="animate-entrance" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div className="animate-tab-matter" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     <div className="glass-card" style={{ padding: '18px', borderRadius: '16px', background: 'var(--bg-card)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
                         <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'var(--accent-blue)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -1486,7 +1581,7 @@ const handleDeleteHabitDb = async (id) => {
 
                 {/* 8. HABITS TAB MOCK */}
                 {previewTab === 'Habits' && (
-                  <div className="animate-entrance" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div className="animate-tab-matter" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
                         <div style={{ fontSize: '1.1rem', fontWeight: 800 }}>Daily Habit Checklist</div>

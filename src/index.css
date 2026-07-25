@@ -53,6 +53,23 @@ body {
 }
 
 /* Typography & Animations */
+/* Smooth Tab Matter Slide Up & Slowly Appear Animation */
+@keyframes tabMatterSlide {
+  0% {
+    opacity: 0;
+    transform: translateY(32px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-tab-matter {
+  animation: tabMatterSlide 0.75s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+}
+
 .serif-italic {
   font-family: var(--font-serif);
   font-style: italic;
@@ -103,7 +120,7 @@ body {
   background-color: #10b981;
 }
 
-/* Safe GPU Entrance Animations */
+/* Safe GPU Entrance Animations & Tab Transitions with Reverse-U Motion Timing Curve */
 @keyframes smoothFloatUp {
   from {
     opacity: 0;
@@ -115,8 +132,24 @@ body {
   }
 }
 
-.animate-entrance {
-  animation: smoothFloatUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+@keyframes tabReverseUEntrance {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+.animate-entrance,
+.animate-tab-entrance {
+  animation: tabReverseUEntrance 0.55s cubic-bezier(0.85, 0.05, 0.15, 0.95) forwards;
+}
+
+.tab-transition {
+  transition: all 0.55s cubic-bezier(0.85, 0.05, 0.15, 0.95);
 }
 
 /* Smooth Swipe-Up Scroll Entrance Animations (IntersectionObserver driven) */
