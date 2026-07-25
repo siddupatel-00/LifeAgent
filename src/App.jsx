@@ -620,20 +620,42 @@ const handleDeleteHabitDb = async (id) => {
       const currentYear = new Date().getFullYear();
 
       const systemPrompt = `
-        You are an autonomous AI assistant in a personal dashboard.
+        You are an autonomous AI executive assistant in LifeAgent dashboard.
         CRITICAL TIME CONTEXT: Today's current date is ${todayStr} (Year: ${currentYear}).
-        ALWAYS calculate dates relative to today's date ${todayStr} and year ${currentYear}. Do NOT use 2024 or past years unless explicitly requested by user.
+        ALWAYS calculate dates relative to today's date ${todayStr} and year ${currentYear}. Do NOT use past years unless explicitly requested.
 
-        User's calendar events: ${JSON.stringify(calendarEvents)}
-        User's habits/todayItems: ${JSON.stringify(todayItems)}
-        User's transactions summary: ${JSON.stringify(transactions)}
-        User's shared notes: ${JSON.stringify(notesList.filter(n => n.shareWithAi))}
-        
-        If the user asks to add event(s) to the calendar, respond with one [CALENDAR_EVENT] block for EACH event requested:
-        [CALENDAR_EVENT]{"title":"...","date":"YYYY-MM-DD","endDate":"YYYY-MM-DD or null","color":"#hex"}[/CALENDAR_EVENT]
-        Make the color a valid hex code (e.g. #3b82f6 for blue, #ef4444 for red).
-        You can output multiple [CALENDAR_EVENT]...[/CALENDAR_EVENT] blocks if multiple events are requested.
-        Provide a helpful natural language text response as well.
+        User's live dashboard data context:
+        - Calendar events: ${JSON.stringify(calendarEvents)}
+        - Habits / Today items: ${JSON.stringify(todayItems)}
+        - Money Transactions: ${JSON.stringify(transactions)}
+        - Shared notes: ${JSON.stringify(notesList.filter(n => n.shareWithAi))}
+
+        YOU HAVE FULL AUTONOMOUS PERMISSION to manage all user metrics across all modules!
+        When the user requests you to create, log, add, or record anything, include the corresponding JSON action block(s) inside your response text:
+
+        1. Calendar Event:
+        [CALENDAR_EVENT]{"title":"Meeting","date":"YYYY-MM-DD","endDate":null,"color":"#3b82f6"}[/CALENDAR_EVENT]
+
+        2. Create Habit:
+        [ADD_HABIT]{"label":"Drink 2L Water","category":"Health","target":"Daily"}[/ADD_HABIT]
+
+        3. Log Spending or Earning (Money Tracker):
+        [ADD_TRANSACTION]{"title":"Groceries","amount":45,"type":"spend","category":"Food","date":"${todayStr}"}[/ADD_TRANSACTION]
+        (Note: "type" can be "spend" or "earn")
+
+        4. Create Note / Journal Entry:
+        [ADD_NOTE]{"title":"Meeting Notes","content":"Discussed project roadmap","category":"General"}[/ADD_NOTE]
+
+        5. Log Sleep Entry:
+        [ADD_SLEEP]{"date":"${todayStr}","hours":8,"minutes":0,"sleep_time":"23:00","wake_time":"07:00","quality":"Good","notes":""}[/ADD_SLEEP]
+
+        6. Log Workout / Gym Routine:
+        [ADD_WORKOUT]{"title":"Morning Run","category":"Cardio","duration_mins":45,"calories":350,"notes":""}[/ADD_WORKOUT]
+
+        7. Log Body Stats / Weight:
+        [ADD_BODY_STATS]{"weight":75,"target_weight":70,"protein":120,"hydration":2.5}[/ADD_BODY_STATS]
+
+        You can output multiple action blocks if multiple items are requested. Always accompany action blocks with a friendly, helpful natural language confirmation.
       `;
       
       let responseText = "";
@@ -674,44 +696,213 @@ const handleDeleteHabitDb = async (id) => {
         responseText = result.response.text();
       }
       
-      // Parse ALL calendar events
-      const eventRegex = /\[CALENDAR_EVENT\](.*?)\[\/CALENDAR_EVENT\]/gs;
-      const matches = [...responseText.matchAll(eventRegex)];
       let finalReply = responseText;
-      
-      if (matches.length > 0) {
+
+      // 1. Parse CALENDAR_EVENT
+      const eventMatches = [...responseText.matchAll(/\[CALENDAR_EVENT\](.*?)\[\/CALENDAR_EVENT\]/gs)];
+      if (eventMatches.length > 0) {
         const newEvents = [];
-        for (const match of matches) {
+        for (const match of eventMatches) {
           try {
             const eventData = JSON.parse(match[1]);
-            const newEvent = { 
-              id: Date.now() + Math.floor(Math.random() * 1000), 
-              title: eventData.title, 
-              date: eventData.date, 
-              end_date: eventData.endDate || null, 
-              color: eventData.color || '#3b82f6' 
-            };
-            // Persist to API and push created DB object
             const res = await fetch('/api/calendar', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-              body: JSON.stringify(newEvent)
+              body: JSON.stringify({ title: eventData.title, date: eventData.date, end_date: eventData.endDate || null, color: eventData.color || '#3b82f6' })
             });
             if (res.ok) {
               const createdEv = await res.json();
               newEvents.push(createdEv);
-            } else {
-              newEvents.push(newEvent);
             }
-
             finalReply = finalReply.replace(match[0], '').trim();
           } catch (err) {
             console.error("Failed to parse calendar event JSON", err);
           }
         }
-
         if (newEvents.length > 0) {
           setCalendarEvents(prev => [...prev, ...newEvents]);
+          showToast?.(`${newEvents.length} Event(s) saved to Calendar`, 'success');
+        }
+      }
+
+      // 2. Parse ADD_HABIT
+      const habitMatches = [...responseText.matchAll(/\[ADD_HABIT\](.*?)\[\/ADD_HABIT\]/gs)];
+      if (habitMatches.length > 0) {
+        const addedHabits = [];
+        for (const match of habitMatches) {
+          try {
+            const data = JSON.parse(match[1]);
+            const res = await fetch('/api/habits', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              body: JSON.stringify({ label: data.label, category: data.category || 'General', target: data.target || 'Daily' })
+            });
+            if (res.ok) {
+              const h = await res.json();
+              addedHabits.push({ id: h.id, title: h.label, category: h.category, streak: h.streak || 0, target: h.target || '', checkedToday: false });
+              
+              // Create linked today item
+              fetch('/api/today', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ label: h.label, category: h.category, habit_id: h.id, time: '10:00 AM' })
+              }).then(r => r.ok && r.json()).then(tItem => {
+                if (tItem) setTodayItems(prev => [...prev, { id: tItem.id, title: tItem.label, category: tItem.category, time: tItem.time, checked: false, habitId: h.id }]);
+              }).catch(() => {});
+            }
+            finalReply = finalReply.replace(match[0], '').trim();
+          } catch (err) {
+            console.error("Failed to parse habit JSON", err);
+          }
+        }
+        if (addedHabits.length > 0) {
+          setHabits(prev => [...prev, ...addedHabits]);
+          showToast?.(`${addedHabits.length} Habit(s) created by ${aiName}`, 'success');
+        }
+      }
+
+      // 3. Parse ADD_TRANSACTION (Money Tracker Spending / Earning)
+      const txMatches = [...responseText.matchAll(/\[ADD_TRANSACTION\](.*?)\[\/ADD_TRANSACTION\]/gs)];
+      if (txMatches.length > 0) {
+        const addedTx = [];
+        for (const match of txMatches) {
+          try {
+            const data = JSON.parse(match[1]);
+            const res = await fetch('/api/transactions', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              body: JSON.stringify({
+                title: data.title,
+                amount: Number(data.amount) || 0,
+                type: data.type || 'spend',
+                category: data.category || 'General',
+                notes: data.notes || '',
+                date: data.date || todayStr
+              })
+            });
+            if (res.ok) {
+              const tx = await res.json();
+              addedTx.push({ id: tx.id, title: tx.title, amount: tx.amount, type: tx.type, category: tx.category, date: tx.date });
+            }
+            finalReply = finalReply.replace(match[0], '').trim();
+          } catch (err) {
+            console.error("Failed to parse transaction JSON", err);
+          }
+        }
+        if (addedTx.length > 0) {
+          setTransactions(prev => [...addedTx, ...prev]);
+          showToast?.(`Transaction recorded by ${aiName}`, 'success');
+        }
+      }
+
+      // 4. Parse ADD_NOTE (Notes & Journaling)
+      const noteMatches = [...responseText.matchAll(/\[ADD_NOTE\](.*?)\[\/ADD_NOTE\]/gs)];
+      if (noteMatches.length > 0) {
+        const addedNotes = [];
+        for (const match of noteMatches) {
+          try {
+            const data = JSON.parse(match[1]);
+            const res = await fetch('/api/notes', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              body: JSON.stringify({
+                title: data.title || 'Untitled Note',
+                content: data.content || '',
+                category: data.category || 'General',
+                date: todayStr,
+                share_with_ai: true
+              })
+            });
+            if (res.ok) {
+              const note = await res.json();
+              addedNotes.push({ id: note.id, title: note.title, content: note.content, category: note.category, date: note.date, shareWithAi: true });
+            }
+            finalReply = finalReply.replace(match[0], '').trim();
+          } catch (err) {
+            console.error("Failed to parse note JSON", err);
+          }
+        }
+        if (addedNotes.length > 0) {
+          setNotesList(prev => [...addedNotes, ...prev]);
+          showToast?.(`Note created by ${aiName}`, 'success');
+        }
+      }
+
+      // 5. Parse ADD_SLEEP (Sleep & Recovery)
+      const sleepMatches = [...responseText.matchAll(/\[ADD_SLEEP\](.*?)\[\/ADD_SLEEP\]/gs)];
+      if (sleepMatches.length > 0) {
+        for (const match of sleepMatches) {
+          try {
+            const data = JSON.parse(match[1]);
+            await fetch('/api/sleep', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              body: JSON.stringify({
+                date: data.date || todayStr,
+                hours: Number(data.hours) || 8,
+                minutes: Number(data.minutes) || 0,
+                sleep_time: data.sleep_time || '23:00',
+                wake_time: data.wake_time || '07:00',
+                quality: data.quality || 'Good',
+                notes: data.notes || ''
+              })
+            });
+            finalReply = finalReply.replace(match[0], '').trim();
+            showToast?.(`Sleep log saved by ${aiName}`, 'success');
+          } catch (err) {
+            console.error("Failed to parse sleep JSON", err);
+          }
+        }
+      }
+
+      // 6. Parse ADD_WORKOUT (Body & Gym)
+      const workoutMatches = [...responseText.matchAll(/\[ADD_WORKOUT\](.*?)\[\/ADD_WORKOUT\]/gs)];
+      if (workoutMatches.length > 0) {
+        for (const match of workoutMatches) {
+          try {
+            const data = JSON.parse(match[1]);
+            await fetch('/api/fitness?type=workouts', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              body: JSON.stringify({
+                title: data.title || 'Workout',
+                category: data.category || 'General',
+                duration_mins: Number(data.duration_mins) || 30,
+                calories: Number(data.calories) || 200,
+                notes: data.notes || '',
+                date: todayStr
+              })
+            });
+            finalReply = finalReply.replace(match[0], '').trim();
+            showToast?.(`Workout recorded by ${aiName}`, 'success');
+          } catch (err) {
+            console.error("Failed to parse workout JSON", err);
+          }
+        }
+      }
+
+      // 7. Parse ADD_BODY_STATS (Body & Gym stats)
+      const bodyMatches = [...responseText.matchAll(/\[ADD_BODY_STATS\](.*?)\[\/ADD_BODY_STATS\]/gs)];
+      if (bodyMatches.length > 0) {
+        for (const match of bodyMatches) {
+          try {
+            const data = JSON.parse(match[1]);
+            await fetch('/api/fitness?type=body-stats', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              body: JSON.stringify({
+                weight: Number(data.weight) || 0,
+                target_weight: Number(data.target_weight) || 0,
+                protein: Number(data.protein) || 0,
+                hydration: Number(data.hydration) || 0,
+                date: todayStr
+              })
+            });
+            finalReply = finalReply.replace(match[0], '').trim();
+            showToast?.(`Body stats logged by ${aiName}`, 'success');
+          } catch (err) {
+            console.error("Failed to parse body stats JSON", err);
+          }
         }
       }
       
