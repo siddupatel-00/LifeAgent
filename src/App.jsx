@@ -1051,14 +1051,14 @@ const handleDeleteHabitDb = async (id) => {
         </nav>
       )}
 
-      {/* LANDING PAGE (Apple Health / Raycast / Linear Inspired at /) */}
+      {/* LANDING PAGE (Personal AI Operating System at /) */}
       {currentPage === 'landing' && (
         <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 16px' }}>
           {/* HERO SECTION */}
-          <section className="animate-entrance" style={{ textAlign: 'center', padding: '60px 0 36px' }}>
+          <section className="animate-entrance scroll-swipe-up" style={{ textAlign: 'center', padding: '60px 0 36px' }}>
             <div className="badge" style={{ padding: '6px 18px', borderRadius: '50px', marginBottom: '28px', border: '1px solid rgba(59, 130, 246, 0.3)', background: 'rgba(59, 130, 246, 0.08)', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
               <div className="pulse-dot-container"><div className="pulse-dot-ring"></div><div className="pulse-dot-core"></div></div>
-              <span style={{ fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.5px' }}>APPLE HEALTH × RAYCAST × LINEAR ARCHITECTURE</span>
+              <span style={{ fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.5px' }}>HEALTH PRECISION × AUTONOMOUS AI ENGINE</span>
             </div>
 
             <h1 style={{ fontSize: '3.8rem', fontWeight: 900, lineHeight: 1.08, letterSpacing: '-2px', marginBottom: '22px', color: 'var(--text-main)' }}>
@@ -1105,7 +1105,7 @@ const handleDeleteHabitDb = async (id) => {
             {/* PILL HIGHLIGHTS */}
             <div style={{ display: 'flex', justifyContent: 'center', gap: '14px', alignItems: 'center', fontSize: '0.88rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
               <span className="pill-tag" style={{ padding: '6px 16px', borderRadius: '30px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
-                <Check size={14} color="var(--accent-blue)" /> Apple Health & Linear Precision
+                <Check size={14} color="var(--accent-blue)" /> Health Precision Analytics
               </span>
               <span className="pill-tag" style={{ padding: '6px 16px', borderRadius: '30px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
                 <Check size={14} color="var(--accent-blue)" /> Unified Personal AI Engine
@@ -1117,7 +1117,7 @@ const handleDeleteHabitDb = async (id) => {
           </section>
 
           {/* INTERACTIVE 80% PRODUCT PREVIEW SECTION */}
-          <section className="animate-entrance delay-1" style={{ margin: '30px auto 80px', width: '85%', minWidth: '320px', maxWidth: '1100px' }}>
+          <section className="animate-entrance scroll-swipe-up delay-1" style={{ margin: '30px auto 80px', width: '85%', minWidth: '320px', maxWidth: '1100px' }}>
             <div 
               className="glass-card" 
               style={{ 
@@ -1254,7 +1254,7 @@ const handleDeleteHabitDb = async (id) => {
                       <div className="glass-card" style={{ padding: '22px', borderRadius: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                         <div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>Apple Health Sleep Index</span>
+                            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>Health Precision Sleep Index</span>
                             <span className="pill-tag" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', fontSize: '0.75rem', border: 'none' }}>Optimal Recovery</span>
                           </div>
                           <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', marginTop: '12px' }}>
@@ -1525,32 +1525,32 @@ const handleDeleteHabitDb = async (id) => {
           </section>
 
           {/* THREE PILLAR FEATURE CARDS */}
-          <section className="animate-entrance delay-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginBottom: '80px' }}>
-            <div className="glass-card motion-card" style={{ padding: '30px', borderRadius: '20px' }}>
+          <section className="scroll-swipe-up delay-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginBottom: '80px' }}>
+            <div className="glass-card motion-card scroll-swipe-up" style={{ padding: '30px', borderRadius: '20px' }}>
               <div style={{ background: 'var(--accent-blue-dim)', width: '48px', height: '48px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
                 <Activity size={24} color="var(--accent-blue)" />
               </div>
-              <h4 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '10px' }}>Apple Health Precision</h4>
+              <h4 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '10px' }}>Health Precision Engine</h4>
               <p style={{ color: 'var(--text-muted)', lineHeight: 1.6, fontSize: '0.95rem' }}>
                 Glanceable biometrics, workout logging, sleep stages, and progress telemetry engineered for peak physical and mental clarity.
               </p>
             </div>
 
-            <div className="glass-card motion-card" style={{ padding: '30px', borderRadius: '20px' }}>
+            <div className="glass-card motion-card scroll-swipe-up" style={{ padding: '30px', borderRadius: '20px' }}>
               <div style={{ background: 'var(--accent-blue-dim)', width: '48px', height: '48px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
                 <Zap size={24} color="var(--accent-blue)" />
               </div>
-              <h4 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '10px' }}>Raycast Speed & Shortcuts</h4>
+              <h4 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '10px' }}>High-Velocity Command Palette</h4>
               <p style={{ color: 'var(--text-muted)', lineHeight: 1.6, fontSize: '0.95rem' }}>
                 Instant keyboard commands (`⌘K` / `Ctrl+J`), zero lag workspace switching, and high-velocity workflow automation.
               </p>
             </div>
 
-            <div className="glass-card motion-card" style={{ padding: '30px', borderRadius: '20px' }}>
+            <div className="glass-card motion-card scroll-swipe-up" style={{ padding: '30px', borderRadius: '20px' }}>
               <div style={{ background: 'var(--accent-blue-dim)', width: '48px', height: '48px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
                 <Bot size={24} color="var(--accent-blue)" />
               </div>
-              <h4 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '10px' }}>Linear Design & AI Context</h4>
+              <h4 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '10px' }}>Personal AI Intelligence</h4>
               <p style={{ color: 'var(--text-muted)', lineHeight: 1.6, fontSize: '0.95rem' }}>
                 Sleek dark/light typography paired with a personal AI companion that understands your notes, budget, and habits in unison.
               </p>
@@ -1558,7 +1558,7 @@ const handleDeleteHabitDb = async (id) => {
           </section>
 
           {/* BOTTOM CTA CARD */}
-          <div className="glass-card animate-entrance delay-3" style={{ padding: '50px 30px', textAlign: 'center', borderRadius: '24px', border: '1px solid var(--border-color)', marginBottom: '40px' }}>
+          <div className="glass-card scroll-swipe-up delay-3" style={{ padding: '50px 30px', textAlign: 'center', borderRadius: '24px', border: '1px solid var(--border-color)', marginBottom: '40px' }}>
             <h3 style={{ fontSize: '2.2rem', fontWeight: 800, marginBottom: '14px', letterSpacing: '-1px' }}>
               Ready for your Personal AI Operating System?
             </h3>

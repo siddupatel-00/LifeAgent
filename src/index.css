@@ -106,8 +106,8 @@ body {
 /* Safe GPU Entrance Animations */
 @keyframes smoothFloatUp {
   from {
-    opacity: 0.01;
-    transform: translateY(18px);
+    opacity: 0;
+    transform: translateY(24px);
   }
   to {
     opacity: 1;
@@ -115,8 +115,31 @@ body {
   }
 }
 
+@keyframes swipeUpReveal {
+  from {
+    opacity: 0;
+    transform: translateY(40px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 .animate-entrance {
   animation: smoothFloatUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.scroll-swipe-up {
+  animation: swipeUpReveal cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-timeline: view();
+  animation-range: entry 15% cover 35%;
+}
+
+@supports not (animation-timeline: view()) {
+  .scroll-swipe-up {
+    animation: smoothFloatUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
 }
 
 .delay-1 { animation-delay: 0.08s; }
@@ -125,14 +148,14 @@ body {
 
 /* GPU Optimized Card Motion without layout thrashing */
 .motion-card {
-  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease, box-shadow 0.3s ease;
   transform: translateZ(0);
 }
 
 .motion-card:hover {
-  transform: translateY(-4px) translateZ(0);
+  transform: translateY(-6px) scale(1.01) translateZ(0);
   border-color: var(--accent-blue);
-  box-shadow: 0 16px 32px rgba(59, 130, 246, 0.15);
+  box-shadow: 0 20px 40px rgba(59, 130, 246, 0.18);
 }
 
 /* Navigation Bar */
