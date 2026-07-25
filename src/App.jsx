@@ -77,6 +77,7 @@ export default function App() {
   const [previewTab, setPreviewTab] = useState('Money'); // 'Money', 'Sleep', 'Calendar', 'Notes', 'Gym', 'Analytics', 'AI', 'Habits'
   const [timeRange, setTimeRange] = useState('today'); // 'today', '3d', '7d', '14d', '25d', '30d', '1m', '3m', '6m', '12m', 'lifetime'
   const [isTimeMenuOpen, setIsTimeMenuOpen] = useState(false);
+  const timeDropdownRef = useRef(null);
   const PREVIEW_TABS = ['Money', 'Sleep', 'Calendar', 'Notes', 'Gym', 'AI', 'Habits', 'Analytics'];
   const [pauseAutoCycleUntil, setPauseAutoCycleUntil] = useState(0);
 
