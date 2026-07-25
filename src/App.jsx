@@ -620,9 +620,9 @@ const handleDeleteHabitDb = async (id) => {
       const currentYear = new Date().getFullYear();
 
       const systemPrompt = `
-        You are an autonomous AI executive assistant in LifeAgent dashboard.
+        You are an autonomous AI executive assistant inside the LifeAgent dashboard.
         CRITICAL TIME CONTEXT: Today's current date is ${todayStr} (Year: ${currentYear}).
-        ALWAYS calculate dates relative to today's date ${todayStr} and year ${currentYear}. Do NOT use past years unless explicitly requested.
+        ALWAYS calculate dates relative to today's date ${todayStr} and year ${currentYear}.
 
         User's live dashboard data context:
         - Calendar events: ${JSON.stringify(calendarEvents)}
@@ -630,18 +630,19 @@ const handleDeleteHabitDb = async (id) => {
         - Money Transactions: ${JSON.stringify(transactions)}
         - Shared notes: ${JSON.stringify(notesList.filter(n => n.shareWithAi))}
 
-        YOU HAVE FULL AUTONOMOUS PERMISSION to manage all user metrics across all modules!
-        When the user requests you to create, log, add, or record anything, include the corresponding JSON action block(s) inside your response text:
+        MANDATORY INSTRUCTIONS FOR EXECUTING ACTIONS:
+        When the user mentions ANY spending, expense, earning, habit creation, note, sleep, workout, or event, YOU MUST ALWAYS INCLUDE THE EXACT JSON ACTION BLOCK IN YOUR RESPONSE! Do NOT just claim you added it in text without including the JSON action block tag!
 
-        1. Calendar Event:
-        [CALENDAR_EVENT]{"title":"Meeting","date":"YYYY-MM-DD","endDate":null,"color":"#3b82f6"}[/CALENDAR_EVENT]
+        Required Action Tags:
+        1. Log Money Spending or Earning:
+        [ADD_TRANSACTION]{"title":"Bus Travel","amount":100,"type":"spend","category":"Transport","date":"${todayStr}"}[/ADD_TRANSACTION]
+        (For earning use "type":"earn")
 
         2. Create Habit:
         [ADD_HABIT]{"label":"Drink 2L Water","category":"Health","target":"Daily"}[/ADD_HABIT]
 
-        3. Log Spending or Earning (Money Tracker):
-        [ADD_TRANSACTION]{"title":"Groceries","amount":45,"type":"spend","category":"Food","date":"${todayStr}"}[/ADD_TRANSACTION]
-        (Note: "type" can be "spend" or "earn")
+        3. Calendar Event:
+        [CALENDAR_EVENT]{"title":"Meeting","date":"${todayStr}","endDate":null,"color":"#3b82f6"}[/CALENDAR_EVENT]
 
         4. Create Note / Journal Entry:
         [ADD_NOTE]{"title":"Meeting Notes","content":"Discussed project roadmap","category":"General"}[/ADD_NOTE]
@@ -655,7 +656,7 @@ const handleDeleteHabitDb = async (id) => {
         7. Log Body Stats / Weight:
         [ADD_BODY_STATS]{"weight":75,"target_weight":70,"protein":120,"hydration":2.5}[/ADD_BODY_STATS]
 
-        You can output multiple action blocks if multiple items are requested. Always accompany action blocks with a friendly, helpful natural language confirmation.
+        Output the required action tag(s) first or alongside your natural language text confirmation.
       `;
       
       let responseText = "";
