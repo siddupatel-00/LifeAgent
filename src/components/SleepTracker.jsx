@@ -11,15 +11,41 @@ export default function SleepTracker({ token, showToast }) {
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
 
-  const [formData, setFormData] = useState({
-    date: new Date().toISOString().split('T')[0],
-    hours: 7,
-    minutes: 30,
-    sleep_time: '23:00',
-    wake_time: '06:30',
-    quality: 'Good',
-    notes: ''
-  });
+  const calcSleepStats = (bedTime, wakeTime) => {
+    if (!bedTime || !wakeTime) return { hours: 7, minutes: 30, quality: 'Good' };
+    const [sH, sM] = bedTime.split(':').map(Number);
+    const [wH, wM] = wakeTime.split(':').map(Number);
+    
+    let start = sH * 60 + sM;
+    let end = wH * 60 + wM;
+    if (end <= start) end += 24 * 60; // Overnight
+    
+    const diff = end - start;
+    const hours = Math.floor(diff / 60);
+    const minutes = diff % 60;
+    
+    const totalHrs = hours + (minutes / 60);
+    let quality = 'Good';
+    if (totalHrs >= 8) quality = 'Excellent';
+    else if (totalHrs >= 7) quality = 'Good';
+    else if (totalHrs >= 5.5) quality = 'Fair';
+    else quality = 'Poor';
+    
+    return { hours, minutes, quality };
+  };
+
+  const handleTimeChange = (field, val) => {
+    const sleepTime = field === 'sleep_time' ? val : formData.sleep_time;
+    const wakeTime = field === 'wake_time' ? val : formData.wake_time;
+    const { hours, minutes, quality } = calcSleepStats(sleepTime, wakeTime);
+    setFormData(prev => ({
+      ...prev,
+      [field]: val,
+      hours,
+      minutes,
+      quality
+    }));
+  };
 
   useEffect(() => {
     fetchLogs();
@@ -503,67 +529,67 @@ export default function SleepTracker({ token, showToast }) {
                 />
               </div>
 
-              {/* DURATION INPUTS: HOURS & MINUTES */}
+              {/* BED TIME & WAKE TIME */}
               <div style={{ display: 'flex', gap: '12px' }}>
                 <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: '6px', color: 'var(--accent-blue)' }}>Hours Slept</label>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: '6px', color: 'var(--accent-blue)' }}>Bed Time</label>
                   <input 
-                    type="number" 
-                    min="0" 
-                    max="24" 
-                    required 
-                    value={formData.hours}
-                    onChange={(e) => setFormData({...formData, hours: e.target.value})}
-                    style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--accent-blue)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '1.1rem', fontWeight: 800, outline: 'none' }}
+                    type="time" 
+                    required
+                    value={formData.sleep_time}
+                    onChange={(e) => handleTimeChange('sleep_time', e.target.value)}
+                    style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--accent-blue)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '1rem', fontWeight: 700, outline: 'none' }}
                   />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: '6px', color: 'var(--accent-blue)' }}>Minutes Slept</label>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: '6px', color: 'var(--accent-blue)' }}>Wake Time</label>
                   <input 
-                    type="number" 
-                    min="0" 
-                    max="59" 
-                    required 
-                    value={formData.minutes}
-                    onChange={(e) => setFormData({...formData, minutes: e.target.value})}
-                    style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--accent-blue)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '1.1rem', fontWeight: 800, outline: 'none' }}
+                    type="time" 
+                    required
+                    value={formData.wake_time}
+                    onChange={(e) => handleTimeChange('wake_time', e.target.value)}
+                    style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--accent-blue)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '1rem', fontWeight: 700, outline: 'none' }}
                   />
                 </div>
               </div>
 
-              {/* SLEEP & WAKE TIME OPTIONAL */}
-              <div style={{ display: 'flex', gap: '12px' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: '6px', color: 'var(--text-muted)' }}>Bed Time</label>
-                  <input 
-                    type="time" 
-                    value={formData.sleep_time}
-                    onChange={(e) => setFormData({...formData, sleep_time: e.target.value})}
-                    style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.9rem', outline: 'none' }}
-                  />
+              {/* LIVE AUTO-CALCULATED DURATION & QUALITY CARD */}
+              <div style={{ padding: '14px 18px', borderRadius: '14px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>Auto-Calculated Sleep</div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '2px' }}>
+                    {formData.hours} <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>hrs</span> {formData.minutes} <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>mins</span>
+                  </div>
                 </div>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: '6px', color: 'var(--text-muted)' }}>Wake Time</label>
-                  <input 
-                    type="time" 
-                    value={formData.wake_time}
-                    onChange={(e) => setFormData({...formData, wake_time: e.target.value})}
-                    style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.9rem', outline: 'none' }}
-                  />
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>Rating</div>
+                  <span 
+                    style={{ 
+                      display: 'inline-block', marginTop: '4px', padding: '4px 10px', borderRadius: '12px', 
+                      fontSize: '0.82rem', fontWeight: 700,
+                      background: formData.quality === 'Excellent' ? 'rgba(16, 185, 129, 0.15)' : formData.quality === 'Good' ? 'rgba(59, 130, 246, 0.15)' : formData.quality === 'Fair' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                      color: formData.quality === 'Excellent' ? '#10b981' : formData.quality === 'Good' ? '#3b82f6' : formData.quality === 'Fair' ? '#f59e0b' : '#ef4444'
+                    }}
+                  >
+                    {formData.quality === 'Excellent' && '🌟 Excellent'}
+                    {formData.quality === 'Good' && '😊 Good'}
+                    {formData.quality === 'Fair' && '😐 Moderate'}
+                    {formData.quality === 'Poor' && '🥱 Poor'}
+                  </span>
                 </div>
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: '6px', color: 'var(--text-muted)' }}>Sleep Quality</label>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: '6px', color: 'var(--text-muted)' }}>Sleep Quality (Override if needed)</label>
                 <select 
                   value={formData.quality} 
                   onChange={(e) => setFormData({...formData, quality: e.target.value})}
-                  style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.9rem', outline: 'none', appearance: 'none' }}
+                  style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.9rem', outline: 'none' }}
                 >
-                  <option value="Excellent">🌟 Excellent (8+ hours, deep sleep)</option>
-                  <option value="Good">😊 Good (7-8 hours, restful)</option>
-                  <option value="Fair">😐 Fair (5-7 hours, light sleep)</option>
-                  <option value="Poor">🥱 Poor (&lt; 5 hours, disrupted)</option>
+                  <option value="Excellent">🌟 Excellent (8+ hours)</option>
+                  <option value="Good">😊 Good (7-8 hours)</option>
+                  <option value="Fair">😐 Moderate (5.5-7 hours)</option>
+                  <option value="Poor">🥱 Poor (&lt; 5.5 hours)</option>
                 </select>
               </div>
 
