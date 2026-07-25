@@ -74,6 +74,7 @@ export default function App() {
 
   // Dashboard state & Global Timeframe Filter
   const [activeTab, setActiveTab] = useState('ai'); // 'ai', 'habits', 'finance', 'body', 'sleep', 'analytics', 'settings'
+  const [previewTab, setPreviewTab] = useState('AI'); // 'Money', 'Sleep', 'Calendar', 'Notes', 'Gym', 'Analytics', 'AI', 'Habits'
   const [timeRange, setTimeRange] = useState('today'); // 'today', '3d', '7d', '14d', '25d', '30d', '1m', '3m', '6m', '12m', 'lifetime'
   const [isTimeMenuOpen, setIsTimeMenuOpen] = useState(false);
   const timeDropdownRef = useRef(null);
@@ -997,7 +998,7 @@ const handleDeleteHabitDb = async (id) => {
               <h1 style={{ fontSize: '1.35rem', fontWeight: 800, letterSpacing: '-0.5px' }}>
                 LIFE <span className="serif-italic">AGENT</span>
               </h1>
-              <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 500 }}>All-in-One Personal & Personal AI Assistant</p>
+              <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 500 }}>Personal AI Operating System</p>
             </div>
           </div>
 
@@ -1050,171 +1051,536 @@ const handleDeleteHabitDb = async (id) => {
         </nav>
       )}
 
-      {/* LANDING PAGE (Personal AI Operating System at /) */}
+      {/* LANDING PAGE (Apple Health / Raycast / Linear Inspired at /) */}
       {currentPage === 'landing' && (
-        <main>
+        <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 16px' }}>
           {/* HERO SECTION */}
-          <section className="animate-entrance" style={{ textAlign: 'center', padding: '70px 0 50px' }}>
-            <div className="badge" style={{ padding: '6px 18px', borderRadius: '50px', marginBottom: '28px', border: '1px solid rgba(59, 130, 246, 0.3)', background: 'rgba(59, 130, 246, 0.08)' }}>
+          <section className="animate-entrance" style={{ textAlign: 'center', padding: '60px 0 36px' }}>
+            <div className="badge" style={{ padding: '6px 18px', borderRadius: '50px', marginBottom: '28px', border: '1px solid rgba(59, 130, 246, 0.3)', background: 'rgba(59, 130, 246, 0.08)', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
               <div className="pulse-dot-container"><div className="pulse-dot-ring"></div><div className="pulse-dot-core"></div></div>
-              <span style={{ fontWeight: 700, fontSize: '0.82rem', letterSpacing: '0.5px' }}>✦ PERSONAL AI OPERATING SYSTEM</span>
+              <span style={{ fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.5px' }}>APPLE HEALTH × RAYCAST × LINEAR ARCHITECTURE</span>
             </div>
 
-            <h1 style={{ fontSize: '3.8rem', fontWeight: 900, lineHeight: 1.1, letterSpacing: '-1.8px', marginBottom: '24px' }}>
+            <h1 style={{ fontSize: '3.8rem', fontWeight: 900, lineHeight: 1.08, letterSpacing: '-2px', marginBottom: '22px', color: 'var(--text-main)' }}>
               Your Personal AI Operating System
             </h1>
 
-            <p style={{ maxWidth: '720px', margin: '0 auto 36px', fontSize: '1.25rem', color: 'var(--text-muted)', lineHeight: 1.6, fontWeight: 400 }}>
+            <p style={{ maxWidth: '780px', margin: '0 auto 36px', fontSize: '1.25rem', color: 'var(--text-muted)', lineHeight: 1.6, fontWeight: 400 }}>
               Track your habits, money, sleep, workouts, calendar, notes and daily progress — while your AI understands everything in one place.
             </p>
 
-            <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '48px' }}>
-              <button className="blue-btn" style={{ fontSize: '1.1rem', padding: '16px 36px' }} onClick={() => navigate('auth', '/auth')}>
+            {/* CTAs */}
+            <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '32px' }}>
+              <button 
+                className="blue-btn" 
+                style={{ fontSize: '1.05rem', padding: '14px 32px', borderRadius: '14px', boxShadow: '0 8px 24px rgba(59, 130, 246, 0.35)' }} 
+                onClick={() => { setAuthMode('signup'); navigate('auth', '/auth'); }}
+              >
                 Get Started Free <ArrowRight size={18} />
               </button>
-              <button className="secondary-btn" style={{ fontSize: '1.1rem', padding: '16px 36px' }} onClick={() => navigate('auth', '/auth')}>
+              
+              <button 
+                className="secondary-btn" 
+                style={{ fontSize: '1.05rem', padding: '14px 26px', borderRadius: '14px', display: 'flex', alignItems: 'center', gap: '10px' }} 
+                onClick={() => { setAuthMode('signup'); navigate('auth', '/auth'); }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                </svg>
+                Continue with Google
+              </button>
+
+              <button 
+                className="secondary-btn" 
+                style={{ fontSize: '1.05rem', padding: '14px 26px', borderRadius: '14px' }} 
+                onClick={() => { setAuthMode('login'); navigate('auth', '/auth'); }}
+              >
                 <LogIn size={18} /> Sign In
               </button>
             </div>
+
+            {/* PILL HIGHLIGHTS */}
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '14px', alignItems: 'center', fontSize: '0.88rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
+              <span className="pill-tag" style={{ padding: '6px 16px', borderRadius: '30px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+                <Check size={14} color="var(--accent-blue)" /> Apple Health & Linear Precision
+              </span>
+              <span className="pill-tag" style={{ padding: '6px 16px', borderRadius: '30px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+                <Check size={14} color="var(--accent-blue)" /> Unified Personal AI Engine
+              </span>
+              <span className="pill-tag" style={{ padding: '6px 16px', borderRadius: '30px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+                <Check size={14} color="var(--accent-blue)" /> End-to-End Encrypted Data
+              </span>
+            </div>
           </section>
 
-          {/* 80% PRODUCT PREVIEW: INTERACTIVE / POLISHED MOCK DASHBOARD */}
-          <section className="animate-entrance delay-1" style={{ marginBottom: '90px' }}>
+          {/* INTERACTIVE 80% PRODUCT PREVIEW SECTION */}
+          <section className="animate-entrance delay-1" style={{ margin: '30px auto 80px', width: '85%', minWidth: '320px', maxWidth: '1100px' }}>
             <div 
               className="glass-card" 
               style={{ 
-                padding: '28px', borderRadius: '24px', border: '1px solid var(--border-color)', 
-                background: 'var(--bg-card)', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', position: 'relative', overflow: 'hidden' 
+                borderRadius: '24px', 
+                border: '1px solid var(--border-color)', 
+                overflow: 'hidden', 
+                boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.5), 0 0 35px rgba(59, 130, 246, 0.15)',
+                background: 'var(--bg-card)'
               }}
             >
-              {/* Mock App Header */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '20px', borderBottom: '1px solid var(--border-color)', marginBottom: '24px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              {/* Window Titlebar Header */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '14px 20px',
+                borderBottom: '1px solid var(--border-color)',
+                background: 'rgba(0, 0, 0, 0.25)',
+                flexWrap: 'wrap',
+                gap: '12px'
+              }}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                   <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ff5f56' }} />
                   <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ffbd2e' }} />
                   <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#27c93f' }} />
-                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)', marginLeft: '8px' }}>LifeAgent OS • Dashboard Preview</span>
+                  <span style={{ marginLeft: '12px', fontSize: '0.78rem', color: 'var(--text-muted)', fontFamily: 'monospace', opacity: 0.85 }}>
+                    LifeAgent OS — Command Center
+                  </span>
                 </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <span className="pill-tag" style={{ fontSize: '0.75rem' }}>● Live Sync</span>
-                  <span className="pill-tag" style={{ fontSize: '0.75rem', background: 'rgba(59, 130, 246, 0.15)', color: 'var(--accent-blue)' }}>AI Connected</span>
+
+                {/* Interactive Tabs Row: Money, Sleep, Calendar, Notes, Gym, Analytics, AI, Habits */}
+                <div style={{ display: 'flex', gap: '4px', overflowX: 'auto', padding: '2px', scrollbarWidth: 'none' }}>
+                  {[
+                    { id: 'Money', label: 'Money', icon: DollarSign },
+                    { id: 'Sleep', label: 'Sleep', icon: SleepIcon },
+                    { id: 'Calendar', label: 'Calendar', icon: Calendar },
+                    { id: 'Notes', label: 'Notes', icon: FileText },
+                    { id: 'Gym', label: 'Gym', icon: Dumbbell },
+                    { id: 'Analytics', label: 'Analytics', icon: BarChart3 },
+                    { id: 'AI', label: 'AI', icon: Bot },
+                    { id: 'Habits', label: 'Habits', icon: CheckCircle2 },
+                  ].map((tab) => {
+                    const Icon = tab.icon;
+                    const isActive = previewTab === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => setPreviewTab(tab.id)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '7px 13px',
+                          borderRadius: '10px',
+                          fontSize: '0.85rem',
+                          fontWeight: isActive ? 700 : 500,
+                          color: isActive ? '#ffffff' : 'var(--text-muted)',
+                          background: isActive ? 'var(--accent-blue)' : 'transparent',
+                          border: 'none',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          whiteSpace: 'nowrap',
+                          boxShadow: isActive ? '0 4px 14px rgba(59, 130, 246, 0.4)' : 'none'
+                        }}
+                      >
+                        <Icon size={14} />
+                        <span>{tab.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
-              {/* 8 Core Pillars Preview Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+              {/* Tab Display Area */}
+              <div style={{ padding: '28px', minHeight: '420px', background: 'var(--bg-main)' }}>
                 
-                {/* 1. Money */}
-                <div className="glass-card" style={{ padding: '20px', borderRadius: '16px', background: 'var(--bg-main)', border: '1px solid var(--border-color)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)' }}>MONEY</span>
-                    <DollarSign size={16} color="var(--accent-blue)" />
-                  </div>
-                  <div style={{ fontSize: '1.4rem', fontWeight: 800 }}>$4,250.00</div>
-                  <div style={{ fontSize: '0.75rem', color: '#22c55e', marginTop: '4px', fontWeight: 600 }}>+$1,200 this month</div>
-                </div>
+                {/* 1. MONEY TAB MOCK */}
+                {previewTab === 'Money' && (
+                  <div className="animate-entrance" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                      <div className="glass-card" style={{ padding: '18px', borderRadius: '16px' }}>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Monthly Income</div>
+                        <div style={{ fontSize: '1.7rem', fontWeight: 800, color: '#10b981', marginTop: '6px' }}>+$6,450.00</div>
+                        <div style={{ fontSize: '0.75rem', color: '#10b981', marginTop: '4px' }}>↑ 14% vs last month</div>
+                      </div>
+                      <div className="glass-card" style={{ padding: '18px', borderRadius: '16px' }}>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Total Expenses</div>
+                        <div style={{ fontSize: '1.7rem', fontWeight: 800, color: '#ef4444', marginTop: '6px' }}>-$1,820.40</div>
+                        <div style={{ fontSize: '0.75rem', color: '#10b981', marginTop: '4px' }}>↓ 8% spent vs budget</div>
+                      </div>
+                      <div className="glass-card" style={{ padding: '18px', borderRadius: '16px' }}>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Net Savings Rate</div>
+                        <div style={{ fontSize: '1.7rem', fontWeight: 800, color: 'var(--accent-blue)', marginTop: '6px' }}>71.7%</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>+$4,629.60 saved</div>
+                      </div>
+                    </div>
 
-                {/* 2. Sleep */}
-                <div className="glass-card" style={{ padding: '20px', borderRadius: '16px', background: 'var(--bg-main)', border: '1px solid var(--border-color)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)' }}>SLEEP</span>
-                    <SleepIcon size={16} color="var(--accent-blue)" />
+                    <div className="glass-card" style={{ padding: '20px', borderRadius: '16px' }}>
+                      <div style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span>Recent Transactions & AI Categorization</span>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--accent-blue)', background: 'var(--accent-blue-dim)', padding: '4px 10px', borderRadius: '20px' }}>Auto-Synced</span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {[
+                          { title: 'Software Subscription (Linear & Vercel)', category: 'Tech & Dev', amount: '-$45.00', date: 'Today', type: 'expense' },
+                          { title: 'Client Retainer Payment', category: 'Income', amount: '+$3,200.00', date: 'Yesterday', type: 'income' },
+                          { title: 'Organic Whole Foods & Grocery', category: 'Health & Food', amount: '-$124.50', date: '2 days ago', type: 'expense' },
+                          { title: 'Gym Membership & Recovery', category: 'Fitness', amount: '-$85.00', date: '3 days ago', type: 'expense' },
+                        ].map((tx, idx) => (
+                          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderRadius: '12px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                              <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: tx.type === 'income' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <DollarSign size={16} color={tx.type === 'income' ? '#10b981' : '#ef4444'} />
+                              </div>
+                              <div>
+                                <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>{tx.title}</div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{tx.category} • {tx.date}</div>
+                              </div>
+                            </div>
+                            <div style={{ fontSize: '0.95rem', fontWeight: 700, color: tx.type === 'income' ? '#10b981' : 'var(--text-main)' }}>
+                              {tx.amount}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                  <div style={{ fontSize: '1.4rem', fontWeight: 800 }}>8h 15m</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--accent-blue)', marginTop: '4px', fontWeight: 600 }}>🌟 Excellent Quality</div>
-                </div>
+                )}
 
-                {/* 3. Habits */}
-                <div className="glass-card" style={{ padding: '20px', borderRadius: '16px', background: 'var(--bg-main)', border: '1px solid var(--border-color)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)' }}>HABITS</span>
-                    <Flame size={16} color="#f59e0b" />
-                  </div>
-                  <div style={{ fontSize: '1.4rem', fontWeight: 800 }}>14 Day Streak</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>4 of 4 completed today</div>
-                </div>
+                {/* 2. SLEEP TAB MOCK */}
+                {previewTab === 'Sleep' && (
+                  <div className="animate-entrance" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '20px', alignItems: 'stretch' }}>
+                      <div className="glass-card" style={{ padding: '22px', borderRadius: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                        <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>Apple Health Sleep Index</span>
+                            <span className="pill-tag" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', fontSize: '0.75rem', border: 'none' }}>Optimal Recovery</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', marginTop: '12px' }}>
+                            <span style={{ fontSize: '2.8rem', fontWeight: 900, color: 'var(--accent-blue)' }}>94%</span>
+                            <span style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-main)' }}>8h 12m duration</span>
+                          </div>
+                          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '6px' }}>Bedtime 11:20 PM — Woke up at 07:32 AM (Consistency Score 98%)</p>
+                        </div>
+                        <div style={{ marginTop: '20px', display: 'flex', gap: '12px' }}>
+                          <div style={{ flex: 1, padding: '10px', borderRadius: '12px', background: 'var(--bg-card)', textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>HRV (Variability)</div>
+                            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#10b981', marginTop: '2px' }}>68 ms</div>
+                          </div>
+                          <div style={{ flex: 1, padding: '10px', borderRadius: '12px', background: 'var(--bg-card)', textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Resting HR</div>
+                            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)', marginTop: '2px' }}>52 bpm</div>
+                          </div>
+                          <div style={{ flex: 1, padding: '10px', borderRadius: '12px', background: 'var(--bg-card)', textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Respiration</div>
+                            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)', marginTop: '2px' }}>14.5 rpm</div>
+                          </div>
+                        </div>
+                      </div>
 
-                {/* 4. Gym */}
-                <div className="glass-card" style={{ padding: '20px', borderRadius: '16px', background: 'var(--bg-main)', border: '1px solid var(--border-color)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)' }}>WORKOUTS</span>
-                    <Dumbbell size={16} color="var(--accent-blue)" />
+                      <div className="glass-card" style={{ padding: '22px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                        <div style={{ fontSize: '0.9rem', fontWeight: 700 }}>Sleep Stages Breakdown</div>
+                        {[
+                          { stage: 'Deep Sleep', duration: '2h 15m (27%)', color: 'var(--accent-blue)', desc: 'Physical & Muscle Repair' },
+                          { stage: 'REM Sleep', duration: '2h 05m (25%)', color: '#8b5cf6', desc: 'Memory & Mental Clarity' },
+                          { stage: 'Light Sleep', duration: '3h 52m (48%)', color: '#64748b', desc: 'Core Transition State' },
+                        ].map((s, idx) => (
+                          <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
+                              <span style={{ fontWeight: 600 }}>{s.stage}</span>
+                              <span style={{ color: 'var(--text-muted)' }}>{s.duration}</span>
+                            </div>
+                            <div style={{ width: '100%', height: '8px', borderRadius: '4px', background: 'var(--bg-card)', overflow: 'hidden' }}>
+                              <div style={{ width: s.stage.includes('Deep') ? '27%' : s.stage.includes('REM') ? '25%' : '48%', height: '100%', background: s.color, borderRadius: '4px' }} />
+                            </div>
+                            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{s.desc}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                  <div style={{ fontSize: '1.4rem', fontWeight: 800 }}>Push Day</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>45 mins • 320 kcal</div>
-                </div>
+                )}
 
-                {/* 5. Calendar */}
-                <div className="glass-card" style={{ padding: '20px', borderRadius: '16px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', gridColumn: 'span 2' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)' }}>CALENDAR</span>
-                    <Calendar size={16} color="var(--accent-blue)" />
-                  </div>
-                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                    <span className="pill-tag" style={{ background: 'rgba(59, 130, 246, 0.15)', color: 'var(--accent-blue)', fontWeight: 700 }}>2:00 PM</span>
-                    <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>Product Roadmap & AI Strategy Sync</span>
-                  </div>
-                </div>
+                {/* 3. CALENDAR TAB MOCK */}
+                {previewTab === 'Calendar' && (
+                  <div className="animate-entrance" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontSize: '1.1rem', fontWeight: 800 }}>Today's Timeline Schedule</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Raycast-style time blocking and AI event synchronization</div>
+                      </div>
+                      <div className="pill-tag" style={{ background: 'var(--accent-blue-dim)', color: 'var(--accent-blue)', border: 'none', fontSize: '0.8rem' }}>
+                        ⌘ K Schedule Event
+                      </div>
+                    </div>
 
-                {/* 6. AI Assistant */}
-                <div className="glass-card" style={{ padding: '20px', borderRadius: '16px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', gridColumn: 'span 2' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--accent-blue)' }}>AI ASSISTANT</span>
-                    <Bot size={16} color="var(--accent-blue)" />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      {[
+                        { time: '08:00 AM', title: '☀️ Morning Hydration & Outdoor Sunlight Protocol', category: 'Wellness', duration: '30m', color: '#10b981' },
+                        { time: '09:30 AM', title: '💻 Deep Work: AI Operating System Core Architecture', category: 'Deep Work', duration: '2.5h', color: 'var(--accent-blue)' },
+                        { time: '01:00 PM', title: '🥗 High-Protein Lunch & Biometric Check-in', category: 'Nutrition', duration: '45m', color: '#f59e0b' },
+                        { time: '03:00 PM', title: '🏋️ Heavy Upper Body Gym Session (Bench PR)', category: 'Fitness', duration: '1.5h', color: '#ec4899' },
+                        { time: '06:00 PM', title: '📚 Evening Reading & AI Daily Audit Briefing', category: 'Mindset', duration: '1h', color: '#8b5cf6' },
+                      ].map((item, idx) => (
+                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '12px 16px', borderRadius: '14px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+                          <div style={{ fontSize: '0.82rem', fontWeight: 700, fontFamily: 'monospace', color: 'var(--text-muted)', width: '80px', flexShrink: 0 }}>
+                            {item.time}
+                          </div>
+                          <div style={{ width: '4px', height: '32px', borderRadius: '2px', background: item.color, flexShrink: 0 }} />
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>{item.title}</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{item.category} • {item.duration}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <p style={{ fontSize: '0.88rem', color: 'var(--text-main)', margin: 0, fontStyle: 'italic' }}>
-                    "Logged your 45-min Push Day workout and updated your habit streak. Sleep recovery looks optimal at 8h 15m!"
-                  </p>
-                </div>
+                )}
+
+                {/* 4. NOTES TAB MOCK */}
+                {previewTab === 'Notes' && (
+                  <div className="animate-entrance" style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                    <div className="glass-card" style={{ padding: '22px', borderRadius: '16px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <FileText size={18} color="var(--accent-blue)" />
+                          <span style={{ fontSize: '1.1rem', fontWeight: 800 }}>2026 Product Strategy & Personal Milestones</span>
+                        </div>
+                        <span className="pill-tag" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', fontSize: '0.75rem', border: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <div className="pulse-dot-container"><div className="pulse-dot-ring"></div><div className="pulse-dot-core"></div></div>
+                          AI Connected
+                        </span>
+                      </div>
+
+                      <div style={{ fontSize: '0.92rem', color: 'var(--text-muted)', lineHeight: 1.75 }}>
+                        <p style={{ marginBottom: '10px' }}>• Complete end-to-end sync across Habits, Money, Gym, Sleep, and Notes in LifeAgent OS.</p>
+                        <p style={{ marginBottom: '10px' }}>• Maintain 95%+ habit consistency with live telemetry feedback.</p>
+                        <p style={{ marginBottom: '10px' }}>• Automated daily budget auditing with Gemini 2.5 Flash context engine.</p>
+                      </div>
+
+                      <div style={{ marginTop: '16px', padding: '12px 16px', borderRadius: '12px', background: 'var(--accent-blue-dim)', border: '1px solid rgba(59, 130, 246, 0.3)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <Sparkles size={16} color="var(--accent-blue)" />
+                        <span style={{ fontSize: '0.82rem', color: 'var(--accent-blue-light)', fontWeight: 500 }}>
+                          AI Insight: You are 3 days ahead on your weekly habit goals! Rest protocol recommended on Sunday.
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 5. GYM TAB MOCK */}
+                {previewTab === 'Gym' && (
+                  <div className="animate-entrance" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+                      <div className="glass-card" style={{ padding: '18px', borderRadius: '16px' }}>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Active Session</div>
+                        <div style={{ fontSize: '1.2rem', fontWeight: 800, marginTop: '4px' }}>Push Workout A</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--accent-blue)', marginTop: '4px' }}>55 mins • 485 kcal burned</div>
+                      </div>
+                      <div className="glass-card" style={{ padding: '18px', borderRadius: '16px' }}>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Total Session Volume</div>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--accent-blue)', marginTop: '4px' }}>12,450 kg</div>
+                        <div style={{ fontSize: '0.75rem', color: '#10b981', marginTop: '4px' }}>⭐ New Personal Record</div>
+                      </div>
+                      <div className="glass-card" style={{ padding: '18px', borderRadius: '16px' }}>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Daily Protein Goal</div>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#10b981', marginTop: '4px' }}>168g / 180g</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>93% target complete</div>
+                      </div>
+                    </div>
+
+                    <div className="glass-card" style={{ padding: '20px', borderRadius: '16px' }}>
+                      <div style={{ fontSize: '0.92rem', fontWeight: 700, marginBottom: '12px' }}>Exercise Sets & Progress</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {[
+                          { name: 'Barbell Bench Press', sets: '4 sets × 8 reps', weight: '100 kg', note: 'PR achieved 🔥' },
+                          { name: 'Overhead Shoulder Press', sets: '3 sets × 10 reps', weight: '65 kg', note: 'Clean form' },
+                          { name: 'Incline Dumbbell Flyes', sets: '3 sets × 12 reps', weight: '28 kg', note: 'Hypertrophy focus' },
+                        ].map((ex, i) => (
+                          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderRadius: '12px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+                            <div>
+                              <div style={{ fontSize: '0.88rem', fontWeight: 600 }}>{ex.name}</div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{ex.sets} • {ex.note}</div>
+                            </div>
+                            <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--accent-blue)' }}>{ex.weight}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 6. ANALYTICS TAB MOCK */}
+                {previewTab === 'Analytics' && (
+                  <div className="animate-entrance" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                      <div className="glass-card" style={{ padding: '18px', borderRadius: '16px' }}>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Habit Consistency</div>
+                        <div style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--accent-blue)', marginTop: '4px' }}>94%</div>
+                        <div style={{ fontSize: '0.75rem', color: '#10b981', marginTop: '4px' }}>24 day active streak</div>
+                      </div>
+                      <div className="glass-card" style={{ padding: '18px', borderRadius: '16px' }}>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Sleep-Productivity Score</div>
+                        <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#10b981', marginTop: '4px' }}>+0.91</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>Strong positive correlation</div>
+                      </div>
+                      <div className="glass-card" style={{ padding: '18px', borderRadius: '16px' }}>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Weekly Deep Work</div>
+                        <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#8b5cf6', marginTop: '4px' }}>42.5 hrs</div>
+                        <div style={{ fontSize: '0.75rem', color: '#10b981', marginTop: '4px' }}>↑ 6 hrs vs last week</div>
+                      </div>
+                    </div>
+
+                    <div className="glass-card" style={{ padding: '20px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <div style={{ fontSize: '0.92rem', fontWeight: 700 }}>30-Day Executive Telemetry</div>
+                      <div style={{ display: 'flex', height: '120px', alignItems: 'flex-end', gap: '8px', paddingTop: '10px' }}>
+                        {[65, 78, 82, 90, 85, 88, 94, 92, 96, 89, 94, 98].map((val, idx) => (
+                          <div key={idx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', height: '100%', justifyContent: 'flex-end' }}>
+                            <div style={{ width: '100%', height: `${val}%`, background: idx === 11 ? 'var(--accent-blue)' : 'rgba(59, 130, 246, 0.3)', borderRadius: '6px', transition: 'all 0.3s' }} />
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center' }}>Daily Progress Telemetry Graph (Peak at 98%)</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 7. AI TAB MOCK */}
+                {previewTab === 'AI' && (
+                  <div className="animate-entrance" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div className="glass-card" style={{ padding: '18px', borderRadius: '16px', background: 'var(--bg-card)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                        <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'var(--accent-blue)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Bot size={16} color="#fff" />
+                        </div>
+                        <span style={{ fontSize: '0.9rem', fontWeight: 700 }}>Personal AI Assistant Context Audit</span>
+                        <span className="pill-tag" style={{ marginLeft: 'auto', background: 'var(--accent-blue-dim)', color: 'var(--accent-blue)', fontSize: '0.72rem', border: 'none' }}>Live Graph Sync</span>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <div style={{ alignSelf: 'flex-end', background: 'var(--accent-blue)', color: '#fff', padding: '10px 14px', borderRadius: '14px 14px 2px 14px', fontSize: '0.88rem', maxWidth: '80%' }}>
+                          Audit my day: check sleep recovery, push workout volume, and remaining daily budget.
+                        </div>
+                        <div style={{ alignSelf: 'flex-start', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', padding: '14px', borderRadius: '14px 14px 14px 2px', fontSize: '0.88rem', maxWidth: '90%', lineHeight: 1.6 }}>
+                          <p style={{ fontWeight: 700, marginBottom: '6px', color: 'var(--accent-blue-light)' }}>🤖 Executive Daily Audit:</p>
+                          <p>• <strong>Sleep</strong>: 8h 12m (94% optimal score) — Excellent recovery state.</p>
+                          <p>• <strong>Gym</strong>: Push Workout A logged with 12,450 kg volume (Bench PR set!).</p>
+                          <p>• <strong>Money</strong>: Spent $18.50 today — $26.50 under your daily budget.</p>
+                          <p style={{ marginTop: '8px', color: 'var(--text-muted)', fontSize: '0.8rem' }}>💡 Everything is tracking on schedule for your weekly goals!</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', borderRadius: '14px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+                      <Bot size={16} color="var(--text-muted)" />
+                      <input type="text" readOnly value="Ask AI to log expense, track workout, or optimize schedule... (⌘K)" style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '0.85rem', width: '100%', outline: 'none' }} />
+                      <button className="blue-btn" style={{ padding: '6px 14px', fontSize: '0.8rem', borderRadius: '8px' }}>Send</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* 8. HABITS TAB MOCK */}
+                {previewTab === 'Habits' && (
+                  <div className="animate-entrance" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontSize: '1.1rem', fontWeight: 800 }}>Daily Habit Checklist</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>4 of 5 Habits Completed Today (80%)</div>
+                      </div>
+                      <div className="pill-tag" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: 'none', fontSize: '0.8rem' }}>
+                        🔥 24 Day Streak Active
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      {[
+                        { title: 'Morning Sunlight & Hydration Protocol', category: 'Health', streak: '28 day streak', checked: true },
+                        { title: '2 Hours Focused Coding / Deep Work', category: 'Productivity', streak: '44 day streak', checked: true },
+                        { title: 'Push Workout A / Muscle Hypertrophy', category: 'Fitness', streak: '12 day streak', checked: true },
+                        { title: 'No Junk Food & Hit 180g Protein Target', category: 'Nutrition', streak: '8 day streak', checked: true },
+                        { title: 'Evening Book Reading (30 mins)', category: 'Mindset', streak: '15 day streak', checked: false },
+                      ].map((habit, idx) => (
+                        <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderRadius: '14px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{ width: '22px', height: '22px', borderRadius: '6px', background: habit.checked ? 'var(--accent-blue)' : 'transparent', border: habit.checked ? 'none' : '2px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              {habit.checked && <Check size={14} color="#fff" />}
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '0.9rem', fontWeight: 600, textDecoration: habit.checked ? 'line-through' : 'none', opacity: habit.checked ? 0.85 : 1 }}>{habit.title}</div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{habit.category}</div>
+                            </div>
+                          </div>
+                          <span style={{ fontSize: '0.8rem', color: habit.checked ? '#10b981' : 'var(--text-muted)', fontWeight: 600 }}>
+                            🔥 {habit.streak}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
               </div>
             </div>
           </section>
 
-          {/* 3 CORE QUESTIONS ANSWERED */}
-          <section className="animate-entrance delay-2" style={{ marginBottom: '80px' }}>
-            <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-              <h3 style={{ fontSize: '2.4rem', fontWeight: 900, letterSpacing: '-1px' }}>
-                One place for your entire life.
-              </h3>
+          {/* THREE PILLAR FEATURE CARDS */}
+          <section className="animate-entrance delay-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginBottom: '80px' }}>
+            <div className="glass-card motion-card" style={{ padding: '30px', borderRadius: '20px' }}>
+              <div style={{ background: 'var(--accent-blue-dim)', width: '48px', height: '48px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
+                <Activity size={24} color="var(--accent-blue)" />
+              </div>
+              <h4 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '10px' }}>Apple Health Precision</h4>
+              <p style={{ color: 'var(--text-muted)', lineHeight: 1.6, fontSize: '0.95rem' }}>
+                Glanceable biometrics, workout logging, sleep stages, and progress telemetry engineered for peak physical and mental clarity.
+              </p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
-              <div className="glass-card" style={{ padding: '32px', borderRadius: '20px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
-                <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--accent-blue)', textTransform: 'uppercase', letterSpacing: '1px' }}>01 / WHAT IS THIS?</span>
-                <h4 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '12px 0 10px' }}>Personal AI Operating System</h4>
-                <p style={{ color: 'var(--text-muted)', lineHeight: 1.6, fontSize: '0.95rem' }}>
-                  A unified, high-performance command center for your habits, finance, sleep, fitness, notes, and calendar.
-                </p>
+            <div className="glass-card motion-card" style={{ padding: '30px', borderRadius: '20px' }}>
+              <div style={{ background: 'var(--accent-blue-dim)', width: '48px', height: '48px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
+                <Zap size={24} color="var(--accent-blue)" />
               </div>
+              <h4 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '10px' }}>Raycast Speed & Shortcuts</h4>
+              <p style={{ color: 'var(--text-muted)', lineHeight: 1.6, fontSize: '0.95rem' }}>
+                Instant keyboard commands (`⌘K` / `Ctrl+J`), zero lag workspace switching, and high-velocity workflow automation.
+              </p>
+            </div>
 
-              <div className="glass-card" style={{ padding: '32px', borderRadius: '20px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
-                <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--accent-blue)', textTransform: 'uppercase', letterSpacing: '1px' }}>02 / WHY USE IT?</span>
-                <h4 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '12px 0 10px' }}>Everything Stays in One Place</h4>
-                <p style={{ color: 'var(--text-muted)', lineHeight: 1.6, fontSize: '0.95rem' }}>
-                  No more switching between 6+ different apps. Your AI assistant sees and coordinates all your data automatically.
-                </p>
+            <div className="glass-card motion-card" style={{ padding: '30px', borderRadius: '20px' }}>
+              <div style={{ background: 'var(--accent-blue-dim)', width: '48px', height: '48px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
+                <Bot size={24} color="var(--accent-blue)" />
               </div>
-
-              <div className="glass-card" style={{ padding: '32px', borderRadius: '20px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
-                <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--accent-blue)', textTransform: 'uppercase', letterSpacing: '1px' }}>03 / HOW TO START?</span>
-                <h4 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '12px 0 10px' }}>Instant Sign In</h4>
-                <p style={{ color: 'var(--text-muted)', lineHeight: 1.6, fontSize: '0.95rem' }}>
-                  Create your account or log in in seconds. No waitlist delays—start organizing your life today.
-                </p>
-              </div>
+              <h4 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '10px' }}>Linear Design & AI Context</h4>
+              <p style={{ color: 'var(--text-muted)', lineHeight: 1.6, fontSize: '0.95rem' }}>
+                Sleek dark/light typography paired with a personal AI companion that understands your notes, budget, and habits in unison.
+              </p>
             </div>
           </section>
 
-          {/* FINAL CLEAN CALL TO ACTION */}
-          <div className="glass-card animate-entrance delay-3" style={{ padding: '60px 40px', textAlign: 'center', borderRadius: '24px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
-            <h3 style={{ fontSize: '2.5rem', fontWeight: 900, marginBottom: '14px', letterSpacing: '-1px' }}>Everything about your life. Organized.</h3>
-            <p style={{ color: 'var(--text-muted)', marginBottom: '32px', fontSize: '1.15rem', maxWidth: '560px', margin: '0 auto 32px' }}>
-              Experience the minimalist personal AI operating system.
+          {/* BOTTOM CTA CARD */}
+          <div className="glass-card animate-entrance delay-3" style={{ padding: '50px 30px', textAlign: 'center', borderRadius: '24px', border: '1px solid var(--border-color)', marginBottom: '40px' }}>
+            <h3 style={{ fontSize: '2.2rem', fontWeight: 800, marginBottom: '14px', letterSpacing: '-1px' }}>
+              Ready for your Personal AI Operating System?
+            </h3>
+            <p style={{ color: 'var(--text-muted)', marginBottom: '28px', fontSize: '1.1rem', maxWidth: '600px', margin: '0 auto 28px' }}>
+              Start organizing your habits, money, sleep, workouts, and calendar with intelligence today.
             </p>
-            <button className="blue-btn" style={{ fontSize: '1.15rem', padding: '16px 40px' }} onClick={() => navigate('auth', '/auth')}>
-              Get Started Free <ArrowRight size={18} />
-            </button>
+            <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button 
+                className="blue-btn" 
+                style={{ fontSize: '1.1rem', padding: '16px 36px', borderRadius: '14px' }} 
+                onClick={() => { setAuthMode('signup'); navigate('auth', '/auth'); }}
+              >
+                Get Started Free <ArrowRight size={18} />
+              </button>
+              <button 
+                className="secondary-btn" 
+                style={{ fontSize: '1.1rem', padding: '16px 32px', borderRadius: '14px' }} 
+                onClick={() => { setAuthMode('login'); navigate('auth', '/auth'); }}
+              >
+                Sign In
+              </button>
+            </div>
           </div>
         </main>
       )}
