@@ -258,7 +258,7 @@ export default function BodyGym({ token, showToast }) {
                     <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', gap: '12px' }}>
                       <span>{workout.date}</span>
                       <span>{workout.duration_mins} mins</span>
-                      <span>{workout.calories} kcal</span>
+                      {Number(workout.calories) > 0 && <span>{workout.calories} kcal</span>}
                     </div>
                   </div>
                   <button 
@@ -300,8 +300,8 @@ export default function BodyGym({ token, showToast }) {
                       <input type="number" required className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="45" value={workoutForm.duration_mins} onChange={e => setWorkoutForm({...workoutForm, duration_mins: e.target.value})} />
                     </div>
                     <div className="input-group">
-                      <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Calories</label>
-                      <input type="number" className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="300" value={workoutForm.calories} onChange={e => setWorkoutForm({...workoutForm, calories: e.target.value})} />
+                      <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Calories (Optional)</label>
+                      <input type="number" className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="Optional (e.g. 300)" value={workoutForm.calories} onChange={e => setWorkoutForm({...workoutForm, calories: e.target.value})} />
                     </div>
                   </div>
 
