@@ -11,6 +11,10 @@ import {
 import confetti from 'canvas-confetti';
 import AnalyticsPanel from './components/AnalyticsPanel';
 import SleepTracker from './components/SleepTracker';
+import BodyGym from './components/BodyGym';
+import MoneyTracker from './components/MoneyTracker';
+import SettingsPanel from './components/SettingsPanel';
+import CalendarPanel from './components/CalendarPanel';
 
 export default function App() {
   const [themeMode, setThemeMode] = useState('light'); // 'dark', 'light', 'pc'
@@ -2575,62 +2579,21 @@ const handleDeleteHabitDb = async (id) => {
 
               {/* 3) MONEY TRACKING */}
               {activeTab === 'finance' && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '28px' }}>
-                  <div>
-                    <h3 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '16px' }}>Transactions ({timeOptions.find(o => o.id === timeRange)?.label})</h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      {transactions.length === 0 ? (
-                        <div style={{ textAlign: 'center', padding: '30px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px dashed var(--border-color)' }}>
-                          <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', fontWeight: 600 }}>No transactions recorded yet.</p>
-                        </div>
-                      ) : (
-                        transactions.map(item => (
-                          <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)' }}>
-                            <div>
-                              <div style={{ fontWeight: 600, fontSize: '1rem' }}>{item.title}</div>
-                              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>{item.category} • {item.date}</div>
-                            </div>
-                            <div style={{ fontSize: '1.2rem', fontWeight: 800, color: item.type === 'earn' ? 'var(--accent-blue)' : 'var(--text-main)' }}>
-                              {item.type === 'earn' ? '+' : '-'}{userProfile.currency || '$'}{item.amount}
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-
-                  <div style={{ background: 'var(--bg-main)', padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)', height: 'fit-content' }}>
-                    <h4 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '16px' }}>Add Transaction</h4>
-                    <form onSubmit={addTransaction} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                      <div>
-                        <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Type</label>
-                        <select value={newType} onChange={(e) => setNewType(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}>
-                          <option value="spend">Spending (-)</option>
-                          <option value="earn">Earning (+)</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Description</label>
-                        <input type="text" placeholder="e.g. Server usage..." value={newTitle} onChange={(e) => setNewTitle(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Amount ({userProfile.currency || '$'})</label>
-                        <input type="number" placeholder="0.00" value={newAmount} onChange={(e) => setNewAmount(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
-                      </div>
-                      <button type="submit" className="blue-btn" style={{ justifyContent: 'center', marginTop: '6px' }}><Plus size={18} /> Record Entry</button>
-                    </form>
-                  </div>
-                </div>
+                <MoneyTracker
+                  transactions={transactions}
+                  setTransactions={setTransactions}
+                  token={token}
+                  showToast={showToast}
+                  currency={userProfile.currency || '$'}
+                />
               )}
 
               {/* 4) BODY & GYM */}
               {activeTab === 'body' && (
-                <div style={{ textAlign: 'center', padding: '80px 40px', background: 'var(--bg-card)', borderRadius: '18px', border: '1px solid var(--border-color)' }}>
-                  <Dumbbell size={48} color="var(--text-muted)" style={{ marginBottom: '16px' }} />
-                  <h3 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '8px' }}>Body & Gym</h3>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '1rem', marginBottom: '24px' }}>Track workouts, body stats, nutrition and more.</p>
-                  <span style={{ display: 'inline-block', padding: '8px 20px', borderRadius: '20px', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--accent-blue)', fontWeight: 700, fontSize: '0.85rem', border: '1px solid rgba(59, 130, 246, 0.3)' }}>🚀 Coming Soon</span>
-                </div>
+                <BodyGym
+                  token={token}
+                  showToast={showToast}
+                />
               )}
 
               {/* 5) SLEEP & RECOVERY */}
@@ -2642,7 +2605,6 @@ const handleDeleteHabitDb = async (id) => {
               )}
 
               {/* 6) MASTER ANALYTICS HUB */}
-
               {activeTab === 'analytics' && (
                 <AnalyticsPanel
                   token={token}
@@ -2651,240 +2613,29 @@ const handleDeleteHabitDb = async (id) => {
                 />
               )}
 
-              {/* 7) SETTINGS & PROFILE (General, AI Agent features, and Log Out at bottom) */}
+              {/* 7) SETTINGS & PROFILE */}
               {activeTab === 'settings' && (
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
-                    <div>
-                      <h3 style={{ fontSize: '1.5rem', fontWeight: 800 }}>General Settings & Preferences</h3>
-                      <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Customize your personal profile details, AI agent behavior, and workspace rules.</p>
-                    </div>
-                    {settingsSaved && (
-                      <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', padding: '6px 14px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Check size={16} /> Saved Successfully
-                      </span>
-                    )}
-                  </div>
-
-                  <form onSubmit={handleSaveSettings} style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-                    
-                    {/* SECTION 1: General Profile Details */}
-                    <div>
-                      <h4 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-blue)' }}>
-                        <User size={18} /> General Profile Details
-                      </h4>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                        
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
-                          <div>
-                            <div style={{ fontWeight: 700, fontSize: '1rem' }}>Full Name</div>
-                            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Your primary display name inside the dashboard.</div>
-                          </div>
-                          <input 
-                            type="text" 
-                            value={userProfile.name} 
-                            onChange={(e) => setUserProfile({ ...userProfile, name: e.target.value })} 
-                            style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600, outline: 'none' }}
-                          />
-                        </div>
-
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
-                          <div>
-                            <div style={{ fontWeight: 700, fontSize: '1rem' }}>Handle / Username</div>
-                            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Your unique public handle shown in the header.</div>
-                          </div>
-                          <input 
-                            type="text" 
-                            value={userProfile.handle} 
-                            onChange={(e) => setUserProfile({ ...userProfile, handle: e.target.value })} 
-                            style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600, outline: 'none' }}
-                          />
-                        </div>
-
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
-                          <div>
-                            <div style={{ fontWeight: 700, fontSize: '1rem' }}>Email Address</div>
-                            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Used for account notifications and VIP early access alerts.</div>
-                          </div>
-                          <input 
-                            type="email" 
-                            value={userProfile.email} 
-                            onChange={(e) => setUserProfile({ ...userProfile, email: e.target.value })} 
-                            style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600, outline: 'none' }}
-                          />
-                        </div>
-
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
-                          <div>
-                            <div style={{ fontWeight: 700, fontSize: '1rem' }}>Currency Preference</div>
-                            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Choose your default currency for the Money Tracker.</div>
-                          </div>
-                          <select 
-                            value={userProfile.currency || '$'} 
-                            onChange={(e) => setUserProfile({ ...userProfile, currency: e.target.value })} 
-                            style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600, outline: 'none', appearance: 'none' }}
-                          >
-                            <option value="$">Dollar ($)</option>
-                            <option value="₹">Rupee (₹)</option>
-                            <option value="€">Euro (€)</option>
-                            <option value="£">Pound (£)</option>
-                          </select>
-                        </div>
-
-                      </div>
-                    </div>
-
-                    {/* SECTION 2: AI Agent & Features */}
-                    <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '24px' }}>
-                      <h4 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-blue)' }}>
-                        <Bot size={18} /> Personal AI Assistant Features
-                      </h4>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                        
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
-                          <div>
-                            <div style={{ fontWeight: 700, fontSize: '1rem' }}>AI Assistant Name</div>
-                            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Customize what your AI friend is called across your entire dashboard (default: AI).</div>
-                          </div>
-                          <input 
-                            type="text" 
-                            value={aiName} 
-                            placeholder="e.g. AI Friend"
-                            onChange={(e) => setAiName(e.target.value || 'AI')} 
-                            style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600, outline: 'none' }}
-                          />
-                        </div>
-
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
-                          <div>
-                            <div style={{ fontWeight: 700, fontSize: '1rem' }}>Preferred AI Provider</div>
-                            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Choose which AI brain powers your dashboard assistant.</div>
-                          </div>
-                          <select 
-                            value={aiProvider} 
-                            onChange={(e) => setAiProvider(e.target.value)} 
-                            style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600, outline: 'none', appearance: 'none' }}
-                          >
-                            <option value="gemini">Google Gemini</option>
-                            <option value="groq">Groq (Llama 3)</option>
-                          </select>
-                        </div>
-
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
-                          <div>
-                            <div style={{ fontWeight: 700, fontSize: '1rem' }}>Gemini API Key</div>
-                            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Enter your free Google Gemini API key to enable real AI responses. Get one at aistudio.google.com</div>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <input 
-                              type="password" 
-                              value={geminiApiKey} 
-                              placeholder="AIzaSy..."
-                              onChange={(e) => setGeminiApiKey(e.target.value)} 
-                              style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600, outline: 'none' }}
-                            />
-                            {geminiApiKey && <span style={{ color: '#22c55e', fontWeight: 700, fontSize: '0.85rem' }}>● Connected</span>}
-                          </div>
-                        </div>
-
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
-                          <div>
-                            <div style={{ fontWeight: 700, fontSize: '1rem' }}>Groq API Key</div>
-                            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Enter your free Groq API key for ultra-fast Llama 3 responses. Get one at console.groq.com</div>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <input 
-                              type="password" 
-                              value={groqApiKey} 
-                              placeholder="gsk_..."
-                              onChange={(e) => setGroqApiKey(e.target.value)} 
-                              style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600, outline: 'none' }}
-                            />
-                            {groqApiKey && <span style={{ color: '#22c55e', fontWeight: 700, fontSize: '0.85rem' }}>● Connected</span>}
-                          </div>
-                        </div>
-
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
-                          <div>
-                            <div style={{ fontWeight: 700, fontSize: '1rem' }}>Daily Morning Audit Summary</div>
-                            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>AI automatically generates a schedule & spendings audit every morning at 7:00 AM.</div>
-                          </div>
-                          <input 
-                            type="checkbox" 
-                            checked={userProfile.morningAudit} 
-                            onChange={(e) => setUserProfile({ ...userProfile, morningAudit: e.target.checked })}
-                            style={{ width: '22px', height: '22px', accentColor: 'var(--accent-blue)', cursor: 'pointer' }}
-                          />
-                        </div>
-
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
-                          <div>
-                            <div style={{ fontWeight: 700, fontSize: '1rem' }}>Real-Time Smart Streak Alerts</div>
-                            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Notify instantly when a study pomodoro or gym habit streak is about to expire.</div>
-                          </div>
-                          <input 
-                            type="checkbox" 
-                            checked={userProfile.smartAlerts} 
-                            onChange={(e) => setUserProfile({ ...userProfile, smartAlerts: e.target.checked })}
-                            style={{ width: '22px', height: '22px', accentColor: 'var(--accent-blue)', cursor: 'pointer' }}
-                          />
-                        </div>
-
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
-                          <div>
-                            <div style={{ fontWeight: 700, fontSize: '1rem' }}>Personal AI Assistant Tone & Personality</div>
-                            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Choose how strict, encouraging, or concise the AI audits your metrics.</div>
-                          </div>
-                          <select 
-                            value={userProfile.aiTone}
-                            onChange={(e) => setUserProfile({ ...userProfile, aiTone: e.target.value })}
-                            style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.92rem', fontWeight: 600, outline: 'none', cursor: 'pointer' }}
-                          >
-                            <option value="Analytical & Direct">Analytical & Direct</option>
-                            <option value="Encouraging & Supportive">Encouraging & Supportive</option>
-                            <option value="Minimalist Executive">Minimalist Executive</option>
-                          </select>
-                        </div>
-
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
-                      <button type="submit" className="blue-btn" style={{ padding: '14px 28px' }}>
-                        <Save size={18} /> Save Changes
-                      </button>
-                    </div>
-
-                  </form>
-
-                  {/* DOWN BELOW: LOGOUT OPTION AS REQUESTED */}
-                  <div style={{ marginTop: '48px', borderTop: '2px dashed var(--border-color)', paddingTop: '32px' }}>
-                    <h4 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#ef4444', marginBottom: '8px' }}>
-                      Account Session
-                    </h4>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginBottom: '20px' }}>
-                      Logging out will close your active dashboard session and return you to the public storefront.
-                    </p>
-                    <button 
-                      onClick={handleLogout}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: '10px',
-                        padding: '14px 24px', borderRadius: '14px',
-                        border: '1px solid #ef4444', background: 'rgba(239, 68, 68, 0.1)',
-                        color: '#ef4444', fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer',
-                        transition: 'all 0.2s'
-                      }}
-                    >
-                      <LogOut size={18} /> Log Out of LifeAgent
-                    </button>
-                  </div>
-
-                  {/* LIFEAGENT V2.4 FOOTER INSIDE SETTINGS */}
-                  <div style={{ marginTop: '48px', paddingTop: '24px', borderTop: '1px solid var(--border-color)', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600, opacity: 0.8 }}>
-                    LifeAgent v2.4 • Pro Edition
-                  </div>
-
-                </div>
+                <SettingsPanel
+                  userProfile={userProfile}
+                  setUserProfile={setUserProfile}
+                  aiName={aiName}
+                  setAiName={setAiName}
+                  aiProvider={aiProvider}
+                  setAiProvider={setAiProvider}
+                  geminiApiKey={geminiApiKey}
+                  setGeminiApiKey={setGeminiApiKey}
+                  groqApiKey={groqApiKey}
+                  setGroqApiKey={setGroqApiKey}
+                  themeMode={themeMode}
+                  setThemeMode={setThemeMode}
+                  token={token}
+                  showToast={showToast}
+                  handleLogout={handleLogout}
+                  settingsSaved={settingsSaved}
+                  setSettingsSaved={setSettingsSaved}
+                  chatResetTime={userProfile.chat_reset_time || '00:00'}
+                  setChatResetTime={(val) => setUserProfile({ ...userProfile, chat_reset_time: val })}
+                />
               )}
 
             </div>

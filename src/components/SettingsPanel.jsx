@@ -29,7 +29,18 @@ const SettingsPanel = ({
         const res = await fetch('/api/settings', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ ...userProfile, ai_name: aiName, gemini_api_key: geminiApiKey, groq_api_key: groqApiKey, ai_provider: aiProvider, theme: themeMode, currency: userProfile.currency, chat_reset_time: chatResetTime })
+          body: JSON.stringify({ 
+            ...userProfile, 
+            phone: userProfile.phone || '', 
+            timezone: userProfile.timezone || 'UTC', 
+            ai_name: aiName, 
+            gemini_api_key: geminiApiKey, 
+            groq_api_key: groqApiKey, 
+            ai_provider: aiProvider, 
+            theme: themeMode, 
+            currency: userProfile.currency, 
+            chat_reset_time: chatResetTime 
+          })
         });
         if (res.ok) {
           setSettingsSaved(true);
@@ -76,7 +87,7 @@ const SettingsPanel = ({
               </div>
               <input 
                 type="text" 
-                value={userProfile.name} 
+                value={userProfile.name || ''} 
                 onChange={(e) => setUserProfile({ ...userProfile, name: e.target.value })} 
                 style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600, outline: 'none' }}
               />
@@ -89,7 +100,7 @@ const SettingsPanel = ({
               </div>
               <input 
                 type="text" 
-                value={userProfile.handle} 
+                value={userProfile.handle || ''} 
                 onChange={(e) => setUserProfile({ ...userProfile, handle: e.target.value })} 
                 style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600, outline: 'none' }}
               />
@@ -102,10 +113,45 @@ const SettingsPanel = ({
               </div>
               <input 
                 type="email" 
-                value={userProfile.email} 
+                value={userProfile.email || ''} 
                 onChange={(e) => setUserProfile({ ...userProfile, email: e.target.value })} 
                 style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600, outline: 'none' }}
               />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: '1rem' }}>Phone Number</div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Your contact phone number for SMS notifications and security alerts.</div>
+              </div>
+              <input 
+                type="tel" 
+                value={userProfile.phone || ''} 
+                placeholder="+1 234 567 8900"
+                onChange={(e) => setUserProfile({ ...userProfile, phone: e.target.value })} 
+                style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600, outline: 'none' }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: '1rem' }}>Timezone</div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Select your primary timezone for automated audits and reminders.</div>
+              </div>
+              <select 
+                value={userProfile.timezone || 'UTC'} 
+                onChange={(e) => setUserProfile({ ...userProfile, timezone: e.target.value })} 
+                style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600, outline: 'none' }}
+              >
+                <option value="UTC">UTC (Coordinated Universal Time)</option>
+                <option value="Asia/Kolkata">Asia/Kolkata (IST +5:30)</option>
+                <option value="America/New_York">America/New_York (EST -5:00 / EDT -4:00)</option>
+                <option value="America/Los_Angeles">America/Los_Angeles (PST -8:00 / PDT -7:00)</option>
+                <option value="Europe/London">Europe/London (GMT / BST)</option>
+                <option value="Europe/Paris">Europe/Paris (CET +1:00)</option>
+                <option value="Asia/Tokyo">Asia/Tokyo (JST +9:00)</option>
+                <option value="Australia/Sydney">Australia/Sydney (AEST +10:00)</option>
+              </select>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
