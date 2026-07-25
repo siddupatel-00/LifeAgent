@@ -1263,47 +1263,43 @@ const handleDeleteHabitDb = async (id) => {
                       <div className="glass-card" style={{ padding: '22px', borderRadius: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                         <div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>Health Precision Sleep Index</span>
-                            <span className="pill-tag" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', fontSize: '0.75rem', border: 'none' }}>Optimal Recovery</span>
+                            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>Sleep Quality & Duration</span>
+                            <span className="pill-tag" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', fontSize: '0.75rem', border: 'none' }}>🌟 Excellent</span>
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', marginTop: '12px' }}>
-                            <span style={{ fontSize: '2.8rem', fontWeight: 900, color: 'var(--accent-blue)' }}>94%</span>
-                            <span style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-main)' }}>8h 12m duration</span>
+                          <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', marginTop: '14px' }}>
+                            <span style={{ fontSize: '2.8rem', fontWeight: 900, color: 'var(--accent-blue)' }}>8h 15m</span>
+                            <span style={{ fontSize: '1.05rem', fontWeight: 600, color: 'var(--text-main)' }}>Avg Duration</span>
                           </div>
-                          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '6px' }}>Bedtime 11:20 PM — Woke up at 07:32 AM (Consistency Score 98%)</p>
+                          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '8px' }}>Bedtime 11:00 PM — Woke up at 07:15 AM</p>
                         </div>
                         <div style={{ marginTop: '20px', display: 'flex', gap: '12px' }}>
-                          <div style={{ flex: 1, padding: '10px', borderRadius: '12px', background: 'var(--bg-card)', textAlign: 'center' }}>
-                            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>HRV (Variability)</div>
-                            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#10b981', marginTop: '2px' }}>68 ms</div>
+                          <div style={{ flex: 1, padding: '12px', borderRadius: '12px', background: 'var(--bg-card)', textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Bed Time</div>
+                            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)', marginTop: '2px' }}>11:00 PM</div>
                           </div>
-                          <div style={{ flex: 1, padding: '10px', borderRadius: '12px', background: 'var(--bg-card)', textAlign: 'center' }}>
-                            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Resting HR</div>
-                            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)', marginTop: '2px' }}>52 bpm</div>
+                          <div style={{ flex: 1, padding: '12px', borderRadius: '12px', background: 'var(--bg-card)', textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Wake Time</div>
+                            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)', marginTop: '2px' }}>07:15 AM</div>
                           </div>
-                          <div style={{ flex: 1, padding: '10px', borderRadius: '12px', background: 'var(--bg-card)', textAlign: 'center' }}>
-                            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Respiration</div>
-                            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)', marginTop: '2px' }}>14.5 rpm</div>
+                          <div style={{ flex: 1, padding: '12px', borderRadius: '12px', background: 'var(--bg-card)', textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Rating</div>
+                            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#10b981', marginTop: '2px' }}>Good</div>
                           </div>
                         </div>
                       </div>
 
-                      <div className="glass-card" style={{ padding: '22px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                        <div style={{ fontSize: '0.9rem', fontWeight: 700 }}>Sleep Stages Breakdown</div>
+                      <div className="glass-card" style={{ padding: '22px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <div style={{ fontSize: '0.9rem', fontWeight: 700, marginBottom: '4px' }}>Recent Sleep Logs</div>
                         {[
-                          { stage: 'Deep Sleep', duration: '2h 15m (27%)', color: 'var(--accent-blue)', desc: 'Physical & Muscle Repair' },
-                          { stage: 'REM Sleep', duration: '2h 05m (25%)', color: '#8b5cf6', desc: 'Memory & Mental Clarity' },
-                          { stage: 'Light Sleep', duration: '3h 52m (48%)', color: '#64748b', desc: 'Core Transition State' },
-                        ].map((s, idx) => (
-                          <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
-                              <span style={{ fontWeight: 600 }}>{s.stage}</span>
-                              <span style={{ color: 'var(--text-muted)' }}>{s.duration}</span>
+                          { date: 'Today', duration: '8h 15m', quality: '🌟 Excellent', time: '11:00 PM - 07:15 AM' },
+                          { date: 'Yesterday', duration: '7h 45m', quality: '😊 Good', time: '11:30 PM - 07:15 AM' },
+                          { date: '2 days ago', duration: '8h 00m', quality: '😊 Good', time: '11:00 PM - 07:00 AM' },
+                        ].map((log, idx) => (
+                          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderRadius: '12px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+                            <div>
+                              <div style={{ fontSize: '0.88rem', fontWeight: 700 }}>{log.duration} • <span style={{ color: '#10b981', fontSize: '0.8rem' }}>{log.quality}</span></div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>{log.date} ({log.time})</div>
                             </div>
-                            <div style={{ width: '100%', height: '8px', borderRadius: '4px', background: 'var(--bg-card)', overflow: 'hidden' }}>
-                              <div style={{ width: s.stage.includes('Deep') ? '27%' : s.stage.includes('REM') ? '25%' : '48%', height: '100%', background: s.color, borderRadius: '4px' }} />
-                            </div>
-                            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{s.desc}</span>
                           </div>
                         ))}
                       </div>
