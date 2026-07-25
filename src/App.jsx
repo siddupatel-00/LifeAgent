@@ -1460,7 +1460,6 @@ const handleDeleteHabitDb = async (id) => {
                           <Bot size={16} color="#fff" />
                         </div>
                         <span style={{ fontSize: '0.9rem', fontWeight: 700 }}>Personal AI Assistant Context Audit</span>
-                        <span className="pill-tag" style={{ marginLeft: 'auto', background: 'var(--accent-blue-dim)', color: 'var(--accent-blue)', fontSize: '0.72rem', border: 'none' }}>Live Graph Sync</span>
                       </div>
 
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
