@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Dumbbell, Target, Plus, Trash2, Activity, Flame, Clock } from 'lucide-react';
+import { todayKey } from '../utils/date';
 
 export default function BodyGym({ token, showToast }) {
   const [activeSubTab, setActiveSubTab] = useState('workouts'); // 'workouts', 'stats'
@@ -60,7 +61,7 @@ export default function BodyGym({ token, showToast }) {
         ...workoutForm,
         duration_mins: Number(workoutForm.duration_mins) || 0,
         calories: Number(workoutForm.calories) || 0,
-        date: new Date().toISOString().split('T')[0]
+        date: todayKey()
       };
       
       const res = await fetch('/api/fitness?type=workouts', {
@@ -111,7 +112,7 @@ export default function BodyGym({ token, showToast }) {
         target_weight: Number(statsForm.target_weight) || 0,
         protein: Number(statsForm.protein) || 0,
         hydration: Number(statsForm.hydration) || 0,
-        date: new Date().toISOString().split('T')[0]
+        date: todayKey()
       };
       
       const res = await fetch('/api/fitness?type=body-stats', {
@@ -279,7 +280,7 @@ export default function BodyGym({ token, showToast }) {
                 <form onSubmit={handleAddWorkout}>
                   <div className="input-group" style={{ marginBottom: '16px' }}>
                     <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Title</label>
-                    <input type="text" required className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="e.g. Morning Run" value={workoutForm.title} onChange={e => setWorkoutForm({...workoutForm, title: e.target.value})} />
+                    <input type="text" required className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="Enter workout name..." value={workoutForm.title} onChange={e => setWorkoutForm({...workoutForm, title: e.target.value})} />
                   </div>
                   
                   <div className="input-group" style={{ marginBottom: '16px' }}>
@@ -306,7 +307,7 @@ export default function BodyGym({ token, showToast }) {
 
                   <div className="input-group" style={{ marginBottom: '24px' }}>
                     <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Notes</label>
-                    <input type="text" className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="Felt great today" value={workoutForm.notes} onChange={e => setWorkoutForm({...workoutForm, notes: e.target.value})} />
+                    <input type="text" className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="Enter notes..." value={workoutForm.notes} onChange={e => setWorkoutForm({...workoutForm, notes: e.target.value})} />
                   </div>
 
                   <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>

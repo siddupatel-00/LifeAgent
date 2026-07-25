@@ -73,19 +73,19 @@ export default function HabitsPanel({
           <p style={{ color: 'var(--text-muted)', marginBottom: '24px' }}>Track foundational habits that shape your life</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: '400px', margin: '0 auto' }}>
             <input 
-              type="text" placeholder="Habit Title (e.g. Deep Work, Workout)" 
+              type="text" placeholder="Enter habit name..."
               value={newHabitData.title}
               onChange={e => setNewHabitData({...newHabitData, title: e.target.value})}
               className="glass-input" 
             />
             <input 
-              type="text" placeholder="Category (e.g. Health, Career, Mind)" 
+              type="text" placeholder="Enter category..."
               value={newHabitData.category}
               onChange={e => setNewHabitData({...newHabitData, category: e.target.value})}
               className="glass-input" 
             />
             <input 
-              type="text" placeholder="Daily Goal (e.g. 4 hours, 100 pages)" 
+              type="text" placeholder="Enter daily goal..."
               value={newHabitData.target}
               onChange={e => setNewHabitData({...newHabitData, target: e.target.value})}
               className="glass-input" 
@@ -205,19 +205,19 @@ export default function HabitsPanel({
             <h3 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '24px' }}>Add New Habit</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <input 
-                type="text" placeholder="Habit Title (e.g. Deep Work, Workout)" 
+                type="text" placeholder="Enter habit name..."
                 value={newHabitData.title}
                 onChange={e => setNewHabitData({...newHabitData, title: e.target.value})}
                 className="glass-input" 
               />
               <input 
-                type="text" placeholder="Category (e.g. Health, Career, Mind)" 
+                type="text" placeholder="Enter category..."
                 value={newHabitData.category}
                 onChange={e => setNewHabitData({...newHabitData, category: e.target.value})}
                 className="glass-input" 
               />
               <input 
-                type="text" placeholder="Daily Goal (e.g. 4 hours, 100 pages)" 
+                type="text" placeholder="Enter daily goal..."
                 value={newHabitData.target}
                 onChange={e => setNewHabitData({...newHabitData, target: e.target.value})}
                 className="glass-input" 

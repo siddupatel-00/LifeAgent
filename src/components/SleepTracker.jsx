@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, X, Trash2, Moon, Clock, Calendar, Activity, Filter } from 'lucide-react';
+import { todayKey } from '../utils/date';
 
 export default function SleepTracker({ token, showToast }) {
   const [logs, setLogs] = useState([]);
@@ -93,7 +94,7 @@ export default function SleepTracker({ token, showToast }) {
         setShowModal(false);
         showToast?.('Sleep Log Added', 'success');
         setFormData({
-          date: new Date().toISOString().split('T')[0],
+          date: todayKey(),
           hours: 7,
           minutes: 30,
           sleep_time: '23:00',
@@ -598,7 +599,7 @@ export default function SleepTracker({ token, showToast }) {
                 <textarea 
                   value={formData.notes} 
                   onChange={(e) => setFormData({...formData, notes: e.target.value})} 
-                  placeholder="e.g. Read 20 mins before bed, no caffeine after 4 PM" 
+                  placeholder="Enter notes..."
                   rows="2"
                   style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.9rem', outline: 'none', resize: 'vertical' }}
                 />

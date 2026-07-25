@@ -7,14 +7,13 @@ export default async function handler(req, res) {
   
   try {
     if (req.method === 'GET') {
-      // Use client_date query param if provided, otherwise fallback to UTC date
-      const clientDate = req.query?.client_date;
+      // The client supplies its calendar date so a new day starts in its timezone.
+      const clientDate = /^\d{4}-\d{2}-\d{2}$/.test(req.query?.client_date || '') ? req.query.client_date : null;
       let items;
       if (clientDate) {
         items = await db.execute({ sql: 'SELECT * FROM today_items WHERE user_id = ? AND date = ?', args: [userId, clientDate] });
       } else {
-        // Fallback: get items from today or yesterday (handles timezone edge cases)
-        items = await db.execute({ sql: 'SELECT * FROM today_items WHERE user_id = ? AND date >= date("now", "-1 day")', args: [userId] });
+        items = await db.execute({ sql: 'SELECT * FROM today_items WHERE user_id = ? AND date = date("now")', args: [userId] });
       }
       
       const targetDate = clientDate || new Date().toISOString().split('T')[0];
@@ -37,7 +36,7 @@ export default async function handler(req, res) {
         if (clientDate) {
           items = await db.execute({ sql: 'SELECT * FROM today_items WHERE user_id = ? AND date = ?', args: [userId, clientDate] });
         } else {
-          items = await db.execute({ sql: 'SELECT * FROM today_items WHERE user_id = ? AND date >= date("now", "-1 day")', args: [userId] });
+          items = await db.execute({ sql: 'SELECT * FROM today_items WHERE user_id = ? AND date = date("now")', args: [userId] });
         }
       }
 

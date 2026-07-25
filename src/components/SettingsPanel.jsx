@@ -189,7 +189,7 @@ const SettingsPanel = ({
               <input 
                 type="text" 
                 value={aiName} 
-                placeholder="e.g. AI Friend"
+                placeholder="Enter assistant name..."
                 onChange={(e) => setAiName(e.target.value || 'AI')} 
                 style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600, outline: 'none' }}
               />

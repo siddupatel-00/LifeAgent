@@ -15,6 +15,7 @@ import BodyGym from './components/BodyGym';
 import MoneyTracker from './components/MoneyTracker';
 import SettingsPanel from './components/SettingsPanel';
 import CalendarPanel from './components/CalendarPanel';
+import { todayKey, localTimeZone } from './utils/date';
 
 export default function App() {
   const [themeMode, setThemeMode] = useState('light'); // 'dark', 'light', 'pc'
@@ -85,7 +86,8 @@ export default function App() {
     aiTone: 'Analytical & Direct',
     morningAudit: true,
     smartAlerts: true,
-    currency: '$'
+    currency: '$',
+    timezone: localTimeZone()
   });
   const [settingsSaved, setSettingsSaved] = useState(false);
 
@@ -281,35 +283,44 @@ export default function App() {
     try {
       const headers = { 'Authorization': `Bearer ${token}` };
       
-      const habitsRes = await fetch('/api/habits', { headers });
-      if (habitsRes.ok) {
-        const hData = await habitsRes.json();
-        setHabits(hData.map(h => ({ id: h.id, title: h.label, category: h.category, streak: h.streak, target: h.target || '', checkedToday: !!h.checked_today, pausedUntil: h.paused_until || null })));
-      }
-      const clientDate = new Date().toISOString().split('T')[0];
-      const todayRes = await fetch(`/api/today?client_date=${clientDate}`, { headers });
-      if (todayRes.ok) {
-        const tData = await todayRes.json();
-        setTodayItems(tData.map(t => ({ id: t.id, time: t.time, title: t.label, category: t.category, checked: !!t.checked, habitId: t.habit_id || null })));
-      }
-
-      const txRes = await fetch('/api/transactions', { headers });
-      if (txRes.ok) {
-        const txData = await txRes.json();
-        setTransactions(txData.map(t => ({ id: t.id, title: t.title, amount: t.amount, type: t.type, date: t.date })));
-      }
-      
       const settingsRes = await fetch('/api/settings', { headers });
+      let timezone = localTimeZone();
       if (settingsRes.ok) {
         const sData = await settingsRes.json();
         if (sData) {
-          setUserProfile(prev => ({ ...prev, ...sData, currency: sData.currency || '$' }));
+          // Fresh accounts have a UTC database default; use the device timezone until
+          // the user chooses a different timezone in Settings.
+          timezone = sData.timezone && sData.timezone !== 'UTC' ? sData.timezone : timezone;
+          setUserProfile(prev => ({ ...prev, ...sData, currency: sData.currency || '$', timezone }));
           setGeminiApiKey(sData.gemini_api_key || '');
           setGroqApiKey(sData.groq_api_key || '');
           setAiProvider(sData.ai_provider || 'gemini');
           if (sData.ai_name) setAiName(sData.ai_name);
           if (sData.theme) setThemeMode(sData.theme);
         }
+      }
+      const clientDate = todayKey(timezone);
+      const todayRes = await fetch(`/api/today?client_date=${clientDate}`, { headers });
+      let todayData = [];
+      if (todayRes.ok) {
+        todayData = await todayRes.json();
+        setTodayItems(todayData.map(t => ({ id: t.id, time: t.time, title: t.label, category: t.category, checked: !!t.checked, habitId: t.habit_id || null })));
+      }
+      const habitsRes = await fetch('/api/habits', { headers });
+      if (habitsRes.ok) {
+        const hData = await habitsRes.json();
+        setHabits(hData.map(h => ({
+          id: h.id, title: h.label, category: h.category, streak: h.streak, target: h.target || '',
+          // A habit's completion belongs to its record for this calendar date.
+          checkedToday: todayData.some(item => item.habit_id === h.id && !!item.checked),
+          pausedUntil: h.paused_until || null
+        })));
+      }
+
+      const txRes = await fetch('/api/transactions', { headers });
+      if (txRes.ok) {
+        const txData = await txRes.json();
+        setTransactions(txData.map(t => ({ id: t.id, title: t.title, amount: t.amount, type: t.type, date: t.date })));
       }
 
       const chatRes = await fetch('/api/chat', { headers });
@@ -402,6 +413,21 @@ export default function App() {
       fetchDashboardData();
     }
   }, [isAuthenticated, token]);
+
+  // Reload the dashboard after the user's local calendar day changes.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const currentDate = () => todayKey(userProfile.timezone);
+    let lastDate = currentDate();
+    const interval = window.setInterval(() => {
+      const nextDate = currentDate();
+      if (nextDate !== lastDate) {
+        lastDate = nextDate;
+        fetchDashboardData();
+      }
+    }, 60_000);
+    return () => window.clearInterval(interval);
+  }, [isAuthenticated, token, userProfile.timezone]);
 
   // Universal sync helpers between Today routine and Daily Works (habits)
   // Sync is now 1:1 via habitId linkage
@@ -590,7 +616,7 @@ const handleDeleteHabitDb = async (id) => {
     setAiMessages(prev => [...prev, { id: 'loading', sender: 'ai', text: 'Thinking...', time: nowTime }]);
     
     try {
-      const todayStr = new Date().toISOString().split('T')[0];
+      const todayStr = todayKey(userProfile.timezone);
       const currentYear = new Date().getFullYear();
 
       const systemPrompt = `
@@ -732,7 +758,7 @@ const handleDeleteHabitDb = async (id) => {
             amount: data.amount,
             type: data.type,
             category: data.type === 'spend' ? 'Personal' : 'Income',
-            date: new Date().toISOString().split('T')[0]
+            date: todayKey(userProfile.timezone)
           },
           ...prev
         ]);
@@ -1161,22 +1187,22 @@ const handleDeleteHabitDb = async (id) => {
                 <>
                   <div>
                     <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Full Name</label>
-                    <input type="text" required value={authForm.name} onChange={e => setAuthForm({...authForm, name: e.target.value})} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', outline: 'none' }} placeholder="John Doe" />
+                    <input type="text" required value={authForm.name} onChange={e => setAuthForm({...authForm, name: e.target.value})} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', outline: 'none' }} placeholder="Enter your name..." />
                   </div>
                   <div>
                     <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Handle / Username</label>
-                    <input type="text" value={authForm.handle} onChange={e => setAuthForm({...authForm, handle: e.target.value})} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', outline: 'none' }} placeholder="@johndoe" />
+                    <input type="text" value={authForm.handle} onChange={e => setAuthForm({...authForm, handle: e.target.value})} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', outline: 'none' }} placeholder="Enter your handle..." />
                   </div>
                   <div>
                     <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Phone (Optional)</label>
-                    <input type="tel" value={authForm.phone} onChange={e => setAuthForm({...authForm, phone: e.target.value})} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', outline: 'none' }} placeholder="+1 234 567 890" />
+                    <input type="tel" value={authForm.phone} onChange={e => setAuthForm({...authForm, phone: e.target.value})} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', outline: 'none' }} placeholder="Enter your phone number..." />
                   </div>
                 </>
               )}
               
               <div>
                 <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Email Address</label>
-                <input type="email" required value={authForm.email} onChange={e => setAuthForm({...authForm, email: e.target.value})} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', outline: 'none' }} placeholder="you@example.com" />
+                <input type="email" required value={authForm.email} onChange={e => setAuthForm({...authForm, email: e.target.value})} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', outline: 'none' }} placeholder="Enter your email..." />
               </div>
               
               <div>
@@ -1744,7 +1770,7 @@ const handleDeleteHabitDb = async (id) => {
                           <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Item Title / Habit Name</label>
                           <input 
                             type="text" 
-                            placeholder="e.g., System Design Architecture or Meditation"
+                            placeholder="Enter habit name..."
                             value={newHabitData.title}
                             onChange={(e) => setNewHabitData({ ...newHabitData, title: e.target.value })}
                             style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.92rem', fontWeight: 600, outline: 'none' }}
@@ -1777,7 +1803,7 @@ const handleDeleteHabitDb = async (id) => {
                           <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Daily Goal / Target</label>
                           <input 
                             type="text" 
-                            placeholder="e.g., 45 mins/day or 2 problems"
+                            placeholder="Enter daily goal..."
                             value={newHabitData.target}
                             onChange={(e) => setNewHabitData({ ...newHabitData, target: e.target.value })}
                             style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.92rem', fontWeight: 600, outline: 'none' }}
@@ -1825,7 +1851,7 @@ const handleDeleteHabitDb = async (id) => {
                                       category: newHabitData.category,
                                       time: '',
                                       habit_id: data.id,
-                                      date: new Date().toISOString().split('T')[0]
+                                      date: todayKey(userProfile.timezone)
                                     })
                                   });
                                   if (todayRes.ok) {
@@ -2020,7 +2046,7 @@ const handleDeleteHabitDb = async (id) => {
                       className="blue-btn" 
                       onClick={() => {
                         setIsAddEventFormOpen(true);
-                        setNewEventDate(selectedCalendarDate || new Date().toISOString().split('T')[0]);
+                        setNewEventDate(selectedCalendarDate || todayKey(userProfile.timezone));
                         setNewEventTitle('');
                       }}
                       style={{ padding: '12px 22px', fontSize: '0.92rem' }}
@@ -2058,7 +2084,7 @@ const handleDeleteHabitDb = async (id) => {
                               type="text"
                               value={newEventTitle}
                               onChange={(e) => setNewEventTitle(e.target.value)}
-                              placeholder="e.g. Team meeting, Dentist appointment..."
+                              placeholder="Enter event title..."
                               autoFocus
                               style={{
                                 width: '100%', padding: '12px 16px', borderRadius: '12px',
@@ -2175,7 +2201,7 @@ const handleDeleteHabitDb = async (id) => {
                             const dateStr = `${calendarMonth.year}-${(calendarMonth.month + 1).toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
                             const dayEvents = calendarEvents.filter(e => e.date === dateStr);
                             const isSelected = selectedCalendarDate === dateStr;
-                            const isToday = dateStr === new Date().toISOString().split('T')[0];
+                            const isToday = dateStr === todayKey(userProfile.timezone);
                             cells.push(
                               <div 
                                 key={d} 
@@ -2454,7 +2480,7 @@ const handleDeleteHabitDb = async (id) => {
                                 value={currentNote.title}
                                 onChange={(e) => {
                                   if (notesViewMode === 'active') {
-                                    setNotesList(notesList.map(n => n.id === currentNote.id ? { ...n, title: e.target.value, date: new Date().toISOString().split('T')[0] } : n));
+                                    setNotesList(notesList.map(n => n.id === currentNote.id ? { ...n, title: e.target.value, date: todayKey(userProfile.timezone) } : n));
                                   }
                                 }}
                                 onBlur={() => handleUpdateNoteDb(currentNote)}
@@ -2545,7 +2571,7 @@ const handleDeleteHabitDb = async (id) => {
                             value={currentNote.content}
                             onChange={(e) => {
                               if (notesViewMode === 'active') {
-                                setNotesList(notesList.map(n => n.id === currentNote.id ? { ...n, content: e.target.value, date: new Date().toISOString().split('T')[0] } : n));
+                                setNotesList(notesList.map(n => n.id === currentNote.id ? { ...n, content: e.target.value, date: todayKey(userProfile.timezone) } : n));
                               }
                             }}
                             onBlur={() => handleUpdateNoteDb(currentNote)}

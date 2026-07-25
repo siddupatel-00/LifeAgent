@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { todayKey } from '../utils/date';
 import { Calendar as CalendarIcon, Plus, Trash2, ChevronDown, Filter, AlertCircle, CheckCircle, Clock } from 'lucide-react';
 
 export default function CalendarPanel({
@@ -9,7 +10,7 @@ export default function CalendarPanel({
 }) {
   const [isAddEventFormOpen, setIsAddEventFormOpen] = useState(false);
   const [newEventTitle, setNewEventTitle] = useState('');
-  const [newEventDate, setNewEventDate] = useState(new Date().toISOString().split('T')[0]);
+  const [newEventDate, setNewEventDate] = useState(todayKey());
   const [calendarMonth, setCalendarMonth] = useState({ year: new Date().getFullYear(), month: new Date().getMonth() });
   const [openStatusDropdown, setOpenStatusDropdown] = useState(null);
 
@@ -85,7 +86,7 @@ export default function CalendarPanel({
   };
 
   const getFilteredEvents = () => {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = todayKey();
     const now = new Date();
     let list = [...calendarEvents];
 
@@ -173,7 +174,7 @@ export default function CalendarPanel({
           className="blue-btn" 
           onClick={() => {
             setIsAddEventFormOpen(true);
-            setNewEventDate(selectedCalendarDate || new Date().toISOString().split('T')[0]);
+            setNewEventDate(selectedCalendarDate || todayKey());
             setNewEventTitle('');
           }}
           style={{ padding: '12px 22px', fontSize: '0.92rem' }}
@@ -212,7 +213,7 @@ export default function CalendarPanel({
                   type="text"
                   value={newEventTitle}
                   onChange={(e) => setNewEventTitle(e.target.value)}
-                  placeholder="e.g. Team sync, Gym session, Exam..."
+                  placeholder="Enter event title..."
                   autoFocus
                   style={{
                     width: '100%', padding: '12px 16px', borderRadius: '12px',
@@ -361,7 +362,7 @@ export default function CalendarPanel({
                 const dateStr = `${calendarMonth.year}-${(calendarMonth.month + 1).toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
                 const dayEvents = calendarEvents.filter(e => e.date === dateStr);
                 const isSelected = selectedCalendarDate === dateStr;
-                const isToday = dateStr === new Date().toISOString().split('T')[0];
+                const isToday = dateStr === todayKey();
                 cells.push(
                   <div 
                     key={d} 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, X, Check } from 'lucide-react';
+import { todayKey } from '../utils/date';
 
 const CATEGORIES = ['General', 'Food', 'Transport', 'Shopping', 'Bills', 'Entertainment', 'Education', 'Health', 'Other'];
 
@@ -9,7 +10,7 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
   const [newType, setNewType] = useState('spend');
   const [newCategory, setNewCategory] = useState('General');
   const [newNotes, setNewNotes] = useState('');
-  const [newDate, setNewDate] = useState(new Date().toISOString().split('T')[0]);
+  const [newDate, setNewDate] = useState(todayKey());
   const [loading, setLoading] = useState(false);
   // Fetch initial transactions
   useEffect(() => {
@@ -206,7 +207,7 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
           </div>
           <div>
             <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Description</label>
-            <input type="text" placeholder="e.g. Groceries..." value={newTitle} onChange={(e) => setNewTitle(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
+            <input type="text" placeholder="Enter description..." value={newTitle} onChange={(e) => setNewTitle(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
           </div>
           <div>
             <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Amount ({currency})</label>
@@ -224,7 +225,7 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
           </div>
           <div>
             <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Notes (Optional)</label>
-            <input type="text" placeholder="Extra info..." value={newNotes} onChange={(e) => setNewNotes(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
+            <input type="text" placeholder="Enter notes..." value={newNotes} onChange={(e) => setNewNotes(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
           </div>
           <button type="submit" className="blue-btn" style={{ justifyContent: 'center', marginTop: '6px' }}><Plus size={18} /> Record Entry</button>
         </form>

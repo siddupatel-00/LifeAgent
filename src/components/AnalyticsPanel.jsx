@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   CheckCircle2, DollarSign, Activity, Check, Moon as SleepIcon, RefreshCw 
 } from 'lucide-react';
+import { todayKey } from '../utils/date';
 
 export default function AnalyticsPanel({ token, showToast, currency = '$' }) {
   const [data, setData] = useState(null);
@@ -15,7 +16,7 @@ export default function AnalyticsPanel({ token, showToast, currency = '$' }) {
     const fetchAnalytics = async () => {
       try {
         setLoading(true);
-        const res = await fetch(`/api/analytics?range=${range}`, {
+        const res = await fetch(`/api/analytics?range=${range}&client_date=${todayKey()}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }

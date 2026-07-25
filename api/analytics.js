@@ -10,6 +10,8 @@ export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   const range = req.query?.range || '7d';
+  const clientDate = /^\d{4}-\d{2}-\d{2}$/.test(req.query?.client_date || '') ? req.query.client_date : null;
+  const todayDate = clientDate || new Date().toISOString().slice(0, 10);
 
   // Default fallback data structures
   let habitsData = { total: 0, completedToday: 0, consistency: 0, totalStreaks: 0, bestStreak: 0, breakdown: [], categories: {} };
@@ -24,7 +26,12 @@ export default async function handler(req, res) {
     const habitsResult = await db.execute({ sql: 'SELECT * FROM habits WHERE user_id = ?', args: [userId] });
     const habits = habitsResult.rows || [];
     const totalHabits = habits.length;
-    const completedToday = habits.filter(h => h.checked_today).length;
+    const todayItemsResult = await db.execute({
+      sql: 'SELECT habit_id, checked FROM today_items WHERE user_id = ? AND date = ?',
+      args: [userId, todayDate]
+    });
+    const completedHabitIds = new Set((todayItemsResult.rows || []).filter(item => item.checked && item.habit_id).map(item => item.habit_id));
+    const completedToday = habits.filter(h => completedHabitIds.has(h.id)).length;
     const consistency = totalHabits > 0 ? Math.round((completedToday / totalHabits) * 100) : 0;
     const totalStreaks = habits.reduce((sum, h) => sum + (Number(h.streak) || 0), 0);
     const bestStreak = habits.reduce((max, h) => Math.max(max, Number(h.streak) || 0), 0);
@@ -32,7 +39,7 @@ export default async function handler(req, res) {
       label: h.label || h.title || 'Habit',
       category: h.category || 'General',
       streak: Number(h.streak) || 0,
-      checkedToday: !!h.checked_today
+      checkedToday: completedHabitIds.has(h.id)
     }));
 
     const categories = {};
@@ -40,7 +47,7 @@ export default async function handler(req, res) {
       const cat = h.category || 'General';
       if (!categories[cat]) categories[cat] = { total: 0, done: 0 };
       categories[cat].total++;
-      if (h.checked_today) categories[cat].done++;
+      if (completedHabitIds.has(h.id)) categories[cat].done++;
     }
 
     habitsData = {
@@ -80,8 +87,8 @@ export default async function handler(req, res) {
   // 3. Today items summary
   try {
     const todayResult = await db.execute({
-      sql: 'SELECT checked FROM today_items WHERE user_id = ?',
-      args: [userId]
+      sql: 'SELECT checked FROM today_items WHERE user_id = ? AND date = ?',
+      args: [userId, todayDate]
     });
     const rows = todayResult.rows || [];
     todayData = {
