@@ -1577,13 +1577,6 @@ const handleDeleteHabitDb = async (id) => {
               >
                 Get Started Free <ArrowRight size={18} />
               </button>
-              <button 
-                className="secondary-btn" 
-                style={{ fontSize: '1.1rem', padding: '16px 32px', borderRadius: '14px' }} 
-                onClick={() => { setAuthMode('login'); navigate('auth', '/auth'); }}
-              >
-                Sign In
-              </button>
             </div>
           </div>
         </main>
