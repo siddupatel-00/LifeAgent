@@ -172,10 +172,18 @@ export default function App() {
   // Authentication State
   const [isAuthenticated, setIsAuthenticated] = useState(() => !!localStorage.getItem('token'));
   const [token, setToken] = useState(() => localStorage.getItem('token') || '');
-  const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
+  const [authMode, setAuthMode] = useState('login'); // 'login', 'signup', or 'forgot'
   const [authForm, setAuthForm] = useState({ name: '', handle: '', email: '', password: '', phone: '' });
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState('');
+
+  // Password Reset State
+  const [resetStep, setResetStep] = useState(1); // 1: request code, 2: enter code & new pass
+  const [resetEmailOrHandle, setResetEmailOrHandle] = useState('');
+  const [resetCode, setResetCode] = useState('');
+  const [resetNewPassword, setResetNewPassword] = useState('');
+  const [resetSuccessMsg, setResetSuccessMsg] = useState('');
+  const [devCodeNotice, setDevCodeNotice] = useState('');
 
   const handleAuth = async (e) => {
     e.preventDefault();
@@ -194,17 +202,6 @@ export default function App() {
       localStorage.setItem('token', data.token);
       setToken(data.token);
       setIsAuthenticated(true);
-      setUserProfile(prev => ({
-        ...prev,
-        name: data.user.name || '',
-        email: data.user.email || '',
-        handle: data.user.handle || '',
-        currency: data.user.currency || '$',
-      }));
-      // Set AI provider and keys immediately from login response
-      if (data.user.ai_provider) setAiProvider(data.user.ai_provider);
-      if (data.user.gemini_api_key) setGeminiApiKey(data.user.gemini_api_key);
-      if (data.user.groq_api_key) setGroqApiKey(data.user.groq_api_key);
       if (data.user.ai_name) setAiName(data.user.ai_name);
       if (data.user.theme) setThemeMode(data.user.theme);
       setAuthForm({ name: '', handle: '', email: '', password: '', phone: '' });
@@ -1800,10 +1797,12 @@ const handleDeleteHabitDb = async (id) => {
         </main>
       )}
 
-      {/* AUTHENTICATION PAGE (At /auth) */}
+      {/* AUTHENTICATION & PASSWORD RESET PAGE (At /auth) */}
       {currentPage === 'auth' && (
         <main className="animate-entrance" style={{ display: 'flex', minHeight: '80vh', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
           <div style={{ background: 'var(--bg-card)', padding: '40px', borderRadius: '24px', border: '1px solid var(--border-color)', width: '100%', maxWidth: '440px', boxShadow: '0 8px 30px rgba(0,0,0,0.1)' }}>
+            
+            {/* Header Title */}
             <div style={{ textAlign: 'center', marginBottom: '30px' }}>
               <div style={{
                 background: 'var(--accent-blue)', width: '48px', height: '48px', borderRadius: '14px',
@@ -1811,59 +1810,157 @@ const handleDeleteHabitDb = async (id) => {
               }}>
                 <Lock size={24} color="#fff" />
               </div>
-              <h2 style={{ fontSize: '1.8rem', fontWeight: 800 }}>{authMode === 'login' ? 'Welcome Back' : 'Create Account'}</h2>
+              <h2 style={{ fontSize: '1.8rem', fontWeight: 800 }}>
+                {authMode === 'forgot' 
+                  ? 'Reset Password' 
+                  : (authMode === 'login' ? 'Welcome Back' : 'Create Account')}
+              </h2>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', marginTop: '8px' }}>
-                {authMode === 'login' ? 'Sign in to access your AI workspace.' : 'Sign up to get your Personal AI Assistant.'}
+                {authMode === 'forgot'
+                  ? (resetStep === 1 ? 'Enter your registered email or username to get a reset code.' : 'Enter your 6-digit reset code and new password.')
+                  : (authMode === 'login' ? 'Sign in to access your AI workspace.' : 'Sign up to get your Personal AI Assistant.')}
               </p>
             </div>
 
+            {/* Banners & Messages */}
             {authError && (
               <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', color: '#ef4444', padding: '12px 16px', borderRadius: '12px', marginBottom: '20px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <XCircle size={18} /> {authError}
               </div>
             )}
 
-            <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {authMode === 'signup' && (
+            {resetSuccessMsg && (
+              <div style={{ background: 'rgba(16, 185, 129, 0.12)', border: '1px solid #10b981', color: '#10b981', padding: '12px 16px', borderRadius: '12px', marginBottom: '20px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <CheckCircle2 size={18} /> {resetSuccessMsg}
+              </div>
+            )}
+
+            {devCodeNotice && (
+              <div style={{ background: 'rgba(59, 130, 246, 0.15)', border: '1px solid var(--accent-blue)', color: 'var(--accent-blue-light)', padding: '12px 16px', borderRadius: '12px', marginBottom: '20px', fontSize: '0.92rem', fontWeight: 700, fontFamily: 'monospace' }}>
+                {devCodeNotice}
+              </div>
+            )}
+
+            {/* FORGOT / RESET PASSWORD FORM */}
+            {authMode === 'forgot' ? (
+              resetStep === 1 ? (
+                /* Step 1: Request Code */
+                <form onSubmit={handleForgotPassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Email Address or Username</label>
+                    <input 
+                      type="text" 
+                      required 
+                      value={resetEmailOrHandle} 
+                      onChange={e => setResetEmailOrHandle(e.target.value)} 
+                      style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', outline: 'none' }} 
+                      placeholder="e.g. adi or friend@gmail.com" 
+                    />
+                  </div>
+
+                  <button type="submit" className="blue-btn" disabled={authLoading} style={{ width: '100%', padding: '14px', fontSize: '1rem', marginTop: '8px', opacity: authLoading ? 0.7 : 1 }}>
+                    {authLoading ? 'Sending Reset Code...' : 'Get Reset Code'}
+                  </button>
+                </form>
+              ) : (
+                /* Step 2: Verify Code & Set Password */
+                <form onSubmit={handleResetPassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>6-Digit Reset Code</label>
+                    <input 
+                      type="text" 
+                      required 
+                      value={resetCode} 
+                      onChange={e => setResetCode(e.target.value)} 
+                      style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', outline: 'none', letterSpacing: '4px', fontFamily: 'monospace', fontSize: '1.2rem', textAlign: 'center' }} 
+                      placeholder="123456" 
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>New Password</label>
+                    <input 
+                      type="password" 
+                      required 
+                      value={resetNewPassword} 
+                      onChange={e => setResetNewPassword(e.target.value)} 
+                      style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', outline: 'none' }} 
+                      placeholder="Enter your new password..." 
+                    />
+                  </div>
+
+                  <button type="submit" className="blue-btn" disabled={authLoading} style={{ width: '100%', padding: '14px', fontSize: '1rem', marginTop: '8px', opacity: authLoading ? 0.7 : 1 }}>
+                    {authLoading ? 'Updating Password...' : 'Save New Password'}
+                  </button>
+                </form>
+              )
+            ) : (
+              /* LOGIN / SIGNUP FORM */
+              <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {authMode === 'signup' && (
+                  <>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Full Name</label>
+                      <input type="text" required value={authForm.name} onChange={e => setAuthForm({...authForm, name: e.target.value})} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', outline: 'none' }} placeholder="Enter your name..." />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Handle / Username</label>
+                      <input type="text" value={authForm.handle} onChange={e => setAuthForm({...authForm, handle: e.target.value})} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', outline: 'none' }} placeholder="Enter your handle..." />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Phone (Optional)</label>
+                      <input type="tel" value={authForm.phone} onChange={e => setAuthForm({...authForm, phone: e.target.value})} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', outline: 'none' }} placeholder="Enter your phone number..." />
+                    </div>
+                  </>
+                )}
+                
+                <div>
+                  <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Email Address or Username</label>
+                  <input type="text" required value={authForm.email} onChange={e => setAuthForm({...authForm, email: e.target.value})} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', outline: 'none' }} placeholder="Enter email or username..." />
+                </div>
+                
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Password</label>
+                    {authMode === 'login' && (
+                      <button 
+                        type="button"
+                        onClick={() => { setAuthMode('forgot'); setResetStep(1); setAuthError(''); setResetSuccessMsg(''); }}
+                        style={{ background: 'none', border: 'none', color: 'var(--accent-blue)', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', padding: 0 }}
+                      >
+                        Forgot Password?
+                      </button>
+                    )}
+                  </div>
+                  <input type="password" required value={authForm.password} onChange={e => setAuthForm({...authForm, password: e.target.value})} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', outline: 'none' }} placeholder="••••••••" />
+                </div>
+
+                <button type="submit" className="blue-btn" disabled={authLoading} style={{ width: '100%', padding: '14px', fontSize: '1rem', marginTop: '8px', opacity: authLoading ? 0.7 : 1 }}>
+                  {authLoading ? 'Please wait...' : (authMode === 'login' ? 'Sign In' : 'Create Account')}
+                </button>
+              </form>
+            )}
+
+            {/* Footer Navigation Link */}
+            <div style={{ textAlign: 'center', marginTop: '24px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+              {authMode === 'forgot' ? (
+                <button 
+                  onClick={() => { setAuthMode('login'); setAuthError(''); setResetSuccessMsg(''); }}
+                  style={{ background: 'none', border: 'none', color: 'var(--accent-blue)', fontWeight: 600, cursor: 'pointer', padding: 0 }}
+                >
+                  ← Back to Sign In
+                </button>
+              ) : (
                 <>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Full Name</label>
-                    <input type="text" required value={authForm.name} onChange={e => setAuthForm({...authForm, name: e.target.value})} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', outline: 'none' }} placeholder="Enter your name..." />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Handle / Username</label>
-                    <input type="text" value={authForm.handle} onChange={e => setAuthForm({...authForm, handle: e.target.value})} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', outline: 'none' }} placeholder="Enter your handle..." />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Phone (Optional)</label>
-                    <input type="tel" value={authForm.phone} onChange={e => setAuthForm({...authForm, phone: e.target.value})} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', outline: 'none' }} placeholder="Enter your phone number..." />
-                  </div>
+                  {authMode === 'login' ? "Don't have an account? " : "Already have an account? "}
+                  <button 
+                    onClick={() => { setAuthMode(authMode === 'login' ? 'signup' : 'login'); setAuthError(''); }} 
+                    style={{ background: 'none', border: 'none', color: 'var(--accent-blue)', fontWeight: 600, cursor: 'pointer', padding: 0 }}
+                  >
+                    {authMode === 'login' ? 'Sign Up' : 'Sign In'}
+                  </button>
                 </>
               )}
-              
-              <div>
-                <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Email Address</label>
-                <input type="email" required value={authForm.email} onChange={e => setAuthForm({...authForm, email: e.target.value})} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', outline: 'none' }} placeholder="Enter your email..." />
-              </div>
-              
-              <div>
-                <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Password</label>
-                <input type="password" required value={authForm.password} onChange={e => setAuthForm({...authForm, password: e.target.value})} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', outline: 'none' }} placeholder="••••••••" />
-              </div>
-
-              <button type="submit" className="blue-btn" disabled={authLoading} style={{ width: '100%', padding: '14px', fontSize: '1rem', marginTop: '8px', opacity: authLoading ? 0.7 : 1 }}>
-                {authLoading ? 'Please wait...' : (authMode === 'login' ? 'Sign In' : 'Create Account')}
-              </button>
-            </form>
-
-            <div style={{ textAlign: 'center', marginTop: '24px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-              {authMode === 'login' ? "Don't have an account? " : "Already have an account? "}
-              <button 
-                onClick={() => { setAuthMode(authMode === 'login' ? 'signup' : 'login'); setAuthError(''); }} 
-                style={{ background: 'none', border: 'none', color: 'var(--accent-blue)', fontWeight: 600, cursor: 'pointer', padding: 0 }}
-              >
-                {authMode === 'login' ? 'Sign Up' : 'Sign In'}
-              </button>
             </div>
           </div>
         </main>
