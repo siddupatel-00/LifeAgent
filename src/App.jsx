@@ -1090,7 +1090,7 @@ const handleDeleteHabitDb = async (id) => {
           <section className="animate-entrance scroll-swipe-up" style={{ textAlign: 'center', padding: '60px 0 36px' }}>
             <div className="badge" style={{ padding: '6px 18px', borderRadius: '50px', marginBottom: '28px', border: '1px solid rgba(59, 130, 246, 0.3)', background: 'rgba(59, 130, 246, 0.08)', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
               <div className="pulse-dot-container"><div className="pulse-dot-ring"></div><div className="pulse-dot-core"></div></div>
-              <span style={{ fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.5px' }}>HEALTH PRECISION × AUTONOMOUS AI ENGINE</span>
+              <span style={{ fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.5px' }}>HEALTH PRECISION × YOUR PERSONAL AI ASSISTANT</span>
             </div>
 
             <h1 style={{ fontSize: '3.8rem', fontWeight: 900, lineHeight: 1.08, letterSpacing: '-2px', marginBottom: '22px', color: 'var(--text-main)' }}>
