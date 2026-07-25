@@ -1254,7 +1254,7 @@ const handleDeleteHabitDb = async (id) => {
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                         {[
-                          { title: 'Software Subscription (Linear & Vercel)', category: 'Tech & Dev', amount: '-$45.00', date: 'Today', type: 'expense' },
+                          { title: 'Software Subscription (Autonomous AI & Vercel)', category: 'Tech & Dev', amount: '-$45.00', date: 'Today', type: 'expense' },
                           { title: 'Client Retainer Payment', category: 'Income', amount: '+$3,200.00', date: 'Yesterday', type: 'income' },
                           { title: 'Organic Whole Foods & Grocery', category: 'Health & Food', amount: '-$124.50', date: '2 days ago', type: 'expense' },
                           { title: 'Gym Membership & Recovery', category: 'Fitness', amount: '-$85.00', date: '3 days ago', type: 'expense' },
@@ -1340,7 +1340,7 @@ const handleDeleteHabitDb = async (id) => {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
                         <div style={{ fontSize: '1.1rem', fontWeight: 800 }}>Today's Timeline Schedule</div>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Raycast-style time blocking and AI event synchronization</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Autonomous AI time blocking and AI event synchronization</div>
                       </div>
                       <div className="pill-tag" style={{ background: 'var(--accent-blue-dim)', color: 'var(--accent-blue)', border: 'none', fontSize: '0.8rem' }}>
                         ⌘ K Schedule Event
@@ -1822,7 +1822,7 @@ const handleDeleteHabitDb = async (id) => {
         </main>
       )}
 
-      {/* MERABAAZAR / LINEAR INSPIRED 2-COLUMN SIDEBAR WORKSPACE DASHBOARD (At /dashboard) */}
+      {/* MERABAAZAR / AUTONOMOUS AI INSPIRED 2-COLUMN SIDEBAR WORKSPACE DASHBOARD (At /dashboard) */}
       {currentPage === 'dashboard' && isAuthenticated && (
         <div className="animate-entrance" style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg-main)' }}>
           
