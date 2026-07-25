@@ -213,6 +213,66 @@ export default function App() {
     }
   };
 
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    setAuthLoading(true);
+    setAuthError('');
+    setResetSuccessMsg('');
+    setDevCodeNotice('');
+    try {
+      const res = await fetch('/api/auth?action=forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ emailOrHandle: resetEmailOrHandle })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Account not found');
+
+      setResetStep(2);
+      setResetSuccessMsg('Reset code generated successfully!');
+      if (data.devCode) {
+        setDevCodeNotice(`🔑 Test Reset Code: ${data.devCode}`);
+      }
+    } catch (err) {
+      setAuthError(err.message);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    setAuthLoading(true);
+    setAuthError('');
+    setResetSuccessMsg('');
+    try {
+      const res = await fetch('/api/auth?action=reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          emailOrHandle: resetEmailOrHandle,
+          code: resetCode,
+          newPassword: resetNewPassword
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to reset password');
+
+      setResetSuccessMsg(data.message || 'Password reset successfully!');
+      setTimeout(() => {
+        setAuthMode('login');
+        setResetStep(1);
+        setAuthError('');
+        setResetSuccessMsg('');
+        setDevCodeNotice('');
+      }, 1800);
+    } catch (err) {
+      setAuthError(err.message);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     setToken('');
@@ -1920,29 +1980,30 @@ const handleDeleteHabitDb = async (id) => {
                 </div>
                 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                    <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Password</label>
-                    {authMode === 'login' && (
+                  <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Password</label>
+                  <input type="password" required value={authForm.password} onChange={e => setAuthForm({...authForm, password: e.target.value})} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', outline: 'none' }} placeholder="••••••••" />
+                  
+                  {authMode === 'login' && (
+                    <div style={{ textAlign: 'right', marginTop: '6px' }}>
                       <button 
                         type="button"
                         onClick={() => { setAuthMode('forgot'); setResetStep(1); setAuthError(''); setResetSuccessMsg(''); }}
-                        style={{ background: 'none', border: 'none', color: 'var(--accent-blue)', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', padding: 0 }}
+                        style={{ background: 'none', border: 'none', color: 'var(--accent-blue)', fontSize: '0.88rem', fontWeight: 600, cursor: 'pointer', padding: '2px 0' }}
                       >
                         Forgot Password?
                       </button>
-                    )}
-                  </div>
-                  <input type="password" required value={authForm.password} onChange={e => setAuthForm({...authForm, password: e.target.value})} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', outline: 'none' }} placeholder="••••••••" />
+                    </div>
+                  )}
                 </div>
 
-                <button type="submit" className="blue-btn" disabled={authLoading} style={{ width: '100%', padding: '14px', fontSize: '1rem', marginTop: '8px', opacity: authLoading ? 0.7 : 1 }}>
+                <button type="submit" className="blue-btn" disabled={authLoading} style={{ width: '100%', padding: '14px', fontSize: '1.02rem', marginTop: '8px', opacity: authLoading ? 0.7 : 1 }}>
                   {authLoading ? 'Please wait...' : (authMode === 'login' ? 'Sign In' : 'Create Account')}
                 </button>
               </form>
             )}
 
             {/* Footer Navigation Link */}
-            <div style={{ textAlign: 'center', marginTop: '24px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+            <div style={{ textAlign: 'center', marginTop: '24px', fontSize: '0.92rem', color: 'var(--text-muted)' }}>
               {authMode === 'forgot' ? (
                 <button 
                   onClick={() => { setAuthMode('login'); setAuthError(''); setResetSuccessMsg(''); }}
