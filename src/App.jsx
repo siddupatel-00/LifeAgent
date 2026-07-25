@@ -1228,7 +1228,6 @@ const handleDeleteHabitDb = async (id) => {
                     <div className="glass-card" style={{ padding: '20px', borderRadius: '16px' }}>
                       <div style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span>Recent Transactions & AI Categorization</span>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--accent-blue)', background: 'var(--accent-blue-dim)', padding: '4px 10px', borderRadius: '20px' }}>Auto-Synced</span>
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                         {[
