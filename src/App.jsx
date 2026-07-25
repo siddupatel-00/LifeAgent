@@ -1050,180 +1050,170 @@ const handleDeleteHabitDb = async (id) => {
         </nav>
       )}
 
-      {/* LANDING PAGE (Storefront at /) */}
+      {/* LANDING PAGE (Personal AI Operating System at /) */}
       {currentPage === 'landing' && (
         <main>
-          <section className="animate-entrance" style={{ textAlign: 'center', padding: '60px 0 70px' }}>
-            <div className="badge" style={{ padding: '6px 16px', borderRadius: '50px', marginBottom: '32px' }}>
+          {/* HERO SECTION */}
+          <section className="animate-entrance" style={{ textAlign: 'center', padding: '70px 0 50px' }}>
+            <div className="badge" style={{ padding: '6px 18px', borderRadius: '50px', marginBottom: '28px', border: '1px solid rgba(59, 130, 246, 0.3)', background: 'rgba(59, 130, 246, 0.08)' }}>
               <div className="pulse-dot-container"><div className="pulse-dot-ring"></div><div className="pulse-dot-core"></div></div>
-              <span>ALL-IN-ONE PERSONAL & AI WORKSPACE</span>
+              <span style={{ fontWeight: 700, fontSize: '0.82rem', letterSpacing: '0.5px' }}>✦ PERSONAL AI OPERATING SYSTEM</span>
             </div>
 
-            <h2 style={{ fontSize: '3.8rem', fontWeight: 900, lineHeight: 1.12, letterSpacing: '-1.5px', marginBottom: '28px' }}>
-              One clean storefront for your<br />
-              <span key={cycleIdx} className="cycle-text" style={{ minWidth: '380px', display: 'inline-block' }}>
-                {cycleOptions[cycleIdx]}
-              </span>
-            </h2>
+            <h1 style={{ fontSize: '3.8rem', fontWeight: 900, lineHeight: 1.1, letterSpacing: '-1.8px', marginBottom: '24px' }}>
+              Your Personal AI Operating System
+            </h1>
 
-            <p style={{ maxWidth: '680px', margin: '0 auto 36px', fontSize: '1.25rem', color: 'var(--text-muted)', lineHeight: 1.65, fontWeight: 400 }}>
-              Replace dozens of fragmented trackers with one unified command center. Seamlessly monitor your money flow, master deep work study streaks, and let an intelligent AI companion audit your daily schedule—all inside a distraction-free workspace.
+            <p style={{ maxWidth: '720px', margin: '0 auto 36px', fontSize: '1.25rem', color: 'var(--text-muted)', lineHeight: 1.6, fontWeight: 400 }}>
+              Track your habits, money, sleep, workouts, calendar, notes and daily progress — while your AI understands everything in one place.
             </p>
 
-            <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '36px' }}>
-              <button className="blue-btn" style={{ fontSize: '1.15rem', padding: '16px 42px' }} onClick={() => { setWaitlistSuccess(false); navigate('waitlist', '/waitlist'); }}>
-                Join VIP Waitlist <ArrowRight size={18} />
+            <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '48px' }}>
+              <button className="blue-btn" style={{ fontSize: '1.1rem', padding: '16px 36px' }} onClick={() => navigate('auth', '/auth')}>
+                Get Started Free <ArrowRight size={18} />
               </button>
-              <button className="secondary-btn" style={{ fontSize: '1.15rem', padding: '16px 42px' }} onClick={() => navigate('auth', '/auth')}>
+              <button className="secondary-btn" style={{ fontSize: '1.1rem', padding: '16px 36px' }} onClick={() => navigate('auth', '/auth')}>
                 <LogIn size={18} /> Sign In
               </button>
             </div>
+          </section>
 
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', alignItems: 'center', fontSize: '0.85rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
-              <span className="pill-tag"><Check size={14} color="var(--accent-blue)" /> 0% Commission & Extra Fees</span>
-              <span className="pill-tag"><Check size={14} color="var(--accent-blue)" /> Instant Early Access Priority</span>
-              <span className="pill-tag"><Check size={14} color="var(--accent-blue)" /> Built-in Personal AI Assistant</span>
+          {/* 80% PRODUCT PREVIEW: INTERACTIVE / POLISHED MOCK DASHBOARD */}
+          <section className="animate-entrance delay-1" style={{ marginBottom: '90px' }}>
+            <div 
+              className="glass-card" 
+              style={{ 
+                padding: '28px', borderRadius: '24px', border: '1px solid var(--border-color)', 
+                background: 'var(--bg-card)', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', position: 'relative', overflow: 'hidden' 
+              }}
+            >
+              {/* Mock App Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '20px', borderBottom: '1px solid var(--border-color)', marginBottom: '24px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ff5f56' }} />
+                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ffbd2e' }} />
+                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#27c93f' }} />
+                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)', marginLeft: '8px' }}>LifeAgent OS • Dashboard Preview</span>
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <span className="pill-tag" style={{ fontSize: '0.75rem' }}>● Live Sync</span>
+                  <span className="pill-tag" style={{ fontSize: '0.75rem', background: 'rgba(59, 130, 246, 0.15)', color: 'var(--accent-blue)' }}>AI Connected</span>
+                </div>
+              </div>
+
+              {/* 8 Core Pillars Preview Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+                
+                {/* 1. Money */}
+                <div className="glass-card" style={{ padding: '20px', borderRadius: '16px', background: 'var(--bg-main)', border: '1px solid var(--border-color)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)' }}>MONEY</span>
+                    <DollarSign size={16} color="var(--accent-blue)" />
+                  </div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800 }}>$4,250.00</div>
+                  <div style={{ fontSize: '0.75rem', color: '#22c55e', marginTop: '4px', fontWeight: 600 }}>+$1,200 this month</div>
+                </div>
+
+                {/* 2. Sleep */}
+                <div className="glass-card" style={{ padding: '20px', borderRadius: '16px', background: 'var(--bg-main)', border: '1px solid var(--border-color)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)' }}>SLEEP</span>
+                    <SleepIcon size={16} color="var(--accent-blue)" />
+                  </div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800 }}>8h 15m</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--accent-blue)', marginTop: '4px', fontWeight: 600 }}>🌟 Excellent Quality</div>
+                </div>
+
+                {/* 3. Habits */}
+                <div className="glass-card" style={{ padding: '20px', borderRadius: '16px', background: 'var(--bg-main)', border: '1px solid var(--border-color)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)' }}>HABITS</span>
+                    <Flame size={16} color="#f59e0b" />
+                  </div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800 }}>14 Day Streak</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>4 of 4 completed today</div>
+                </div>
+
+                {/* 4. Gym */}
+                <div className="glass-card" style={{ padding: '20px', borderRadius: '16px', background: 'var(--bg-main)', border: '1px solid var(--border-color)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)' }}>WORKOUTS</span>
+                    <Dumbbell size={16} color="var(--accent-blue)" />
+                  </div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800 }}>Push Day</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>45 mins • 320 kcal</div>
+                </div>
+
+                {/* 5. Calendar */}
+                <div className="glass-card" style={{ padding: '20px', borderRadius: '16px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', gridColumn: 'span 2' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)' }}>CALENDAR</span>
+                    <Calendar size={16} color="var(--accent-blue)" />
+                  </div>
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    <span className="pill-tag" style={{ background: 'rgba(59, 130, 246, 0.15)', color: 'var(--accent-blue)', fontWeight: 700 }}>2:00 PM</span>
+                    <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>Product Roadmap & AI Strategy Sync</span>
+                  </div>
+                </div>
+
+                {/* 6. AI Assistant */}
+                <div className="glass-card" style={{ padding: '20px', borderRadius: '16px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', gridColumn: 'span 2' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--accent-blue)' }}>AI ASSISTANT</span>
+                    <Bot size={16} color="var(--accent-blue)" />
+                  </div>
+                  <p style={{ fontSize: '0.88rem', color: 'var(--text-main)', margin: 0, fontStyle: 'italic' }}>
+                    "Logged your 45-min Push Day workout and updated your habit streak. Sleep recovery looks optimal at 8h 15m!"
+                  </p>
+                </div>
+
+              </div>
             </div>
           </section>
 
-          <section className="animate-entrance delay-1" style={{ marginBottom: '80px' }}>
-            <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-              <h3 style={{ fontSize: '2.5rem', fontWeight: 800, letterSpacing: '-1px', marginBottom: '12px' }}>
-                Why pay for 6+ separate apps?
+          {/* 3 CORE QUESTIONS ANSWERED */}
+          <section className="animate-entrance delay-2" style={{ marginBottom: '80px' }}>
+            <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+              <h3 style={{ fontSize: '2.4rem', fontWeight: 900, letterSpacing: '-1px' }}>
+                One place for your entire life.
               </h3>
-              <p style={{ color: 'var(--text-muted)', fontSize: '1.15rem' }}>
-                The average person pays $21+ across fragmented tools. LifeAgent replaces all of them.
-              </p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: '32px', alignItems: 'stretch' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px', alignContent: 'center' }}>
-                {fragmentedApps.map((app, i) => (
-                  <div 
-                    key={i} 
-                    className="glass-card motion-card" 
-                    style={{ 
-                      padding: '16px', position: 'relative', background: 'var(--bg-main)', 
-                      border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '12px' 
-                    }}
-                  >
-                    <div style={{
-                      position: 'absolute', top: '8px', right: '8px',
-                      width: '18px', height: '18px', borderRadius: '50%',
-                      background: 'rgba(255, 82, 82, 0.2)', color: '#ff5252',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem'
-                    }}>
-                      <X size={12} />
-                    </div>
-
-                    <div style={{
-                      width: '38px', height: '38px', borderRadius: '10px',
-                      background: 'var(--bg-card)', border: '1px solid var(--border-color)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontWeight: 800, fontSize: '0.85rem', color: 'var(--text-muted)'
-                    }}>
-                      {app.code}
-                    </div>
-
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-main)' }}>{app.name}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>{app.sub} • <span style={{ color: '#ff5252', fontWeight: 600 }}>{app.cost}</span></div>
-                    </div>
-                  </div>
-                ))}
-
-                <div style={{ gridColumn: 'span 2', textAlign: 'center', padding: '12px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                  Total spent separately: <strong style={{ color: '#ff5252', textDecoration: 'line-through' }}>$21+ / Month ($250+/year)</strong>
-                </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
+              <div className="glass-card" style={{ padding: '32px', borderRadius: '20px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--accent-blue)', textTransform: 'uppercase', letterSpacing: '1px' }}>01 / WHAT IS THIS?</span>
+                <h4 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '12px 0 10px' }}>Personal AI Operating System</h4>
+                <p style={{ color: 'var(--text-muted)', lineHeight: 1.6, fontSize: '0.95rem' }}>
+                  A unified, high-performance command center for your habits, finance, sleep, fitness, notes, and calendar.
+                </p>
               </div>
 
-              <div className="glass-card motion-card" style={{ padding: '36px', border: '2px solid var(--accent-blue)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'var(--bg-card)' }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-                    <span className="badge" style={{ marginBottom: 0 }}>● LifeAgent</span>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--accent-blue)' }}>ALL-IN-ONE SOLUTION</span>
-                  </div>
+              <div className="glass-card" style={{ padding: '32px', borderRadius: '20px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--accent-blue)', textTransform: 'uppercase', letterSpacing: '1px' }}>02 / WHY USE IT?</span>
+                <h4 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '12px 0 10px' }}>Everything Stays in One Place</h4>
+                <p style={{ color: 'var(--text-muted)', lineHeight: 1.6, fontSize: '0.95rem' }}>
+                  No more switching between 6+ different apps. Your AI assistant sees and coordinates all your data automatically.
+                </p>
+              </div>
 
-                  <h4 style={{ fontSize: '1.8rem', fontWeight: 900, lineHeight: 1.25, marginBottom: '24px', letterSpacing: '-0.5px' }}>
-                    Everything you need,<br />
-                    <span className="serif-italic">one subscription.</span>
-                  </h4>
-
-                  <ul style={{ display: 'flex', flexDirection: 'column', gap: '14px', listStyle: 'none', marginBottom: '32px' }}>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.98rem' }}>
-                      <CheckCircle2 color="var(--accent-blue)" size={20} /> Full Money Spending & Earning Analytics
-                    </li>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.98rem' }}>
-                      <CheckCircle2 color="var(--accent-blue)" size={20} /> Deep Work Pomodoro & Study Tracker
-                    </li>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.98rem' }}>
-                      <CheckCircle2 color="var(--accent-blue)" size={20} /> Built-in Personal AI Assistant
-                    </li>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.98rem' }}>
-                      <CheckCircle2 color="var(--accent-blue)" size={20} /> Body, Gym & Sleep Quality Analytics
-                    </li>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.98rem' }}>
-                      <CheckCircle2 color="var(--accent-blue)" size={20} /> Clean Black, White & Focus Blue Core
-                    </li>
-                  </ul>
-                </div>
-
-                <div style={{ paddingTop: '20px', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
-                  <div>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block' }}>Avg. cost vs paying separately:</span>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', marginTop: '4px' }}>
-                      <span style={{ fontSize: '2.2rem', fontWeight: 900, color: 'var(--accent-blue)' }}>ONLY $4 <span style={{ fontSize: '0.95rem', fontWeight: 500, color: 'var(--text-main)' }}>/ month</span></span>
-                      <span style={{ fontSize: '1.1rem', fontWeight: 700, color: '#ff5252', textDecoration: 'line-through' }}>$21+/mo</span>
-                    </div>
-                  </div>
-
-                  <button className="blue-btn" style={{ padding: '14px 28px' }} onClick={() => { setWaitlistSuccess(false); navigate('waitlist', '/waitlist'); }}>
-                    Join Waitlist →
-                  </button>
-                </div>
+              <div className="glass-card" style={{ padding: '32px', borderRadius: '20px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--accent-blue)', textTransform: 'uppercase', letterSpacing: '1px' }}>03 / HOW TO START?</span>
+                <h4 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '12px 0 10px' }}>Instant Sign In</h4>
+                <p style={{ color: 'var(--text-muted)', lineHeight: 1.6, fontSize: '0.95rem' }}>
+                  Create your account or log in in seconds. No waitlist delays—start organizing your life today.
+                </p>
               </div>
             </div>
           </section>
 
-          <section className="animate-entrance delay-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', marginBottom: '80px' }}>
-            <div className="glass-card motion-card" style={{ padding: '28px' }}>
-              <div style={{ background: 'var(--accent-blue-dim)', width: '48px', height: '48px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
-                <DollarSign size={24} color="var(--accent-blue)" />
-              </div>
-              <h4 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '10px' }}>Money Spending Tracker</h4>
-              <p style={{ color: 'var(--text-muted)', lineHeight: 1.6, fontSize: '0.95rem' }}>
-                Log every dollar earned and spent across daily, monthly, and lifetime timeframes with clear analytics.
-              </p>
-            </div>
-
-            <div className="glass-card motion-card" style={{ padding: '28px' }}>
-              <div style={{ background: 'var(--accent-blue-dim)', width: '48px', height: '48px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
-                <BookOpen size={24} color="var(--accent-blue)" />
-              </div>
-              <h4 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '10px' }}>Study & Habit Mastery</h4>
-              <p style={{ color: 'var(--text-muted)', lineHeight: 1.6, fontSize: '0.95rem' }}>
-                Track study pomodoros, gym routines, and sleep progress across 11 customized timeframe filters.
-              </p>
-            </div>
-
-            <div className="glass-card motion-card" style={{ padding: '28px' }}>
-              <div style={{ background: 'var(--accent-blue-dim)', width: '48px', height: '48px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
-                <Bot size={24} color="var(--accent-blue)" />
-              </div>
-              <h4 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '10px' }}>Autonomous AI Companion</h4>
-              <p style={{ color: 'var(--text-muted)', lineHeight: 1.6, fontSize: '0.95rem' }}>
-                A smart built-in assistant that chats with you, audits your progress, and answers questions live.
-              </p>
-            </div>
-          </section>
-
-          <div className="glass-card animate-entrance delay-3" style={{ padding: '50px', textAlign: 'center' }}>
-            <h3 style={{ fontSize: '2.2rem', fontWeight: 800, marginBottom: '14px', letterSpacing: '-0.5px' }}>Ready for your minimalist Command Center?</h3>
-            <p style={{ color: 'var(--text-muted)', marginBottom: '28px', fontSize: '1.1rem' }}>
-              Be the first to access our unified workspace when we launch.
+          {/* FINAL CLEAN CALL TO ACTION */}
+          <div className="glass-card animate-entrance delay-3" style={{ padding: '60px 40px', textAlign: 'center', borderRadius: '24px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+            <h3 style={{ fontSize: '2.5rem', fontWeight: 900, marginBottom: '14px', letterSpacing: '-1px' }}>Everything about your life. Organized.</h3>
+            <p style={{ color: 'var(--text-muted)', marginBottom: '32px', fontSize: '1.15rem', maxWidth: '560px', margin: '0 auto 32px' }}>
+              Experience the minimalist personal AI operating system.
             </p>
-            <button className="blue-btn" style={{ fontSize: '1.1rem', padding: '16px 36px' }} onClick={() => { setWaitlistSuccess(false); navigate('waitlist', '/waitlist'); }}>
-              Join Waitlist Now <ArrowRight size={18} />
+            <button className="blue-btn" style={{ fontSize: '1.15rem', padding: '16px 40px' }} onClick={() => navigate('auth', '/auth')}>
+              Get Started Free <ArrowRight size={18} />
             </button>
           </div>
         </main>
