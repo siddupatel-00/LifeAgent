@@ -79,6 +79,38 @@ export default function App() {
   const [isTimeMenuOpen, setIsTimeMenuOpen] = useState(false);
   const timeDropdownRef = useRef(null);
 
+  // Scroll swipe-up entrance animation observer for landing page elements
+  useEffect(() => {
+    if (currentPage !== 'landing') return;
+
+    let observer;
+    const timer = setTimeout(() => {
+      const observerOptions = {
+        root: null,
+        rootMargin: '0px 0px -40px 0px',
+        threshold: 0.08
+      };
+
+      observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-revealed');
+          } else {
+            entry.target.classList.remove('is-revealed');
+          }
+        });
+      }, observerOptions);
+
+      const elements = document.querySelectorAll('.scroll-swipe-up');
+      elements.forEach(el => observer.observe(el));
+    }, 40);
+
+    return () => {
+      clearTimeout(timer);
+      if (observer) observer.disconnect();
+    };
+  }, [currentPage, previewTab]);
+
   // User Profile & Settings State
   const [userProfile, setUserProfile] = useState({
     name: '',
@@ -1070,7 +1102,7 @@ const handleDeleteHabitDb = async (id) => {
             </p>
 
             {/* CTAs */}
-            <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '32px' }}>
+            <div className="scroll-swipe-up scroll-delay-1" style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '32px' }}>
               <button 
                 className="blue-btn" 
                 style={{ fontSize: '1.05rem', padding: '14px 32px', borderRadius: '14px', boxShadow: '0 8px 24px rgba(59, 130, 246, 0.35)' }} 
@@ -1103,7 +1135,7 @@ const handleDeleteHabitDb = async (id) => {
             </div>
 
             {/* PILL HIGHLIGHTS */}
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '14px', alignItems: 'center', fontSize: '0.88rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
+            <div className="scroll-swipe-up scroll-delay-2" style={{ display: 'flex', justifyContent: 'center', gap: '14px', alignItems: 'center', fontSize: '0.88rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
               <span className="pill-tag" style={{ padding: '6px 16px', borderRadius: '30px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
                 <Check size={14} color="var(--accent-blue)" /> Health Precision Analytics
               </span>
@@ -1117,9 +1149,9 @@ const handleDeleteHabitDb = async (id) => {
           </section>
 
           {/* INTERACTIVE 80% PRODUCT PREVIEW SECTION */}
-          <section className="animate-entrance scroll-swipe-up delay-1" style={{ margin: '30px auto 80px', width: '85%', minWidth: '320px', maxWidth: '1100px' }}>
+          <section className="scroll-swipe-up scroll-delay-1" style={{ margin: '30px auto 80px', width: '85%', minWidth: '320px', maxWidth: '1100px' }}>
             <div 
-              className="glass-card" 
+              className="glass-card scroll-swipe-up scroll-delay-2" 
               style={{ 
                 borderRadius: '24px', 
                 border: '1px solid var(--border-color)', 
@@ -1525,7 +1557,7 @@ const handleDeleteHabitDb = async (id) => {
           </section>
 
           {/* THREE PILLAR FEATURE CARDS */}
-          <section className="scroll-swipe-up delay-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginBottom: '80px' }}>
+          <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginBottom: '80px' }}>
             <div className="glass-card motion-card scroll-swipe-up" style={{ padding: '30px', borderRadius: '20px' }}>
               <div style={{ background: 'var(--accent-blue-dim)', width: '48px', height: '48px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
                 <Activity size={24} color="var(--accent-blue)" />
@@ -1536,7 +1568,7 @@ const handleDeleteHabitDb = async (id) => {
               </p>
             </div>
 
-            <div className="glass-card motion-card scroll-swipe-up" style={{ padding: '30px', borderRadius: '20px' }}>
+            <div className="glass-card motion-card scroll-swipe-up scroll-delay-1" style={{ padding: '30px', borderRadius: '20px' }}>
               <div style={{ background: 'var(--accent-blue-dim)', width: '48px', height: '48px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
                 <Zap size={24} color="var(--accent-blue)" />
               </div>
@@ -1546,7 +1578,7 @@ const handleDeleteHabitDb = async (id) => {
               </p>
             </div>
 
-            <div className="glass-card motion-card scroll-swipe-up" style={{ padding: '30px', borderRadius: '20px' }}>
+            <div className="glass-card motion-card scroll-swipe-up scroll-delay-2" style={{ padding: '30px', borderRadius: '20px' }}>
               <div style={{ background: 'var(--accent-blue-dim)', width: '48px', height: '48px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
                 <Bot size={24} color="var(--accent-blue)" />
               </div>
@@ -1558,7 +1590,7 @@ const handleDeleteHabitDb = async (id) => {
           </section>
 
           {/* BOTTOM CTA CARD */}
-          <div className="glass-card scroll-swipe-up delay-3" style={{ padding: '50px 30px', textAlign: 'center', borderRadius: '24px', border: '1px solid var(--border-color)', marginBottom: '40px' }}>
+          <div className="glass-card scroll-swipe-up scroll-delay-3" style={{ padding: '50px 30px', textAlign: 'center', borderRadius: '24px', border: '1px solid var(--border-color)', marginBottom: '40px' }}>
             <h3 style={{ fontSize: '2.2rem', fontWeight: 800, marginBottom: '14px', letterSpacing: '-1px' }}>
               Ready for your Personal AI Operating System?
             </h3>
