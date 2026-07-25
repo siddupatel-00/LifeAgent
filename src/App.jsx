@@ -1914,7 +1914,7 @@ const handleDeleteHabitDb = async (id) => {
                       value={resetEmailOrHandle} 
                       onChange={e => setResetEmailOrHandle(e.target.value)} 
                       style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', outline: 'none' }} 
-                      placeholder="e.g. adi or friend@gmail.com" 
+                      placeholder="example@gmail.com" 
                     />
                   </div>
 
