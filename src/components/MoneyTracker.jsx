@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, X, Check } from 'lucide-react';
 
 const CATEGORIES = ['General', 'Food', 'Transport', 'Shopping', 'Bills', 'Entertainment', 'Education', 'Health', 'Other'];
@@ -10,6 +10,30 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
   const [newCategory, setNewCategory] = useState('General');
   const [newNotes, setNewNotes] = useState('');
   const [newDate, setNewDate] = useState(new Date().toISOString().split('T')[0]);
+  const [loading, setLoading] = useState(false);
+  // Fetch initial transactions
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      if (!token) return;
+      setLoading(true);
+      try {
+        const res = await fetch('/api/transactions', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setTransactions(data);
+        } else {
+          showToast?.('Failed to load transactions', 'error');
+        }
+      } catch (e) {
+        showToast?.('Network error loading transactions', 'error');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTransactions();
+  }, []);
   
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
