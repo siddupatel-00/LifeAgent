@@ -1355,7 +1355,7 @@ const handleDeleteHabitDb = async (id) => {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                           <FileText size={18} color="var(--accent-blue)" />
-                          <span style={{ fontSize: '1.1rem', fontWeight: 800 }}>2026 Product Strategy & Personal Milestones</span>
+                          <span style={{ fontSize: '1.1rem', fontWeight: 800 }}>Goals of 2026</span>
                         </div>
                         <span className="pill-tag" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', fontSize: '0.75rem', border: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <div className="pulse-dot-container"><div className="pulse-dot-ring"></div><div className="pulse-dot-core"></div></div>
@@ -1364,15 +1364,15 @@ const handleDeleteHabitDb = async (id) => {
                       </div>
 
                       <div style={{ fontSize: '0.92rem', color: 'var(--text-muted)', lineHeight: 1.75 }}>
-                        <p style={{ marginBottom: '10px' }}>• Complete end-to-end sync across Habits, Money, Gym, Sleep, and Notes in LifeAgent OS.</p>
-                        <p style={{ marginBottom: '10px' }}>• Maintain 95%+ habit consistency with live telemetry feedback.</p>
-                        <p style={{ marginBottom: '10px' }}>• Automated daily budget auditing with Gemini 2.5 Flash context engine.</p>
+                        <p style={{ marginBottom: '10px' }}>• Earn my first 10k</p>
+                        <p style={{ marginBottom: '10px' }}>• Grow business by 3x</p>
+                        <p style={{ marginBottom: '10px' }}>• Gift new mobile to mom and new earbuds to dad</p>
                       </div>
 
                       <div style={{ marginTop: '16px', padding: '12px 16px', borderRadius: '12px', background: 'var(--accent-blue-dim)', border: '1px solid rgba(59, 130, 246, 0.3)', display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <Sparkles size={16} color="var(--accent-blue)" />
                         <span style={{ fontSize: '0.82rem', color: 'var(--accent-blue-light)', fontWeight: 500 }}>
-                          AI Insight: You are 3 days ahead on your weekly habit goals! Rest protocol recommended on Sunday.
+                          AI Insight: 3 key 2026 milestones logged. Your income and business metrics are tracked live!
                         </span>
                       </div>
                     </div>
