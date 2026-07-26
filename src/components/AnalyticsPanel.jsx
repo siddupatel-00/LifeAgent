@@ -12,6 +12,10 @@ export default function AnalyticsPanel({ token, showToast, currency = '$', timeR
   const [customEnd, setCustomEnd] = useState('');
   const [retryCount, setRetryCount] = useState(0);
 
+  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'logs'
+  const [metrics, setMetrics] = useState([]);
+  const [loadingMetrics, setLoadingMetrics] = useState(false);
+
   const handleRangeChange = (newRange) => {
     setRange(newRange);
     if (newRange === 'custom' && (!customStart || !customEnd)) {
@@ -173,9 +177,54 @@ export default function AnalyticsPanel({ token, showToast, currency = '$', timeR
     : range === '90d' ? 'past 90 days'
     : 'selected range';
 
+  useEffect(() => {
+    if (activeTab === 'logs' && token) {
+      setLoadingMetrics(true);
+      fetch('/api/metrics', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then(data => {
+        setMetrics(data);
+        setLoadingMetrics(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoadingMetrics(false);
+      });
+    }
+  }, [activeTab, token]);
+
   return (
     <div className="animate-entrance">
-      {renderFilterButtons()}
+      <div style={{ display: 'flex', gap: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px', marginBottom: '24px' }}>
+        <button 
+          onClick={() => setActiveTab('overview')}
+          style={{ 
+            background: 'none', border: 'none', padding: '8px 16px', cursor: 'pointer',
+            fontSize: '1rem', fontWeight: activeTab === 'overview' ? 700 : 500,
+            color: activeTab === 'overview' ? 'var(--accent-blue)' : 'var(--text-muted)',
+            borderBottom: activeTab === 'overview' ? '2px solid var(--accent-blue)' : 'none'
+          }}
+        >
+          Overview
+        </button>
+        <button 
+          onClick={() => setActiveTab('logs')}
+          style={{ 
+            background: 'none', border: 'none', padding: '8px 16px', cursor: 'pointer',
+            fontSize: '1rem', fontWeight: activeTab === 'logs' ? 700 : 500,
+            color: activeTab === 'logs' ? 'var(--accent-blue)' : 'var(--text-muted)',
+            borderBottom: activeTab === 'logs' ? '2px solid var(--accent-blue)' : 'none'
+          }}
+        >
+          History & Logs
+        </button>
+      </div>
+
+      {activeTab === 'overview' ? (
+        <>
+          {renderFilterButtons()}
       
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '28px' }}>
         <div className="glass-card" style={{ padding: '24px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
@@ -349,6 +398,33 @@ export default function AnalyticsPanel({ token, showToast, currency = '$', timeR
           <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', marginTop: '4px' }}>Notes & Diary</div>
         </div>
       </div>
+        </>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {loadingMetrics ? (
+            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>Loading logs...</div>
+          ) : metrics.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '40px', background: 'var(--bg-card)', borderRadius: '18px', border: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>No logs found.</div>
+          ) : (
+            metrics.map(m => (
+              <div key={m.id} className="glass-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderRadius: '18px', border: '1px solid var(--border-color)', background: 'var(--bg-card)' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
+                    <span style={{ fontWeight: 700, fontSize: '1.05rem' }}>{m.metric_name}</span>
+                    <span className="pill-tag" style={{ fontSize: '0.7rem' }}>{m.metric_type}</span>
+                  </div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                    {m.date}
+                  </div>
+                </div>
+                <div style={{ fontSize: '1.2rem', fontWeight: 800 }}>
+                  {m.metric_value}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 }

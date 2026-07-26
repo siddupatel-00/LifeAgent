@@ -94,6 +94,22 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
       });
     }
 
+    if (activeTf === 'this_month') {
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const prefix = `${year}-${month}-`;
+      return (transactions || []).filter(t => getNormalizedDate(t?.date).startsWith(prefix));
+    }
+
+    if (activeTf === 'last_month') {
+      const pastDate = new Date(now);
+      pastDate.setMonth(pastDate.getMonth() - 1);
+      const year = pastDate.getFullYear();
+      const month = String(pastDate.getMonth() + 1).padStart(2, '0');
+      const prefix = `${year}-${month}-`;
+      return (transactions || []).filter(t => getNormalizedDate(t?.date).startsWith(prefix));
+    }
+
     return transactions || [];
   })();
 

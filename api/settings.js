@@ -11,9 +11,9 @@ export default async function handler(req, res) {
       const result = await db.execute({ sql: 'SELECT name, email, phone, handle, theme, ai_name, gemini_api_key, groq_api_key, ai_provider, currency, ai_tone, morning_audit, smart_alerts FROM users WHERE id = ?', args: [userId] });
       if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
       
-      let userSettings = { timezone: 'UTC', chat_reset_time: '00:00', last_chat_reset: null };
+      let userSettings = { timezone: 'UTC', chat_reset_time: '00:00', last_chat_reset: null, workout_split_type: 'weekly', workout_templates: null };
       try {
-        const settingsResult = await db.execute({ sql: 'SELECT timezone, chat_reset_time, last_chat_reset FROM user_settings WHERE user_id = ?', args: [userId] });
+        const settingsResult = await db.execute({ sql: 'SELECT timezone, chat_reset_time, last_chat_reset, workout_split_type, workout_templates FROM user_settings WHERE user_id = ?', args: [userId] });
         if (settingsResult.rows.length > 0) {
           userSettings = settingsResult.rows[0];
         }
@@ -61,6 +61,9 @@ export default async function handler(req, res) {
       const timezone = body.timezone;
       const chat_reset_time = body.chat_reset_time || body.chatResetTime;
       
+      const workout_split_type = body.workout_split_type;
+      const workout_templates = body.workout_templates;
+      
       const currentUserReq = await db.execute({ sql: 'SELECT * FROM users WHERE id = ?', args: [userId] });
       const current = currentUserReq.rows[0] || {};
       
@@ -84,15 +87,17 @@ export default async function handler(req, res) {
         ]
       });
 
-      const currentSetReq = await db.execute({ sql: 'SELECT timezone, chat_reset_time FROM user_settings WHERE user_id = ?', args: [userId] });
-      const currentSet = currentSetReq.rows.length > 0 ? currentSetReq.rows[0] : { timezone: 'UTC', chat_reset_time: '00:00' };
+      const currentSetReq = await db.execute({ sql: 'SELECT timezone, chat_reset_time, workout_split_type, workout_templates FROM user_settings WHERE user_id = ?', args: [userId] });
+      const currentSet = currentSetReq.rows.length > 0 ? currentSetReq.rows[0] : { timezone: 'UTC', chat_reset_time: '00:00', workout_split_type: 'weekly', workout_templates: null };
 
       await db.execute({
-        sql: 'INSERT INTO user_settings (user_id, timezone, chat_reset_time) VALUES (?, ?, ?) ON CONFLICT (user_id) DO UPDATE SET timezone = excluded.timezone, chat_reset_time = excluded.chat_reset_time',
+        sql: 'INSERT INTO user_settings (user_id, timezone, chat_reset_time, workout_split_type, workout_templates) VALUES (?, ?, ?, ?, ?) ON CONFLICT (user_id) DO UPDATE SET timezone = excluded.timezone, chat_reset_time = excluded.chat_reset_time, workout_split_type = excluded.workout_split_type, workout_templates = excluded.workout_templates',
         args: [
           userId, 
           timezone !== undefined ? timezone : currentSet.timezone, 
-          chat_reset_time !== undefined ? chat_reset_time : currentSet.chat_reset_time
+          chat_reset_time !== undefined ? chat_reset_time : currentSet.chat_reset_time,
+          workout_split_type !== undefined ? workout_split_type : currentSet.workout_split_type,
+          workout_templates !== undefined ? workout_templates : currentSet.workout_templates
         ]
       });
       return res.status(200).json({ success: true });

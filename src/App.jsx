@@ -334,6 +334,8 @@ export default function App() {
     { id: '3m', label: '3 Months' },
     { id: '6m', label: '6 Months' },
     { id: '12m', label: '12 Months' },
+    { id: 'this_month', label: 'This Month' },
+    { id: 'last_month', label: 'Last Month' },
     { id: 'lifetime', label: 'Lifetime' }
   ];
 
@@ -388,7 +390,7 @@ export default function App() {
 
 
   // 2) Habit Tracker state
-  // Habits state with exact daily tracking items: Gym, Study, Code, DSA Problems
+  // Habits state with exact daily tracking items: Gym, Study, Code, Reading
   const [habits, setHabits] = useState([]);
   const [isAddHabitModalOpen, setIsAddHabitModalOpen] = useState(false);
   const [newHabitData, setNewHabitData] = useState({ title: '', category: '', target: '' });
@@ -703,6 +705,24 @@ export default function App() {
       }));
 
       handleUpdateHabitDb(h.id, newStreak, nextChecked, h.pausedUntil);
+
+      if (nextChecked) {
+        // Try to parse numeric value from habit target
+        const match = h.target ? h.target.match(/\d+/) : null;
+        const numValue = match ? match[0] : "1";
+        
+        fetch('/api/metrics', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({
+            date: todayKey(),
+            metric_type: 'habit',
+            metric_name: h.title,
+            metric_value: numValue
+          })
+        }).catch(err => console.error('Failed to log habit metric:', err));
+      }
+
       return { ...h, checkedToday: nextChecked, streak: newStreak };
     }));
   };
@@ -2438,125 +2458,41 @@ const handleDeleteHabitDb = async (id) => {
 
             {/* Timeframe Dropdown Selector (Hide when on Settings or AI Chat tab) */}
             {(activeTab === 'finance') && (
-              <>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', position: 'relative' }} ref={timeDropdownRef}>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)' }}>Active Timeframe:</span>
-                    
-                    <button
-                      onClick={() => setIsTimeMenuOpen(!isTimeMenuOpen)}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: '10px',
-                        padding: '10px 18px', borderRadius: '30px', border: '1px solid var(--border-color)',
-                        background: 'var(--bg-card)', color: 'var(--text-main)',
-                        fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.08)', transition: 'all 0.2s'
-                      }}
-                    >
-                      <Calendar size={16} color="var(--accent-blue)" />
-                      <span>{timeOptions.find(o => o.id === timeRange)?.label || 'Today'}</span>
-                      <ChevronDown size={14} style={{ transform: isTimeMenuOpen ? 'rotate(180deg)' : 'none', transition: '0.2s' }} />
-                    </button>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', position: 'relative' }} ref={timeDropdownRef}>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)' }}>Active Timeframe:</span>
+                  
+                  <button
+                    onClick={() => setIsTimeMenuOpen(!isTimeMenuOpen)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '10px',
+                      padding: '10px 18px', borderRadius: '30px', border: '1px solid var(--border-color)',
+                      background: 'var(--bg-card)', color: 'var(--text-main)',
+                      fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.08)', transition: 'all 0.2s'
+                    }}
+                  >
+                    <Calendar size={16} color="var(--accent-blue)" />
+                    <span>{timeOptions.find(o => o.id === timeRange)?.label || 'Today'}</span>
+                    <ChevronDown size={14} style={{ transform: isTimeMenuOpen ? 'rotate(180deg)' : 'none', transition: '0.2s' }} />
+                  </button>
 
-                    {isTimeMenuOpen && (
-                      <div className="theme-dropdown-menu" style={{ left: '110px', right: 'auto', top: '100%', marginTop: '6px', minWidth: '180px', maxHeight: '300px', overflowY: 'auto', zIndex: 100 }}>
-                        {timeOptions.map((opt) => (
-                          <button
-                            key={opt.id}
-                            className={`theme-dropdown-item ${timeRange === opt.id ? 'active' : ''}`}
-                            onClick={() => { setTimeRange(opt.id); setIsTimeMenuOpen(false); }}
-                            style={{ fontWeight: timeRange === opt.id ? 800 : 500 }}
-                          >
-                            <Calendar size={14} /> {opt.label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  <div style={{ position: 'relative' }} ref={todayConfigDropdownRef}>
-                    <button
-                      onClick={() => setIsTodayConfigMenuOpen(!isTodayConfigMenuOpen)}
-                      title="Configure Today Cards"
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        padding: '8px 12px',
-                        borderRadius: '12px',
-                        border: '1px solid var(--border-color)',
-                        background: 'var(--bg-card)',
-                        color: 'var(--text-main)',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s'
-                      }}
-                    >
-                      <MoreVertical size={18} />
-                    </button>
-
-                    {isTodayConfigMenuOpen && (
-                      <div
-                        className="theme-dropdown-menu"
-                        style={{
-                          right: 0,
-                          left: 'auto',
-                          top: '100%',
-                          marginTop: '6px',
-                          minWidth: '240px',
-                          padding: '12px',
-                          zIndex: 100
-                        }}
-                      >
-                        <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '10px', paddingBottom: '6px', borderBottom: '1px solid var(--border-color)' }}>
-                          Today Tab Cards
-                        </div>
-
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', borderRadius: '8px' }}>
-                          <input
-                            type="checkbox"
-                            checked={todayWidgetsConfig.showWorkout}
-                            onChange={(e) => {
-                              const updated = { ...todayWidgetsConfig, showWorkout: e.target.checked };
-                              setTodayWidgetsConfig(updated);
-                              localStorage.setItem('today_widgets_config', JSON.stringify(updated));
-                            }}
-                            style={{ cursor: 'pointer', accentColor: 'var(--accent-blue)', width: '16px', height: '16px' }}
-                          />
-                          <span>🏋️ Scheduled Workout Card</span>
-                        </label>
-
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', borderRadius: '8px' }}>
-                          <input
-                            type="checkbox"
-                            checked={todayWidgetsConfig.showProtein}
-                            onChange={(e) => {
-                              const updated = { ...todayWidgetsConfig, showProtein: e.target.checked };
-                              setTodayWidgetsConfig(updated);
-                              localStorage.setItem('today_widgets_config', JSON.stringify(updated));
-                            }}
-                            style={{ cursor: 'pointer', accentColor: 'var(--accent-blue)', width: '16px', height: '16px' }}
-                          />
-                          <span>🥩 Daily Protein Goal Card</span>
-                        </label>
-
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', borderRadius: '8px' }}>
-                          <input
-                            type="checkbox"
-                            checked={todayWidgetsConfig.showHydration}
-                            onChange={(e) => {
-                              const updated = { ...todayWidgetsConfig, showHydration: e.target.checked };
-                              setTodayWidgetsConfig(updated);
-                              localStorage.setItem('today_widgets_config', JSON.stringify(updated));
-                            }}
-                            style={{ cursor: 'pointer', accentColor: 'var(--accent-blue)', width: '16px', height: '16px' }}
-                          />
-                          <span>💧 Daily Hydration Card</span>
-                        </label>
-                      </div>
-                    )}
-                  </div>
+                  {isTimeMenuOpen && (
+                    <div className="theme-dropdown-menu" style={{ left: '110px', right: 'auto', top: '100%', marginTop: '6px', minWidth: '180px', maxHeight: '300px', overflowY: 'auto', zIndex: 100 }}>
+                      {timeOptions.map((opt) => (
+                        <button
+                          key={opt.id}
+                          className={`theme-dropdown-item ${timeRange === opt.id ? 'active' : ''}`}
+                          onClick={() => { setTimeRange(opt.id); setIsTimeMenuOpen(false); }}
+                          style={{ fontWeight: timeRange === opt.id ? 800 : 500 }}
+                        >
+                          <Calendar size={14} /> {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              </>
+              </div>
             )}
 
             {/* TAB CONTENT HOUSING BOX */}
@@ -2572,13 +2508,97 @@ const handleDeleteHabitDb = async (id) => {
                       </h3>
                       <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: '4px' }}>Neat, minimalist 1-click progress tracking for your required daily pillars</p>
                     </div>
-                    <button 
-                      className="blue-btn"
-                      onClick={handleToggleAllToday}
-                      style={{ padding: '12px 20px', fontSize: '0.9rem', flexShrink: 0, whiteSpace: 'nowrap' }}
-                    >
-                      <Check size={18} /> Tick All Today
-                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <button 
+                        className="blue-btn"
+                        onClick={handleToggleAllToday}
+                        style={{ padding: '12px 20px', fontSize: '0.9rem', flexShrink: 0, whiteSpace: 'nowrap' }}
+                      >
+                        <Check size={18} /> Tick All Today
+                      </button>
+
+                      <div style={{ position: 'relative' }} ref={todayConfigDropdownRef}>
+                        <button
+                          onClick={() => setIsTodayConfigMenuOpen(!isTodayConfigMenuOpen)}
+                          title="Configure Today Cards"
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            padding: '10px 12px',
+                            borderRadius: '12px',
+                            border: '1px solid var(--border-color)',
+                            background: 'var(--bg-card)',
+                            color: 'var(--text-main)',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          <MoreVertical size={18} />
+                        </button>
+
+                        {isTodayConfigMenuOpen && (
+                          <div
+                            className="theme-dropdown-menu"
+                            style={{
+                              right: 0,
+                              left: 'auto',
+                              top: '100%',
+                              marginTop: '6px',
+                              minWidth: '240px',
+                              padding: '12px',
+                              zIndex: 100
+                            }}
+                          >
+                            <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '10px', paddingBottom: '6px', borderBottom: '1px solid var(--border-color)' }}>
+                              Today Tab Cards
+                            </div>
+
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', borderRadius: '8px' }}>
+                              <input
+                                type="checkbox"
+                                checked={todayWidgetsConfig.showWorkout}
+                                onChange={(e) => {
+                                  const updated = { ...todayWidgetsConfig, showWorkout: e.target.checked };
+                                  setTodayWidgetsConfig(updated);
+                                  localStorage.setItem('today_widgets_config', JSON.stringify(updated));
+                                }}
+                                style={{ cursor: 'pointer', accentColor: 'var(--accent-blue)', width: '16px', height: '16px' }}
+                              />
+                              <span>🏋️ Scheduled Workout Card</span>
+                            </label>
+
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', borderRadius: '8px' }}>
+                              <input
+                                type="checkbox"
+                                checked={todayWidgetsConfig.showProtein}
+                                onChange={(e) => {
+                                  const updated = { ...todayWidgetsConfig, showProtein: e.target.checked };
+                                  setTodayWidgetsConfig(updated);
+                                  localStorage.setItem('today_widgets_config', JSON.stringify(updated));
+                                }}
+                                style={{ cursor: 'pointer', accentColor: 'var(--accent-blue)', width: '16px', height: '16px' }}
+                              />
+                              <span>🥩 Daily Protein Goal Card</span>
+                            </label>
+
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', borderRadius: '8px' }}>
+                              <input
+                                type="checkbox"
+                                checked={todayWidgetsConfig.showHydration}
+                                onChange={(e) => {
+                                  const updated = { ...todayWidgetsConfig, showHydration: e.target.checked };
+                                  setTodayWidgetsConfig(updated);
+                                  localStorage.setItem('today_widgets_config', JSON.stringify(updated));
+                                }}
+                                style={{ cursor: 'pointer', accentColor: 'var(--accent-blue)', width: '16px', height: '16px' }}
+                              />
+                              <span>💧 Daily Hydration Card</span>
+                            </label>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
                   {/* Clean Top Progress Bar */}
@@ -3062,7 +3082,7 @@ const handleDeleteHabitDb = async (id) => {
                               <option value="" disabled hidden>Select Category...</option>
                               <option value="Coding">Coding Pillar</option>
                               <option value="Study">Study Pillar</option>
-                              <option value="DSA & Algorithms">DSA & Algorithms</option>
+                              <option value="Reading">Reading</option>
                               <option value="Body & Gym">Body & Gym</option>
                               <option value="Money">Money Pillar</option>
                               <option value="Deep Focus">Deep Focus</option>
