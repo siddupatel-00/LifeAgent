@@ -7,7 +7,7 @@ import {
   Sun, Moon, Monitor, ChevronDown, Lock, Phone, AtSign, Activity, Zap, Check, X,
   Dumbbell, Moon as SleepIcon, BarChart3, PieChart, Flame, Heart, Target, Filter,
   Home, LayoutDashboard, LogOut, Sliders, Settings, Save, Bell, Shield, PenTool, MessageSquare, Sidebar as SidebarIcon, FileText, Unlock, Smile,
-  MoreVertical
+  MoreVertical, List
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import AnalyticsPanel from './components/AnalyticsPanel';
@@ -3015,38 +3015,52 @@ const handleDeleteHabitDb = async (id) => {
 
                         <div>
                           <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Pillar / Category</label>
-                          <select 
-                            value={newHabitData.category}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              setNewHabitData({ ...newHabitData, category: val });
-                              if (val === 'Other') {
-                                setIsCustomPillar(true);
-                              } else {
-                                setIsCustomPillar(false);
-                              }
-                              if (val === 'Body & Gym') {
-                                setActiveTab('body');
-                              }
-                            }}
-                            style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.92rem', fontWeight: 600, outline: 'none', cursor: 'pointer' }}
-                          >
-                            <option value="Coding">Coding Pillar</option>
-                            <option value="Study">Study Pillar</option>
-                            <option value="DSA & Algorithms">DSA & Algorithms</option>
-                            <option value="Body & Gym">Body & Gym</option>
-                            <option value="Money">Money Pillar</option>
-                            <option value="Deep Focus">Deep Focus</option>
-                            <option value="Other">Other...</option>
-                          </select>
-                          {(isCustomPillar || newHabitData.category === 'Other') && (
-                            <input 
-                              type="text" 
-                              placeholder="Enter Custom Pillar Name..."
-                              value={customPillarInput}
-                              onChange={(e) => setCustomPillarInput(e.target.value)}
-                              style={{ width: '100%', marginTop: '8px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.92rem', fontWeight: 600, outline: 'none' }}
-                            />
+                          {(isCustomPillar || newHabitData.category === 'Other') ? (
+                            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                              <input 
+                                type="text" 
+                                placeholder="Enter custom category..."
+                                value={customPillarInput}
+                                onChange={(e) => setCustomPillarInput(e.target.value)}
+                                style={{ flex: 1, width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.92rem', fontWeight: 600, outline: 'none' }}
+                              />
+                              <button 
+                                type="button"
+                                onClick={() => {
+                                  setIsCustomPillar(false);
+                                  setNewHabitData({ ...newHabitData, category: 'Coding' });
+                                }}
+                                title="Switch back to dropdown list"
+                                style={{ padding: '12px 14px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-muted)', border: '1px solid var(--border-color)', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', height: '46px', whiteSpace: 'nowrap' }}
+                              >
+                                <List size={16} /> List
+                              </button>
+                            </div>
+                          ) : (
+                            <select 
+                              value={newHabitData.category}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setNewHabitData({ ...newHabitData, category: val });
+                                if (val === 'Other') {
+                                  setIsCustomPillar(true);
+                                } else {
+                                  setIsCustomPillar(false);
+                                }
+                                if (val === 'Body & Gym') {
+                                  setActiveTab('body');
+                                }
+                              }}
+                              style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.92rem', fontWeight: 600, outline: 'none', cursor: 'pointer' }}
+                            >
+                              <option value="Coding">Coding Pillar</option>
+                              <option value="Study">Study Pillar</option>
+                              <option value="DSA & Algorithms">DSA & Algorithms</option>
+                              <option value="Body & Gym">Body & Gym</option>
+                              <option value="Money">Money Pillar</option>
+                              <option value="Deep Focus">Deep Focus</option>
+                              <option value="Other">+ Enter Custom Category...</option>
+                            </select>
                           )}
                         </div>
 
