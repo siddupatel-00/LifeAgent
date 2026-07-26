@@ -1,11 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, X, Trash2, Moon, Clock, Calendar, Activity, Filter } from 'lucide-react';
 import { todayKey } from '../utils/date';
+import ConfirmModal from './ConfirmModal';
 
 export default function SleepTracker({ token, showToast }) {
   const [logs, setLogs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [formData, setFormData] = useState({
+    date: todayKey(),
+    hours: 7,
+    minutes: 30,
+    sleep_time: '23:00',
+    wake_time: '06:30',
+    quality: 'Good',
+    notes: ''
+  });
   
   // Date range filter mode: '7d' | 'this_month' | 'past_month' | 'custom'
   const [rangeMode, setRangeMode] = useState('7d');
@@ -110,8 +120,12 @@ export default function SleepTracker({ token, showToast }) {
     }
   };
 
-  const handleDeleteLog = async (id) => {
-    if (!confirm('Delete this sleep log?')) return;
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+
+  const confirmDeleteLog = async () => {
+    if (!deleteConfirmId) return;
+    const id = deleteConfirmId;
+    setDeleteConfirmId(null);
     try {
       const res = await fetch('/api/sleep', {
         method: 'DELETE',
@@ -123,8 +137,8 @@ export default function SleepTracker({ token, showToast }) {
       });
       
       if (res.ok) {
-        setLogs(logs.filter(log => log.id !== id));
-        showToast?.('Sleep Log Deleted', 'success');
+        setLogs(prev => prev.filter(log => log.id !== id));
+        showToast?.('Sleep log deleted', 'info');
       } else {
         showToast?.('Failed to delete log', 'error');
       }
@@ -482,7 +496,7 @@ export default function SleepTracker({ token, showToast }) {
                 </div>
 
                 <button 
-                  onClick={() => handleDeleteLog(log.id)}
+                  onClick={() => setDeleteConfirmId(log.id)}
                   style={{
                     background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer',
                     padding: '6px', borderRadius: '8px', transition: 'all 0.2s'
@@ -555,11 +569,28 @@ export default function SleepTracker({ token, showToast }) {
               </div>
 
               {/* LIVE AUTO-CALCULATED DURATION & QUALITY CARD */}
-              <div style={{ padding: '14px 18px', borderRadius: '14px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ padding: '14px 18px', borderRadius: '14px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
                 <div>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>Auto-Calculated Sleep</div>
-                  <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '2px' }}>
-                    {formData.hours} <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>hrs</span> {formData.minutes} <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>mins</span>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '4px' }}>Duration (Hrs & Mins)</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <input
+                      type="number"
+                      min="0"
+                      max="24"
+                      value={formData.hours}
+                      onChange={(e) => setFormData(prev => ({ ...prev, hours: Math.max(0, parseInt(e.target.value) || 0) }))}
+                      style={{ width: '56px', padding: '4px 6px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', color: 'var(--text-main)', fontSize: '0.95rem', fontWeight: 700, textAlign: 'center', outline: 'none' }}
+                    />
+                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>hrs</span>
+                    <input
+                      type="number"
+                      min="0"
+                      max="59"
+                      value={formData.minutes}
+                      onChange={(e) => setFormData(prev => ({ ...prev, minutes: Math.max(0, Math.min(59, parseInt(e.target.value) || 0)) }))}
+                      style={{ width: '56px', padding: '4px 6px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', color: 'var(--text-main)', fontSize: '0.95rem', fontWeight: 700, textAlign: 'center', outline: 'none' }}
+                    />
+                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>mins</span>
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
@@ -613,6 +644,41 @@ export default function SleepTracker({ token, showToast }) {
                 Save Sleep Entry
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* CUSTOM IN-APP DELETE CONFIRMATION MODAL */}
+      {deleteConfirmId && (
+        <div className="blur-overlay" onClick={() => setDeleteConfirmId(null)}>
+          <div 
+            className="glass-card animate-entrance" 
+            onClick={e => e.stopPropagation()}
+            style={{
+              padding: '24px 28px', borderRadius: '20px', width: '90%', maxWidth: '380px',
+              background: 'var(--bg-card)', border: '1px solid var(--border-color)', textAlign: 'center'
+            }}
+          >
+            <div style={{ background: 'rgba(239, 68, 68, 0.15)', width: '48px', height: '48px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', color: '#ef4444' }}>
+              <Trash2 size={24} />
+            </div>
+            <h4 style={{ fontSize: '1.2rem', fontWeight: 800, margin: '0 0 8px' }}>Delete Sleep Log?</h4>
+            <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', margin: '0 0 20px' }}>Are you sure you want to delete this sleep entry?</p>
+            
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button 
+                onClick={() => setDeleteConfirmId(null)}
+                style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontWeight: 700, cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmDeleteLog}
+                style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', background: '#ef4444', color: '#fff', fontWeight: 700, cursor: 'pointer' }}
+              >
+                Delete
+              </button>
+            </div>
           </div>
         </div>
       )}

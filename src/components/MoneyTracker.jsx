@@ -4,13 +4,13 @@ import { todayKey } from '../utils/date';
 
 const CATEGORIES = ['General', 'Food', 'Transport', 'Shopping', 'Bills', 'Entertainment', 'Education', 'Health', 'Other'];
 
-export default function MoneyTracker({ transactions, setTransactions, token, showToast, currency }) {
+export default function MoneyTracker({ transactions, setTransactions, token, showToast, currency, timeRange = 'today', timeframe, timezone, userProfile }) {
   const [newTitle, setNewTitle] = useState('');
   const [newAmount, setNewAmount] = useState('');
   const [newType, setNewType] = useState('spend');
   const [newCategory, setNewCategory] = useState('General');
   const [newNotes, setNewNotes] = useState('');
-  const [newDate, setNewDate] = useState(todayKey());
+  const [newDate, setNewDate] = useState(todayKey(timezone || userProfile?.timezone));
   const [loading, setLoading] = useState(false);
   // Fetch initial transactions
   useEffect(() => {
@@ -39,8 +39,66 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
 
-  const totalEarned = transactions.filter(t => t.type === 'earn').reduce((acc, t) => acc + t.amount, 0);
-  const totalSpent = transactions.filter(t => t.type === 'spend').reduce((acc, t) => acc + t.amount, 0);
+  // Filter transactions according to active timeframe (e.g. 'today', '3d', '7d', etc.)
+  const filteredTransactions = (() => {
+    const tz = timezone || userProfile?.timezone;
+    const todayStr = todayKey(tz);
+
+    const getNormalizedDate = (dStr) => {
+      if (!dStr || dStr === 'Today') return todayStr;
+      if (dStr === 'Yesterday') {
+        const d = new Date(todayStr + 'T00:00:00');
+        d.setDate(d.getDate() - 1);
+        return d.toISOString().split('T')[0];
+      }
+      if (dStr.includes('days ago')) {
+        const num = parseInt(dStr, 10) || 1;
+        const d = new Date(todayStr + 'T00:00:00');
+        d.setDate(d.getDate() - num);
+        return d.toISOString().split('T')[0];
+      }
+      return dStr.split('T')[0];
+    };
+
+    const activeTf = timeframe || timeRange || 'today';
+
+    if (!activeTf || activeTf === 'today') {
+      return (transactions || []).filter(t => getNormalizedDate(t?.date) === todayStr);
+    }
+
+    if (activeTf === 'lifetime') {
+      return transactions || [];
+    }
+
+    const now = new Date(todayStr + 'T00:00:00');
+
+    if (['3d', '7d', '14d', '25d', '30d'].includes(activeTf)) {
+      const days = parseInt(activeTf);
+      const pastDate = new Date(now);
+      pastDate.setDate(pastDate.getDate() - days);
+      const pastStr = pastDate.toISOString().split('T')[0];
+      return (transactions || []).filter(t => {
+        const d = getNormalizedDate(t?.date);
+        return d >= pastStr && d <= todayStr;
+      });
+    }
+
+    if (['1m', '3m', '6m', '12m'].includes(activeTf)) {
+      const months = parseInt(activeTf);
+      const pastDate = new Date(now);
+      pastDate.setMonth(pastDate.getMonth() - months);
+      const pastStr = pastDate.toISOString().split('T')[0];
+      return (transactions || []).filter(t => {
+        const d = getNormalizedDate(t?.date);
+        return d >= pastStr && d <= todayStr;
+      });
+    }
+
+    return transactions || [];
+  })();
+
+  const totalEarned = filteredTransactions.filter(t => t.type === 'earn').reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
+  const totalSpent = filteredTransactions.filter(t => t.type === 'spend').reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
   const netBalance = totalEarned - totalSpent;
 
   const addTransaction = async (e) => {
@@ -139,12 +197,12 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
 
         <h3 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '16px' }}>Transactions</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {transactions.length === 0 ? (
+          {filteredTransactions.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '30px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px dashed var(--border-color)' }}>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', fontWeight: 600 }}>No transactions recorded yet.</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', fontWeight: 600 }}>No transactions recorded for selected timeframe.</p>
             </div>
           ) : (
-            transactions.map(item => (
+            filteredTransactions.map(item => (
               <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)' }}>
                 {editingId === item.id ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>

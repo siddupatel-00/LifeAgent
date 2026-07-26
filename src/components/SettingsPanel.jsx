@@ -39,7 +39,13 @@ const SettingsPanel = ({
             ai_provider: aiProvider, 
             theme: themeMode, 
             currency: userProfile.currency, 
-            chat_reset_time: chatResetTime 
+            chat_reset_time: chatResetTime,
+            ai_tone: userProfile.aiTone || userProfile.ai_tone || 'Analytical & Direct',
+            aiTone: userProfile.aiTone || userProfile.ai_tone || 'Analytical & Direct',
+            morning_audit: userProfile.morningAudit !== undefined ? (userProfile.morningAudit ? 1 : 0) : (userProfile.morning_audit !== undefined ? (userProfile.morning_audit ? 1 : 0) : 1),
+            morningAudit: userProfile.morningAudit !== undefined ? !!userProfile.morningAudit : (userProfile.morning_audit !== undefined ? userProfile.morning_audit !== 0 : true),
+            smart_alerts: userProfile.smartAlerts !== undefined ? (userProfile.smartAlerts ? 1 : 0) : (userProfile.smart_alerts !== undefined ? (userProfile.smart_alerts ? 1 : 0) : 1),
+            smartAlerts: userProfile.smartAlerts !== undefined ? !!userProfile.smartAlerts : (userProfile.smart_alerts !== undefined ? userProfile.smart_alerts !== 0 : true)
           })
         });
         if (res.ok) {
@@ -267,8 +273,11 @@ const SettingsPanel = ({
               </div>
               <input 
                 type="checkbox" 
-                checked={userProfile.morningAudit} 
-                onChange={(e) => setUserProfile({ ...userProfile, morningAudit: e.target.checked })}
+                checked={userProfile.morningAudit !== undefined ? !!userProfile.morningAudit : (userProfile.morning_audit !== undefined ? userProfile.morning_audit !== 0 : true)} 
+                onChange={(e) => {
+                  const val = e.target.checked;
+                  setUserProfile({ ...userProfile, morningAudit: val, morning_audit: val ? 1 : 0 });
+                }}
                 style={{ width: '22px', height: '22px', accentColor: 'var(--accent-blue)', cursor: 'pointer' }}
               />
             </div>
@@ -280,8 +289,11 @@ const SettingsPanel = ({
               </div>
               <input 
                 type="checkbox" 
-                checked={userProfile.smartAlerts} 
-                onChange={(e) => setUserProfile({ ...userProfile, smartAlerts: e.target.checked })}
+                checked={userProfile.smartAlerts !== undefined ? !!userProfile.smartAlerts : (userProfile.smart_alerts !== undefined ? userProfile.smart_alerts !== 0 : true)} 
+                onChange={(e) => {
+                  const val = e.target.checked;
+                  setUserProfile({ ...userProfile, smartAlerts: val, smart_alerts: val ? 1 : 0 });
+                }}
                 style={{ width: '22px', height: '22px', accentColor: 'var(--accent-blue)', cursor: 'pointer' }}
               />
             </div>
@@ -292,8 +304,11 @@ const SettingsPanel = ({
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Choose how strict, encouraging, or concise the AI audits your metrics.</div>
               </div>
               <select 
-                value={userProfile.aiTone}
-                onChange={(e) => setUserProfile({ ...userProfile, aiTone: e.target.value })}
+                value={userProfile.aiTone || userProfile.ai_tone || 'Analytical & Direct'}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setUserProfile({ ...userProfile, aiTone: val, ai_tone: val });
+                }}
                 style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.92rem', fontWeight: 600, outline: 'none', cursor: 'pointer' }}
               >
                 <option value="Analytical & Direct">Analytical & Direct</option>

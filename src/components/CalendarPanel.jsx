@@ -1,18 +1,27 @@
 import React, { useState } from 'react';
 import { todayKey } from '../utils/date';
 import { Calendar as CalendarIcon, Plus, Trash2, ChevronDown, Filter, AlertCircle, CheckCircle, Clock } from 'lucide-react';
+import ConfirmModal from './ConfirmModal';
+
+const formatDateStr = (d) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
 
 export default function CalendarPanel({
   calendarEvents, setCalendarEvents,
   selectedCalendarDate, setSelectedCalendarDate,
   calendarSubTab, setCalendarSubTab,
-  token, showToast
+  token, showToast, userProfile
 }) {
   const [isAddEventFormOpen, setIsAddEventFormOpen] = useState(false);
   const [newEventTitle, setNewEventTitle] = useState('');
-  const [newEventDate, setNewEventDate] = useState(todayKey());
+  const [newEventDate, setNewEventDate] = useState(() => todayKey(userProfile?.timezone));
   const [calendarMonth, setCalendarMonth] = useState({ year: new Date().getFullYear(), month: new Date().getMonth() });
   const [openStatusDropdown, setOpenStatusDropdown] = useState(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
 
   // Filters state
   const [showExpired, setShowExpired] = useState(false);
@@ -43,25 +52,23 @@ export default function CalendarPanel({
     }
   };
 
-  const handleDeleteEvent = async (id) => {
+  const performDeleteEvent = async (id) => {
     if (!id) return;
-    if (window.confirm('Are you sure you want to delete this event?')) {
-      try {
-        const res = await fetch('/api/calendar', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ id })
-        });
-        if (res.ok) {
-          setCalendarEvents(prev => prev.filter(ev => ev.id !== id));
-          showToast?.('Event deleted successfully', 'success');
-        } else {
-          showToast?.('Failed to delete event', 'error');
-        }
-      } catch (err) {
-        console.error('Failed to delete event:', err);
-        showToast?.('Network error deleting event', 'error');
+    try {
+      const res = await fetch('/api/calendar', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ id })
+      });
+      if (res.ok) {
+        setCalendarEvents(prev => prev.filter(ev => ev.id !== id));
+        showToast?.('Event deleted successfully', 'success');
+      } else {
+        showToast?.('Failed to delete event', 'error');
       }
+    } catch (err) {
+      console.error('Failed to delete event:', err);
+      showToast?.('Network error deleting event', 'error');
     }
   };
 
@@ -86,8 +93,9 @@ export default function CalendarPanel({
   };
 
   const getFilteredEvents = () => {
-    const todayStr = todayKey();
-    const now = new Date();
+    const todayStr = todayKey(userProfile?.timezone);
+    const todayParts = todayStr.split('-').map(Number);
+    const now = new Date(todayParts[0], todayParts[1] - 1, todayParts[2]);
     let list = [...calendarEvents];
 
     // If a specific calendar date is selected by clicking on the grid
@@ -114,20 +122,24 @@ export default function CalendarPanel({
     }
 
     if (calendarSubTab === 'this_week') {
+      // Sunday-Saturday bounds for This Week
+      const dayOfWeek = now.getDay();
       const start = new Date(now);
-      start.setDate(start.getDate() - start.getDay());
+      start.setDate(now.getDate() - dayOfWeek);
       const end = new Date(start);
-      end.setDate(end.getDate() + 6);
-      const sStr = start.toISOString().split('T')[0];
-      const eStr = end.toISOString().split('T')[0];
+      end.setDate(start.getDate() + 6);
+      const sStr = formatDateStr(start);
+      const eStr = formatDateStr(end);
       list = list.filter(e => e.date >= sStr && e.date <= eStr);
     } else if (calendarSubTab === 'next_week') {
+      // Sunday-Saturday bounds for Next Week
+      const dayOfWeek = now.getDay();
       const start = new Date(now);
-      start.setDate(start.getDate() + (7 - start.getDay()));
+      start.setDate(now.getDate() + (7 - dayOfWeek));
       const end = new Date(start);
-      end.setDate(end.getDate() + 6);
-      const sStr = start.toISOString().split('T')[0];
-      const eStr = end.toISOString().split('T')[0];
+      end.setDate(start.getDate() + 6);
+      const sStr = formatDateStr(start);
+      const eStr = formatDateStr(end);
       list = list.filter(e => e.date >= sStr && e.date <= eStr);
     } else if (calendarSubTab === 'this_month') {
       const yearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -158,6 +170,34 @@ export default function CalendarPanel({
   };
 
   const filteredEventsList = getFilteredEvents();
+
+  const todayStr = todayKey(userProfile?.timezone);
+  const todayParts = todayStr.split('-').map(Number);
+  const todayObj = new Date(todayParts[0], todayParts[1] - 1, todayParts[2]);
+  const tomorrowObj = new Date(todayObj);
+  tomorrowObj.setDate(tomorrowObj.getDate() + 1);
+  const tomorrowStr = formatDateStr(tomorrowObj);
+
+  const sortedEventsList = [...filteredEventsList].sort((a, b) => a.date.localeCompare(b.date));
+
+  const groupedSections = [
+    { key: 'today', title: `📌 Today (${todayStr})`, badgeBg: 'rgba(59, 130, 246, 0.15)', badgeColor: 'var(--accent-blue)', events: [] },
+    { key: 'tomorrow', title: `🌅 Tomorrow (${tomorrowStr})`, badgeBg: 'rgba(139, 92, 246, 0.15)', badgeColor: '#8b5cf6', events: [] },
+    { key: 'upcoming', title: '🚀 Upcoming', badgeBg: 'rgba(16, 185, 129, 0.15)', badgeColor: '#10b981', events: [] },
+    { key: 'past', title: '⏳ Earlier / Past', badgeBg: 'rgba(107, 114, 128, 0.15)', badgeColor: '#6b7280', events: [] }
+  ];
+
+  sortedEventsList.forEach(e => {
+    if (e.date === todayStr) {
+      groupedSections[0].events.push(e);
+    } else if (e.date === tomorrowStr) {
+      groupedSections[1].events.push(e);
+    } else if (e.date > tomorrowStr) {
+      groupedSections[2].events.push(e);
+    } else {
+      groupedSections[3].events.push(e);
+    }
+  });
 
   return (
     <div className="animate-entrance">
@@ -409,90 +449,127 @@ export default function CalendarPanel({
             )}
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {filteredEventsList
-              .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-              .map(e => {
-                const badge = getStatusBadgeProps(e.status);
-                const isDropdownOpen = openStatusDropdown === e.id;
-                
-                return (
-                  <div key={e.id} style={{ padding: '14px 16px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', borderLeft: `4px solid ${e.color || 'var(--accent-blue)'}`, position: 'relative' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
-                      <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <CalendarIcon size={14} /> {e.date}
-                      </div>
-                      
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        {/* Status Badge with Dropdown */}
-                        <div style={{ position: 'relative' }}>
-                          <button
-                            onClick={() => setOpenStatusDropdown(isDropdownOpen ? null : e.id)}
-                            style={{
-                              display: 'flex', alignItems: 'center', gap: '4px',
-                              background: badge.bg, color: badge.color,
-                              border: `1px solid ${badge.color}`, borderRadius: '12px',
-                              padding: '3px 10px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer'
-                            }}
-                          >
-                            {badge.icon} {badge.label} <ChevronDown size={12} />
-                          </button>
-                          
-                          {isDropdownOpen && (
-                            <div style={{
-                              position: 'absolute', top: '100%', right: 0, marginTop: '4px',
-                              background: 'var(--bg-card)', border: '1px solid var(--border-color)',
-                              borderRadius: '10px', zIndex: 10, minWidth: '130px', boxShadow: '0 6px 16px rgba(0,0,0,0.2)',
-                              overflow: 'hidden'
-                            }}>
-                              {['upcoming', 'completed', 'failed', 'expired'].map(status => {
-                                const sBadge = getStatusBadgeProps(status);
-                                return (
-                                  <div
-                                    key={status}
-                                    onClick={() => handleUpdateStatus(e.id, status)}
-                                    style={{
-                                      padding: '8px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '8px',
-                                      cursor: 'pointer', borderBottom: '1px solid var(--border-color)',
-                                      color: sBadge.color, fontWeight: 600, background: 'var(--bg-card)'
-                                    }}
-                                  >
-                                    {sBadge.icon} {sBadge.label}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {groupedSections.filter(g => g.key !== 'past' || g.events.length > 0).map(group => (
+              <div key={group.key}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontSize: '0.82rem',
+                  fontWeight: 800,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  color: group.badgeColor,
+                  marginBottom: '10px',
+                  paddingBottom: '6px',
+                  borderBottom: `2px solid ${group.badgeColor}33`
+                }}>
+                  <span>{group.icon}</span>
+                  <span>{group.title}</span>
+                  <span style={{
+                    background: group.badgeBg,
+                    color: group.badgeColor,
+                    borderRadius: '12px',
+                    padding: '2px 8px',
+                    fontSize: '0.75rem',
+                    fontWeight: 700
+                  }}>
+                    {group.events.length}
+                  </span>
+                </div>
 
-                        {/* DELETE BUTTON */}
-                        <button 
-                          onClick={() => handleDeleteEvent(e.id)}
-                          style={{
-                            background: 'rgba(239, 68, 68, 0.1)',
-                            border: '1px solid rgba(239, 68, 68, 0.3)',
-                            color: '#ef4444',
-                            borderRadius: '8px',
-                            padding: '4px 8px',
-                            fontSize: '0.75rem',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                            transition: 'all 0.2s'
-                          }}
-                          title="Delete Event"
-                        >
-                          <Trash2 size={13} /> Delete
-                        </button>
-                      </div>
-                    </div>
-                    
-                    <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-main)' }}>{e.title}</div>
+                {group.events.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {group.events.map(e => {
+                      const badge = getStatusBadgeProps(e.status);
+                      const isDropdownOpen = openStatusDropdown === e.id;
+                      
+                      return (
+                        <div key={e.id} style={{ padding: '14px 16px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', borderLeft: `4px solid ${e.color || 'var(--accent-blue)'}`, position: 'relative' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
+                            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <CalendarIcon size={14} /> {e.date}
+                            </div>
+                            
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              {/* Status Badge with Dropdown */}
+                              <div style={{ position: 'relative' }}>
+                                <button
+                                  onClick={() => setOpenStatusDropdown(isDropdownOpen ? null : e.id)}
+                                  style={{
+                                    display: 'flex', alignItems: 'center', gap: '4px',
+                                    background: badge.bg, color: badge.color,
+                                    border: `1px solid ${badge.color}`, borderRadius: '12px',
+                                    padding: '3px 10px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer'
+                                  }}
+                                >
+                                  {badge.icon} {badge.label} <ChevronDown size={12} />
+                                </button>
+                                
+                                {isDropdownOpen && (
+                                  <div style={{
+                                    position: 'absolute', top: '100%', right: 0, marginTop: '4px',
+                                    background: 'var(--bg-card)', border: '1px solid var(--border-color)',
+                                    borderRadius: '10px', zIndex: 10, minWidth: '130px', boxShadow: '0 6px 16px rgba(0,0,0,0.2)',
+                                    overflow: 'hidden'
+                                  }}>
+                                    {['upcoming', 'completed', 'failed', 'expired'].map(status => {
+                                      const sBadge = getStatusBadgeProps(status);
+                                      return (
+                                        <div
+                                          key={status}
+                                          onClick={() => handleUpdateStatus(e.id, status)}
+                                          style={{
+                                            padding: '8px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '8px',
+                                            cursor: 'pointer', borderBottom: '1px solid var(--border-color)',
+                                            color: sBadge.color, fontWeight: 600, background: 'var(--bg-card)'
+                                          }}
+                                        >
+                                          {sBadge.icon} {sBadge.label}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* DELETE BUTTON */}
+                              <button 
+                                onClick={() => setDeleteConfirmId(e.id)}
+                                style={{
+                                  background: 'rgba(239, 68, 68, 0.1)',
+                                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                                  color: '#ef4444',
+                                  borderRadius: '8px',
+                                  padding: '4px 8px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  transition: 'all 0.2s'
+                                }}
+                                title="Delete Event"
+                              >
+                                <Trash2 size={13} /> Delete
+                              </button>
+                            </div>
+                          </div>
+                          
+                          <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-main)' }}>{e.title}</div>
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })}
+                ) : (
+                  <div style={{ padding: '14px 16px', background: 'var(--bg-main)', borderRadius: '12px', border: '1px dashed var(--border-color)', fontSize: '0.82rem', color: 'var(--text-muted)', textAlign: 'center', fontStyle: 'italic' }}>
+                    {group.emptyMsg}
+                  </div>
+                )}
+              </div>
+            ))}
 
             {filteredEventsList.length === 0 && (
               <div style={{ padding: '32px 20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem', background: 'var(--bg-main)', borderRadius: '12px', border: '1px dashed var(--border-color)' }}>
@@ -504,6 +581,19 @@ export default function CalendarPanel({
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={!!deleteConfirmId}
+        title="Delete Event"
+        message="Are you sure you want to delete this event?"
+        confirmText="Delete"
+        onConfirm={() => {
+          const id = deleteConfirmId;
+          setDeleteConfirmId(null);
+          performDeleteEvent(id);
+        }}
+        onCancel={() => setDeleteConfirmId(null)}
+      />
     </div>
   );
 }

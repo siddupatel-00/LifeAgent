@@ -4,11 +4,15 @@ import {
 } from 'lucide-react';
 import { todayKey } from '../utils/date';
 
-export default function AnalyticsPanel({ token, showToast, currency = '$' }) {
+export default function AnalyticsPanel({ token, showToast, currency = '$', timeRange, userProfile }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [range, setRange] = useState('7d');
+  const [range, setRange] = useState(timeRange || '7d');
   const [retryCount, setRetryCount] = useState(0);
+
+  useEffect(() => {
+    if (timeRange) setRange(timeRange);
+  }, [timeRange]);
 
   useEffect(() => {
     let mounted = true;
@@ -16,7 +20,7 @@ export default function AnalyticsPanel({ token, showToast, currency = '$' }) {
     const fetchAnalytics = async () => {
       try {
         setLoading(true);
-        const res = await fetch(`/api/analytics?range=${range}&client_date=${todayKey()}`, {
+        const res = await fetch(`/api/analytics?range=${range}&client_date=${todayKey(userProfile?.timezone)}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }

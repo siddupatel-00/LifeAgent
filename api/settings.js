@@ -35,10 +35,10 @@ export default async function handler(req, res) {
         currency: row.currency || '$',
         ai_tone: row.ai_tone || 'Analytical & Direct',
         aiTone: row.ai_tone || 'Analytical & Direct',
-        morning_audit: row.morning_audit !== undefined ? row.morning_audit : 1,
-        morningAudit: row.morning_audit !== 0,
-        smart_alerts: row.smart_alerts !== undefined ? row.smart_alerts : 1,
-        smartAlerts: row.smart_alerts !== 0,
+        morning_audit: row.morning_audit !== undefined && row.morning_audit !== null ? row.morning_audit : 1,
+        morningAudit: (row.morning_audit !== undefined && row.morning_audit !== null) ? row.morning_audit !== 0 : true,
+        smart_alerts: row.smart_alerts !== undefined && row.smart_alerts !== null ? row.smart_alerts : 1,
+        smartAlerts: (row.smart_alerts !== undefined && row.smart_alerts !== null) ? row.smart_alerts !== 0 : true,
         ...userSettings
       });
     }
@@ -55,14 +55,14 @@ export default async function handler(req, res) {
       const groq_api_key = body.groq_api_key !== undefined ? body.groq_api_key : body.groqApiKey;
       const ai_provider = body.ai_provider || body.aiProvider;
       const currency = body.currency;
-      const ai_tone = body.ai_tone || body.aiTone;
-      const morning_audit = body.morning_audit !== undefined ? body.morning_audit : body.morningAudit;
-      const smart_alerts = body.smart_alerts !== undefined ? body.smart_alerts : body.smartAlerts;
+      const ai_tone = body.aiTone !== undefined ? body.aiTone : body.ai_tone;
+      const morning_audit = body.morningAudit !== undefined ? (body.morningAudit ? 1 : 0) : (body.morning_audit !== undefined ? (body.morning_audit ? 1 : 0) : undefined);
+      const smart_alerts = body.smartAlerts !== undefined ? (body.smartAlerts ? 1 : 0) : (body.smart_alerts !== undefined ? (body.smart_alerts ? 1 : 0) : undefined);
       const timezone = body.timezone;
       const chat_reset_time = body.chat_reset_time || body.chatResetTime;
       
       const currentUserReq = await db.execute({ sql: 'SELECT * FROM users WHERE id = ?', args: [userId] });
-      const current = currentUserReq.rows[0];
+      const current = currentUserReq.rows[0] || {};
       
       await db.execute({
         sql: 'UPDATE users SET name = ?, email = ?, phone = ?, handle = ?, theme = ?, ai_name = ?, gemini_api_key = ?, groq_api_key = ?, ai_provider = ?, currency = ?, ai_tone = ?, morning_audit = ?, smart_alerts = ? WHERE id = ?',
@@ -77,9 +77,9 @@ export default async function handler(req, res) {
           groq_api_key !== undefined ? groq_api_key : current.groq_api_key,
           ai_provider !== undefined ? ai_provider : current.ai_provider,
           currency !== undefined ? currency : current.currency,
-          ai_tone !== undefined ? ai_tone : current.ai_tone,
-          morning_audit !== undefined ? (morning_audit ? 1 : 0) : current.morning_audit,
-          smart_alerts !== undefined ? (smart_alerts ? 1 : 0) : current.smart_alerts,
+          ai_tone !== undefined ? ai_tone : (current.ai_tone || 'Analytical & Direct'),
+          morning_audit !== undefined ? morning_audit : (current.morning_audit !== undefined && current.morning_audit !== null ? current.morning_audit : 1),
+          smart_alerts !== undefined ? smart_alerts : (current.smart_alerts !== undefined && current.smart_alerts !== null ? current.smart_alerts : 1),
           userId
         ]
       });

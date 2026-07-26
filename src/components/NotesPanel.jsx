@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BookOpen, Plus, Trash2 } from 'lucide-react';
+import { getFormattedDateTitle } from '../utils/date';
 
 export default function NotesPanel({
   notesList,
@@ -77,7 +78,9 @@ export default function NotesPanel({
         <button 
           className="blue-btn" 
           onClick={async () => {
-            const defaultTitle = '📝 New Personal Note & Diary Entry';
+            const baseTitle = getFormattedDateTitle();
+            const count = notesList.filter(n => n.title === baseTitle || n.title.startsWith(`${baseTitle} (`)).length;
+            const defaultTitle = count > 0 ? `${baseTitle} (${count + 1})` : baseTitle;
             const defaultContent = 'Type your daily reflection, thoughts, or goals here...';
             handleCreateNoteDb(defaultTitle, defaultContent, true, (newNote) => {
               setNotesList([newNote, ...notesList]);

@@ -15,7 +15,37 @@ import BodyGym from './components/BodyGym';
 import MoneyTracker from './components/MoneyTracker';
 import SettingsPanel from './components/SettingsPanel';
 import CalendarPanel from './components/CalendarPanel';
+import ConfirmModal from './components/ConfirmModal';
 import { todayKey, localTimeZone } from './utils/date';
+
+const getFormattedDateTitle = (dateStr) => {
+  let targetDate = new Date();
+  if (dateStr) {
+    if (dateStr instanceof Date) {
+      targetDate = dateStr;
+    } else if (typeof dateStr === 'string') {
+      if (dateStr.includes('-')) {
+        const parts = dateStr.split('T')[0].split('-').map(Number);
+        if (parts.length === 3 && !parts.some(isNaN)) {
+          targetDate = new Date(parts[0], parts[1] - 1, parts[2]);
+        } else {
+          targetDate = new Date(dateStr);
+        }
+      } else {
+        targetDate = new Date(dateStr);
+      }
+    } else if (typeof dateStr === 'number') {
+      targetDate = new Date(dateStr);
+    }
+  }
+  if (isNaN(targetDate.getTime())) {
+    targetDate = new Date();
+  }
+  const day = targetDate.getDate();
+  const month = targetDate.toLocaleDateString('en-US', { month: 'long' });
+  const year = targetDate.getFullYear();
+  return `📝 ${day} ${month} ${year}`;
+};
 
 export default function App() {
   const [themeMode, setThemeMode] = useState('light'); // 'dark', 'light', 'pc'
@@ -314,6 +344,8 @@ export default function App() {
     }, 3000);
   };
 
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
+
   // Auto-scroll ONLY inside the AI chat box containers whenever new messages arrive (does not scroll website/window)
   useEffect(() => {
     if (mainAiChatScrollRef.current) {
@@ -348,6 +380,8 @@ export default function App() {
   const [habits, setHabits] = useState([]);
   const [isAddHabitModalOpen, setIsAddHabitModalOpen] = useState(false);
   const [newHabitData, setNewHabitData] = useState({ title: '', category: 'Coding', target: '' });
+  const [customPillarInput, setCustomPillarInput] = useState('');
+  const [isCustomPillar, setIsCustomPillar] = useState(false);
   const [newTodayItemData, setNewTodayItemData] = useState({ title: '', category: 'Coding', time: '10:00 AM' });
   const [isAddTodayItemOpen, setIsAddTodayItemOpen] = useState(false);
   const [todayItems, setTodayItems] = useState([]);
@@ -473,8 +507,50 @@ export default function App() {
       const notesRes = await fetch('/api/notes', { headers });
       if (notesRes.ok) {
         const notesData = await notesRes.json();
-        setNotesList(notesData.filter(n => !n.is_trashed).map(n => ({ id: n.id, title: n.title, content: n.content, category: n.category, date: n.date, shareWithAi: !!n.share_with_ai })));
-        setTrashNotes(notesData.filter(n => !!n.is_trashed).map(n => ({ id: n.id, title: n.title, content: n.content, category: n.category, date: n.date, shareWithAi: !!n.share_with_ai, deletedAt: n.deleted_at ? new Date(n.deleted_at).getTime() : Date.now() })));
+        let activeNotes = notesData.filter(n => !n.is_trashed).map(n => ({ id: n.id, title: n.title, content: n.content, category: n.category, date: n.date, shareWithAi: !!n.share_with_ai }));
+        const trashedNotes = notesData.filter(n => !!n.is_trashed).map(n => ({ id: n.id, title: n.title, content: n.content, category: n.category, date: n.date, shareWithAi: !!n.share_with_ai, deletedAt: n.deleted_at ? new Date(n.deleted_at).getTime() : Date.now() }));
+        
+        setTrashNotes(trashedNotes);
+
+        // Check if a note exists for today's date
+        const todayNote = activeNotes.find(n => n.date === clientDate);
+        if (todayNote) {
+          setNotesList(activeNotes);
+          setActiveNoteId(todayNote.id);
+        } else {
+          try {
+            const createRes = await fetch('/api/notes', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              body: JSON.stringify({
+                title: getFormattedDateTitle(clientDate),
+                content: 'Type your daily reflection, thoughts, or goals here...',
+                share_with_ai: true
+              })
+            });
+            if (createRes.ok) {
+              const newNoteData = await createRes.json();
+              const formattedNote = {
+                id: newNoteData.id,
+                title: newNoteData.title,
+                content: newNoteData.content,
+                category: newNoteData.category || 'Diary',
+                date: newNoteData.date || clientDate,
+                shareWithAi: !!newNoteData.share_with_ai
+              };
+              activeNotes = [formattedNote, ...activeNotes];
+              setNotesList(activeNotes);
+              setActiveNoteId(formattedNote.id);
+            } else {
+              setNotesList(activeNotes);
+              if (activeNotes.length > 0) setActiveNoteId(activeNotes[0].id);
+            }
+          } catch (createErr) {
+            console.error('Error creating default today note:', createErr);
+            setNotesList(activeNotes);
+            if (activeNotes.length > 0) setActiveNoteId(activeNotes[0].id);
+          }
+        }
       }
     } catch (err) {
       console.error('Failed to fetch dashboard data:', err);
@@ -684,11 +760,11 @@ const handleDeleteHabitDb = async (id) => {
       } else {
         const errorData = await response.json();
         console.error('Waitlist error:', errorData.error);
-        alert(errorData.error || 'Failed to join waitlist. Please try again.');
+        showToast(errorData.error || 'Failed to join waitlist. Please try again.', 'error');
       }
     } catch (err) {
       console.error('Network error during waitlist submission:', err);
-      alert('Network error. Please try again later.');
+      showToast('Network error. Please try again later.', 'error');
     }
   };
 
@@ -2550,7 +2626,13 @@ const handleDeleteHabitDb = async (id) => {
                     </div>
                     <button 
                       className="blue-btn" 
-                      onClick={() => setIsAddHabitModalOpen(!isAddHabitModalOpen)}
+                      onClick={() => {
+                        if (isAddHabitModalOpen) {
+                          setCustomPillarInput('');
+                          setIsCustomPillar(false);
+                        }
+                        setIsAddHabitModalOpen(!isAddHabitModalOpen);
+                      }}
                       style={{ padding: '12px 22px', fontSize: '0.92rem' }}
                     >
                       <Plus size={18} /> {isAddHabitModalOpen ? 'Close Form' : 'Add Pillar / Daily Item'}
@@ -2583,6 +2665,11 @@ const handleDeleteHabitDb = async (id) => {
                             onChange={(e) => {
                               const val = e.target.value;
                               setNewHabitData({ ...newHabitData, category: val });
+                              if (val === 'Other') {
+                                setIsCustomPillar(true);
+                              } else {
+                                setIsCustomPillar(false);
+                              }
                               if (val === 'Body & Gym') {
                                 setActiveTab('body');
                               }
@@ -2595,7 +2682,17 @@ const handleDeleteHabitDb = async (id) => {
                             <option value="Body & Gym">Body & Gym</option>
                             <option value="Money">Money Pillar</option>
                             <option value="Deep Focus">Deep Focus</option>
+                            <option value="Other">Other...</option>
                           </select>
+                          {(isCustomPillar || newHabitData.category === 'Other') && (
+                            <input 
+                              type="text" 
+                              placeholder="Enter Custom Pillar Name..."
+                              value={customPillarInput}
+                              onChange={(e) => setCustomPillarInput(e.target.value)}
+                              style={{ width: '100%', marginTop: '8px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.92rem', fontWeight: 600, outline: 'none' }}
+                            />
+                          )}
                         </div>
 
                         <div>
@@ -2613,17 +2710,21 @@ const handleDeleteHabitDb = async (id) => {
                           className="blue-btn"
                           onClick={async () => {
                             if (!newHabitData.title.trim()) {
-                              alert('Please enter a title for your daily item.');
+                              showToast('Please enter a title for your daily item.', 'error');
                               return;
                             }
                             
+                            const finalCategory = (newHabitData.category === 'Other' || isCustomPillar) 
+                              ? (customPillarInput.trim() || 'Other') 
+                              : newHabitData.category;
+
                             try {
                               const res = await fetch('/api/habits', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                                 body: JSON.stringify({
                                   label: newHabitData.title.trim(),
-                                  category: newHabitData.category,
+                                  category: finalCategory,
                                   target: newHabitData.target.trim() || '30 mins/day'
                                 })
                               });
@@ -2647,7 +2748,7 @@ const handleDeleteHabitDb = async (id) => {
                                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                                     body: JSON.stringify({
                                       label: newHabitData.title.trim(),
-                                      category: newHabitData.category,
+                                      category: finalCategory,
                                       time: '',
                                       habit_id: data.id,
                                       date: todayKey(userProfile.timezone)
@@ -2662,6 +2763,8 @@ const handleDeleteHabitDb = async (id) => {
                                 }
 
                                 setNewHabitData({ title: '', category: 'Coding', target: '' });
+                                setCustomPillarInput('');
+                                setIsCustomPillar(false);
                                 setIsAddHabitModalOpen(false);
                               } else {
                                 console.error('Failed to create habit');
@@ -2751,9 +2854,16 @@ const handleDeleteHabitDb = async (id) => {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (window.confirm('Are you sure you want to delete this habit?')) {
-                              handleDeleteHabitDb(item.id);
-                            }
+                            setConfirmModal({
+                              isOpen: true,
+                              title: 'Delete Habit',
+                              message: 'Are you sure you want to delete this habit?',
+                              onConfirm: () => {
+                                handleDeleteHabitDb(item.id);
+                                setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null });
+                                showToast('Habit deleted', 'info');
+                              }
+                            });
                           }}
                           style={{
                             position: 'absolute',
@@ -2831,248 +2941,17 @@ const handleDeleteHabitDb = async (id) => {
 
               {/* 2.5) CALENDAR TAB */}
               {activeTab === 'calendar' && (
-                <div className="animate-entrance">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px', flexWrap: 'wrap', gap: '16px' }}>
-                    <div>
-                      <h3 style={{ fontSize: '1.55rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <Calendar size={24} color="var(--accent-blue)" /> Universal Calendar
-                      </h3>
-                      <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: '4px' }}>
-                        Manage your events, meetings, and deadlines. Let your AI know what's coming up.
-                      </p>
-                    </div>
-                    <button 
-                      className="blue-btn" 
-                      onClick={() => {
-                        setIsAddEventFormOpen(true);
-                        setNewEventDate(selectedCalendarDate || todayKey(userProfile.timezone));
-                        setNewEventTitle('');
-                      }}
-                      style={{ padding: '12px 22px', fontSize: '0.92rem' }}
-                    >
-                      <Plus size={18} /> Add Event
-                    </button>
-                  </div>
-{/* Modal Add Event Form */}
-                  {isAddEventFormOpen && (
-                    <div
-                      className="blur-overlay"
-                      onClick={() => setIsAddEventFormOpen(false)}
-                    >
-                      <div
-                        className="glass-card animate-entrance"
-                        style={{
-                          background: 'var(--bg-card)',
-                          border: '1px solid var(--accent-blue)',
-                          borderRadius: '16px',
-                          padding: '24px',
-                          minWidth: '300px',
-                          maxWidth: '440px',
-                          maxHeight: '90vh',
-                          overflowY: 'auto',
-                        }}
-                        onClick={e => e.stopPropagation()}
-                      >
-                        <h4 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <Plus size={18} color="var(--accent-blue)" /> New Event
-                        </h4>
-                        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-                          <div style={{ flex: '2', minWidth: '200px' }}>
-                            <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Enter event title</label>
-                            <input
-                              type="text"
-                              value={newEventTitle}
-                              onChange={(e) => setNewEventTitle(e.target.value)}
-                              placeholder="Enter event title..."
-                              autoFocus
-                              style={{
-                                width: '100%', padding: '12px 16px', borderRadius: '12px',
-                                border: '1px solid var(--border-color)', background: 'var(--bg-main)',
-                                color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none'
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter' && newEventTitle.trim()) {
-                                  (async () => {
-                                    try {
-                                      const res = await fetch('/api/calendar', {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                        body: JSON.stringify({ title: newEventTitle.trim(), date: newEventDate, color: '#3b82f6' })
-                                      });
-                                      if (res.ok) {
-                                        const ev = await res.json();
-                                        setCalendarEvents([...calendarEvents, ev]);
-                                        setNewEventTitle('');
-                                        setIsAddEventFormOpen(false);
-                                      }
-                                    } catch (err) { console.error(err); }
-                                  })();
-                                }
-                              }}
-                            />
-                          </div>
-                          <div style={{ flex: '1', minWidth: '160px' }}>
-                            <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Date</label>
-                            <input
-                              type="date"
-                              value={newEventDate}
-                              onChange={(e) => setNewEventDate(e.target.value)}
-                              style={{
-                                width: '100%', padding: '12px 16px', borderRadius: '12px',
-                                border: '1px solid var(--border-color)', background: 'var(--bg-main)',
-                                color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none'
-                              }}
-                            />
-                          </div>
-                          <button
-                            className="blue-btn"
-                            disabled={!newEventTitle.trim()}
-                            onClick={async () => {
-                              try {
-                                const res = await fetch('/api/calendar', {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                  body: JSON.stringify({ title: newEventTitle.trim(), date: newEventDate, color: '#3b82f6' })
-                                });
-                                if (res.ok) {
-                                  const ev = await res.json();
-                                  setCalendarEvents([...calendarEvents, ev]);
-                                  setNewEventTitle('');
-                                  setIsAddEventFormOpen(false);
-                                }
-                              } catch (err) { console.error(err); }
-                            }}
-                            style={{ padding: '12px 24px', fontSize: '0.92rem', whiteSpace: 'nowrap' }}
-                          >
-                            Save Event
-                          </button>
-                        </div>
-                        <button className="secondary-btn" onClick={() => setIsAddEventFormOpen(false)} style={{ marginTop: '12px', width: '100%' }}>Cancel</button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Sub-tabs */}
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', overflowX: 'auto', paddingBottom: '8px' }}>
-                    {['This Week', 'Next Week', 'This Month', 'Next Month', 'This Year'].map(tab => {
-                      const tabKey = tab.toLowerCase().replace(' ', '_');
-                      const isActive = calendarSubTab === tabKey;
-                      return (
-                        <button
-                          key={tabKey}
-                          onClick={() => setCalendarSubTab(tabKey)}
-                          style={{
-                            padding: '8px 16px', borderRadius: '50px', border: 'none',
-                            background: isActive ? 'var(--accent-blue)' : 'var(--bg-card)',
-                            color: isActive ? '#fff' : 'var(--text-muted)',
-                            fontWeight: isActive ? 700 : 500, cursor: 'pointer',
-                            fontSize: '0.85rem', transition: 'all 0.2s', whiteSpace: 'nowrap'
-                          }}
-                        >
-                          {tab}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '24px', minHeight: '460px' }}>
-                    {/* Left: Mini Calendar Grid */}
-                    <div style={{ background: 'var(--bg-card)', borderRadius: '18px', border: '1px solid var(--border-color)', padding: '24px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                        <h4 style={{ fontSize: '1.2rem', fontWeight: 800 }}>{new Date(calendarMonth.year, calendarMonth.month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</h4>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          <button onClick={() => setCalendarMonth(prev => { const d = new Date(prev.year, prev.month - 1); return { year: d.getFullYear(), month: d.getMonth() }; })} style={{ background: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: '8px', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-main)', cursor: 'pointer' }}>&lt;</button>
-                          <button onClick={() => setCalendarMonth(prev => { const d = new Date(prev.year, prev.month + 1); return { year: d.getFullYear(), month: d.getMonth() }; })} style={{ background: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: '8px', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-main)', cursor: 'pointer' }}>&gt;</button>
-                        </div>
-                      </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', textAlign: 'center', marginBottom: '8px' }}>
-                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-                          <div key={d} style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>{d}</div>
-                        ))}
-                      </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', textAlign: 'center' }}>
-                        {(() => {
-                          const firstDay = new Date(calendarMonth.year, calendarMonth.month, 1).getDay();
-                          const daysInMonth = new Date(calendarMonth.year, calendarMonth.month + 1, 0).getDate();
-                          const cells = [];
-                          for (let i = 0; i < firstDay; i++) cells.push(<div key={`empty-${i}`} />);
-                          for (let d = 1; d <= daysInMonth; d++) {
-                            const dateStr = `${calendarMonth.year}-${(calendarMonth.month + 1).toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
-                            const dayEvents = calendarEvents.filter(e => e.date === dateStr);
-                            const isSelected = selectedCalendarDate === dateStr;
-                            const isToday = dateStr === todayKey(userProfile.timezone);
-                            cells.push(
-                              <div 
-                                key={d} 
-                                onClick={() => setSelectedCalendarDate(dateStr)}
-                                style={{ 
-                                  padding: '10px 0', borderRadius: '10px', 
-                                  background: isSelected ? 'var(--accent-blue)' : isToday ? 'rgba(59, 130, 246, 0.15)' : 'var(--bg-main)', 
-                                  color: isSelected ? '#fff' : 'var(--text-main)',
-                                  cursor: 'pointer', position: 'relative',
-                                  fontWeight: isSelected || isToday ? 800 : 500,
-                                  fontSize: '0.9rem',
-                                  border: isToday && !isSelected ? '2px solid var(--accent-blue)' : '1px solid var(--border-color)'
-                                }}
-                              >
-                                {d}
-                                {dayEvents.length > 0 && (
-                                  <div style={{ display: 'flex', justifyContent: 'center', gap: '2px', position: 'absolute', bottom: '4px', left: 0, right: 0 }}>
-                                    {dayEvents.slice(0, 3).map((e, idx) => (
-                                      <div key={idx} style={{ width: '4px', height: '4px', borderRadius: '50%', background: isSelected ? '#fff' : e.color || 'var(--accent-blue)' }} />
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          }
-                          return cells;
-                        })()}
-                      </div>
-                    </div>
-                    
-                    {/* Right: Event List */}
-                    <div style={{ background: 'var(--bg-card)', borderRadius: '18px', border: '1px solid var(--border-color)', padding: '24px' }}>
-                      <h4 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '16px' }}>
-                        {selectedCalendarDate ? `Events for ${selectedCalendarDate}` : 'Upcoming Events'}
-                      </h4>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        {calendarEvents
-                          .filter(e => !selectedCalendarDate || e.date === selectedCalendarDate)
-                          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-                          .map(e => (
-                          <div key={e.id} style={{ padding: '12px 16px', background: 'var(--bg-main)', borderRadius: '12px', border: '1px solid var(--border-color)', borderLeft: `4px solid ${e.color || 'var(--accent-blue)'}`, position: 'relative' }}>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '4px' }}>{e.date}</div>
-                            <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)' }}>{e.title}</div>
-                            <button 
-                              onClick={async () => {
-                                if (window.confirm('Delete this event?')) {
-                                  try {
-                                    const res = await fetch('/api/calendar', {
-                                      method: 'DELETE',
-                                      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                      body: JSON.stringify({ id: e.id })
-                                    });
-                                    if (res.ok) setCalendarEvents(calendarEvents.filter(ev => ev.id !== e.id));
-                                  } catch(err) { console.error(err); }
-                                }
-                              }}
-                              style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', color: '#ff5252', cursor: 'pointer', padding: '4px' }}
-                              title="Delete Event"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        ))}
-                        {calendarEvents.filter(e => !selectedCalendarDate || e.date === selectedCalendarDate).length === 0 && (
-                          <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem', background: 'var(--bg-main)', borderRadius: '12px', border: '1px dashed var(--border-color)' }}>
-                            No events found.
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <CalendarPanel
+                  calendarEvents={calendarEvents}
+                  setCalendarEvents={setCalendarEvents}
+                  selectedCalendarDate={selectedCalendarDate}
+                  setSelectedCalendarDate={setSelectedCalendarDate}
+                  calendarSubTab={calendarSubTab}
+                  setCalendarSubTab={setCalendarSubTab}
+                  token={token}
+                  showToast={showToast}
+                  userProfile={userProfile}
+                />
               )}
 
               {/* 2.5) NOTES & DIARY TAB (With Personal AI Assistant Permission Sharing) */}
@@ -3090,7 +2969,9 @@ const handleDeleteHabitDb = async (id) => {
                     <button 
                       className="blue-btn" 
                       onClick={async () => {
-                        const defaultTitle = '📝 New Personal Note & Diary Entry';
+                        const baseTitle = getFormattedDateTitle();
+                        const count = notesList.filter(n => n.title === baseTitle || n.title.startsWith(`${baseTitle} (`)).length;
+                        const defaultTitle = count > 0 ? `${baseTitle} (${count + 1})` : baseTitle;
                         const defaultContent = 'Type your daily reflection, thoughts, or goals here...';
                         handleCreateNoteDb(defaultTitle, defaultContent, true, (newNote) => {
                           setNotesList([newNote, ...notesList]);
@@ -3410,6 +3291,9 @@ const handleDeleteHabitDb = async (id) => {
                   token={token}
                   showToast={showToast}
                   currency={userProfile.currency || '$'}
+                  timeRange={timeRange}
+                  userProfile={userProfile}
+                  timezone={userProfile.timezone}
                 />
               )}
 
@@ -3418,6 +3302,8 @@ const handleDeleteHabitDb = async (id) => {
                 <BodyGym
                   token={token}
                   showToast={showToast}
+                  timeRange={timeRange}
+                  userProfile={userProfile}
                 />
               )}
 
@@ -3426,6 +3312,8 @@ const handleDeleteHabitDb = async (id) => {
                 <SleepTracker
                   token={token}
                   showToast={showToast}
+                  timeRange={timeRange}
+                  userProfile={userProfile}
                 />
               )}
 
@@ -3435,6 +3323,8 @@ const handleDeleteHabitDb = async (id) => {
                   token={token}
                   showToast={showToast}
                   currency={userProfile.currency || '$'}
+                  timeRange={timeRange}
+                  userProfile={userProfile}
                 />
               )}
 
@@ -3543,6 +3433,15 @@ const handleDeleteHabitDb = async (id) => {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText="Delete"
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+      />
 
     </div>
   );
