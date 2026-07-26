@@ -6,7 +6,8 @@ import {
   Send, Plus, Clock, Award, Trash2, ChevronRight, LogIn, ExternalLink,
   Sun, Moon, Monitor, ChevronDown, Lock, Phone, AtSign, Activity, Zap, Check, X,
   Dumbbell, Moon as SleepIcon, BarChart3, PieChart, Flame, Heart, Target, Filter,
-  Home, LayoutDashboard, LogOut, Sliders, Settings, Save, Bell, Shield, PenTool, MessageSquare, Sidebar as SidebarIcon, FileText, Unlock, Smile
+  Home, LayoutDashboard, LogOut, Sliders, Settings, Save, Bell, Shield, PenTool, MessageSquare, Sidebar as SidebarIcon, FileText, Unlock, Smile,
+  MoreVertical
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import AnalyticsPanel from './components/AnalyticsPanel';
@@ -108,6 +109,16 @@ export default function App() {
   const [timeRange, setTimeRange] = useState('today'); // 'today', '3d', '7d', '14d', '25d', '30d', '1m', '3m', '6m', '12m', 'lifetime'
   const [isTimeMenuOpen, setIsTimeMenuOpen] = useState(false);
   const timeDropdownRef = useRef(null);
+
+  const [todayWidgetsConfig, setTodayWidgetsConfig] = useState(() => {
+    try {
+      const saved = localStorage.getItem('today_widgets_config');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return { showWorkout: true, showProtein: true, showHydration: true };
+  });
+  const [isTodayConfigMenuOpen, setIsTodayConfigMenuOpen] = useState(false);
+  const todayConfigDropdownRef = useRef(null);
   const PREVIEW_TABS = ['Money', 'Sleep', 'Calendar', 'Notes', 'Gym', 'AI', 'Habits', 'Analytics'];
   const [pauseAutoCycleUntil, setPauseAutoCycleUntil] = useState(0);
 
@@ -435,7 +446,7 @@ export default function App() {
 
   // 8) Calendar state
   const [calendarEvents, setCalendarEvents] = useState([]);
-  const [calendarSubTab, setCalendarSubTab] = useState('this_month');
+  const [calendarSubTab, setCalendarSubTab] = useState('today');
   const [selectedCalendarDate, setSelectedCalendarDate] = useState(null);
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const now = new Date();
@@ -508,6 +519,18 @@ export default function App() {
         setCalendarEvents(calData.map(c => ({ id: c.id, title: c.title, date: c.date, color: c.color })));
       }
       
+      const workoutsRes = await fetch('/api/fitness?type=workouts', { headers });
+      if (workoutsRes.ok) {
+        const wData = await workoutsRes.json();
+        setWorkouts(wData);
+      }
+
+      const statsRes = await fetch('/api/fitness?type=body-stats', { headers });
+      if (statsRes.ok) {
+        const sData = await statsRes.json();
+        setBodyStats(sData);
+      }
+
       const notesRes = await fetch('/api/notes', { headers });
       if (notesRes.ok) {
         const notesData = await notesRes.json();
@@ -715,6 +738,9 @@ const handleDeleteHabitDb = async (id) => {
       }
       if (timeDropdownRef.current && !timeDropdownRef.current.contains(e.target)) {
         setIsTimeMenuOpen(false);
+      }
+      if (todayConfigDropdownRef.current && !todayConfigDropdownRef.current.contains(e.target)) {
+        setIsTodayConfigMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -2437,8 +2463,86 @@ const handleDeleteHabitDb = async (id) => {
                     )}
                   </div>
 
-                  <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-                    Showing live audited metrics across 4 core pillars
+                  <div style={{ position: 'relative' }} ref={todayConfigDropdownRef}>
+                    <button
+                      onClick={() => setIsTodayConfigMenuOpen(!isTodayConfigMenuOpen)}
+                      title="Configure Today Cards"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '8px 12px',
+                        borderRadius: '12px',
+                        border: '1px solid var(--border-color)',
+                        background: 'var(--bg-card)',
+                        color: 'var(--text-main)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      <MoreVertical size={18} />
+                    </button>
+
+                    {isTodayConfigMenuOpen && (
+                      <div
+                        className="theme-dropdown-menu"
+                        style={{
+                          right: 0,
+                          left: 'auto',
+                          top: '100%',
+                          marginTop: '6px',
+                          minWidth: '240px',
+                          padding: '12px',
+                          zIndex: 100
+                        }}
+                      >
+                        <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '10px', paddingBottom: '6px', borderBottom: '1px solid var(--border-color)' }}>
+                          Today Tab Cards
+                        </div>
+
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', borderRadius: '8px' }}>
+                          <input
+                            type="checkbox"
+                            checked={todayWidgetsConfig.showWorkout}
+                            onChange={(e) => {
+                              const updated = { ...todayWidgetsConfig, showWorkout: e.target.checked };
+                              setTodayWidgetsConfig(updated);
+                              localStorage.setItem('today_widgets_config', JSON.stringify(updated));
+                            }}
+                            style={{ cursor: 'pointer', accentColor: 'var(--accent-blue)', width: '16px', height: '16px' }}
+                          />
+                          <span>🏋️ Scheduled Workout Card</span>
+                        </label>
+
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', borderRadius: '8px' }}>
+                          <input
+                            type="checkbox"
+                            checked={todayWidgetsConfig.showProtein}
+                            onChange={(e) => {
+                              const updated = { ...todayWidgetsConfig, showProtein: e.target.checked };
+                              setTodayWidgetsConfig(updated);
+                              localStorage.setItem('today_widgets_config', JSON.stringify(updated));
+                            }}
+                            style={{ cursor: 'pointer', accentColor: 'var(--accent-blue)', width: '16px', height: '16px' }}
+                          />
+                          <span>🥩 Daily Protein Goal Card</span>
+                        </label>
+
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', borderRadius: '8px' }}>
+                          <input
+                            type="checkbox"
+                            checked={todayWidgetsConfig.showHydration}
+                            onChange={(e) => {
+                              const updated = { ...todayWidgetsConfig, showHydration: e.target.checked };
+                              setTodayWidgetsConfig(updated);
+                              localStorage.setItem('today_widgets_config', JSON.stringify(updated));
+                            }}
+                            style={{ cursor: 'pointer', accentColor: 'var(--accent-blue)', width: '16px', height: '16px' }}
+                          />
+                          <span>💧 Daily Hydration Card</span>
+                        </label>
+                      </div>
+                    )}
                   </div>
                 </div>
               </>
@@ -2484,6 +2588,254 @@ const handleDeleteHabitDb = async (id) => {
                       </div>
                     </div>
                   </div>
+
+                  {/* Dedicated 'Today Workout & Nutrition Summary' Section */}
+                  {(todayWidgetsConfig.showWorkout || todayWidgetsConfig.showProtein || todayWidgetsConfig.showHydration) && (
+                    <div style={{ background: 'var(--bg-main)', borderRadius: '20px', border: '1px solid var(--border-color)', padding: '24px', marginBottom: '28px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h4 style={{ fontSize: '1.2rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-main)', margin: 0 }}>
+                          <Dumbbell size={22} color="var(--accent-blue)" /> Today Workout & Nutrition Summary
+                        </h4>
+                        <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--accent-blue)', background: 'var(--accent-blue-dim)', padding: '4px 12px', borderRadius: '12px', border: '1px solid rgba(59,130,246,0.2)' }}>
+                          Fitness & Health Pillar
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
+                        {/* a) Today's Scheduled Workout Split */}
+                        {todayWidgetsConfig.showWorkout && (() => {
+                          const todayKeyStr = todayKey(userProfile?.timezone);
+                          const daysEpoch = Math.floor(new Date(todayKeyStr).getTime() / (1000 * 60 * 60 * 24));
+                          const splitList = (() => {
+                            try {
+                              const saved = localStorage.getItem('gym_workout_split');
+                              if (saved) return JSON.parse(saved);
+                            } catch (e) {}
+                            return ['Push Day', 'Leg Day', 'Pull Day', 'Cardio / Running', 'Rest & Recovery'];
+                          })();
+                          const currentTitle = splitList[Math.abs(daysEpoch) % splitList.length];
+                          const isDone = Array.isArray(workouts) && workouts.some(w => w.date === todayKeyStr);
+
+                          return (
+                            <div style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '14px' }}>
+                              <div>
+                                <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--accent-blue)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>
+                                  🎯 Scheduled Workout Split
+                                </div>
+                                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  🏋️ {currentTitle}
+                                </div>
+                                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                                  Cycle: {splitList.join(' → ')}
+                                </div>
+                              </div>
+
+                              <div>
+                                {isDone ? (
+                                  <div style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', padding: '10px 16px', borderRadius: '12px', fontWeight: 800, fontSize: '0.88rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                                    <Check size={18} /> Completed Today ✓
+                                  </div>
+                                ) : (
+                                  <button 
+                                    onClick={async () => {
+                                      try {
+                                        const res = await fetch('/api/fitness?type=workouts', {
+                                          method: 'POST',
+                                          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                          body: JSON.stringify({ title: currentTitle, category: 'Strength', duration_mins: 45, calories: 320, notes: `Completed scheduled ${currentTitle}`, date: todayKeyStr })
+                                        });
+                                        if (res.ok) {
+                                          const newW = await res.json();
+                                          setWorkouts(prev => [newW, ...(Array.isArray(prev) ? prev : [])]);
+                                          showToast(`🎉 ${currentTitle} Completed!`, 'success');
+                                        } else {
+                                          setWorkouts(prev => [{ title: currentTitle, category: 'Strength', duration_mins: 45, calories: 320, notes: `Completed scheduled ${currentTitle}`, date: todayKeyStr, id: Date.now() }, ...(Array.isArray(prev) ? prev : [])]);
+                                          showToast(`🎉 ${currentTitle} Completed!`, 'success');
+                                        }
+                                      } catch(e) {
+                                        setWorkouts(prev => [{ title: currentTitle, category: 'Strength', duration_mins: 45, calories: 320, notes: `Completed scheduled ${currentTitle}`, date: todayKeyStr, id: Date.now() }, ...(Array.isArray(prev) ? prev : [])]);
+                                        showToast(`🎉 ${currentTitle} Completed!`, 'success');
+                                      }
+                                    }}
+                                    className="blue-btn"
+                                    style={{ width: '100%', padding: '10px 16px', fontSize: '0.88rem', fontWeight: 700, borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                                  >
+                                    <Check size={18} /> Mark Complete Today
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })()}
+
+                        {/* b) Daily Protein Tracker with Progress Bar */}
+                        {todayWidgetsConfig.showProtein && (() => {
+                          const latestStat = Array.isArray(bodyStats) && bodyStats.length > 0 ? bodyStats[0] : null;
+                          const protein = Number(latestStat?.protein) || 0;
+                          const targetW = Number(latestStat?.target_weight) || 0;
+                          const goal = targetW > 0 ? Math.round(targetW * 2) : 150;
+                          const pct = Math.min(100, Math.max(0, Math.round((protein / goal) * 100)));
+
+                          const handleAddProtein = async (amount) => {
+                            const todayStr = todayKey(userProfile?.timezone);
+                            const newProtein = Math.max(0, protein + amount);
+                            const hydrationVal = Number(latestStat?.hydration) || 0;
+                            const payload = {
+                              weight: Number(latestStat?.weight) || 70,
+                              target_weight: targetW || 70,
+                              protein: newProtein,
+                              hydration: hydrationVal,
+                              date: todayStr
+                            };
+                            try {
+                              if (token) {
+                                const res = await fetch('/api/fitness?type=body-stats', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                  body: JSON.stringify(payload)
+                                });
+                                if (res.ok) {
+                                  const data = await res.json();
+                                  setBodyStats(prev => [data, ...(Array.isArray(prev) ? prev : [])]);
+                                  showToast('Protein updated!', 'success');
+                                }
+                              } else {
+                                setBodyStats(prev => [{ ...payload, id: Date.now() }, ...(Array.isArray(prev) ? prev : [])]);
+                                showToast('Protein updated!', 'success');
+                              }
+                            } catch (e) {
+                              console.error(e);
+                            }
+                          };
+
+                          return (
+                            <div style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '14px' }}>
+                              <div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--accent-blue)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                    🥩 Daily Protein Tracker
+                                  </span>
+                                  <span style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--accent-blue)' }}>
+                                    {pct}%
+                                  </span>
+                                </div>
+                                <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--accent-blue)', marginBottom: '8px' }}>
+                                  {protein}g <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>/ {goal}g goal</span>
+                                </div>
+                                <div style={{ width: '100%', height: '10px', background: 'var(--bg-main)', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                                  <div style={{ width: `${pct}%`, height: '100%', background: 'var(--accent-blue)', borderRadius: '10px', transition: 'width 0.3s ease', boxShadow: '0 0 8px rgba(59,130,246,0.3)' }} />
+                                </div>
+                              </div>
+
+                              <div style={{ display: 'flex', gap: '8px' }}>
+                                <button
+                                  onClick={() => handleAddProtein(25)}
+                                  style={{ flex: 1, padding: '7px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+                                >
+                                  +25g
+                                </button>
+                                <button
+                                  onClick={() => handleAddProtein(30)}
+                                  style={{ flex: 1, padding: '7px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+                                >
+                                  +30g
+                                </button>
+                                <button
+                                  onClick={() => handleAddProtein(-10)}
+                                  style={{ padding: '7px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-muted)', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+                                >
+                                  -10g
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })()}
+
+                        {/* c) Daily Hydration Tracker */}
+                        {todayWidgetsConfig.showHydration && (() => {
+                          const latestStat = Array.isArray(bodyStats) && bodyStats.length > 0 ? bodyStats[0] : null;
+                          const hydration = Number(latestStat?.hydration) || 0;
+                          const goal = 3.5;
+                          const pct = Math.min(100, Math.max(0, Math.round((hydration / goal) * 100)));
+
+                          const handleAddHydration = async (amount) => {
+                            const todayStr = todayKey(userProfile?.timezone);
+                            const newHydration = Math.max(0, parseFloat((hydration + amount).toFixed(2)));
+                            const proteinVal = Number(latestStat?.protein) || 0;
+                            const targetW = Number(latestStat?.target_weight) || 70;
+                            const payload = {
+                              weight: Number(latestStat?.weight) || 70,
+                              target_weight: targetW,
+                              protein: proteinVal,
+                              hydration: newHydration,
+                              date: todayStr
+                            };
+                            try {
+                              if (token) {
+                                const res = await fetch('/api/fitness?type=body-stats', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                  body: JSON.stringify(payload)
+                                });
+                                if (res.ok) {
+                                  const data = await res.json();
+                                  setBodyStats(prev => [data, ...(Array.isArray(prev) ? prev : [])]);
+                                  showToast('Hydration updated!', 'success');
+                                }
+                              } else {
+                                setBodyStats(prev => [{ ...payload, id: Date.now() }, ...(Array.isArray(prev) ? prev : [])]);
+                                showToast('Hydration updated!', 'success');
+                              }
+                            } catch (e) {
+                              console.error(e);
+                            }
+                          };
+
+                          return (
+                            <div style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '14px' }}>
+                              <div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#06b6d4', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                    💧 Daily Hydration Tracker
+                                  </span>
+                                  <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#06b6d4' }}>
+                                    {pct}%
+                                  </span>
+                                </div>
+                                <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#06b6d4', marginBottom: '8px' }}>
+                                  {hydration} L <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>/ {goal} L target</span>
+                                </div>
+                                <div style={{ width: '100%', height: '10px', background: 'var(--bg-main)', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                                  <div style={{ width: `${pct}%`, height: '100%', background: '#06b6d4', borderRadius: '10px', transition: 'width 0.3s ease', boxShadow: '0 0 8px rgba(6,182,212,0.3)' }} />
+                                </div>
+                              </div>
+
+                              <div style={{ display: 'flex', gap: '8px' }}>
+                                <button
+                                  onClick={() => handleAddHydration(0.5)}
+                                  style={{ flex: 1, padding: '7px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+                                >
+                                  +0.5 L
+                                </button>
+                                <button
+                                  onClick={() => handleAddHydration(1.0)}
+                                  style={{ flex: 1, padding: '7px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+                                >
+                                  +1.0 L
+                                </button>
+                                <button
+                                  onClick={() => handleAddHydration(-0.5)}
+                                  style={{ padding: '7px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-muted)', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+                                >
+                                  -0.5 L
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Clean List of Today Items */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>

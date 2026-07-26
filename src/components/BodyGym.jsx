@@ -313,14 +313,6 @@ export default function BodyGym({ token, showToast }) {
               </div>
 
               <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-                <button 
-                  onClick={() => setIsEditSplitOpen(true)}
-                  className="secondary-btn"
-                  style={{ padding: '8px 14px', fontSize: '0.82rem', borderRadius: '12px' }}
-                >
-                  ⚙️ Customize Split ({splitList.length} Days)
-                </button>
-
                 {isTodayCompleted ? (
                   <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', padding: '10px 18px', borderRadius: '14px', fontWeight: 800, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Check size={18} /> Completed Today
@@ -354,12 +346,11 @@ export default function BodyGym({ token, showToast }) {
             </div>
           </div>
 
-          {/* Bottom Grid: Quick Protein & Hydration Summary */}
+          {/* Bottom Grid: Quick Protein & Hydration Summary (Read Only display on Today tab) */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
             <div className="glass-card" style={{ padding: '20px', borderRadius: '18px', border: '1px solid var(--border-color)', background: 'var(--bg-card)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                 <div style={{ fontSize: '0.95rem', fontWeight: 700 }}>🥩 Daily Protein Tracker</div>
-                <button className="blue-btn" style={{ padding: '4px 10px', fontSize: '0.78rem' }} onClick={openStatsModal}>+ Log Protein</button>
               </div>
               <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--accent-blue)' }}>
                 {currentProtein}g <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>/ {targetProteinGoal}g goal</span>
@@ -372,7 +363,6 @@ export default function BodyGym({ token, showToast }) {
             <div className="glass-card" style={{ padding: '20px', borderRadius: '18px', border: '1px solid var(--border-color)', background: 'var(--bg-card)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                 <div style={{ fontSize: '0.95rem', fontWeight: 700 }}>💧 Daily Hydration</div>
-                <button className="secondary-btn" style={{ padding: '4px 10px', fontSize: '0.78rem' }} onClick={openStatsModal}>Update</button>
               </div>
               <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#06b6d4' }}>
                 {Number(latestStat?.hydration || 0)} L <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>/ 3.5 L target</span>
@@ -415,6 +405,48 @@ export default function BodyGym({ token, showToast }) {
                 <Activity size={16} /> <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>This Week</span>
               </div>
               <div style={{ fontSize: '1.8rem', fontWeight: 800 }}>{thisWeekCount}</div>
+            </div>
+          </div>
+
+          {/* Active Workout Split Routine & Customizer */}
+          <div className="glass-card" style={{ padding: '24px', borderRadius: '18px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', marginBottom: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)' }}>🔄 Workout Rotation Split ({splitList.length} Days)</h3>
+                <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                  Your scheduled workouts rotate automatically day by day in this cycle.
+                </p>
+              </div>
+              <button 
+                onClick={() => setIsEditSplitOpen(true)}
+                className="secondary-btn"
+                style={{ padding: '8px 16px', fontSize: '0.84rem', borderRadius: '12px', fontWeight: 700 }}
+              >
+                ⚙️ Customize Split Routine
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '4px' }}>
+              {splitList.map((dayName, idx) => {
+                const isCurrentToday = idx === todaySplitIdx;
+                return (
+                  <div 
+                    key={idx} 
+                    style={{ 
+                      flex: 1, minWidth: '130px', padding: '14px 16px', borderRadius: '14px',
+                      background: isCurrentToday ? 'var(--accent-blue-dim)' : 'var(--bg-main)',
+                      border: `1px solid ${isCurrentToday ? 'var(--accent-blue)' : 'var(--border-color)'}`
+                    }}
+                  >
+                    <div style={{ fontSize: '0.7rem', fontWeight: 800, color: isCurrentToday ? 'var(--accent-blue)' : 'var(--text-muted)', textTransform: 'uppercase' }}>
+                      {isCurrentToday ? '🎯 TODAY (DAY ' + (idx + 1) + ')' : 'DAY ' + (idx + 1)}
+                    </div>
+                    <div style={{ fontSize: '0.92rem', fontWeight: 700, marginTop: '4px', color: 'var(--text-main)' }}>
+                      {dayName}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 

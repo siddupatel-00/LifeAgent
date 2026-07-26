@@ -13,7 +13,7 @@ const formatDateStr = (d) => {
 export default function CalendarPanel({
   calendarEvents, setCalendarEvents,
   selectedCalendarDate, setSelectedCalendarDate,
-  calendarSubTab, setCalendarSubTab,
+  calendarSubTab = 'today', setCalendarSubTab,
   token, showToast, userProfile
 }) {
   const [isAddEventFormOpen, setIsAddEventFormOpen] = useState(false);
@@ -116,9 +116,9 @@ export default function CalendarPanel({
       return list; // Include expired events as requested!
     }
 
-    if (calendarSubTab === 'realtime') {
-      // Real time mode: only upcoming / real-time non-expired events
-      return list.filter(e => e.date >= todayStr && e.status !== 'expired');
+    if (calendarSubTab === 'today') {
+      // Today mode: filter strictly for today's date
+      return list.filter(e => e.date === todayStr);
     }
 
     if (calendarSubTab === 'this_week') {
@@ -296,7 +296,7 @@ export default function CalendarPanel({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '20px' }}>
         <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px', flexWrap: 'wrap', alignItems: 'center' }}>
           {[
-            { id: 'realtime', label: '⚡ Real-Time Only' },
+            { id: 'today', label: '📌 Today' },
             { id: 'this_month', label: 'This Month' },
             { id: 'this_week', label: 'This Week' },
             { id: 'next_week', label: 'Next Week' },
@@ -329,7 +329,7 @@ export default function CalendarPanel({
         </div>
 
         {/* Toggle Expired Events checkbox for non-custom tabs */}
-        {calendarSubTab !== 'custom' && calendarSubTab !== 'realtime' && (
+        {calendarSubTab !== 'custom' && calendarSubTab !== 'today' && (
           <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600, cursor: 'pointer' }}>
             <input 
               type="checkbox"
@@ -437,7 +437,7 @@ export default function CalendarPanel({
         <div style={{ background: 'var(--bg-card)', borderRadius: '18px', border: '1px solid var(--border-color)', padding: '24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <h4 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0 }}>
-              {selectedCalendarDate ? `Events for ${selectedCalendarDate}` : calendarSubTab === 'realtime' ? 'Real-Time Events' : calendarSubTab === 'custom' ? 'Custom Range Events' : 'Filtered Events'}
+              {selectedCalendarDate ? `Events for ${selectedCalendarDate}` : calendarSubTab === 'today' ? "Today's Events" : calendarSubTab === 'custom' ? 'Custom Range Events' : 'Filtered Events'}
             </h4>
             {selectedCalendarDate && (
               <button 
