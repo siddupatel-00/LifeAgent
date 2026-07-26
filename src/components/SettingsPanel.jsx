@@ -33,7 +33,7 @@ const SettingsPanel = ({
             ...userProfile, 
             phone: userProfile.phone || '', 
             timezone: userProfile.timezone || 'UTC', 
-            ai_name: aiName, 
+            ai_name: aiName?.trim() || 'AI', 
             gemini_api_key: geminiApiKey, 
             groq_api_key: groqApiKey, 
             ai_provider: aiProvider, 
@@ -194,9 +194,10 @@ const SettingsPanel = ({
               </div>
               <input 
                 type="text" 
-                value={aiName} 
+                value={aiName || ''} 
                 placeholder="Enter assistant name..."
-                onChange={(e) => setAiName(e.target.value || 'AI')} 
+                onChange={(e) => setAiName(e.target.value)} 
+                onBlur={() => { if (!aiName?.trim()) setAiName('AI'); }}
                 style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600, outline: 'none' }}
               />
             </div>

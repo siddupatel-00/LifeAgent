@@ -4,15 +4,32 @@ import {
 } from 'lucide-react';
 import { todayKey } from '../utils/date';
 
-export default function AnalyticsPanel({ token, showToast, currency = '$', timeRange, userProfile }) {
+export default function AnalyticsPanel({ token, showToast, currency = '$', timeRange = '7d', userProfile }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [range, setRange] = useState(timeRange || '7d');
+  const [customStart, setCustomStart] = useState('');
+  const [customEnd, setCustomEnd] = useState('');
   const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     if (timeRange) setRange(timeRange);
   }, [timeRange]);
+
+  const handleRangeChange = (newRange) => {
+    setRange(newRange);
+    if (newRange === 'custom' && (!customStart || !customEnd)) {
+      const today = todayKey(userProfile?.timezone);
+      const [y, m, d] = today.split('-').map(Number);
+      const startDateObj = new Date(y, m - 1, d);
+      startDateObj.setDate(startDateObj.getDate() - 6);
+      const sYear = startDateObj.getFullYear();
+      const sMonth = String(startDateObj.getMonth() + 1).padStart(2, '0');
+      const sDay = String(startDateObj.getDate()).padStart(2, '0');
+      setCustomEnd(today);
+      setCustomStart(`${sYear}-${sMonth}-${sDay}`);
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -20,7 +37,11 @@ export default function AnalyticsPanel({ token, showToast, currency = '$', timeR
     const fetchAnalytics = async () => {
       try {
         setLoading(true);
-        const res = await fetch(`/api/analytics?range=${range}&client_date=${todayKey(userProfile?.timezone)}`, {
+        let query = `/api/analytics?range=${range}&client_date=${todayKey(userProfile?.timezone)}`;
+        if (range === 'custom' && customStart && customEnd) {
+          query += `&start_date=${customStart}&end_date=${customEnd}`;
+        }
+        const res = await fetch(query, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -54,7 +75,7 @@ export default function AnalyticsPanel({ token, showToast, currency = '$', timeR
     return () => {
       mounted = false;
     };
-  }, [token, range, retryCount]);
+  }, [token, range, customStart, customEnd, retryCount, userProfile?.timezone]);
 
   const renderFilterButtons = () => {
     const ranges = [
@@ -62,30 +83,56 @@ export default function AnalyticsPanel({ token, showToast, currency = '$', timeR
       { label: '14 Days', value: '14d' },
       { label: '30 Days', value: '30d' },
       { label: '90 Days', value: '90d' },
+      { label: 'Custom Range', value: 'custom' }
     ];
     
     return (
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
-        {ranges.map(r => (
-          <button
-            key={r.value}
-            onClick={() => setRange(r.value)}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '20px',
-              border: '1px solid',
-              borderColor: range === r.value ? 'var(--accent-blue)' : 'var(--border-color)',
-              background: range === r.value ? 'rgba(59, 130, 246, 0.12)' : 'var(--bg-card)',
-              color: range === r.value ? 'var(--accent-blue)' : 'var(--text-muted)',
-              fontSize: '0.85rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            {r.label}
-          </button>
-        ))}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+          {ranges.map(r => (
+            <button
+              key={r.value}
+              onClick={() => handleRangeChange(r.value)}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '20px',
+                border: '1px solid',
+                borderColor: range === r.value ? 'var(--accent-blue)' : 'var(--border-color)',
+                background: range === r.value ? 'rgba(59, 130, 246, 0.12)' : 'var(--bg-card)',
+                color: range === r.value ? 'var(--accent-blue)' : 'var(--text-muted)',
+                fontSize: '0.85rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
+
+        {range === 'custom' && (
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', background: 'var(--bg-card)', padding: '12px 16px', borderRadius: '14px', border: '1px solid var(--border-color)', width: 'fit-content', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)' }}>From:</span>
+              <input 
+                type="date" 
+                value={customStart} 
+                onChange={(e) => setCustomStart(e.target.value)}
+                style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.85rem', fontWeight: 600 }}
+              />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)' }}>To:</span>
+              <input 
+                type="date" 
+                value={customEnd} 
+                onChange={(e) => setCustomEnd(e.target.value)}
+                style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.85rem', fontWeight: 600 }}
+              />
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -122,6 +169,14 @@ export default function AnalyticsPanel({ token, showToast, currency = '$', timeR
   const today = data.today || {};
   const notes = data.notes || {};
 
+  const rangeLabel = data.startDate && data.endDate
+    ? `${data.startDate} to ${data.endDate}`
+    : range === '7d' ? 'past 7 days'
+    : range === '14d' ? 'past 14 days'
+    : range === '30d' ? 'past 30 days'
+    : range === '90d' ? 'past 90 days'
+    : 'selected range';
+
   return (
     <div className="animate-entrance">
       {renderFilterButtons()}
@@ -147,7 +202,7 @@ export default function AnalyticsPanel({ token, showToast, currency = '$', timeR
             {currency}{(finance.netBalance || 0).toFixed(0)}
           </div>
           <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 700 }}>
-            Based on recent transactions
+            Based on transactions in {rangeLabel}
           </div>
         </div>
 
@@ -159,7 +214,7 @@ export default function AnalyticsPanel({ token, showToast, currency = '$', timeR
             {sleep.avgHours || 0} <span style={{ fontSize: '1.2rem', fontWeight: 600 }}>hrs</span>
           </div>
           <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 700 }}>
-            7-day average sleep duration
+            Average sleep duration in {rangeLabel}
           </div>
         </div>
       </div>
@@ -168,7 +223,7 @@ export default function AnalyticsPanel({ token, showToast, currency = '$', timeR
         <div>
           <h3 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0 }}>Performance Overview</h3>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: '4px' }}>
-            Detailed breakdown over past {range === '7d' ? '7 days' : range === '14d' ? '14 days' : range === '30d' ? '30 days' : '90 days'}
+            Detailed breakdown ({rangeLabel})
           </p>
         </div>
       </div>

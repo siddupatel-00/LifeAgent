@@ -3,6 +3,13 @@ dotenv.config();
 import db from '../lib/db.js';
 import { getUserId } from '../lib/auth.js';
 
+function getOffsetDate(baseDateStr, daysBack) {
+  const [y, m, d] = (baseDateStr || new Date().toISOString().slice(0, 10)).split('-').map(Number);
+  const dateObj = new Date(Date.UTC(y, m - 1, d));
+  dateObj.setUTCDate(dateObj.getUTCDate() - daysBack);
+  return dateObj.toISOString().slice(0, 10);
+}
+
 export default async function handler(req, res) {
   const userId = getUserId(req);
   if (!userId) return res.status(401).json({ error: 'Unauthorized' });
@@ -10,8 +17,38 @@ export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   const range = req.query?.range || '7d';
-  const clientDate = /^\d{4}-\d{2}-\d{2}$/.test(req.query?.client_date || '') ? req.query.client_date : null;
-  const todayDate = clientDate || new Date().toISOString().slice(0, 10);
+  const clientDate = /^\d{4}-\d{2}-\d{2}$/.test(req.query?.client_date || '') 
+    ? req.query.client_date 
+    : new Date().toISOString().slice(0, 10);
+  const todayDate = clientDate;
+  const customStart = /^\d{4}-\d{2}-\d{2}$/.test(req.query?.start_date || '') ? req.query.start_date : null;
+  const customEnd = /^\d{4}-\d{2}-\d{2}$/.test(req.query?.end_date || '') ? req.query.end_date : null;
+
+  let startDateStr = todayDate;
+  let endDateStr = todayDate;
+
+  if (range === 'custom' && (customStart || customEnd)) {
+    startDateStr = customStart || getOffsetDate(customEnd || todayDate, 6);
+    endDateStr = customEnd || todayDate;
+    if (startDateStr > endDateStr) {
+      const tmp = startDateStr;
+      startDateStr = endDateStr;
+      endDateStr = tmp;
+    }
+  } else if (range === '14d') {
+    startDateStr = getOffsetDate(todayDate, 13);
+    endDateStr = todayDate;
+  } else if (range === '30d') {
+    startDateStr = getOffsetDate(todayDate, 29);
+    endDateStr = todayDate;
+  } else if (range === '90d') {
+    startDateStr = getOffsetDate(todayDate, 89);
+    endDateStr = todayDate;
+  } else {
+    // Default 7d
+    startDateStr = getOffsetDate(todayDate, 6);
+    endDateStr = todayDate;
+  }
 
   // Default fallback data structures
   let habitsData = { total: 0, completedToday: 0, consistency: 0, totalStreaks: 0, bestStreak: 0, breakdown: [], categories: {} };
@@ -21,25 +58,32 @@ export default async function handler(req, res) {
   let sleepData = { avgHours: 0 };
   let workoutsData = { thisWeek: 0, totalMinutes: 0, totalCalories: 0 };
 
-  // 1. Habits summary
+  // 1. Habits summary & today_items consistency in range
   try {
     const habitsResult = await db.execute({ sql: 'SELECT * FROM habits WHERE user_id = ?', args: [userId] });
     const habits = habitsResult.rows || [];
     const totalHabits = habits.length;
     const todayItemsResult = await db.execute({
-      sql: 'SELECT habit_id, checked FROM today_items WHERE user_id = ? AND date = ?',
-      args: [userId, todayDate]
+      sql: 'SELECT habit_id, checked, date FROM today_items WHERE user_id = ? AND date >= ? AND date <= ?',
+      args: [userId, startDateStr, endDateStr]
     });
-    const completedHabitIds = new Set((todayItemsResult.rows || []).filter(item => item.checked && item.habit_id).map(item => item.habit_id));
-    const completedToday = habits.filter(h => completedHabitIds.has(h.id)).length;
-    const consistency = totalHabits > 0 ? Math.round((completedToday / totalHabits) * 100) : 0;
+    const rangeTodayItems = todayItemsResult.rows || [];
+    const completedHabitIdsToday = new Set(
+      rangeTodayItems.filter(item => item.date === todayDate && item.checked && item.habit_id).map(item => item.habit_id)
+    );
+    const completedToday = habits.filter(h => completedHabitIdsToday.has(h.id)).length;
+    const totalRangeItems = rangeTodayItems.length;
+    const completedRangeItems = rangeTodayItems.filter(item => !!item.checked).length;
+    const consistency = totalRangeItems > 0 
+      ? Math.round((completedRangeItems / totalRangeItems) * 100) 
+      : (totalHabits > 0 ? Math.round((completedToday / totalHabits) * 100) : 0);
     const totalStreaks = habits.reduce((sum, h) => sum + (Number(h.streak) || 0), 0);
     const bestStreak = habits.reduce((max, h) => Math.max(max, Number(h.streak) || 0), 0);
     const habitBreakdown = habits.map(h => ({
       label: h.label || h.title || 'Habit',
       category: h.category || 'General',
       streak: Number(h.streak) || 0,
-      checkedToday: completedHabitIds.has(h.id)
+      checkedToday: completedHabitIdsToday.has(h.id)
     }));
 
     const categories = {};
@@ -47,7 +91,7 @@ export default async function handler(req, res) {
       const cat = h.category || 'General';
       if (!categories[cat]) categories[cat] = { total: 0, done: 0 };
       categories[cat].total++;
-      if (completedHabitIds.has(h.id)) categories[cat].done++;
+      if (completedHabitIdsToday.has(h.id)) categories[cat].done++;
     }
 
     habitsData = {
@@ -63,11 +107,11 @@ export default async function handler(req, res) {
     console.error('Analytics Habits Error:', err.message);
   }
 
-  // 2. Financial summary
+  // 2. Financial summary (date-bounded)
   try {
     const txnResult = await db.execute({
-      sql: 'SELECT type, amount FROM transactions WHERE user_id = ?',
-      args: [userId]
+      sql: 'SELECT type, amount FROM transactions WHERE user_id = ? AND date >= ? AND date <= ?',
+      args: [userId, startDateStr, endDateStr]
     });
     let totalEarned = 0, totalSpent = 0;
     for (const row of (txnResult.rows || [])) {
@@ -84,7 +128,7 @@ export default async function handler(req, res) {
     console.error('Analytics Finance Error:', err.message);
   }
 
-  // 3. Today items summary
+  // 3. Today items summary (for current todayDate)
   try {
     const todayResult = await db.execute({
       sql: 'SELECT checked FROM today_items WHERE user_id = ? AND date = ?',
@@ -99,22 +143,22 @@ export default async function handler(req, res) {
     console.error('Analytics Today Error:', err.message);
   }
 
-  // 4. Notes count
+  // 4. Notes count (date-bounded)
   try {
     const notesResult = await db.execute({
-      sql: 'SELECT count(*) as count FROM notes WHERE user_id = ? AND (is_trashed = 0 OR is_trashed IS NULL)',
-      args: [userId]
+      sql: 'SELECT count(*) as count FROM notes WHERE user_id = ? AND (is_trashed = 0 OR is_trashed IS NULL) AND date >= ? AND date <= ?',
+      args: [userId, startDateStr, endDateStr]
     });
     notesData = { count: Number(notesResult.rows[0]?.count) || 0 };
   } catch (err) {
     console.error('Analytics Notes Error:', err.message);
   }
 
-  // 5. Sleep average
+  // 5. Sleep average (date-bounded)
   try {
     const sleepResult = await db.execute({
-      sql: 'SELECT hours, minutes FROM sleep_logs WHERE user_id = ? ORDER BY date DESC LIMIT 7',
-      args: [userId]
+      sql: 'SELECT hours, minutes FROM sleep_logs WHERE user_id = ? AND date >= ? AND date <= ? ORDER BY date DESC',
+      args: [userId, startDateStr, endDateStr]
     });
     const rows = sleepResult.rows || [];
     if (rows.length > 0) {
@@ -125,11 +169,11 @@ export default async function handler(req, res) {
     console.error('Analytics Sleep Error:', err.message);
   }
 
-  // 6. Workouts
+  // 6. Workouts (date-bounded)
   try {
     const workoutsResult = await db.execute({
-      sql: 'SELECT duration_mins, calories FROM workouts WHERE user_id = ?',
-      args: [userId]
+      sql: 'SELECT duration_mins, calories FROM workouts WHERE user_id = ? AND date >= ? AND date <= ?',
+      args: [userId, startDateStr, endDateStr]
     });
     const rows = workoutsResult.rows || [];
     const totalMins = rows.reduce((sum, r) => sum + (Number(r.duration_mins) || 0), 0);
@@ -145,6 +189,8 @@ export default async function handler(req, res) {
 
   return res.status(200).json({
     range,
+    startDate: startDateStr,
+    endDate: endDateStr,
     habits: habitsData,
     finance: financeData,
     today: todayData,

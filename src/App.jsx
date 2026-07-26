@@ -48,7 +48,7 @@ const getFormattedDateTitle = (dateStr) => {
 };
 
 export default function App() {
-  const [themeMode, setThemeMode] = useState('light'); // 'dark', 'light', 'pc'
+  const [themeMode, setThemeMode] = useState('pc'); // 'dark', 'light', 'pc'
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
   const themeDropdownRef = useRef(null);
 
@@ -413,18 +413,22 @@ export default function App() {
     if (trashNotes.length > 0) {
       const now = Date.now();
       const fortyNineDaysMs = 49 * 24 * 60 * 60 * 1000;
-      const validNotes = trashNotes.filter(note => (now - (note.deletedAt || now)) <= fortyNineDaysMs);
-      if (validNotes.length !== trashNotes.length) {
+      const expired = trashNotes.filter(note => (now - (note.deletedAt || now)) > fortyNineDaysMs);
+      if (expired.length > 0) {
+        // Permanently delete expired notes from DB
+        expired.forEach(note => {
+          fetch('/api/notes', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ id: note.id })
+          }).catch(err => console.error('Failed to auto-delete expired trash note:', err));
+        });
+        const validNotes = trashNotes.filter(note => (now - (note.deletedAt || now)) <= fortyNineDaysMs);
         setTrashNotes(validNotes);
       }
     }
   }, [trashNotes]);
 
-  useEffect(() => {
-    if (notesViewMode === 'trash' && trashNotes.length === 0) {
-      setNotesViewMode('active');
-    }
-  }, [trashNotes.length, notesViewMode]);
 
   // 7) Persistent Side Personal AI Assistant Panel state
   const [isAiSidePanelOpen, setIsAiSidePanelOpen] = useState(true);
@@ -514,42 +518,12 @@ export default function App() {
 
         // Check if a note exists for today's date
         const todayNote = activeNotes.find(n => n.date === clientDate);
+        // Always set the notes list
+        setNotesList(activeNotes);
         if (todayNote) {
-          setNotesList(activeNotes);
           setActiveNoteId(todayNote.id);
-        } else {
-          try {
-            const createRes = await fetch('/api/notes', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-              body: JSON.stringify({
-                title: getFormattedDateTitle(clientDate),
-                content: 'Type your daily reflection, thoughts, or goals here...',
-                share_with_ai: true
-              })
-            });
-            if (createRes.ok) {
-              const newNoteData = await createRes.json();
-              const formattedNote = {
-                id: newNoteData.id,
-                title: newNoteData.title,
-                content: newNoteData.content,
-                category: newNoteData.category || 'Diary',
-                date: newNoteData.date || clientDate,
-                shareWithAi: !!newNoteData.share_with_ai
-              };
-              activeNotes = [formattedNote, ...activeNotes];
-              setNotesList(activeNotes);
-              setActiveNoteId(formattedNote.id);
-            } else {
-              setNotesList(activeNotes);
-              if (activeNotes.length > 0) setActiveNoteId(activeNotes[0].id);
-            }
-          } catch (createErr) {
-            console.error('Error creating default today note:', createErr);
-            setNotesList(activeNotes);
-            if (activeNotes.length > 0) setActiveNoteId(activeNotes[0].id);
-          }
+        } else if (activeNotes.length > 0) {
+          setActiveNoteId(activeNotes[0].id);
         }
       }
     } catch (err) {
@@ -563,6 +537,9 @@ export default function App() {
   const handleUpdateNoteDb = async (note) => {
     if (!token || !note || !note.id) return;
     try {
+      const isTrashed = note.is_trashed !== undefined ? (note.is_trashed ? 1 : 0) : (note.deletedAt ? 1 : 0);
+      const deletedAt = isTrashed === 0 ? null : (note.deletedAt ? new Date(note.deletedAt).toISOString() : (note.deleted_at || new Date().toISOString()));
+
       await fetch('/api/notes', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -571,8 +548,8 @@ export default function App() {
           title: note.title,
           content: note.content,
           share_with_ai: note.shareWithAi !== undefined ? note.shareWithAi : note.share_with_ai,
-          is_trashed: note.is_trashed !== undefined ? note.is_trashed : (note.deletedAt ? 1 : 0),
-          deleted_at: note.deletedAt ? new Date(note.deletedAt).toISOString() : (note.deleted_at || null)
+          is_trashed: isTrashed,
+          deleted_at: deletedAt
         })
       });
     } catch (err) {
@@ -2989,7 +2966,10 @@ const handleDeleteHabitDb = async (id) => {
                     <div style={{ background: 'var(--bg-main)', borderRadius: '18px', border: '1px solid var(--border-color)', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       <div style={{ display: 'flex', gap: '6px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
                         <button
-                          onClick={() => setNotesViewMode('active')}
+                          onClick={() => {
+                            setNotesViewMode('active');
+                            if (notesList.length > 0) setActiveNoteId(notesList[0].id);
+                          }}
                           style={{
                             flex: 1, padding: '8px', borderRadius: '10px', border: 'none',
                             background: notesViewMode === 'active' ? 'var(--accent-blue)' : 'transparent',
@@ -2999,19 +2979,20 @@ const handleDeleteHabitDb = async (id) => {
                         >
                           📖 Active ({notesList.length})
                         </button>
-                        {trashNotes.length > 0 && (
-                          <button
-                            onClick={() => setNotesViewMode('trash')}
-                            style={{
-                              flex: 1, padding: '8px', borderRadius: '10px', border: 'none',
-                              background: notesViewMode === 'trash' ? 'rgba(239, 68, 68, 0.18)' : 'transparent',
-                              color: notesViewMode === 'trash' ? '#ef4444' : 'var(--text-muted)',
-                              fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', transition: 'all 0.2s'
-                            }}
-                          >
-                            🗑️ Trash ({trashNotes.length})
-                          </button>
-                        )}
+                        <button
+                          onClick={() => {
+                            setNotesViewMode('trash');
+                            if (trashNotes.length > 0) setActiveNoteId(trashNotes[0].id);
+                          }}
+                          style={{
+                            flex: 1, padding: '8px', borderRadius: '10px', border: 'none',
+                            background: notesViewMode === 'trash' ? 'rgba(239, 68, 68, 0.18)' : 'transparent',
+                            color: notesViewMode === 'trash' ? '#ef4444' : 'var(--text-muted)',
+                            fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', transition: 'all 0.2s'
+                          }}
+                        >
+                          🗑️ Trash ({trashNotes.length})
+                        </button>
                       </div>
 
                       {notesViewMode === 'active' ? (
@@ -3050,10 +3031,11 @@ const handleDeleteHabitDb = async (id) => {
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         handleUpdateNoteDb({ id: note.id, is_trashed: 1, deleted_at: new Date().toISOString() });
-                                        setTrashNotes([{ ...note, deletedAt: Date.now() }, ...trashNotes]);
+                                        setTrashNotes([{ ...note, deletedAt: Date.now(), is_trashed: 1 }, ...trashNotes]);
                                         const next = notesList.filter(n => n.id !== note.id);
                                         setNotesList(next);
                                         if (activeNoteId === note.id && next.length > 0) setActiveNoteId(next[0].id);
+                                        showToast('Note moved to Trash. Click 🗑️ Trash to restore anytime!');
                                       }}
                                       style={{ background: 'transparent', border: 'none', color: activeNoteId === note.id ? '#fff' : '#ef4444', cursor: 'pointer', padding: '2px', opacity: 0.8 }}
                                       title="Move to Trash (Kept for 49 days)"
@@ -3103,11 +3085,18 @@ const handleDeleteHabitDb = async (id) => {
                                       <button
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          handleUpdateNoteDb({ id: tNote.id, is_trashed: 0, deleted_at: null });
-                                          setNotesList([tNote, ...notesList]);
-                                          setTrashNotes(trashNotes.filter(n => n.id !== tNote.id));
-                                          setActiveNoteId(tNote.id);
-                                          setNotesViewMode('active');
+                                          const restoredNote = { ...tNote, is_trashed: 0, deletedAt: null, deleted_at: null };
+                                          handleUpdateNoteDb(restoredNote);
+                                          setNotesList(prev => [restoredNote, ...prev]);
+                                          const remainingTrash = trashNotes.filter(n => n.id !== tNote.id);
+                                          setTrashNotes(remainingTrash);
+                                          // Stay on trash tab; select next trash note if available
+                                          if (remainingTrash.length > 0) {
+                                            setActiveNoteId(remainingTrash[0].id);
+                                          } else {
+                                            setActiveNoteId(null);
+                                          }
+                                          showToast('Note restored to active notes!');
                                         }}
                                         style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', border: 'none', borderRadius: '6px', padding: '4px 8px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}
                                         title="Restore Note to Active"
@@ -3115,9 +3104,29 @@ const handleDeleteHabitDb = async (id) => {
                                         ♻️ Restore
                                       </button>
                                       <button
-                                        onClick={(e) => {
+                                        onClick={async (e) => {
                                           e.stopPropagation();
-                                          setTrashNotes(trashNotes.filter(n => n.id !== tNote.id));
+                                          const remainingTrash = trashNotes.filter(n => n.id !== tNote.id);
+                                          setTrashNotes(remainingTrash);
+                                          // Select next trash note or clear selection
+                                          if (activeNoteId === tNote.id) {
+                                            setActiveNoteId(remainingTrash.length > 0 ? remainingTrash[0].id : null);
+                                          }
+                                          try {
+                                            const delRes = await fetch('/api/notes', {
+                                              method: 'DELETE',
+                                              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                              body: JSON.stringify({ id: tNote.id })
+                                            });
+                                            if (delRes.ok) {
+                                              showToast('Note permanently deleted', 'success');
+                                            } else {
+                                              showToast('Failed to delete note', 'error');
+                                            }
+                                          } catch (err) {
+                                            console.error(err);
+                                            showToast('Failed to delete note', 'error');
+                                          }
                                         }}
                                         style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: 'none', borderRadius: '6px', padding: '4px 8px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}
                                         title="Permanently Delete Now"
@@ -3191,6 +3200,7 @@ const handleDeleteHabitDb = async (id) => {
                                       const nextList = notesList.filter(n => n.id !== currentNote.id);
                                       setNotesList(nextList);
                                       handleUpdateNoteDb(trashedNote);
+                                      showToast('Note moved to Trash. Click 🗑️ Trash to restore anytime!');
                                       if (nextList.length > 0) {
                                         setActiveNoteId(nextList[0].id);
                                       } else {
@@ -3214,12 +3224,18 @@ const handleDeleteHabitDb = async (id) => {
                                 <div style={{ display: 'flex', gap: '10px' }}>
                                   <button
                                     onClick={() => {
-                                      const restoredNote = { ...currentNote, is_trashed: 0, deletedAt: null };
-                                      setNotesList([restoredNote, ...notesList]);
-                                      setTrashNotes(trashNotes.filter(n => n.id !== currentNote.id));
-                                      setActiveNoteId(currentNote.id);
-                                      setNotesViewMode('active');
+                                      const restoredNote = { ...currentNote, is_trashed: 0, deletedAt: null, deleted_at: null };
                                       handleUpdateNoteDb(restoredNote);
+                                      setNotesList(prev => [restoredNote, ...prev]);
+                                      const remainingTrash = trashNotes.filter(n => n.id !== currentNote.id);
+                                      setTrashNotes(remainingTrash);
+                                      // Stay on trash tab; select next trash note if available
+                                      if (remainingTrash.length > 0) {
+                                        setActiveNoteId(remainingTrash[0].id);
+                                      } else {
+                                        setActiveNoteId(null);
+                                      }
+                                      showToast('Note restored to active notes!');
                                     }}
                                     className="blue-btn"
                                     style={{ padding: '8px 16px', fontSize: '0.85rem' }}
@@ -3228,14 +3244,26 @@ const handleDeleteHabitDb = async (id) => {
                                   </button>
                                   <button
                                     onClick={async () => {
-                                      setTrashNotes(trashNotes.filter(n => n.id !== currentNote.id));
+                                      const noteId = currentNote.id;
+                                      const remainingTrash = trashNotes.filter(n => n.id !== noteId);
+                                      setTrashNotes(remainingTrash);
+                                      // Select next trash note or clear selection
+                                      setActiveNoteId(remainingTrash.length > 0 ? remainingTrash[0].id : null);
                                       try {
-                                        await fetch('/api/notes', {
+                                        const delRes = await fetch('/api/notes', {
                                           method: 'DELETE',
                                           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                          body: JSON.stringify({ id: currentNote.id })
+                                          body: JSON.stringify({ id: noteId })
                                         });
-                                      } catch(e){}
+                                        if (delRes.ok) {
+                                          showToast('Note permanently deleted', 'success');
+                                        } else {
+                                          showToast('Failed to delete note', 'error');
+                                        }
+                                      } catch(e){
+                                        console.error(e);
+                                        showToast('Failed to delete note', 'error');
+                                      }
                                     }}
                                     style={{ padding: '8px 16px', borderRadius: '20px', background: '#ef4444', color: '#fff', border: 'none', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}
                                   >
