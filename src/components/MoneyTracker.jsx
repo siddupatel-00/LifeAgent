@@ -105,13 +105,25 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
     e.preventDefault();
     if (!newTitle || !newAmount) return;
     
+    let evaluatedAmount = 0;
+    try {
+      const sanitized = String(newAmount).replace(/[^0-9+\-*/().]/g, '');
+      if (!sanitized) throw new Error('Empty');
+      // eslint-disable-next-line no-new-func
+      evaluatedAmount = new Function('return ' + sanitized)();
+      if (isNaN(evaluatedAmount) || !isFinite(evaluatedAmount)) throw new Error('Invalid Math');
+    } catch (err) {
+      showToast?.('Invalid amount format or calculation', 'error');
+      return;
+    }
+    
     try {
       const res = await fetch('/api/transactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ 
           title: newTitle, 
-          amount: parseFloat(newAmount), 
+          amount: parseFloat(evaluatedAmount), 
           type: newType,
           category: newCategory,
           notes: newNotes,
@@ -160,11 +172,25 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
   };
 
   const saveEdit = async () => {
+    let evaluatedAmount = 0;
+    try {
+      const sanitized = String(editForm.amount).replace(/[^0-9+\-*/().]/g, '');
+      if (!sanitized) throw new Error('Empty');
+      // eslint-disable-next-line no-new-func
+      evaluatedAmount = new Function('return ' + sanitized)();
+      if (isNaN(evaluatedAmount) || !isFinite(evaluatedAmount)) throw new Error('Invalid Math');
+    } catch (err) {
+      showToast?.('Invalid amount format or calculation', 'error');
+      return;
+    }
+    
+    const finalForm = { ...editForm, amount: parseFloat(evaluatedAmount) };
+    
     try {
       const res = await fetch('/api/transactions', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(editForm)
+        body: JSON.stringify(finalForm)
       });
       if (res.ok) {
         setTransactions(prev => prev.map(t => t.id === editingId ? { ...t, ...editForm } : t));
@@ -208,7 +234,7 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     <div style={{ display: 'flex', gap: '12px' }}>
                       <input type="text" value={editForm.title} onChange={e => setEditForm({...editForm, title: e.target.value})} style={{ flex: 1, padding: '8px', borderRadius: '6px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
-                      <input type="number" value={editForm.amount} onChange={e => setEditForm({...editForm, amount: parseFloat(e.target.value)})} style={{ width: '100px', padding: '8px', borderRadius: '6px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
+                      <input type="text" value={editForm.amount} onChange={e => setEditForm({...editForm, amount: e.target.value})} style={{ width: '100px', padding: '8px', borderRadius: '6px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
                     </div>
                     <div style={{ display: 'flex', gap: '12px' }}>
                       <select value={editForm.type} onChange={e => setEditForm({...editForm, type: e.target.value})} style={{ flex: 1, padding: '8px', borderRadius: '6px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}>
@@ -269,7 +295,7 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
           </div>
           <div>
             <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Amount ({currency})</label>
-            <input type="number" placeholder="0.00" step="0.01" value={newAmount} onChange={(e) => setNewAmount(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
+            <input type="text" placeholder="e.g., 950+300 or 1250" value={newAmount} onChange={(e) => setNewAmount(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
           </div>
           <div>
             <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Category</label>
