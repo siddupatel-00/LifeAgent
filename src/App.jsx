@@ -205,7 +205,7 @@ export default function App() {
     aiTone: 'Analytical & Direct',
     morningAudit: true,
     smartAlerts: true,
-    auto_open_ai_sidechat: true,
+    auto_open_ai_sidechat: localStorage.getItem('auto_open_ai_sidechat') !== 'false',
     currency: '$',
     timezone: localTimeZone()
   });
@@ -446,6 +446,7 @@ export default function App() {
 
   // Auto-open AI side panel when switching tabs if setting is enabled
   useEffect(() => {
+    localStorage.setItem('auto_open_ai_sidechat', userProfile.auto_open_ai_sidechat);
     if (userProfile.auto_open_ai_sidechat !== false) {
       if (activeTab !== 'settings' && activeTab !== 'ai') {
         setIsAiSidePanelOpen(true);
