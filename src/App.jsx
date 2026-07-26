@@ -49,7 +49,7 @@ const getFormattedDateTitle = (dateStr) => {
 };
 
 export default function App() {
-  const [themeMode, setThemeMode] = useState('pc'); // 'dark', 'light', 'pc'
+  const [themeMode, setThemeMode] = useState(() => localStorage.getItem('themeMode') || 'pc'); // 'dark', 'light', 'pc'
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
   const themeDropdownRef = useRef(null);
 
@@ -726,14 +726,15 @@ const handleDeleteHabitDb = async (id) => {
   // Handle PC/System vs explicit Dark/Light mode
   useEffect(() => {
     const root = document.documentElement;
+    localStorage.setItem('themeMode', themeMode);
+    
     if (themeMode === 'pc') {
       const isSystemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       root.setAttribute('data-theme', isSystemDark ? 'dark' : 'light');
       
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
       const listener = (e) => root.setAttribute('data-theme', e.matches ? 'dark' : 'light');
-      mediaQuery.addEventListener('change', listener);
-      return () => mediaQuery.removeEventListener('change', listener);
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', listener);
+      return () => window.matchMedia('(prefers-color-scheme: dark)').removeEventListener('change', listener);
     } else {
       root.setAttribute('data-theme', themeMode);
     }
