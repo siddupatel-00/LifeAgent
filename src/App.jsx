@@ -390,7 +390,7 @@ export default function App() {
   // Habits state with exact daily tracking items: Gym, Study, Code, DSA Problems
   const [habits, setHabits] = useState([]);
   const [isAddHabitModalOpen, setIsAddHabitModalOpen] = useState(false);
-  const [newHabitData, setNewHabitData] = useState({ title: '', category: 'Coding', target: '' });
+  const [newHabitData, setNewHabitData] = useState({ title: '', category: '', target: '' });
   const [newTodayItemData, setNewTodayItemData] = useState({ title: '', category: 'Coding', time: '10:00 AM' });
   const [isAddTodayItemOpen, setIsAddTodayItemOpen] = useState(false);
   const [todayItems, setTodayItems] = useState([]);
@@ -3009,22 +3009,53 @@ const handleDeleteHabitDb = async (id) => {
 
                         <div>
                           <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Pillar / Category</label>
-                          <input 
-                            type="text" 
-                            list="pillar-category-list"
-                            placeholder="Select or type category..."
-                            value={newHabitData.category}
-                            onChange={(e) => setNewHabitData({ ...newHabitData, category: e.target.value })}
-                            style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.92rem', fontWeight: 600, outline: 'none' }}
-                          />
-                          <datalist id="pillar-category-list">
-                            <option value="Coding Pillar" />
-                            <option value="Study Pillar" />
-                            <option value="DSA & Algorithms" />
-                            <option value="Body & Gym" />
-                            <option value="Money Pillar" />
-                            <option value="Deep Focus" />
-                          </datalist>
+                          {newHabitData.category === 'Other' ? (
+                            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                              <input 
+                                type="text" 
+                                placeholder="Enter custom category name..."
+                                value={customPillarInput}
+                                onChange={(e) => setCustomPillarInput(e.target.value)}
+                                style={{ flex: 1, width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.92rem', fontWeight: 600, outline: 'none' }}
+                                autoFocus
+                              />
+                              <button 
+                                type="button"
+                                onClick={() => {
+                                  setNewHabitData({ ...newHabitData, category: '' });
+                                  setCustomPillarInput('');
+                                }}
+                                title="Re-select category"
+                                style={{ padding: '12px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-muted)', border: '1px solid var(--border-color)', cursor: 'pointer', height: '46px' }}
+                              >
+                                <X size={16} />
+                              </button>
+                            </div>
+                          ) : (
+                            <select 
+                              value={newHabitData.category}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setNewHabitData({ ...newHabitData, category: val });
+                                if (val === 'Body & Gym') setActiveTab('body');
+                              }}
+                              style={{ 
+                                width: '100%', padding: '12px 16px', borderRadius: '12px', 
+                                background: 'var(--bg-card)', 
+                                color: newHabitData.category ? 'var(--text-main)' : 'var(--text-muted)', 
+                                border: '1px solid var(--border-color)', fontSize: '0.92rem', fontWeight: 600, outline: 'none', cursor: 'pointer' 
+                              }}
+                            >
+                              <option value="" disabled hidden>Select Category...</option>
+                              <option value="Coding">Coding Pillar</option>
+                              <option value="Study">Study Pillar</option>
+                              <option value="DSA & Algorithms">DSA & Algorithms</option>
+                              <option value="Body & Gym">Body & Gym</option>
+                              <option value="Money">Money Pillar</option>
+                              <option value="Deep Focus">Deep Focus</option>
+                              <option value="Other">+ Enter Custom Category...</option>
+                            </select>
+                          )}
                         </div>
 
                         <div>
@@ -3046,13 +3077,17 @@ const handleDeleteHabitDb = async (id) => {
                               return;
                             }
 
+                            const finalCategory = newHabitData.category === 'Other' 
+                              ? (customPillarInput.trim() || 'General') 
+                              : (newHabitData.category.trim() || 'General');
+
                             try {
                               const res = await fetch('/api/habits', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                                 body: JSON.stringify({
                                   label: newHabitData.title.trim(),
-                                  category: newHabitData.category.trim(),
+                                  category: finalCategory,
                                   target: newHabitData.target.trim() || '30 mins/day'
                                 })
                               });
@@ -3076,7 +3111,7 @@ const handleDeleteHabitDb = async (id) => {
                                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                                     body: JSON.stringify({
                                       label: newHabitData.title.trim(),
-                                      category: newHabitData.category.trim(),
+                                      category: finalCategory,
                                       time: '',
                                       habit_id: data.id,
                                       date: todayKey(userProfile.timezone)
@@ -3090,7 +3125,8 @@ const handleDeleteHabitDb = async (id) => {
                                   console.error('Failed to create linked today item:', linkErr);
                                 }
 
-                                setNewHabitData({ title: '', category: 'Coding', target: '' });
+                                setNewHabitData({ title: '', category: '', target: '' });
+                                setCustomPillarInput('');
                                 setIsAddHabitModalOpen(false);
                               } else {
                                 console.error('Failed to create habit');
