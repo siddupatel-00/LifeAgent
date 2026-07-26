@@ -45,7 +45,8 @@ const SettingsPanel = ({
             morning_audit: userProfile.morningAudit !== undefined ? (userProfile.morningAudit ? 1 : 0) : (userProfile.morning_audit !== undefined ? (userProfile.morning_audit ? 1 : 0) : 1),
             morningAudit: userProfile.morningAudit !== undefined ? !!userProfile.morningAudit : (userProfile.morning_audit !== undefined ? userProfile.morning_audit !== 0 : true),
             smart_alerts: userProfile.smartAlerts !== undefined ? (userProfile.smartAlerts ? 1 : 0) : (userProfile.smart_alerts !== undefined ? (userProfile.smart_alerts ? 1 : 0) : 1),
-            smartAlerts: userProfile.smartAlerts !== undefined ? !!userProfile.smartAlerts : (userProfile.smart_alerts !== undefined ? userProfile.smart_alerts !== 0 : true)
+            smartAlerts: userProfile.smartAlerts !== undefined ? !!userProfile.smartAlerts : (userProfile.smart_alerts !== undefined ? userProfile.smart_alerts !== 0 : true),
+            auto_open_ai_sidechat: userProfile.auto_open_ai_sidechat !== false ? 1 : 0
           })
         });
         if (res.ok) {
@@ -294,6 +295,22 @@ const SettingsPanel = ({
                 onChange={(e) => {
                   const val = e.target.checked;
                   setUserProfile({ ...userProfile, smartAlerts: val, smart_alerts: val ? 1 : 0 });
+                }}
+                style={{ width: '22px', height: '22px', accentColor: 'var(--accent-blue)', cursor: 'pointer' }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: '1rem' }}>Auto-Open AI Side Chat</div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Automatically open the AI assistant panel when navigating to different tabs.</div>
+              </div>
+              <input 
+                type="checkbox" 
+                checked={userProfile.auto_open_ai_sidechat !== false} 
+                onChange={(e) => {
+                  const val = e.target.checked;
+                  setUserProfile({ ...userProfile, auto_open_ai_sidechat: val });
                 }}
                 style={{ width: '22px', height: '22px', accentColor: 'var(--accent-blue)', cursor: 'pointer' }}
               />

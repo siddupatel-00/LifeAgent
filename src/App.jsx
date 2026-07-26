@@ -205,6 +205,7 @@ export default function App() {
     aiTone: 'Analytical & Direct',
     morningAudit: true,
     smartAlerts: true,
+    auto_open_ai_sidechat: true,
     currency: '$',
     timezone: localTimeZone()
   });
@@ -441,7 +442,16 @@ export default function App() {
 
 
   // 7) Persistent Side Personal AI Assistant Panel state
-  const [isAiSidePanelOpen, setIsAiSidePanelOpen] = useState(true);
+  const [isAiSidePanelOpen, setIsAiSidePanelOpen] = useState(false);
+
+  // Auto-open AI side panel when switching tabs if setting is enabled
+  useEffect(() => {
+    if (userProfile.auto_open_ai_sidechat !== false) {
+      if (activeTab !== 'settings' && activeTab !== 'ai') {
+        setIsAiSidePanelOpen(true);
+      }
+    }
+  }, [activeTab, userProfile.auto_open_ai_sidechat]);
 
   // 8) Calendar state
   const [calendarEvents, setCalendarEvents] = useState([]);
@@ -2425,7 +2435,7 @@ const handleDeleteHabitDb = async (id) => {
             </div>
 
             {/* Timeframe Dropdown Selector (Hide when on Settings or AI Chat tab) */}
-            {(activeTab === 'today' || activeTab === 'finance') && (
+            {(activeTab === 'finance') && (
               <>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', position: 'relative' }} ref={timeDropdownRef}>
