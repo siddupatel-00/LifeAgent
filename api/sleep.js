@@ -39,7 +39,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'PUT') {
-      const { id, sleep_time, wake_time, quality, notes } = req.body;
+      const { id, sleep_time, wake_time, quality, notes, date } = req.body;
       let hours = req.body.hours !== undefined ? Number(req.body.hours) : undefined;
       let minutes = req.body.minutes !== undefined ? Number(req.body.minutes) : undefined;
 
@@ -55,10 +55,17 @@ export default async function handler(req, res) {
         minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
       }
       
-      await db.execute({
-        sql: 'UPDATE sleep_logs SET sleep_time = ?, wake_time = ?, hours = ?, minutes = ?, quality = ?, notes = ? WHERE id = ? AND user_id = ?',
-        args: [sTime, wTime, hours, minutes, quality, notes, id, userId]
-      });
+      if (date) {
+        await db.execute({
+          sql: 'UPDATE sleep_logs SET sleep_time = ?, wake_time = ?, hours = ?, minutes = ?, quality = ?, notes = ?, date = ? WHERE id = ? AND user_id = ?',
+          args: [sTime, wTime, hours, minutes, quality, notes, date, id, userId]
+        });
+      } else {
+        await db.execute({
+          sql: 'UPDATE sleep_logs SET sleep_time = ?, wake_time = ?, hours = ?, minutes = ?, quality = ?, notes = ? WHERE id = ? AND user_id = ?',
+          args: [sTime, wTime, hours, minutes, quality, notes, id, userId]
+        });
+      }
       return res.status(200).json({ success: true });
     }
 
