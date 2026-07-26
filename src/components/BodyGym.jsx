@@ -726,63 +726,64 @@ export default function BodyGym({ token, showToast }) {
             </div>
           )}
 
-          {/* Customize Workout Split Modal */}
-          {isEditSplitOpen && (
-            <div className="modal-overlay" onClick={() => setIsEditSplitOpen(false)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <div className="glass-card animate-entrance" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', padding: '32px', borderRadius: '24px', width: '90%', maxWidth: '440px', border: '1px solid var(--border-color)' }}>
-                <h3 style={{ fontSize: '1.3rem', fontWeight: 800, marginBottom: '8px' }}>Customize Workout Split</h3>
-                <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', marginBottom: '20px' }}>
-                  Your workouts will automatically rotate day by day in this order.
-                </p>
+        </div>
+      )}
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px', maxHeight: '220px', overflowY: 'auto' }}>
-                  {splitList.map((item, idx) => (
-                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)' }}>
-                      <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>Day {idx + 1}: {item}</span>
-                      {splitList.length > 1 && (
-                        <button 
-                          onClick={() => saveSplitList(splitList.filter((_, i) => i !== idx))}
-                          style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
-                          title="Remove Day"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      )}
-                    </div>
-                  ))}
+      {/* Customize Workout Split Modal */}
+      {isEditSplitOpen && (
+        <div className="modal-overlay" onClick={() => setIsEditSplitOpen(false)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="glass-card animate-entrance" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', padding: '32px', borderRadius: '24px', width: '90%', maxWidth: '440px', border: '1px solid var(--border-color)' }}>
+            <h3 style={{ fontSize: '1.3rem', fontWeight: 800, marginBottom: '8px' }}>Customize Workout Split</h3>
+            <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', marginBottom: '20px' }}>
+              Your workouts will automatically rotate day by day in this order.
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px', maxHeight: '220px', overflowY: 'auto' }}>
+              {splitList.map((item, idx) => (
+                <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)' }}>
+                  <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>Day {idx + 1}: {item}</span>
+                  {splitList.length > 1 && (
+                    <button 
+                      onClick={() => saveSplitList(splitList.filter((_, i) => i !== idx))}
+                      style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
+                      title="Remove Day"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
                 </div>
-
-                <form onSubmit={(e) => {
-                  e.preventDefault();
-                  if (newSplitName.trim()) {
-                    saveSplitList([...splitList, newSplitName.trim()]);
-                    setNewSplitName('');
-                  }
-                }} style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
-                  <input 
-                    type="text" 
-                    placeholder="Add new split day (e.g. Arms Day)..." 
-                    value={newSplitName} 
-                    onChange={(e) => setNewSplitName(e.target.value)} 
-                    className="glass-input" 
-                    style={{ flex: 1, padding: '10px 14px', fontSize: '0.88rem' }}
-                  />
-                  <button type="submit" className="blue-btn" style={{ padding: '10px 16px', fontSize: '0.85rem' }}>+ Add</button>
-                </form>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <button 
-                    type="button" 
-                    onClick={() => saveSplitList(['Push Day', 'Leg Day', 'Pull Day', 'Cardio / Running', 'Rest & Recovery'])}
-                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline' }}
-                  >
-                    Reset Default 5-Day Split
-                  </button>
-                  <button type="button" className="blue-btn" onClick={() => setIsEditSplitOpen(false)}>Done</button>
-                </div>
-              </div>
+              ))}
             </div>
-          )}
+
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              if (newSplitName.trim()) {
+                saveSplitList([...splitList, newSplitName.trim()]);
+                setNewSplitName('');
+              }
+            }} style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
+              <input 
+                type="text" 
+                placeholder="Add new split day (e.g. Arms Day)..." 
+                value={newSplitName} 
+                onChange={(e) => setNewSplitName(e.target.value)} 
+                className="glass-input" 
+                style={{ flex: 1, padding: '10px 14px', fontSize: '0.88rem' }}
+              />
+              <button type="submit" className="blue-btn" style={{ padding: '10px 16px', fontSize: '0.85rem' }}>+ Add</button>
+            </form>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <button 
+                type="button" 
+                onClick={() => saveSplitList(['Push Day', 'Leg Day', 'Pull Day', 'Cardio / Running', 'Rest & Recovery'])}
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline' }}
+              >
+                Reset Default 5-Day Split
+              </button>
+              <button type="button" className="blue-btn" onClick={() => setIsEditSplitOpen(false)}>Done</button>
+            </div>
+          </div>
         </div>
       )}
     </div>
