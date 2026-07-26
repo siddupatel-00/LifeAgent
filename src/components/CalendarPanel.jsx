@@ -450,7 +450,7 @@ export default function CalendarPanel({
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {groupedSections.filter(g => g.key !== 'past' || g.events.length > 0).map(group => (
+            {groupedSections.filter(g => g.key === 'today' || g.events.length > 0).map(group => (
               <div key={group.key}>
                 <div style={{
                   display: 'flex',
