@@ -391,6 +391,7 @@ export default function App() {
   const [habits, setHabits] = useState([]);
   const [isAddHabitModalOpen, setIsAddHabitModalOpen] = useState(false);
   const [newHabitData, setNewHabitData] = useState({ title: '', category: '', target: '' });
+  const [customPillarInput, setCustomPillarInput] = useState('');
   const [newTodayItemData, setNewTodayItemData] = useState({ title: '', category: 'Coding', time: '10:00 AM' });
   const [isAddTodayItemOpen, setIsAddTodayItemOpen] = useState(false);
   const [todayItems, setTodayItems] = useState([]);
