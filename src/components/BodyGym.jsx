@@ -1,11 +1,39 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Dumbbell, Target, Plus, Trash2, Activity, Flame, Clock } from 'lucide-react';
+import { Dumbbell, Target, Plus, Trash2, Activity, Flame, Clock, Check } from 'lucide-react';
 import { todayKey } from '../utils/date';
 
 export default function BodyGym({ token, showToast }) {
-  const [activeSubTab, setActiveSubTab] = useState('workouts'); // 'workouts', 'stats'
+  const [activeSubTab, setActiveSubTab] = useState('today'); // 'today', 'workouts', 'stats'
   const [workouts, setWorkouts] = useState([]);
   const [bodyStats, setBodyStats] = useState([]);
+
+  // Workout Split Rotation State
+  const [splitList, setSplitList] = useState(() => {
+    try {
+      const saved = localStorage.getItem('gym_workout_split');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return ['Push Day', 'Leg Day', 'Pull Day', 'Cardio / Running', 'Rest & Recovery'];
+  });
+  const [isEditSplitOpen, setIsEditSplitOpen] = useState(false);
+  const [newSplitName, setNewSplitName] = useState('');
+
+  const saveSplitList = (newList) => {
+    setSplitList(newList);
+    try {
+      localStorage.setItem('gym_workout_split', JSON.stringify(newList));
+    } catch (e) {}
+  };
+
+  // Auto-rotation based on calendar day index
+  const todayStr = todayKey();
+  const todayDateObj = new Date(todayStr);
+  const daysEpoch = Math.floor(todayDateObj.getTime() / (1000 * 60 * 60 * 24));
+  const todaySplitIdx = Math.abs(daysEpoch) % splitList.length;
+
+  const todayWorkoutTitle = splitList[todaySplitIdx];
+  const tomorrowWorkoutTitle = splitList[(todaySplitIdx + 1) % splitList.length];
+  const dayAfterWorkoutTitle = splitList[(todaySplitIdx + 2) % splitList.length];
 
   // Workout form state
   const [isAddWorkoutOpen, setIsAddWorkoutOpen] = useState(false);
@@ -54,12 +82,46 @@ export default function BodyGym({ token, showToast }) {
     fetchStats();
   }, [fetchWorkouts, fetchStats]);
 
-  // Derived metrics for body stats (computed early for modal handler reference)
+  // Derived metrics for body stats
   const latestStat = bodyStats.length > 0 ? bodyStats[0] : null;
   const currentProtein = Number(latestStat?.protein) || 0;
   const targetWeight = Number(latestStat?.target_weight) || 0;
   const targetProteinGoal = targetWeight > 0 ? Math.round(targetWeight * 2) : 150;
   const proteinPercentComplete = Math.min(100, Math.max(0, Math.round((currentProtein / targetProteinGoal) * 100)));
+
+  // Check if today's scheduled workout has been logged
+  const todayLoggedWorkout = workouts.find(w => w.date === todayStr);
+  const isTodayCompleted = !!todayLoggedWorkout;
+
+  const handleQuickCompleteToday = async () => {
+    if (isTodayCompleted) return;
+    try {
+      const payload = {
+        title: todayWorkoutTitle,
+        category: 'Strength',
+        duration_mins: 45,
+        calories: 320,
+        notes: `Completed scheduled ${todayWorkoutTitle}`,
+        date: todayStr
+      };
+      
+      const res = await fetch('/api/fitness?type=workouts', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+      
+      if (res.ok) {
+        showToast(`🎉 ${todayWorkoutTitle} Completed!`, 'success');
+        fetchWorkouts();
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const handleAddWorkout = async (e) => {
     e.preventDefault();
@@ -194,8 +256,19 @@ export default function BodyGym({ token, showToast }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      {/* Sub-tab navigation */}
+      {/* Sub-tab navigation: Today | Workouts | Body Stats */}
       <div style={{ display: 'flex', gap: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+        <button 
+          onClick={() => setActiveSubTab('today')}
+          style={{ 
+            background: 'none', border: 'none', padding: '8px 16px', cursor: 'pointer',
+            fontSize: '1rem', fontWeight: activeSubTab === 'today' ? 700 : 500,
+            color: activeSubTab === 'today' ? 'var(--accent-blue)' : 'var(--text-muted)',
+            borderBottom: activeSubTab === 'today' ? '2px solid var(--accent-blue)' : 'none'
+          }}
+        >
+          Today
+        </button>
         <button 
           onClick={() => setActiveSubTab('workouts')}
           style={{ 
@@ -219,6 +292,98 @@ export default function BodyGym({ token, showToast }) {
           Body Stats
         </button>
       </div>
+
+      {/* 1. TODAY SUB-TAB: Workout Split Cycle & Daily Summary */}
+      {activeSubTab === 'today' && (
+        <div className="animate-entrance" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          
+          {/* Main Hero Card: Today's Scheduled Workout */}
+          <div className="glass-card" style={{ padding: '28px', borderRadius: '22px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+              <div>
+                <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent-blue)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '6px' }}>
+                  🎯 Today's Scheduled Workout Split
+                </div>
+                <h2 style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '8px' }}>
+                  🏋️ {todayWorkoutTitle}
+                </h2>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', maxWidth: '520px', lineHeight: '1.5' }}>
+                  Your split automatically advances day by day ({splitList.join(' → ')}). Complete it or let it roll automatically to tomorrow!
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <button 
+                  onClick={() => setIsEditSplitOpen(true)}
+                  className="secondary-btn"
+                  style={{ padding: '8px 14px', fontSize: '0.82rem', borderRadius: '12px' }}
+                >
+                  ⚙️ Customize Split ({splitList.length} Days)
+                </button>
+
+                {isTodayCompleted ? (
+                  <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', padding: '10px 18px', borderRadius: '14px', fontWeight: 800, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Check size={18} /> Completed Today
+                  </span>
+                ) : (
+                  <button 
+                    onClick={handleQuickCompleteToday}
+                    className="blue-btn"
+                    style={{ padding: '10px 20px', fontSize: '0.9rem', fontWeight: 700, borderRadius: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <Check size={18} /> Mark Complete Today
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Rotation Timeline Preview */}
+            <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid var(--border-color)', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+              <div style={{ background: 'var(--accent-blue-dim)', border: '1px solid rgba(59, 130, 246, 0.3)', padding: '12px 16px', borderRadius: '14px' }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--accent-blue)', fontWeight: 800 }}>TODAY (DAY {todaySplitIdx + 1})</div>
+                <div style={{ fontSize: '0.95rem', fontWeight: 700, marginTop: '2px' }}>{todayWorkoutTitle}</div>
+              </div>
+              <div style={{ background: 'var(--bg-main)', border: '1px solid var(--border-color)', padding: '12px 16px', borderRadius: '14px', opacity: 0.85 }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700 }}>TOMORROW</div>
+                <div style={{ fontSize: '0.95rem', fontWeight: 700, marginTop: '2px' }}>{tomorrowWorkoutTitle}</div>
+              </div>
+              <div style={{ background: 'var(--bg-main)', border: '1px solid var(--border-color)', padding: '12px 16px', borderRadius: '14px', opacity: 0.65 }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700 }}>DAY AFTER</div>
+                <div style={{ fontSize: '0.95rem', fontWeight: 700, marginTop: '2px' }}>{dayAfterWorkoutTitle}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Grid: Quick Protein & Hydration Summary */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+            <div className="glass-card" style={{ padding: '20px', borderRadius: '18px', border: '1px solid var(--border-color)', background: 'var(--bg-card)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <div style={{ fontSize: '0.95rem', fontWeight: 700 }}>🥩 Daily Protein Tracker</div>
+                <button className="blue-btn" style={{ padding: '4px 10px', fontSize: '0.78rem' }} onClick={openStatsModal}>+ Log Protein</button>
+              </div>
+              <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--accent-blue)' }}>
+                {currentProtein}g <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>/ {targetProteinGoal}g goal</span>
+              </div>
+              <div style={{ width: '100%', height: '8px', background: 'var(--border-color)', borderRadius: '4px', marginTop: '10px', overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${proteinPercentComplete}%`, background: 'var(--accent-blue)', borderRadius: '4px' }} />
+              </div>
+            </div>
+
+            <div className="glass-card" style={{ padding: '20px', borderRadius: '18px', border: '1px solid var(--border-color)', background: 'var(--bg-card)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <div style={{ fontSize: '0.95rem', fontWeight: 700 }}>💧 Daily Hydration</div>
+                <button className="secondary-btn" style={{ padding: '4px 10px', fontSize: '0.78rem' }} onClick={openStatsModal}>Update</button>
+              </div>
+              <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#06b6d4' }}>
+                {Number(latestStat?.hydration || 0)} L <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>/ 3.5 L target</span>
+              </div>
+              <div style={{ width: '100%', height: '8px', background: 'var(--border-color)', borderRadius: '4px', marginTop: '10px', overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${Math.min(100, Math.round(((Number(latestStat?.hydration || 0)) / 3.5) * 100))}%`, background: '#06b6d4', borderRadius: '4px' }} />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {activeSubTab === 'workouts' && (
         <div className="animate-entrance">
@@ -525,6 +690,64 @@ export default function BodyGym({ token, showToast }) {
                     <button type="submit" className="blue-btn">Save Stats</button>
                   </div>
                 </form>
+              </div>
+            </div>
+          )}
+
+          {/* Customize Workout Split Modal */}
+          {isEditSplitOpen && (
+            <div className="modal-overlay" onClick={() => setIsEditSplitOpen(false)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div className="glass-card animate-entrance" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', padding: '32px', borderRadius: '24px', width: '90%', maxWidth: '440px', border: '1px solid var(--border-color)' }}>
+                <h3 style={{ fontSize: '1.3rem', fontWeight: 800, marginBottom: '8px' }}>Customize Workout Split</h3>
+                <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', marginBottom: '20px' }}>
+                  Your workouts will automatically rotate day by day in this order.
+                </p>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px', maxHeight: '220px', overflowY: 'auto' }}>
+                  {splitList.map((item, idx) => (
+                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)' }}>
+                      <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>Day {idx + 1}: {item}</span>
+                      {splitList.length > 1 && (
+                        <button 
+                          onClick={() => saveSplitList(splitList.filter((_, i) => i !== idx))}
+                          style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
+                          title="Remove Day"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  if (newSplitName.trim()) {
+                    saveSplitList([...splitList, newSplitName.trim()]);
+                    setNewSplitName('');
+                  }
+                }} style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
+                  <input 
+                    type="text" 
+                    placeholder="Add new split day (e.g. Arms Day)..." 
+                    value={newSplitName} 
+                    onChange={(e) => setNewSplitName(e.target.value)} 
+                    className="glass-input" 
+                    style={{ flex: 1, padding: '10px 14px', fontSize: '0.88rem' }}
+                  />
+                  <button type="submit" className="blue-btn" style={{ padding: '10px 16px', fontSize: '0.85rem' }}>+ Add</button>
+                </form>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <button 
+                    type="button" 
+                    onClick={() => saveSplitList(['Push Day', 'Leg Day', 'Pull Day', 'Cardio / Running', 'Rest & Recovery'])}
+                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline' }}
+                  >
+                    Reset Default 5-Day Split
+                  </button>
+                  <button type="button" className="blue-btn" onClick={() => setIsEditSplitOpen(false)}>Done</button>
+                </div>
               </div>
             </div>
           )}
