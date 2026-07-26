@@ -79,19 +79,38 @@ export default async function handler(req, res) {
       : (totalHabits > 0 ? Math.round((completedToday / totalHabits) * 100) : 0);
     const totalStreaks = habits.reduce((sum, h) => sum + (Number(h.streak) || 0), 0);
     const bestStreak = habits.reduce((max, h) => Math.max(max, Number(h.streak) || 0), 0);
-    const habitBreakdown = habits.map(h => ({
-      label: h.label || h.title || 'Habit',
-      category: h.category || 'General',
-      streak: Number(h.streak) || 0,
-      checkedToday: completedHabitIdsToday.has(h.id)
-    }));
+    const daysInRange = Math.max(1, Math.round((new Date(endDateStr) - new Date(startDateStr)) / (1000*60*60*24)) + 1);
+
+    const habitCheckCounts = {};
+    for (const item of rangeTodayItems) {
+      if (!habitCheckCounts[item.habit_id]) habitCheckCounts[item.habit_id] = { checked: 0, total: 0 };
+      habitCheckCounts[item.habit_id].total++;
+      if (item.checked) habitCheckCounts[item.habit_id].checked++;
+    }
+
+    const habitBreakdown = habits.map(h => {
+      const counts = habitCheckCounts[h.id] || { checked: 0, total: 0 };
+      const completionRate = counts.total > 0 ? Math.round((counts.checked / counts.total) * 100) : 0;
+      return {
+        label: h.label || h.title || 'Habit',
+        category: h.category || 'General',
+        streak: Number(h.streak) || 0,
+        checkedToday: completedHabitIdsToday.has(h.id),
+        completionRate,
+        daysChecked: counts.checked,
+        daysTotal: counts.total
+      };
+    });
 
     const categories = {};
     for (const h of habits) {
       const cat = h.category || 'General';
-      if (!categories[cat]) categories[cat] = { total: 0, done: 0 };
+      if (!categories[cat]) categories[cat] = { total: 0, done: 0, totalDays: 0, checkedDays: 0 };
       categories[cat].total++;
       if (completedHabitIdsToday.has(h.id)) categories[cat].done++;
+      const counts = habitCheckCounts[h.id] || { checked: 0, total: 0 };
+      categories[cat].totalDays += counts.total;
+      categories[cat].checkedDays += counts.checked;
     }
 
     habitsData = {

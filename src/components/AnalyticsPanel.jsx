@@ -186,7 +186,7 @@ export default function AnalyticsPanel({ token, showToast, currency = '$', timeR
             {habits.consistency || 0}%
           </div>
           <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 700 }}>
-            {habits.total > 0 ? `${habits.completedToday || 0} of ${habits.total} habits completed today` : 'No habits tracked yet'}
+            {habits.total > 0 ? <>{habits.completedToday || 0} of {habits.total || 0} done today &middot; {rangeLabel} consistency</> : 'No habits tracked yet'}
           </div>
         </div>
 
@@ -232,17 +232,17 @@ export default function AnalyticsPanel({ token, showToast, currency = '$', timeR
         {habits.breakdown && habits.breakdown.length > 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             {habits.breakdown.map((h, i) => {
-              const pct = h.checkedToday ? 100 : 0;
+              const pct = h.completionRate ?? (h.checkedToday ? 100 : 0);
               return (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                   <div style={{ width: '140px', fontSize: '0.85rem', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{h.label}</div>
                   <div style={{ flex: 1, height: '28px', background: 'var(--bg-main)', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color)', position: 'relative' }}>
-                    <div style={{ height: '100%', width: `${pct}%`, background: h.checkedToday ? 'linear-gradient(90deg, #3b82f6, #22c55e)' : 'transparent', borderRadius: '8px', transition: 'width 0.5s ease', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: '8px' }}>
-                      {h.checkedToday && <Check size={14} color="#fff" />}
+                    <div style={{ height: '100%', width: `${pct}%`, background: pct > 0 ? `linear-gradient(90deg, #3b82f6, ${pct >= 80 ? '#22c55e' : pct >= 50 ? '#f59e0b' : '#ef4444'})` : 'transparent', borderRadius: '8px', transition: 'width 0.5s ease', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: '8px' }}>
+                      {pct >= 80 && <Check size={14} color="#fff" />}
                     </div>
                   </div>
                   <div style={{ width: '80px', textAlign: 'right' }}>
-                    <span style={{ fontSize: '0.82rem', fontWeight: 800, color: h.checkedToday ? '#22c55e' : 'var(--text-muted)' }}>{h.checkedToday ? 'Done' : 'Pending'}</span>
+                    <span style={{ fontSize: '0.82rem', fontWeight: 800, color: pct >= 80 ? '#22c55e' : pct >= 50 ? '#f59e0b' : 'var(--text-muted)' }}>{pct}%</span>
                   </div>
                   <div style={{ width: '70px', textAlign: 'right' }}>
                     <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--accent-blue)' }}>🔥 {h.streak}</span>
@@ -310,12 +310,12 @@ export default function AnalyticsPanel({ token, showToast, currency = '$', timeR
           {Object.keys(habits.categories || {}).length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {Object.entries(habits.categories).map(([cat, catData]) => {
-                const pct = Math.round((catData.done / catData.total) * 100) || 0;
+                const pct = catData.totalDays > 0 ? Math.round((catData.checkedDays / catData.totalDays) * 100) : (catData.total > 0 ? Math.round((catData.done / catData.total) * 100) : 0);
                 return (
                   <div key={cat}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                       <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{cat}</span>
-                      <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent-blue)' }}>{catData.done}/{catData.total} ({pct}%)</span>
+                      <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent-blue)' }}>{catData.checkedDays ?? catData.done}/{catData.totalDays ?? catData.total} ({pct}%)</span>
                     </div>
                     <div style={{ height: '10px', background: 'var(--bg-main)', borderRadius: '5px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
                       <div style={{ height: '100%', width: `${pct}%`, background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)', borderRadius: '5px', transition: 'width 0.5s ease' }} />
