@@ -7,14 +7,10 @@ import { todayKey } from '../utils/date';
 export default function AnalyticsPanel({ token, showToast, currency = '$', timeRange = '7d', userProfile }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [range, setRange] = useState(timeRange || '7d');
+  const [range, setRange] = useState('7d');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
   const [retryCount, setRetryCount] = useState(0);
-
-  useEffect(() => {
-    if (timeRange) setRange(timeRange);
-  }, [timeRange]);
 
   const handleRangeChange = (newRange) => {
     setRange(newRange);
