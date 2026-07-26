@@ -1488,33 +1488,59 @@ const handleDeleteHabitDb = async (id) => {
                   <div className="animate-tab-matter" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
-                        <div style={{ fontSize: '1.1rem', fontWeight: 800 }}>Today's Timeline Schedule</div>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Autonomous AI time blocking and AI event synchronization</div>
+                        <div style={{ fontSize: '1.1rem', fontWeight: 800 }}>Upcoming Events & Reminders</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Plan, track, and never miss what matters</div>
                       </div>
                       <div className="pill-tag" style={{ background: 'var(--accent-blue-dim)', color: 'var(--accent-blue)', border: 'none', fontSize: '0.8rem' }}>
-                        ⌘ K Schedule Event
+                        + Add Event
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      {[
-                        { time: '08:00 AM', title: '☀️ Morning Hydration & Outdoor Sunlight Protocol', category: 'Wellness', duration: '30m', color: '#10b981' },
-                        { time: '09:30 AM', title: '💻 Deep Work: AI Operating System Core Architecture', category: 'Deep Work', duration: '2.5h', color: 'var(--accent-blue)' },
-                        { time: '01:00 PM', title: '🥗 High-Protein Lunch & Biometric Check-in', category: 'Nutrition', duration: '45m', color: '#f59e0b' },
-                        { time: '03:00 PM', title: '🏋️ Heavy Upper Body Gym Session (Bench PR)', category: 'Fitness', duration: '1.5h', color: '#ec4899' },
-                        { time: '06:00 PM', title: '📚 Evening Reading & AI Daily Audit Briefing', category: 'Mindset', duration: '1h', color: '#8b5cf6' },
-                      ].map((item, idx) => (
-                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '12px 16px', borderRadius: '14px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
-                          <div style={{ fontSize: '0.82rem', fontWeight: 700, fontFamily: 'monospace', color: 'var(--text-muted)', width: '80px', flexShrink: 0 }}>
-                            {item.time}
+                    {/* This Week */}
+                    <div>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent-blue)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📅 This Week</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {[
+                          { day: 'Mon, Jul 28', title: '🤖 Attend AI Strategy Meeting', tag: 'Work', color: 'var(--accent-blue)' },
+                          { day: 'Wed, Jul 30', title: '🚗 Car Servicing & Oil Change', tag: 'Personal', color: '#f59e0b' },
+                          { day: 'Fri, Aug 1', title: '💰 Freelance Invoice Due', tag: 'Finance', color: '#10b981' },
+                        ].map((item, idx) => (
+                          <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '12px 16px', borderRadius: '14px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+                            <div style={{ fontSize: '0.78rem', fontWeight: 700, fontFamily: 'monospace', color: 'var(--text-muted)', width: '90px', flexShrink: 0 }}>
+                              {item.day}
+                            </div>
+                            <div style={{ width: '4px', height: '32px', borderRadius: '2px', background: item.color, flexShrink: 0 }} />
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>{item.title}</div>
+                              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{item.tag}</div>
+                            </div>
                           </div>
-                          <div style={{ width: '4px', height: '32px', borderRadius: '2px', background: item.color, flexShrink: 0 }} />
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>{item.title}</div>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{item.category} • {item.duration}</div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Next Week */}
+                    <div>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#8b5cf6', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>🗓️ Next Week</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {[
+                          { day: 'Mon, Aug 4', title: '🏥 Annual Health Check-up', tag: 'Health', color: '#ec4899' },
+                          { day: 'Tue, Aug 5', title: '📦 Amazon Return Pickup', tag: 'Personal', color: '#f59e0b' },
+                          { day: 'Thu, Aug 7', title: '🎂 Mom\'s Birthday – Gift Shopping', tag: 'Family', color: '#ef4444' },
+                          { day: 'Sat, Aug 9', title: '✈️ Weekend Trip to Goa', tag: 'Travel', color: '#06b6d4' },
+                        ].map((item, idx) => (
+                          <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '12px 16px', borderRadius: '14px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+                            <div style={{ fontSize: '0.78rem', fontWeight: 700, fontFamily: 'monospace', color: 'var(--text-muted)', width: '90px', flexShrink: 0 }}>
+                              {item.day}
+                            </div>
+                            <div style={{ width: '4px', height: '32px', borderRadius: '2px', background: item.color, flexShrink: 0 }} />
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>{item.title}</div>
+                              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{item.tag}</div>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}

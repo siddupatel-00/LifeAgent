@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Dumbbell, Target, Plus, Trash2, Activity, Flame, Clock } from 'lucide-react';
 import { todayKey } from '../utils/date';
 
@@ -19,7 +19,8 @@ export default function BodyGym({ token, showToast }) {
     weight: '', target_weight: '', protein: '', hydration: ''
   });
 
-  const fetchWorkouts = async () => {
+  const fetchWorkouts = useCallback(async () => {
+    if (!token) return;
     try {
       const res = await fetch('/api/fitness?type=workouts', {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -31,9 +32,10 @@ export default function BodyGym({ token, showToast }) {
     } catch (e) {
       console.error(e);
     }
-  };
+  }, [token]);
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
+    if (!token) return;
     try {
       const res = await fetch('/api/fitness?type=body-stats', {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -45,14 +47,19 @@ export default function BodyGym({ token, showToast }) {
     } catch (e) {
       console.error(e);
     }
-  };
+  }, [token]);
 
   useEffect(() => {
-    if (token) {
-      fetchWorkouts();
-      fetchStats();
-    }
-  }, [token]);
+    fetchWorkouts();
+    fetchStats();
+  }, [fetchWorkouts, fetchStats]);
+
+  // Derived metrics for body stats (computed early for modal handler reference)
+  const latestStat = bodyStats.length > 0 ? bodyStats[0] : null;
+  const currentProtein = Number(latestStat?.protein) || 0;
+  const targetWeight = Number(latestStat?.target_weight) || 0;
+  const targetProteinGoal = targetWeight > 0 ? Math.round(targetWeight * 2) : 150;
+  const proteinPercentComplete = Math.min(100, Math.max(0, Math.round((currentProtein / targetProteinGoal) * 100)));
 
   const handleAddWorkout = async (e) => {
     e.preventDefault();
@@ -75,8 +82,7 @@ export default function BodyGym({ token, showToast }) {
       
       if (res.ok) {
         showToast('Workout Added', 'success');
-        setIsAddWorkoutOpen(false);
-        setWorkoutForm({ title: '', category: 'General', duration_mins: '', calories: '', notes: '' });
+        closeWorkoutModal();
         fetchWorkouts();
       }
     } catch (e) {
@@ -104,6 +110,26 @@ export default function BodyGym({ token, showToast }) {
     }
   };
 
+  const openStatsModal = () => {
+    setStatsForm({
+      weight: latestStat?.weight ?? '',
+      target_weight: latestStat?.target_weight ?? '',
+      protein: latestStat?.protein ?? '',
+      hydration: latestStat?.hydration ?? ''
+    });
+    setIsAddStatsOpen(true);
+  };
+
+  const closeStatsModal = () => {
+    setIsAddStatsOpen(false);
+    setStatsForm({ weight: '', target_weight: '', protein: '', hydration: '' });
+  };
+
+  const closeWorkoutModal = () => {
+    setIsAddWorkoutOpen(false);
+    setWorkoutForm({ title: '', category: 'General', duration_mins: '', calories: '', notes: '' });
+  };
+
   const handleAddStats = async (e) => {
     e.preventDefault();
     try {
@@ -126,8 +152,7 @@ export default function BodyGym({ token, showToast }) {
       
       if (res.ok) {
         showToast('Stats Updated', 'success');
-        setIsAddStatsOpen(false);
-        setStatsForm({ weight: '', target_weight: '', protein: '', hydration: '' });
+        closeStatsModal();
         fetchStats();
       }
     } catch (e) {
@@ -164,9 +189,6 @@ export default function BodyGym({ token, showToast }) {
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
   const thisWeekCount = workouts.filter(w => new Date(w.date) >= oneWeekAgo).length;
 
-  // Derived metrics for body stats
-  const latestStat = bodyStats.length > 0 ? bodyStats[0] : null;
-  
   const last7Days = bodyStats.slice(0, 7).reverse();
   const maxWeight = Math.max(...last7Days.map(s => s.weight || 0), 1);
 
@@ -274,7 +296,7 @@ export default function BodyGym({ token, showToast }) {
 
           {/* Add Workout Modal */}
           {isAddWorkoutOpen && (
-            <div className="modal-overlay" onClick={() => setIsAddWorkoutOpen(false)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="modal-overlay" onClick={closeWorkoutModal} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <div className="glass-card animate-entrance" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', padding: '32px', borderRadius: '24px', width: '90%', maxWidth: '400px', border: '1px solid var(--border-color)' }}>
                 <h3 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '20px' }}>Log Workout</h3>
                 <form onSubmit={handleAddWorkout}>
@@ -311,7 +333,7 @@ export default function BodyGym({ token, showToast }) {
                   </div>
 
                   <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-                    <button type="button" className="secondary-btn" onClick={() => setIsAddWorkoutOpen(false)}>Cancel</button>
+                    <button type="button" className="secondary-btn" onClick={closeWorkoutModal}>Cancel</button>
                     <button type="submit" className="blue-btn">Save Workout</button>
                   </div>
                 </form>
@@ -323,46 +345,88 @@ export default function BodyGym({ token, showToast }) {
 
       {activeSubTab === 'stats' && (
         <div className="animate-entrance">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
-            {/* Current Stats */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '24px' }}>
+            {/* Daily Protein Goal & Tracker Card */}
+            <div className="glass-card" style={{ padding: '24px', borderRadius: '18px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Target size={18} color="var(--accent-blue)" />
+                    <h3 style={{ fontSize: '1.15rem', fontWeight: 700 }}>Daily Protein Goal</h3>
+                  </div>
+                  <button 
+                    className="blue-btn" 
+                    style={{ padding: '6px 14px', fontSize: '0.82rem', fontWeight: 700 }}
+                    onClick={openStatsModal}
+                  >
+                    + Log Protein
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '12px' }}>
+                  <span style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--accent-blue)' }}>
+                    {currentProtein}g
+                  </span>
+                  <span style={{ fontSize: '0.95rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                    / {targetProteinGoal}g daily target
+                  </span>
+                </div>
+
+                {/* Progress Bar */}
+                <div style={{ width: '100%', height: '10px', background: 'var(--border-color)', borderRadius: '5px', overflow: 'hidden', marginBottom: '8px' }}>
+                  <div 
+                    style={{ 
+                      height: '100%', 
+                      width: `${proteinPercentComplete}%`,
+                      background: 'linear-gradient(90deg, var(--accent-blue), #10b981)',
+                      borderRadius: '5px',
+                      transition: 'width 0.4s ease'
+                    }} 
+                  />
+                </div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600, display: 'flex', justifyContent: 'space-between' }}>
+                  <span>{proteinPercentComplete}% complete</span>
+                  <span>{latestStat?.date ? `Updated: ${latestStat.date}` : 'No entry today'}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Current Body Stats Card */}
             <div className="glass-card" style={{ padding: '24px', borderRadius: '18px', border: '1px solid var(--border-color)', background: 'var(--bg-card)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 700 }}>Current Stats</h3>
-                <button className="blue-btn" style={{ padding: '6px 12px', fontSize: '0.85rem' }} onClick={() => setIsAddStatsOpen(true)}>Log Stats</button>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 700 }}>Current Body Metrics</h3>
+                <button className="secondary-btn" style={{ padding: '6px 12px', fontSize: '0.82rem' }} onClick={openStatsModal}>Edit All Stats</button>
               </div>
 
               {latestStat ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Weight</span>
-                    <span style={{ fontWeight: 800, fontSize: '1.2rem' }}>{latestStat.weight} kg</span>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                  <div style={{ background: 'var(--bg-main)', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Current Weight</span>
+                    <span style={{ fontWeight: 800, fontSize: '1.1rem' }}>{latestStat.weight} kg</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Target Weight</span>
-                    <span style={{ fontWeight: 800, fontSize: '1.2rem' }}>{latestStat.target_weight} kg</span>
+                  <div style={{ background: 'var(--bg-main)', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Target Weight</span>
+                    <span style={{ fontWeight: 800, fontSize: '1.1rem' }}>{latestStat.target_weight} kg</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Daily Protein</span>
-                    <span style={{ fontWeight: 800, fontSize: '1.2rem' }}>{latestStat.protein} g</span>
+                  <div style={{ background: 'var(--bg-main)', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Daily Protein</span>
+                    <span style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--accent-blue)' }}>{latestStat.protein} g</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Hydration</span>
-                    <span style={{ fontWeight: 800, fontSize: '1.2rem' }}>{latestStat.hydration} L</span>
-                  </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'right', marginTop: '8px' }}>
-                    Last updated: {latestStat.date}
+                  <div style={{ background: 'var(--bg-main)', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Daily Hydration</span>
+                    <span style={{ fontWeight: 800, fontSize: '1.1rem', color: '#06b6d4' }}>{latestStat.hydration} L</span>
                   </div>
                 </div>
               ) : (
-                <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '20px 0' }}>No stats recorded yet.</p>
+                <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '20px 0' }}>No stats recorded yet. Click "Edit All Stats" to start!</p>
               )}
             </div>
 
-            {/* Weight Trend */}
+            {/* Weight Trend Card */}
             <div className="glass-card" style={{ padding: '24px', borderRadius: '18px', border: '1px solid var(--border-color)', background: 'var(--bg-card)' }}>
-              <h3 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '20px' }}>Weight Trend (7 Days)</h3>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '16px' }}>Weight Trend (7 Days)</h3>
               {last7Days.length > 0 ? (
-                <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', height: '120px', marginTop: '30px' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', height: '110px', marginTop: '10px' }}>
                   {last7Days.map((day, idx) => (
                     <div key={idx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%' }}>
                       <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', width: '100%' }}>
@@ -375,7 +439,7 @@ export default function BodyGym({ token, showToast }) {
                           opacity: idx === last7Days.length - 1 ? 1 : 0.6
                         }} />
                       </div>
-                      <span style={{ fontSize: '0.7rem', marginTop: '8px', color: 'var(--text-muted)' }}>
+                      <span style={{ fontSize: '0.7rem', marginTop: '6px', color: 'var(--text-muted)' }}>
                         {day.date.split('-')[2]}
                       </span>
                     </div>
@@ -430,7 +494,7 @@ export default function BodyGym({ token, showToast }) {
 
           {/* Add Stats Modal */}
           {isAddStatsOpen && (
-            <div className="modal-overlay" onClick={() => setIsAddStatsOpen(false)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="modal-overlay" onClick={closeStatsModal} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <div className="glass-card animate-entrance" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', padding: '32px', borderRadius: '24px', width: '90%', maxWidth: '400px', border: '1px solid var(--border-color)' }}>
                 <h3 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '20px' }}>Log Body Stats</h3>
                 <form onSubmit={handleAddStats}>
@@ -457,7 +521,7 @@ export default function BodyGym({ token, showToast }) {
                   </div>
 
                   <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-                    <button type="button" className="secondary-btn" onClick={() => setIsAddStatsOpen(false)}>Cancel</button>
+                    <button type="button" className="secondary-btn" onClick={closeStatsModal}>Cancel</button>
                     <button type="submit" className="blue-btn">Save Stats</button>
                   </div>
                 </form>
@@ -469,3 +533,4 @@ export default function BodyGym({ token, showToast }) {
     </div>
   );
 }
+
