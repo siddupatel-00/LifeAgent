@@ -121,13 +121,14 @@ export default function App() {
   const todayConfigDropdownRef = useRef(null);
   const PREVIEW_TABS = ['Money', 'Sleep', 'Calendar', 'Notes', 'Gym', 'AI', 'Habits', 'Analytics'];
   const [pauseAutoCycleUntil, setPauseAutoCycleUntil] = useState(0);
+  const [isHoveringMockup, setIsHoveringMockup] = useState(false);
 
-  // Auto-cycle landing page preview tabs every 3.5 seconds (pauses 6.5s on click)
+  // Auto-cycle landing page preview tabs every 3.5 seconds (pauses 6.5s on click, or while hovering)
   useEffect(() => {
     if (currentPage !== 'landing') return;
 
     const interval = setInterval(() => {
-      if (Date.now() < pauseAutoCycleUntil) return;
+      if (Date.now() < pauseAutoCycleUntil || isHoveringMockup) return;
 
       setPreviewTab(prev => {
         const idx = PREVIEW_TABS.indexOf(prev);
@@ -137,7 +138,7 @@ export default function App() {
     }, 3500);
 
     return () => clearInterval(interval);
-  }, [currentPage, pauseAutoCycleUntil]);
+  }, [currentPage, pauseAutoCycleUntil, isHoveringMockup]);
 
   const tabRefs = useRef({});
   const [pillStyle, setPillStyle] = useState({ left: 0, width: 0, opacity: 0 });
@@ -222,7 +223,8 @@ export default function App() {
   // Password Reset State
   const [resetStep, setResetStep] = useState(1); // 1: request code, 2: enter code & new pass
   const [resetEmailOrHandle, setResetEmailOrHandle] = useState('');
-  const [resetCode, setResetCode] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showFinanceForm, setShowFinanceForm] = useState(false);
   const [resetNewPassword, setResetNewPassword] = useState('');
   const [resetSuccessMsg, setResetSuccessMsg] = useState('');
   const [devCodeNotice, setDevCodeNotice] = useState('');
@@ -245,7 +247,6 @@ export default function App() {
       setToken(data.token);
       setIsAuthenticated(true);
       if (data.user.ai_name) setAiName(data.user.ai_name);
-      if (data.user.theme) setThemeMode(data.user.theme);
       setAuthForm({ name: '', handle: '', email: '', password: '', phone: '' });
       navigate('dashboard', '/dashboard');
     } catch (err) {
@@ -393,11 +394,15 @@ export default function App() {
   // Habits state with exact daily tracking items: Gym, Study, Code, Reading
   const [habits, setHabits] = useState([]);
   const [isAddHabitModalOpen, setIsAddHabitModalOpen] = useState(false);
-  const [newHabitData, setNewHabitData] = useState({ title: '', category: '', target: '' });
+  const [isEditHabitModalOpen, setIsEditHabitModalOpen] = useState(false);
+  const [editingHabitData, setEditingHabitData] = useState(null);
+  const [newHabitData, setNewHabitData] = useState({ title: '', category: '', target: '', challengeMode: false, challengeDays: 30, durationMode: 'preset' });
   const [customPillarInput, setCustomPillarInput] = useState('');
   const [newTodayItemData, setNewTodayItemData] = useState({ title: '', category: 'Coding', time: '10:00 AM' });
   const [isAddTodayItemOpen, setIsAddTodayItemOpen] = useState(false);
   const [todayItems, setTodayItems] = useState([]);
+  const [habitCardViews, setHabitCardViews] = useState({}); // { habitId: 'progress' | 'heatmap' }
+  const [habitMenuOpen, setHabitMenuOpen] = useState(null); // habitId
 
   // 3) Finance state
   const [transactions, setTransactions] = useState([]);
@@ -492,7 +497,6 @@ export default function App() {
           setGroqApiKey(sData.groq_api_key || '');
           setAiProvider(sData.ai_provider || 'gemini');
           if (sData.ai_name) setAiName(sData.ai_name);
-          if (sData.theme) setThemeMode(sData.theme);
         }
       }
       const clientDate = todayKey(timezone);
@@ -507,6 +511,7 @@ export default function App() {
         const hData = await habitsRes.json();
         setHabits(hData.map(h => ({
           id: h.id, title: h.label, category: h.category, streak: h.streak, target: h.target || '',
+          challengeDays: h.challenge_days || 0, startDate: h.start_date || null,
           // A habit's completion belongs to its record for this calendar date.
           checkedToday: todayData.some(item => item.habit_id === h.id && !!item.checked),
           pausedUntil: h.paused_until || null
@@ -753,6 +758,28 @@ const handleDeleteHabitDb = async (id) => {
       root.setAttribute('data-theme', themeMode);
     }
   }, [themeMode]);
+
+  // Theme Color Sync
+  const [themeColor, setThemeColor] = useState(() => {
+    if (typeof window !== 'undefined') return localStorage.getItem('themeColor') || 'blue';
+    return 'blue';
+  });
+
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const newColor = localStorage.getItem('themeColor') || 'blue';
+      if (newColor !== themeColor) {
+        setThemeColor(newColor);
+        document.documentElement.setAttribute('data-color-theme', newColor);
+      }
+    };
+    
+    // Initial set
+    document.documentElement.setAttribute('data-color-theme', themeColor);
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [themeColor]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -1229,7 +1256,7 @@ const handleDeleteHabitDb = async (id) => {
               justifyContent: 'center',
               boxShadow: '0 0 20px rgba(59, 130, 246, 0.4)'
             }}>
-              <Sparkles size={22} color="#fff" />
+              <Sparkles size={22} color="var(--accent-text)" />
             </div>
             <div>
               <h1 style={{ fontSize: '1.35rem', fontWeight: 800, letterSpacing: '-0.5px' }}>
@@ -1240,6 +1267,23 @@ const handleDeleteHabitDb = async (id) => {
           </div>
 
           <div style={{ display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <select 
+              value={themeColor || 'blue'}
+              onChange={(e) => {
+                localStorage.setItem('themeColor', e.target.value);
+                document.documentElement.setAttribute('data-color-theme', e.target.value);
+                window.dispatchEvent(new Event('storage'));
+              }} 
+              style={{ padding: '7px 14px', borderRadius: '40px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.85rem', fontWeight: 600, outline: 'none', cursor: 'pointer' }}
+              title="Change Accent Color"
+            >
+              <option value="blue">🔵 Classic Blue</option>
+              <option value="professional">⚫ Black & White</option>
+              <option value="pink">🌸 Vibrant Pink</option>
+              <option value="neon">⚡ Neon Tech</option>
+              <option value="emerald">🌿 Emerald</option>
+            </select>
+
             <div className="theme-dropdown" ref={themeDropdownRef}>
               <button 
                 className="theme-toggle-btn"
@@ -1293,10 +1337,7 @@ const handleDeleteHabitDb = async (id) => {
         <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 16px' }}>
           {/* HERO SECTION */}
           <section className="animate-entrance scroll-swipe-up" style={{ textAlign: 'center', padding: '60px 0 36px' }}>
-            <div className="badge" style={{ padding: '6px 18px', borderRadius: '50px', marginBottom: '28px', border: '1px solid rgba(59, 130, 246, 0.3)', background: 'rgba(59, 130, 246, 0.08)', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-              <div className="pulse-dot-container"><div className="pulse-dot-ring"></div><div className="pulse-dot-core"></div></div>
-              <span style={{ fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.5px' }}>HEALTH PRECISION × YOUR PERSONAL AI ASSISTANT</span>
-            </div>
+
 
             <h1 style={{ fontSize: '3.8rem', fontWeight: 900, lineHeight: 1.08, letterSpacing: '-2px', marginBottom: '22px', color: 'var(--text-main)' }}>
               Your Personal AI Operating System
@@ -1317,23 +1358,14 @@ const handleDeleteHabitDb = async (id) => {
               </button>
             </div>
 
-            {/* PILL HIGHLIGHTS */}
-            <div className="scroll-swipe-up scroll-delay-2" style={{ display: 'flex', justifyContent: 'center', gap: '14px', alignItems: 'center', fontSize: '0.88rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
-              <span className="pill-tag" style={{ padding: '6px 16px', borderRadius: '30px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
-                <Check size={14} color="var(--accent-blue)" /> Health Precision Analytics
-              </span>
-              <span className="pill-tag" style={{ padding: '6px 16px', borderRadius: '30px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
-                <Check size={14} color="var(--accent-blue)" /> Unified Personal AI Engine
-              </span>
-              <span className="pill-tag" style={{ padding: '6px 16px', borderRadius: '30px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
-                <Check size={14} color="var(--accent-blue)" /> End-to-End Encrypted Data
-              </span>
-            </div>
+
           </section>
 
           {/* INTERACTIVE 80% PRODUCT PREVIEW SECTION */}
           <section className="scroll-swipe-up scroll-delay-1" style={{ margin: '30px auto 80px', width: '85%', minWidth: '320px', maxWidth: '1100px' }}>
             <div 
+              onMouseEnter={() => setIsHoveringMockup(true)}
+              onMouseLeave={() => setIsHoveringMockup(false)}
               className="glass-card scroll-swipe-up scroll-delay-2" 
               style={{ 
                 borderRadius: '24px', 
@@ -1359,7 +1391,7 @@ const handleDeleteHabitDb = async (id) => {
                   <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ffbd2e' }} />
                   <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#27c93f' }} />
                   <span style={{ marginLeft: '12px', fontSize: '0.78rem', color: 'var(--text-muted)', fontFamily: 'monospace', opacity: 0.85 }}>
-                    LifeAgent OS — Command Center
+                    LifeAgent-Dashboard
                   </span>
                 </div>
 
@@ -1408,7 +1440,7 @@ const handleDeleteHabitDb = async (id) => {
                           borderRadius: '10px',
                           fontSize: '0.85rem',
                           fontWeight: isActive ? 700 : 500,
-                          color: isActive ? '#ffffff' : 'var(--text-muted)',
+                          color: isActive ? 'var(--accent-text)' : 'var(--text-muted)',
                           background: 'transparent',
                           border: 'none',
                           cursor: 'pointer',
@@ -1739,13 +1771,13 @@ const handleDeleteHabitDb = async (id) => {
                     <div className="glass-card" style={{ padding: '18px', borderRadius: '16px', background: 'var(--bg-card)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
                         <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'var(--accent-blue)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <Bot size={16} color="#fff" />
+                          <Bot size={16} color="var(--accent-text)" />
                         </div>
                         <span style={{ fontSize: '0.9rem', fontWeight: 700 }}>Personal AI Assistant</span>
                       </div>
 
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        <div style={{ alignSelf: 'flex-end', background: 'var(--accent-blue)', color: '#fff', padding: '10px 14px', borderRadius: '14px 14px 2px 14px', fontSize: '0.88rem', maxWidth: '80%' }}>
+                        <div style={{ alignSelf: 'flex-end', background: 'var(--accent-blue)', color: 'var(--accent-text)', padding: '10px 14px', borderRadius: '14px 14px 2px 14px', fontSize: '0.88rem', maxWidth: '80%' }}>
                           Audit my day: check sleep recovery, push workout volume, and remaining daily budget.
                         </div>
                         <div style={{ alignSelf: 'flex-start', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', padding: '14px', borderRadius: '14px 14px 14px 2px', fontSize: '0.88rem', maxWidth: '90%', lineHeight: 1.6 }}>
@@ -1782,15 +1814,15 @@ const handleDeleteHabitDb = async (id) => {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       {[
                         { title: 'Morning Sunlight & Hydration Protocol', category: 'Health', streak: '28 day streak', checked: true },
-                        { title: '2 Hours Focused Coding / Deep Work', category: 'Productivity', streak: '44 day streak', checked: true },
-                        { title: 'Push Workout A / Muscle Hypertrophy', category: 'Fitness', streak: '12 day streak', checked: true },
+                        { title: 'Coding / DSA', category: 'Productivity', streak: '44 day streak', checked: true },
+                        { title: 'Push Day', category: 'Fitness', streak: '12 day streak', checked: true },
                         { title: 'No Junk Food & Hit 180g Protein Target', category: 'Nutrition', streak: '8 day streak', checked: true },
                         { title: 'Evening Book Reading (30 mins)', category: 'Mindset', streak: '15 day streak', checked: false },
                       ].map((habit, idx) => (
                         <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderRadius: '14px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                             <div style={{ width: '22px', height: '22px', borderRadius: '6px', background: habit.checked ? 'var(--accent-blue)' : 'transparent', border: habit.checked ? 'none' : '2px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              {habit.checked && <Check size={14} color="#fff" />}
+                              {habit.checked && <Check size={14} color="var(--accent-text)" />}
                             </div>
                             <div>
                               <div style={{ fontSize: '0.9rem', fontWeight: 600, textDecoration: habit.checked ? 'line-through' : 'none', opacity: habit.checked ? 0.85 : 1 }}>{habit.title}</div>
@@ -1958,7 +1990,7 @@ const handleDeleteHabitDb = async (id) => {
 
             <div className="glass-card" style={{ padding: '28px', background: 'var(--bg-main)', border: '1px solid var(--accent-blue)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', textAlign: 'left' }}>
-                <div style={{ background: 'var(--accent-blue)', color: '#fff', width: '50px', height: '50px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '1.4rem' }}>
+                <div style={{ background: 'var(--accent-blue)', color: 'var(--accent-text)', width: '50px', height: '50px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '1.4rem' }}>
                   𝕏
                 </div>
                 <div>
@@ -1997,7 +2029,7 @@ const handleDeleteHabitDb = async (id) => {
                 background: 'var(--accent-blue)', width: '48px', height: '48px', borderRadius: '14px',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px'
               }}>
-                <Lock size={24} color="#fff" />
+                <Lock size={24} color="var(--accent-text)" />
               </div>
               <h2 style={{ fontSize: '1.8rem', fontWeight: 800 }}>
                 {authMode === 'forgot' 
@@ -2196,7 +2228,7 @@ const handleDeleteHabitDb = async (id) => {
                 onClick={() => navigate('landing', '/')}
               >
                 <div style={{ background: 'var(--accent-blue)', width: '32px', height: '32px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Sparkles size={18} color="#fff" />
+                  <Sparkles size={18} color="var(--accent-text)" />
                 </div>
                 <h1 style={{ fontSize: '1.15rem', fontWeight: 900, letterSpacing: '-0.5px' }}>
                   life<span style={{ fontWeight: 400 }}>agent</span>
@@ -2218,15 +2250,15 @@ const handleDeleteHabitDb = async (id) => {
                   <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <Bot size={18} /> {aiName} Mode
                   </span>
-                  <span style={{ background: 'var(--accent-blue)', color: '#fff', fontSize: '0.65rem', fontWeight: 800, padding: '2px 6px', borderRadius: '20px' }}>NEW</span>
+                  <span style={{ background: 'var(--accent-blue)', color: 'var(--accent-text)', fontSize: '0.65rem', fontWeight: 800, padding: '2px 6px', borderRadius: '20px' }}>NEW</span>
                 </button>
 
                 <button 
                   onClick={() => setActiveTab('today')}
                   style={{ 
                     display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '12px', border: 'none',
-                    background: activeTab === 'today' ? 'var(--accent-blue)' : 'transparent',
-                    color: activeTab === 'today' ? '#ffffff' : 'var(--text-muted)',
+                    background: activeTab === 'today' ? 'rgba(59, 130, 246, 0.14)' : 'transparent',
+                    color: activeTab === 'today' ? '#3b82f6' : 'var(--text-muted)',
                     fontSize: '0.95rem', fontWeight: activeTab === 'today' ? 700 : 500, cursor: 'pointer', transition: 'all 0.2s', textAlign: 'left'
                   }}
                 >
@@ -2237,8 +2269,8 @@ const handleDeleteHabitDb = async (id) => {
                 onClick={() => setActiveTab('habits')}
                 style={{ 
                   display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '12px', border: 'none',
-                  background: activeTab === 'habits' ? 'var(--accent-blue)' : 'transparent',
-                  color: activeTab === 'habits' ? '#ffffff' : 'var(--text-muted)',
+                  background: activeTab === 'habits' ? 'rgba(59, 130, 246, 0.14)' : 'transparent',
+                  color: activeTab === 'habits' ? '#3b82f6' : 'var(--text-muted)',
                   fontSize: '0.95rem', fontWeight: activeTab === 'habits' ? 700 : 500, cursor: 'pointer', transition: 'all 0.2s', textAlign: 'left'
                 }}
               >
@@ -2251,7 +2283,7 @@ const handleDeleteHabitDb = async (id) => {
                     display: 'flex', alignItems: 'center', gap: '12px',
                     padding: '12px 14px', borderRadius: '12px', border: 'none',
                     background: activeTab === 'notes' ? 'rgba(59, 130, 246, 0.14)' : 'transparent',
-                    color: activeTab === 'notes' ? 'var(--accent-blue)' : 'var(--text-muted)',
+                    color: activeTab === 'notes' ? '#3b82f6' : 'var(--text-muted)',
                     fontWeight: activeTab === 'notes' ? 700 : 500, cursor: 'pointer',
                     fontSize: '0.92rem', transition: 'all 0.2s', textAlign: 'left'
                   }}
@@ -2265,7 +2297,7 @@ const handleDeleteHabitDb = async (id) => {
                     display: 'flex', alignItems: 'center', gap: '12px',
                     padding: '12px 14px', borderRadius: '12px', border: 'none',
                     background: activeTab === 'calendar' ? 'rgba(59, 130, 246, 0.14)' : 'transparent',
-                    color: activeTab === 'calendar' ? 'var(--accent-blue)' : 'var(--text-muted)',
+                    color: activeTab === 'calendar' ? '#3b82f6' : 'var(--text-muted)',
                     fontWeight: activeTab === 'calendar' ? 700 : 500, cursor: 'pointer',
                     fontSize: '0.92rem', transition: 'all 0.2s', textAlign: 'left'
                   }}
@@ -2279,7 +2311,7 @@ const handleDeleteHabitDb = async (id) => {
                     display: 'flex', alignItems: 'center', gap: '12px',
                     padding: '12px 14px', borderRadius: '12px', border: 'none',
                     background: activeTab === 'finance' ? 'rgba(59, 130, 246, 0.14)' : 'transparent',
-                    color: activeTab === 'finance' ? 'var(--accent-blue)' : 'var(--text-muted)',
+                    color: activeTab === 'finance' ? '#3b82f6' : 'var(--text-muted)',
                     fontWeight: activeTab === 'finance' ? 700 : 500, cursor: 'pointer',
                     fontSize: '0.92rem', transition: 'all 0.2s', textAlign: 'left'
                   }}
@@ -2293,7 +2325,7 @@ const handleDeleteHabitDb = async (id) => {
                     display: 'flex', alignItems: 'center', gap: '12px',
                     padding: '12px 14px', borderRadius: '12px', border: 'none',
                     background: activeTab === 'body' ? 'rgba(59, 130, 246, 0.14)' : 'transparent',
-                    color: activeTab === 'body' ? 'var(--accent-blue)' : 'var(--text-muted)',
+                    color: activeTab === 'body' ? '#3b82f6' : 'var(--text-muted)',
                     fontWeight: activeTab === 'body' ? 700 : 500, cursor: 'pointer',
                     fontSize: '0.92rem', transition: 'all 0.2s', textAlign: 'left'
                   }}
@@ -2307,7 +2339,7 @@ const handleDeleteHabitDb = async (id) => {
                     display: 'flex', alignItems: 'center', gap: '12px',
                     padding: '12px 14px', borderRadius: '12px', border: 'none',
                     background: activeTab === 'sleep' ? 'rgba(59, 130, 246, 0.14)' : 'transparent',
-                    color: activeTab === 'sleep' ? 'var(--accent-blue)' : 'var(--text-muted)',
+                    color: activeTab === 'sleep' ? '#3b82f6' : 'var(--text-muted)',
                     fontWeight: activeTab === 'sleep' ? 700 : 500, cursor: 'pointer',
                     fontSize: '0.92rem', transition: 'all 0.2s', textAlign: 'left'
                   }}
@@ -2361,9 +2393,7 @@ const handleDeleteHabitDb = async (id) => {
                     <h2 style={{ fontSize: '1.9rem', fontWeight: 900, letterSpacing: '-0.5px' }}>
                       Hey {userProfile.handle ? `@${userProfile.handle.replace('@', '')}` : (userProfile.name ? userProfile.name.split(' ')[0] : 'User')} – welcome!
                     </h2>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '4px' }}>
-                      Unified workspace and real-time trackers for your daily performance.
-                    </p>
+
                   </>
                 ) : (
                   <h2 style={{ fontSize: '1.9rem', fontWeight: 900, letterSpacing: '-0.5px', color: 'var(--text-main)' }}>
@@ -2386,7 +2416,7 @@ const handleDeleteHabitDb = async (id) => {
                         display: 'flex', alignItems: 'center', gap: '8px',
                         padding: '8px 16px', borderRadius: '30px',
                         background: isAiSidePanelOpen ? 'var(--accent-blue)' : 'var(--bg-card)',
-                        color: isAiSidePanelOpen ? '#fff' : 'var(--text-main)',
+                        color: isAiSidePanelOpen ? 'var(--accent-text)' : 'var(--text-main)',
                         border: `1px solid ${isAiSidePanelOpen ? 'var(--accent-blue)' : 'var(--border-color)'}`,
                         fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.2s',
                         boxShadow: isAiSidePanelOpen ? '0 0 16px rgba(59,130,246,0.35)' : 'none'
@@ -2451,9 +2481,9 @@ const handleDeleteHabitDb = async (id) => {
 
             {/* Timeframe Dropdown Selector (Hide when on Settings or AI Chat tab) */}
             {(activeTab === 'finance') && (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', position: 'relative' }} ref={timeDropdownRef}>
-                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)' }}>Active Timeframe:</span>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)' }}>Timeframe:</span>
                   
                   <button
                     onClick={() => setIsTimeMenuOpen(!isTimeMenuOpen)}
@@ -2489,6 +2519,19 @@ const handleDeleteHabitDb = async (id) => {
                     </div>
                   )}
                 </div>
+                
+                <button 
+                  onClick={() => setShowFinanceForm(!showFinanceForm)} 
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '8px',
+                    padding: '10px 18px', borderRadius: '30px', border: '1px solid var(--border-color)',
+                    background: 'var(--bg-card)', color: 'var(--text-main)',
+                    fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.08)', transition: 'all 0.2s'
+                  }}
+                >
+                  {showFinanceForm ? 'View Charts' : '+ Record Entry'}
+                </button>
               </div>
             )}
 
@@ -2499,17 +2542,35 @@ const handleDeleteHabitDb = async (id) => {
               {activeTab === 'today' && (
                 <div className="animate-entrance">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px', gap: '16px' }}>
-                    <div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       <h3 style={{ fontSize: '1.55rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <Clock size={24} color="var(--accent-blue)" /> Today's Routine & Schedule
+                        <Clock size={24} color="var(--accent-blue)" /> Today's Works
                       </h3>
-                      <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: '4px' }}>Neat, minimalist 1-click progress tracking for your required daily pillars</p>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ width: '160px', height: '5px', background: 'var(--bg-card)', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                          <div style={{
+                            width: `${(todayItems.filter(i => i.checked).length / (todayItems.length || 1)) * 100}%`,
+                            height: '100%',
+                            background: 'var(--accent-blue)',
+                            boxShadow: '0 0 8px rgba(59,130,246,0.4)',
+                            transition: 'width 0.3s ease'
+                          }}></div>
+                        </div>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>
+                          {todayItems.filter(i => i.checked).length}/{todayItems.length} done
+                        </span>
+                      </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <button 
-                        className="blue-btn"
                         onClick={handleToggleAllToday}
-                        style={{ padding: '12px 20px', fontSize: '0.9rem', flexShrink: 0, whiteSpace: 'nowrap' }}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '8px',
+                          padding: '10px 18px', borderRadius: '30px', border: '1px solid var(--border-color)',
+                          background: 'var(--bg-card)', color: 'var(--text-main)',
+                          fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.08)', transition: 'all 0.2s', flexShrink: 0, whiteSpace: 'nowrap'
+                        }}
                       >
                         <Check size={18} /> Tick All Today
                       </button>
@@ -2562,7 +2623,7 @@ const handleDeleteHabitDb = async (id) => {
                                 }}
                                 style={{ cursor: 'pointer', accentColor: 'var(--accent-blue)', width: '16px', height: '16px' }}
                               />
-                              <span>🏋️ Scheduled Workout Card</span>
+                              <span>🏋️ Workout</span>
                             </label>
 
                             <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', borderRadius: '8px' }}>
@@ -2576,7 +2637,7 @@ const handleDeleteHabitDb = async (id) => {
                                 }}
                                 style={{ cursor: 'pointer', accentColor: 'var(--accent-blue)', width: '16px', height: '16px' }}
                               />
-                              <span>🥩 Daily Protein Goal Card</span>
+                              <span>🥩 Protein</span>
                             </label>
 
                             <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', borderRadius: '8px' }}>
@@ -2590,7 +2651,7 @@ const handleDeleteHabitDb = async (id) => {
                                 }}
                                 style={{ cursor: 'pointer', accentColor: 'var(--accent-blue)', width: '16px', height: '16px' }}
                               />
-                              <span>💧 Daily Hydration Card</span>
+                              <span>💧 Hydration</span>
                             </label>
                           </div>
                         )}
@@ -2598,24 +2659,6 @@ const handleDeleteHabitDb = async (id) => {
                     </div>
                   </div>
 
-                  {/* Clean Top Progress Bar */}
-                  <div style={{ background: 'var(--bg-main)', padding: '18px 24px', borderRadius: '16px', border: '1px solid var(--border-color)', marginBottom: '28px', display: 'flex', alignItems: 'center', gap: '20px' }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', fontWeight: 800, marginBottom: '8px' }}>
-                        <span>DAILY CHECKLIST PROGRESS</span>
-                        <span style={{ color: 'var(--accent-blue)' }}>{todayItems.filter(i => i.checked).length} of {todayItems.length} Routine Items Checked</span>
-                      </div>
-                      <div style={{ width: '100%', height: '10px', background: 'var(--bg-card)', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
-                        <div style={{
-                          width: `${(todayItems.filter(i => i.checked).length / (todayItems.length || 1)) * 100}%`,
-                          height: '100%',
-                          background: 'var(--accent-blue)',
-                          boxShadow: '0 0 12px rgba(59,130,246,0.4)',
-                          transition: 'width 0.3s ease'
-                        }}></div>
-                      </div>
-                    </div>
-                  </div>
 
                   {/* Dedicated 'Today Workout & Nutrition Summary' Section */}
                   {(todayWidgetsConfig.showWorkout || todayWidgetsConfig.showProtein || todayWidgetsConfig.showHydration) && (
@@ -2647,21 +2690,17 @@ const handleDeleteHabitDb = async (id) => {
                           return (
                             <div style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '14px' }}>
                               <div>
-                                <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--accent-blue)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>
-                                  🎯 Scheduled Workout Split
+
+                                <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  🏋️ {isDone ? (workouts.find(w => w.date === todayKeyStr)?.title || currentTitle) : currentTitle}
                                 </div>
-                                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                  🏋️ {currentTitle}
-                                </div>
-                                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                                  Cycle: {splitList.join(' → ')}
-                                </div>
+
                               </div>
 
                               <div>
                                 {isDone ? (
-                                  <div style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', padding: '10px 16px', borderRadius: '12px', fontWeight: 800, fontSize: '0.88rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                                    <Check size={18} /> Completed Today ✓
+                                  <div style={{ background: 'rgba(255,255,255,0.06)', color: 'var(--text-muted)', padding: '10px 16px', borderRadius: '12px', fontWeight: 700, fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', border: '1px solid var(--border-color)' }}>
+                                    <Check size={16} /> Completed Today
                                   </div>
                                 ) : (
                                   <button 
@@ -2715,16 +2754,26 @@ const handleDeleteHabitDb = async (id) => {
                               hydration: hydrationVal,
                               date: todayStr
                             };
+                            
+                            const isExistingToday = latestStat?.date === todayStr && latestStat?.id;
+                            if (isExistingToday) {
+                              payload.id = latestStat.id;
+                            }
+                            
                             try {
                               if (token) {
                                 const res = await fetch('/api/fitness?type=body-stats', {
-                                  method: 'POST',
+                                  method: isExistingToday ? 'PUT' : 'POST',
                                   headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                                   body: JSON.stringify(payload)
                                 });
                                 if (res.ok) {
-                                  const data = await res.json();
-                                  setBodyStats(prev => [data, ...(Array.isArray(prev) ? prev : [])]);
+                                  if (isExistingToday) {
+                                    setBodyStats(prev => prev.map(s => s.id === payload.id ? { ...s, protein: payload.protein } : s));
+                                  } else {
+                                    const data = await res.json();
+                                    setBodyStats(prev => [data, ...(Array.isArray(prev) ? prev : [])]);
+                                  }
                                   showToast('Protein updated!', 'success');
                                 }
                               } else {
@@ -2872,7 +2921,7 @@ const handleDeleteHabitDb = async (id) => {
                         <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', fontWeight: 600 }}>No routine items scheduled for today.</p>
                       </div>
                     ) : (
-                      todayItems.map(item => (
+                      [...todayItems].sort((a,b) => (a.checked === b.checked ? 0 : a.checked ? 1 : -1)).map(item => (
                         <div 
                           key={item.id} 
                         onClick={() => handleToggleTodayItem(item.id)}
@@ -2919,24 +2968,14 @@ const handleDeleteHabitDb = async (id) => {
                             handleToggleTodayItem(item.id);
                           }}
                           style={{
-                            padding: '12px 22px',
-                            borderRadius: '12px',
-                            border: `1px solid ${item.checked ? 'var(--accent-blue)' : 'var(--border-color)'}`,
-                            background: item.checked ? 'var(--accent-blue)' : 'var(--bg-card)',
-                            color: item.checked ? '#fff' : 'var(--text-main)',
-                            fontWeight: 700,
-                            fontSize: '0.9rem',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            transition: 'all 0.2s',
-                            flexShrink: 0,
-                            boxShadow: item.checked ? '0 0 16px rgba(59,130,246,0.35)' : 'none'
+                            display: 'flex', alignItems: 'center', gap: '8px',
+                            padding: '10px 18px', borderRadius: '30px', border: '1px solid var(--border-color)',
+                            background: 'var(--bg-card)', color: 'var(--text-main)',
+                            fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.08)', transition: 'all 0.2s', flexShrink: 0
                           }}
                         >
-                          <CheckCircle2 size={18} color={item.checked ? "#fff" : "var(--accent-blue)"} />
-                          {item.checked ? 'Checked Today ✓' : 'Tick Today Progress'}
+                          {item.checked ? 'Done' : 'Pending'}
                         </button>
                       </div>
                     ))
@@ -2955,15 +2994,15 @@ const handleDeleteHabitDb = async (id) => {
                   <div style={{ background: 'var(--bg-main)', borderRadius: '20px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
                     <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-card)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--accent-blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: '1.1rem', boxShadow: '0 0 16px rgba(59,130,246,0.4)' }}>
+                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--accent-blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-text)', fontWeight: 800, fontSize: '1.1rem', boxShadow: '0 0 16px rgba(59,130,246,0.4)' }}>
                           <Bot size={22} />
                         </div>
                         <div>
                           <h4 style={{ fontSize: '1.05rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>{aiName} <span style={{ width: '8px', height: '8px', background: '#22c55e', borderRadius: '50%' }}></span></h4>
-                          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Full Real-Time Account Access & Alarm Engine Active</span>
+
                         </div>
                       </div>
-                      <span className="pill-tag" style={{ background: 'var(--accent-blue-dim)', color: 'var(--accent-blue)', borderColor: 'var(--accent-blue)' }}>● Real-Time Database Sync</span>
+
                     </div>
 
                     <div ref={mainAiChatScrollRef} style={{ flex: 1, padding: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '18px' }}>
@@ -2972,7 +3011,7 @@ const handleDeleteHabitDb = async (id) => {
                           <div style={{
                             maxWidth: '85%', padding: '16px 20px', borderRadius: '18px',
                             background: msg.sender === 'user' ? 'var(--accent-blue)' : 'var(--bg-card)',
-                            color: msg.sender === 'user' ? '#fff' : 'var(--text-main)',
+                            color: msg.sender === 'user' ? 'var(--accent-text)' : 'var(--text-main)',
                             border: msg.sender === 'user' ? 'none' : '1px solid var(--border-color)',
                             boxShadow: '0 4px 12px rgba(0,0,0,0.05)', fontSize: '0.93rem', lineHeight: 1.6, whiteSpace: 'pre-line'
                           }}>
@@ -2991,7 +3030,13 @@ const handleDeleteHabitDb = async (id) => {
                         onChange={(e) => setInputMessage(e.target.value)}
                         style={{ flex: 1, padding: '14px 18px', borderRadius: '14px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', outline: 'none', fontSize: '0.95rem' }}
                       />
-                      <button type="submit" className="blue-btn" style={{ padding: '0 24px' }}>
+                      <button type="submit" style={{
+                        display: 'flex', alignItems: 'center', gap: '8px',
+                        padding: '10px 24px', borderRadius: '30px', border: '1px solid var(--border-color)',
+                        background: 'var(--bg-card)', color: 'var(--text-main)',
+                        fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.08)', transition: 'all 0.2s'
+                      }}>
                         <Send size={18} /> Send
                       </button>
                     </form>
@@ -3007,15 +3052,20 @@ const handleDeleteHabitDb = async (id) => {
                       <h3 style={{ fontSize: '1.5rem', fontWeight: 800 }}>Daily Works • Daily Mastery</h3>
                       <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: '4px' }}>Daily tracking and real-time AI streak curves</p>
                     </div>
-                    <button 
-                      className="blue-btn" 
-                      onClick={() => {
-                        setIsAddHabitModalOpen(!isAddHabitModalOpen);
-                      }}
-                      style={{ padding: '12px 22px', fontSize: '0.92rem' }}
-                    >
-                      <Plus size={18} /> {isAddHabitModalOpen ? 'Close Form' : 'Add Pillar / Daily Item'}
-                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '0.9rem', color: 'var(--text-main)', background: 'var(--bg-card)', padding: '10px 18px', borderRadius: '14px', border: '1px solid var(--border-color)', fontWeight: 700, letterSpacing: '0.3px', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
+                        Today : {habits.filter(h => h.checkedToday).length}/{habits.length}
+                      </span>
+                      <button 
+                        className="blue-btn" 
+                        onClick={() => {
+                          setIsAddHabitModalOpen(!isAddHabitModalOpen);
+                        }}
+                        style={{ padding: '12px 22px', fontSize: '0.92rem' }}
+                      >
+                        <Plus size={18} /> {isAddHabitModalOpen ? 'Close Form' : 'Add Habit / Daily Item'}
+                      </button>
+                    </div>
                   </div>
 
                   {/* INLINE ADD NEW PILLAR / DAILY ITEM FORM */}
@@ -3077,11 +3127,12 @@ const handleDeleteHabitDb = async (id) => {
                               }}
                             >
                               <option value="" disabled hidden>Select Category...</option>
-                              <option value="Coding">Coding Pillar</option>
-                              <option value="Study">Study Pillar</option>
+                              <option value="Coding">Coding Habit</option>
+                              <option value="Study">Study Habit</option>
                               <option value="Reading">Reading</option>
-                              <option value="Body & Gym">Body & Gym</option>
-                              <option value="Money">Money Pillar</option>
+                              <option value="Body & Gym">Fitness & Health</option>
+                              <option value="Diet & Nutrition">Diet & Nutrition</option>
+                              <option value="Money">Money Habit</option>
                               <option value="Deep Focus">Deep Focus</option>
                               <option value="Other">+ Enter Custom Category...</option>
                             </select>
@@ -3092,13 +3143,67 @@ const handleDeleteHabitDb = async (id) => {
                           <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Daily Goal / Target</label>
                           <input 
                             type="text" 
-                            placeholder="Enter daily goal..."
+                            placeholder="e.g. 30 mins, 5 pages"
                             value={newHabitData.target}
                             onChange={(e) => setNewHabitData({ ...newHabitData, target: e.target.value })}
                             style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.92rem', fontWeight: 600, outline: 'none' }}
                           />
                         </div>
+                      </div>
 
+                      {/* CHALLENGE MODE OPTIONS */}
+                      <div style={{ marginTop: '16px', display: 'flex', alignItems: 'center', gap: '16px', background: 'var(--bg-card)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                          <input 
+                            type="checkbox" 
+                            checked={newHabitData.challengeMode}
+                            onChange={(e) => setNewHabitData({ ...newHabitData, challengeMode: e.target.checked })}
+                            style={{ width: '18px', height: '18px', accentColor: 'var(--accent-blue)' }}
+                          />
+                          Make this a time-limited challenge
+                        </label>
+
+                        {newHabitData.challengeMode && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>Duration:</span>
+                            <select
+                              value={newHabitData.durationMode === 'custom' ? 'custom' : newHabitData.challengeDays}
+                              onChange={(e) => {
+                                if (e.target.value === 'custom') {
+                                  setNewHabitData({ ...newHabitData, durationMode: 'custom', challengeDays: '' });
+                                } else {
+                                  setNewHabitData({ ...newHabitData, durationMode: 'preset', challengeDays: Number(e.target.value) });
+                                }
+                              }}
+                              style={{ padding: '6px 12px', borderRadius: '8px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.85rem', fontWeight: 700, outline: 'none', cursor: 'pointer' }}
+                            >
+                              <option value={7}>7 Days</option>
+                              <option value={14}>14 Days</option>
+                              <option value={21}>21 Days</option>
+                              <option value={30}>30 Days</option>
+                              <option value={60}>60 Days</option>
+                              <option value={90}>90 Days</option>
+                              <option value="custom">Custom...</option>
+                            </select>
+
+                            {newHabitData.durationMode === 'custom' && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  placeholder="e.g. 100"
+                                  value={newHabitData.challengeDays}
+                                  onChange={(e) => setNewHabitData({ ...newHabitData, challengeDays: e.target.value ? Number(e.target.value) : '' })}
+                                  style={{ width: '80px', padding: '6px 10px', borderRadius: '8px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.85rem', fontWeight: 700, outline: 'none' }}
+                                />
+                                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>Days</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
                         <button 
                           className="blue-btn"
                           onClick={async () => {
@@ -3118,7 +3223,8 @@ const handleDeleteHabitDb = async (id) => {
                                 body: JSON.stringify({
                                   label: newHabitData.title.trim(),
                                   category: finalCategory,
-                                  target: newHabitData.target.trim() || '30 mins/day'
+                                  target: newHabitData.target.trim() || '30 mins/day',
+                                  challenge_days: newHabitData.challengeMode ? newHabitData.challengeDays : 0
                                 })
                               });
                               if (res.ok) {
@@ -3155,7 +3261,7 @@ const handleDeleteHabitDb = async (id) => {
                                   console.error('Failed to create linked today item:', linkErr);
                                 }
 
-                                setNewHabitData({ title: '', category: '', target: '' });
+                                setNewHabitData({ title: '', category: '', target: '', challengeMode: false, challengeDays: 30, durationMode: 'preset' });
                                 setCustomPillarInput('');
                                 setIsAddHabitModalOpen(false);
                               } else {
@@ -3173,35 +3279,14 @@ const handleDeleteHabitDb = async (id) => {
                     </div>
                   )}
 
-                  {/* FULL-WIDTH TODAY INTENSITY GRAPH (Empty State) */}
-                  <div style={{ background: 'var(--bg-main)', padding: '24px 32px', borderRadius: '18px', border: '1px solid var(--border-color)', marginBottom: '32px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-                      <div>
-                        <span style={{ fontWeight: 800, fontSize: '0.82rem', color: 'var(--text-muted)', letterSpacing: '0.5px' }}>TODAY'S INTENSITY & PROGRESS CURVE</span>
-                        <div style={{ fontSize: '1.8rem', fontWeight: 900, marginTop: '2px' }}>
-                          {Math.round((habits.filter(h => h.checkedToday).length / (habits.length || 1)) * 100)}% Complete <span style={{ fontSize: '0.85rem', color: '#22c55e', fontWeight: 700 }}>● Live Sync</span>
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', background: 'var(--bg-card)', padding: '6px 14px', borderRadius: '12px', border: '1px solid var(--border-color)', fontWeight: 600 }}>
-                          {habits.filter(h => h.checkedToday).length} of {habits.length} Pillars Ticked
-                        </span>
-                      </div>
-                    </div>
 
-                    {habits.length === 0 && (
-                      <div style={{ textAlign: 'center', padding: '30px', background: 'var(--bg-card)', borderRadius: '14px', border: '1px dashed var(--border-color)' }}>
-                        <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', fontWeight: 600 }}>No daily works added yet. Add a pillar to see your progress curve.</p>
-                      </div>
-                    )}
-                  </div>
 
                   {/* GRID OF HABIT CARDS WITH ACTIVITY PILL HEATMAPS */}
                   <h4 style={{ fontSize: '1.15rem', fontWeight: 800, marginBottom: '16px' }}>Your Daily Items & 7-Day Activity Matrix</h4>
                   
                   {habits.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)' }}>
-                      No pillars exist yet.
+                      No habits exist yet.
                     </div>
                   ) : (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '18px' }}>
@@ -3220,112 +3305,336 @@ const handleDeleteHabitDb = async (id) => {
                       >
                         <div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                            <span 
-                              className="pill-tag" 
-                              onClick={(e) => {
-                                if (item.category === 'Body & Gym') {
-                                  e.stopPropagation();
-                                  setActiveTab('body');
-                                }
-                              }}
-                              style={{ 
-                                background: 'var(--accent-blue-dim)', 
-                                color: 'var(--accent-blue)', 
-                                borderColor: 'var(--accent-blue)', 
-                                fontWeight: 700,
-                                cursor: item.category === 'Body & Gym' ? 'pointer' : 'default'
-                              }}
-                            >
-                              {item.category} Pillar
-                            </span>
-                            <span style={{ fontSize: '0.85rem', color: '#f59e0b', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              <Flame size={16} /> {item.streak} Day Streak
-                            </span>
-                          </div>
-                        {/* Delete Habit Button */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setConfirmModal({
-                              isOpen: true,
-                              title: 'Delete Habit',
-                              message: 'Are you sure you want to delete this habit?',
-                              onConfirm: () => {
-                                handleDeleteHabitDb(item.id);
-                                setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null });
-                                showToast('Habit deleted', 'info');
-                              }
-                            });
-                          }}
-                          style={{
-                            position: 'absolute',
-                            top: '8px',
-                            right: '8px',
-                            background: 'transparent',
-                            border: 'none',
-                            cursor: 'pointer',
-                            color: 'var(--text-muted)',
-                          }}
-                          aria-label="Delete habit"
-                        >
-                          <Trash2 size={18} />
-                        </button>
 
-                          <h5 style={{ fontWeight: 800, fontSize: '1.15rem', marginBottom: '6px', textDecoration: item.checkedToday ? 'line-through' : 'none' }}>{item.title}</h5>
-                          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '16px' }}>Daily Goal: <strong style={{ color: 'var(--text-main)' }}>{item.target}</strong></p>
+                            {(() => {
+                              if (item.challengeDays > 0 && item.startDate) {
+                                const elapsed = Math.floor((new Date() - new Date(item.startDate)) / (1000 * 60 * 60 * 24));
+                                const daysStr = Math.min(Math.max(elapsed + 1, 1), item.challengeDays); // +1 because day 1 is the start date
+                                const isCompleted = daysStr >= item.challengeDays && item.checkedToday;
+                                return (
+                                  <span style={{ fontSize: '0.85rem', color: isCompleted ? '#22c55e' : 'var(--accent-blue)', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    {isCompleted ? '🎉 Completed!' : `Day ${daysStr} of ${item.challengeDays}`}
+                                  </span>
+                                );
+                              }
+                              return (
+                                <span style={{ fontSize: '0.85rem', color: '#f59e0b', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  <Flame size={16} /> {item.streak} Day Streak
+                                </span>
+                              );
+                            })()}
+                          </div>
+                        {/* 3-Dots Menu Button */}
+                        <div style={{ position: 'absolute', top: '8px', right: '8px', zIndex: 10 }}>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setHabitMenuOpen(habitMenuOpen === item.id ? null : item.id);
+                            }}
+                            style={{
+                              background: 'transparent',
+                              border: 'none',
+                              cursor: 'pointer',
+                              color: 'var(--text-muted)',
+                              padding: '4px'
+                            }}
+                            aria-label="Habit options"
+                          >
+                            <MoreVertical size={18} />
+                          </button>
+                          
+                          {habitMenuOpen === item.id && (
+                            <div className="dot-menu" style={{
+                              position: 'absolute', top: '100%', right: '0', background: 'var(--bg-card)', 
+                              border: '1px solid var(--border-color)', borderRadius: '8px',
+                              boxShadow: '0 4px 12px rgba(0,0,0,0.1)', overflow: 'hidden', minWidth: '160px',
+                              display: 'flex', flexDirection: 'column'
+                            }}>
+                              {item.challengeDays > 0 && (
+                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const currentView = habitCardViews[item.id] || 'progress';
+                                    setHabitCardViews({ ...habitCardViews, [item.id]: currentView === 'progress' ? 'heatmap' : 'progress' });
+                                    setHabitMenuOpen(null);
+                                  }}
+                                  style={{ padding: '10px 16px', background: 'transparent', border: 'none', borderBottom: '1px solid var(--border-color)', textAlign: 'left', cursor: 'pointer', color: 'var(--text-main)', fontSize: '0.85rem', fontWeight: 600 }}
+                                >
+                                  {(habitCardViews[item.id] || 'progress') === 'progress' ? 'Show Heatmap View' : 'Show Progress Bar'}
+                                </button>
+                              )}
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const predefinedCategories = ['Coding', 'Study', 'Reading', 'Body & Gym', 'Diet & Nutrition', 'Money', 'Deep Focus'];
+                                  const isCustom = !predefinedCategories.includes(item.category);
+                                  
+                                  setEditingHabitData({
+                                    id: item.id,
+                                    title: item.title,
+                                    category: isCustom ? 'Other' : item.category,
+                                    target: item.target,
+                                    challengeMode: item.challengeDays > 0,
+                                    challengeDays: item.challengeDays || 30,
+                                    durationMode: [7, 14, 21, 30, 60, 90].includes(item.challengeDays) ? 'preset' : 'custom'
+                                  });
+                                  if (isCustom) setCustomPillarInput(item.category);
+                                  setIsEditHabitModalOpen(true);
+                                  setHabitMenuOpen(null);
+                                }}
+                                style={{ padding: '10px 16px', background: 'transparent', border: 'none', borderBottom: '1px solid var(--border-color)', textAlign: 'left', cursor: 'pointer', color: 'var(--text-main)', fontSize: '0.85rem', fontWeight: 600 }}
+                              >
+                                Edit Habit
+                              </button>
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setConfirmModal({
+                                    isOpen: true,
+                                    title: 'Delete Habit',
+                                    message: 'Are you sure you want to delete this habit?',
+                                    onConfirm: () => {
+                                      handleDeleteHabitDb(item.id);
+                                      setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null });
+                                      showToast('Habit deleted', 'info');
+                                    }
+                                  });
+                                  setHabitMenuOpen(null);
+                                }}
+                                style={{ padding: '10px 16px', background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', color: 'var(--danger-color, #ef4444)', fontSize: '0.85rem', fontWeight: 600 }}
+                              >
+                                Delete Habit
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                          <h5 style={{ fontWeight: 800, fontSize: '1.15rem', marginBottom: '6px', textDecoration: item.checkedToday ? 'line-through' : 'none' }}>{item.category}</h5>
+                          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Daily Goal: <strong style={{ color: 'var(--text-main)' }}>{item.target}</strong></p>
+                          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '16px' }}>Habit Name: <strong style={{ color: 'var(--text-main)' }}>{item.title}</strong></p>
                         </div>
 
                         <div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', fontWeight: 700, marginBottom: '8px' }}>
-                            <span style={{ color: 'var(--text-muted)' }}>7-Day Activity Heatmap:</span>
-                            <span style={{ color: 'var(--accent-blue)' }}>{item.completionRate}% Consistency</span>
-                          </div>
+                          {(() => {
+                            const currentView = habitCardViews[item.id] || (item.challengeDays > 0 ? 'progress' : 'heatmap');
 
-                          {/* 7-Day Activity Pill Heatmap */}
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px', marginBottom: '16px' }}>
-                            {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((dayLetter, dIdx) => {
-                              const todayIdx = (new Date().getDay() + 6) % 7;
-                              const isCompleted = dIdx === todayIdx ? item.checkedToday : false;
+                            if (item.challengeDays > 0 && item.startDate && currentView === 'progress') {
+                              const elapsed = Math.floor((new Date() - new Date(item.startDate)) / (1000 * 60 * 60 * 24));
+                              const daysStr = Math.min(Math.max(elapsed + 1, 1), item.challengeDays);
+                              const percent = Math.round((daysStr / item.challengeDays) * 100);
+                              
                               return (
-                                <div key={dIdx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                                  <div style={{
-                                    width: '100%',
-                                    height: '24px',
-                                    borderRadius: '6px',
-                                    background: isCompleted ? 'var(--accent-blue)' : 'var(--bg-card)',
-                                    border: `1px solid ${isCompleted ? 'var(--accent-blue)' : 'var(--border-color)'}`,
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    transition: 'all 0.2s'
-                                  }}>
-                                    {isCompleted && <Check size={12} color="#fff" />}
+                                <div style={{ marginBottom: '16px' }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', fontWeight: 700, marginBottom: '8px' }}>
+                                    <span style={{ color: 'var(--text-muted)' }}>Challenge Progress:</span>
+                                    <span style={{ color: 'var(--accent-blue)' }}>{percent}% Done</span>
                                   </div>
-                                  <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 600 }}>{dayLetter}</span>
+                                  <div style={{ width: '100%', height: '12px', background: 'var(--border-color)', borderRadius: '6px', overflow: 'hidden' }}>
+                                    <div style={{ width: `${percent}%`, height: '100%', background: 'var(--accent-blue)', borderRadius: '6px', transition: 'width 0.3s ease' }}></div>
+                                  </div>
                                 </div>
                               );
-                            })}
-                          </div>
+                            }
 
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleToggleHabitItem(item.id);
-                            }}
-                            style={{
-                              width: '100%', padding: '12px', borderRadius: '12px',
-                              border: `1px solid ${item.checkedToday ? 'var(--accent-blue)' : 'var(--border-color)'}`,
-                              background: item.checkedToday ? 'var(--accent-blue)' : 'var(--bg-card)',
-                              color: item.checkedToday ? '#fff' : 'var(--text-main)',
-                              fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer', transition: 'all 0.2s',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                              boxShadow: item.checkedToday ? '0 0 16px rgba(59,130,246,0.35)' : 'none'
-                            }}
-                          >
-                            <CheckCircle2 size={18} color={item.checkedToday ? "#fff" : "var(--accent-blue)"} />
-                            {item.checkedToday ? "Completed Today ✓" : "Quick Check-In Today"}
-                          </button>
+                            return (
+                              <>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', fontWeight: 700, marginBottom: '8px' }}>
+                                  <span style={{ color: 'var(--text-muted)' }}>&nbsp;</span>
+                                  <span style={{ color: 'var(--accent-blue)' }}>{item.completionRate}% Consistency</span>
+                                </div>
+
+                                {/* 7-Day Activity Pill Heatmap */}
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px', marginBottom: '16px' }}>
+                                  {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((dayLetter, dIdx) => {
+                                    const todayIdx = (new Date().getDay() + 6) % 7;
+                                    const isCompleted = dIdx === todayIdx ? item.checkedToday : false;
+                                    return (
+                                      <div key={dIdx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                                        <div style={{
+                                          width: '100%',
+                                          height: '24px',
+                                          borderRadius: '6px',
+                                          background: isCompleted ? 'var(--accent-blue)' : 'var(--bg-card)',
+                                          border: `1px solid ${isCompleted ? 'var(--accent-blue)' : 'var(--border-color)'}`,
+                                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                          transition: 'all 0.2s'
+                                        }}>
+                                          {isCompleted && <Check size={12} color="var(--accent-text)" />}
+                                        </div>
+                                        <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 600 }}>{dayLetter}</span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </>
+                            );
+                          })()}
+
+                          {(() => {
+                            const isChallenge = item.challengeDays > 0;
+                            const elapsed = isChallenge && item.startDate ? Math.floor((new Date() - new Date(item.startDate)) / (1000 * 60 * 60 * 24)) : 0;
+                            const daysStr = Math.min(Math.max(elapsed + 1, 1), item.challengeDays);
+                            const isCompleted = isChallenge && daysStr >= item.challengeDays && item.checkedToday;
+
+                            if (isCompleted) {
+                              return (
+                                <div style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', padding: '12px', borderRadius: '12px', textAlign: 'center', fontWeight: 800, fontSize: '0.95rem' }}>
+                                  🎉 Challenge Completed!
+                                </div>
+                              );
+                            }
+
+                            return (
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleToggleHabitItem(item.id);
+                                }}
+                                style={{
+                                  width: '100%', padding: '12px', borderRadius: '12px', border: 'none',
+                                  background: item.checkedToday ? 'var(--accent-blue)' : 'var(--bg-card)',
+                                  color: item.checkedToday ? 'var(--accent-text)' : 'var(--text-main)',
+                                  fontWeight: 800, fontSize: '0.95rem', cursor: 'pointer', transition: 'all 0.2s',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+                                }}
+                              >
+                                {item.checkedToday ? <><CheckCircle2 size={18} /> Completed Today ✓</> : 'Quick Check-In Today'}
+                              </button>
+                            );
+                          })()}
                         </div>
                       </div>
                       ))}
+                    </div>
+                  )}
+
+                  {/* EDIT HABIT MODAL */}
+                  {isEditHabitModalOpen && editingHabitData && (
+                    <div className="blur-overlay" onClick={() => setIsEditHabitModalOpen(false)}>
+                      <div className="glass-card animate-entrance" onClick={e => e.stopPropagation()}
+                        style={{ padding: '32px', width: '90%', maxWidth: '400px', maxHeight: '90vh', overflowY: 'auto' }}>
+                        <h3 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '24px' }}>Edit Habit</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          <input 
+                            type="text" placeholder="Enter habit name..."
+                            value={editingHabitData.title}
+                            onChange={e => setEditingHabitData({...editingHabitData, title: e.target.value})}
+                            className="glass-input" 
+                          />
+                          <select 
+                            className="glass-input"
+                            value={editingHabitData.category}
+                            onChange={e => setEditingHabitData({...editingHabitData, category: e.target.value})}
+                          >
+                            <option value="Coding">Coding Habit</option>
+                            <option value="Study">Study Habit</option>
+                            <option value="Reading">Reading</option>
+                            <option value="Body & Gym">Fitness & Health</option>
+                            <option value="Diet & Nutrition">Diet & Nutrition</option>
+                            <option value="Money">Money Habit</option>
+                            <option value="Deep Focus">Deep Focus</option>
+                            <option value="Other">Custom Category</option>
+                          </select>
+                          {editingHabitData.category === 'Other' && (
+                            <input 
+                              type="text" placeholder="Enter custom category name..."
+                              value={customPillarInput}
+                              onChange={e => setCustomPillarInput(e.target.value)}
+                              className="glass-input" 
+                            />
+                          )}
+                          <input 
+                            type="text" placeholder="Daily Goal (e.g. 30 mins, 5 pages)"
+                            value={editingHabitData.target}
+                            onChange={e => setEditingHabitData({...editingHabitData, target: e.target.value})}
+                            className="glass-input" 
+                          />
+                          
+                          <div style={{ padding: '16px', background: 'var(--bg-main)', borderRadius: '12px', border: '1px solid var(--border-color)', marginTop: '8px' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer', marginBottom: editingHabitData.challengeMode ? '16px' : '0' }}>
+                              <input 
+                                type="checkbox"
+                                checked={editingHabitData.challengeMode}
+                                onChange={(e) => setEditingHabitData({ ...editingHabitData, challengeMode: e.target.checked })}
+                                style={{ width: '18px', height: '18px', accentColor: 'var(--accent-blue)' }}
+                              />
+                              Make this a time-limited challenge
+                            </label>
+
+                            {editingHabitData.challengeMode && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>Duration:</span>
+                                <select
+                                  value={editingHabitData.durationMode === 'custom' ? 'custom' : editingHabitData.challengeDays}
+                                  onChange={(e) => {
+                                    if (e.target.value === 'custom') {
+                                      setEditingHabitData({ ...editingHabitData, durationMode: 'custom', challengeDays: '' });
+                                    } else {
+                                      setEditingHabitData({ ...editingHabitData, durationMode: 'preset', challengeDays: Number(e.target.value) });
+                                    }
+                                  }}
+                                  style={{ padding: '6px 12px', borderRadius: '8px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.85rem', fontWeight: 700, outline: 'none', cursor: 'pointer' }}
+                                >
+                                  <option value={7}>7 Days</option>
+                                  <option value={14}>14 Days</option>
+                                  <option value={21}>21 Days</option>
+                                  <option value={30}>30 Days</option>
+                                  <option value={60}>60 Days</option>
+                                  <option value={90}>90 Days</option>
+                                  <option value="custom">Custom...</option>
+                                </select>
+
+                                {editingHabitData.durationMode === 'custom' && (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <input
+                                      type="number"
+                                      min="1"
+                                      placeholder="e.g. 100"
+                                      value={editingHabitData.challengeDays}
+                                      onChange={(e) => setEditingHabitData({ ...editingHabitData, challengeDays: e.target.value ? Number(e.target.value) : '' })}
+                                      style={{ width: '80px', padding: '6px 10px', borderRadius: '8px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.85rem', fontWeight: 700, outline: 'none' }}
+                                    />
+                                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>Days</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
+                            <button className="glass-button" style={{ flex: 1 }} onClick={() => setIsEditHabitModalOpen(false)}>Cancel</button>
+                            <button 
+                              className="blue-btn" style={{ flex: 1 }}
+                              onClick={async () => {
+                                if (!editingHabitData.title.trim()) return showToast('Title required', 'error');
+                                const finalCategory = editingHabitData.category === 'Other' ? (customPillarInput.trim() || 'Custom') : editingHabitData.category;
+                                
+                                try {
+                                  await fetch('/api/habits', {
+                                    method: 'PUT',
+                                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                    body: JSON.stringify({
+                                      id: editingHabitData.id,
+                                      label: editingHabitData.title,
+                                      category: finalCategory,
+                                      target: editingHabitData.target,
+                                      challenge_days: editingHabitData.challengeMode ? Number(editingHabitData.challengeDays) : 0
+                                    })
+                                  });
+                                  setIsEditHabitModalOpen(false);
+                                  showToast('Habit updated!', 'success');
+                                  fetchHabits(); // reload
+                                } catch (e) {
+                                  console.error(e);
+                                  showToast('Failed to update habit', 'error');
+                                }
+                              }}
+                            >
+                              Save
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -3359,18 +3668,17 @@ const handleDeleteHabitDb = async (id) => {
                       </p>
                     </div>
                     <button 
-                      className="blue-btn" 
                       onClick={async () => {
                         const baseTitle = getFormattedDateTitle();
                         const count = notesList.filter(n => n.title === baseTitle || n.title.startsWith(`${baseTitle} (`)).length;
                         const defaultTitle = count > 0 ? `${baseTitle} (${count + 1})` : baseTitle;
-                        const defaultContent = 'Type your daily reflection, thoughts, or goals here...';
+                        const defaultContent = '';
                         handleCreateNoteDb(defaultTitle, defaultContent, true, (newNote) => {
                           setNotesList([newNote, ...notesList]);
                           setActiveNoteId(newNote.id);
                         });
                       }}
-                      style={{ padding: '12px 22px', fontSize: '0.92rem' }}
+                      style={{ padding: '10px 20px', borderRadius: '30px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: 700, fontSize: '0.92rem', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s' }}
                     >
                       <Plus size={18} /> New Diary Page / Note
                     </button>
@@ -3388,7 +3696,7 @@ const handleDeleteHabitDb = async (id) => {
                           style={{
                             flex: 1, padding: '8px', borderRadius: '10px', border: 'none',
                             background: notesViewMode === 'active' ? 'var(--accent-blue)' : 'transparent',
-                            color: notesViewMode === 'active' ? '#fff' : 'var(--text-muted)',
+                            color: notesViewMode === 'active' ? 'var(--accent-text)' : 'var(--text-muted)',
                             fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', transition: 'all 0.2s'
                           }}
                         >
@@ -3425,7 +3733,7 @@ const handleDeleteHabitDb = async (id) => {
                                   padding: '14px 16px',
                                   borderRadius: '14px',
                                   background: activeNoteId === note.id ? 'var(--accent-blue)' : 'var(--bg-card)',
-                                  color: activeNoteId === note.id ? '#fff' : 'var(--text-main)',
+                                  color: activeNoteId === note.id ? 'var(--accent-text)' : 'var(--text-main)',
                                   border: `1px solid ${activeNoteId === note.id ? 'var(--accent-blue)' : 'var(--border-color)'}`,
                                   cursor: 'pointer',
                                   transition: 'all 0.2s',
@@ -3438,7 +3746,7 @@ const handleDeleteHabitDb = async (id) => {
                                   </span>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                     {note.shareWithAi && (
-                                      <span title="Shared with AI Agent" style={{ fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '4px', background: activeNoteId === note.id ? 'rgba(255,255,255,0.25)' : 'rgba(34,197,94,0.15)', color: activeNoteId === note.id ? '#fff' : '#22c55e', padding: '2px 8px', borderRadius: '10px', fontWeight: 700 }}>
+                                      <span title="Shared with AI Agent" style={{ fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '4px', background: activeNoteId === note.id ? 'rgba(255,255,255,0.25)' : 'rgba(34,197,94,0.15)', color: activeNoteId === note.id ? 'var(--accent-text)' : '#22c55e', padding: '2px 8px', borderRadius: '10px', fontWeight: 700 }}>
                                         🤖 AI Shared
                                       </span>
                                     )}
@@ -3452,7 +3760,7 @@ const handleDeleteHabitDb = async (id) => {
                                         if (activeNoteId === note.id && next.length > 0) setActiveNoteId(next[0].id);
                                         showToast('Note moved to Trash. Click 🗑️ Trash to restore anytime!');
                                       }}
-                                      style={{ background: 'transparent', border: 'none', color: activeNoteId === note.id ? '#fff' : '#ef4444', cursor: 'pointer', padding: '2px', opacity: 0.8 }}
+                                      style={{ background: 'transparent', border: 'none', color: activeNoteId === note.id ? 'var(--accent-text)' : '#ef4444', cursor: 'pointer', padding: '2px', opacity: 0.8 }}
                                       title="Move to Trash (Kept for 49 days)"
                                     >
                                       <Trash2 size={15} />
@@ -3737,6 +4045,8 @@ const handleDeleteHabitDb = async (id) => {
                   timeRange={timeRange}
                   userProfile={userProfile}
                   timezone={userProfile.timezone}
+                  showForm={showFinanceForm}
+                  setShowForm={setShowFinanceForm}
                 />
               )}
 
@@ -3827,7 +4137,7 @@ const handleDeleteHabitDb = async (id) => {
                       alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start',
                       maxWidth: '90%',
                       background: msg.sender === 'user' ? 'var(--accent-blue)' : 'var(--bg-card)',
-                      color: msg.sender === 'user' ? '#fff' : 'var(--text-main)',
+                      color: msg.sender === 'user' ? 'var(--accent-text)' : 'var(--text-main)',
                       padding: '14px 16px',
                       borderRadius: '16px',
                       border: msg.sender === 'ai' ? '1px solid var(--border-color)' : 'none',

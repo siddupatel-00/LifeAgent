@@ -178,6 +178,28 @@ const SettingsPanel = ({
               </select>
             </div>
 
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: '1rem' }}>Accent Color Theme</div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Personalize your dashboard's accent colors.</div>
+              </div>
+              <select 
+                value={typeof window !== 'undefined' ? (localStorage.getItem('themeColor') || 'blue') : 'blue'}
+                onChange={(e) => {
+                  localStorage.setItem('themeColor', e.target.value);
+                  document.documentElement.setAttribute('data-color-theme', e.target.value);
+                  window.dispatchEvent(new Event('storage'));
+                }} 
+                style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600, outline: 'none', appearance: 'none' }}
+              >
+                <option value="blue">Classic Blue</option>
+                <option value="professional">Black & White</option>
+                <option value="pink">Vibrant Pink</option>
+                <option value="neon">Neon Tech</option>
+                <option value="emerald">Emerald Green</option>
+              </select>
+            </div>
+
           </div>
         </div>
 
@@ -228,8 +250,14 @@ const SettingsPanel = ({
                 onChange={(e) => setChatResetTime(e.target.value)} 
                 style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600, outline: 'none', appearance: 'none' }}
               >
-                <option value="00:00">12:00 AM (Midnight)</option>
-                <option value="06:00">6:00 AM</option>
+                {[...Array(24)].map((_, i) => {
+                  const hour = i.toString().padStart(2, '0');
+                  return (
+                    <option key={hour} value={`${hour}:00`}>
+                      {i === 0 ? 'Midnight (12:00 AM)' : i < 12 ? `${i}:00 AM` : i === 12 ? 'Noon (12:00 PM)' : `${i - 12}:00 PM`}
+                    </option>
+                  );
+                })}
               </select>
             </div>
 
@@ -314,6 +342,40 @@ const SettingsPanel = ({
                 }}
                 style={{ width: '22px', height: '22px', accentColor: 'var(--accent-blue)', cursor: 'pointer' }}
               />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: '1rem' }}>Share Notes with AI Assistant</div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>When enabled, notes marked for sharing can be queried by your AI assistant. Off by default.</div>
+              </div>
+              <div
+                onClick={async () => {
+                  const newVal = !(userProfile.share_notes_with_ai || false);
+                  setUserProfile({ ...userProfile, share_notes_with_ai: newVal });
+                  try {
+                    await fetch('/api/settings', {
+                      method: 'PUT',
+                      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                      body: JSON.stringify({ share_notes_with_ai: newVal ? 1 : 0 })
+                    });
+                  } catch(e) {}
+                  showToast('Saved successfully', 'success');
+                }}
+                style={{
+                  width: '52px', height: '28px', borderRadius: '14px', cursor: 'pointer', flexShrink: 0,
+                  background: (userProfile.share_notes_with_ai) ? 'var(--accent-blue)' : 'var(--border-color)',
+                  position: 'relative', transition: 'background 0.25s'
+                }}
+              >
+                <div style={{
+                  position: 'absolute', top: '3px',
+                  left: (userProfile.share_notes_with_ai) ? '26px' : '3px',
+                  width: '22px', height: '22px', borderRadius: '50%',
+                  background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+                  transition: 'left 0.25s'
+                }} />
+              </div>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>

@@ -100,9 +100,10 @@ export default function NotesPanel({
             <button
               onClick={() => setNotesViewMode('active')}
               style={{
-                flex: 1, padding: '8px', borderRadius: '10px', border: 'none',
-                background: notesViewMode === 'active' ? 'var(--accent-blue)' : 'transparent',
-                color: notesViewMode === 'active' ? '#fff' : 'var(--text-muted)',
+                flex: 1, padding: '8px', borderRadius: '10px', border: '1px solid',
+                borderColor: notesViewMode === 'active' ? '#3b82f6' : 'transparent',
+                background: notesViewMode === 'active' ? 'rgba(59, 130, 246, 0.14)' : 'transparent',
+                color: notesViewMode === 'active' ? '#3b82f6' : 'var(--text-muted)',
                 fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', transition: 'all 0.2s'
               }}
             >
@@ -128,16 +129,16 @@ export default function NotesPanel({
                   No notes yet. Click + to add one.
                 </div>
               ) : (
-                notesList.map(note => (
+                [...notesList].sort((a, b) => new Date(b.updated_at || b.date || 0) - new Date(a.updated_at || a.date || 0)).map(note => (
                   <div
                     key={note.id}
                     onClick={() => setActiveNoteId(note.id)}
                     style={{
                       padding: '14px 16px',
                       borderRadius: '14px',
-                      background: activeNoteId === note.id ? 'var(--accent-blue)' : 'var(--bg-card)',
-                      color: activeNoteId === note.id ? '#fff' : 'var(--text-main)',
-                      border: `1px solid ${activeNoteId === note.id ? 'var(--accent-blue)' : 'var(--border-color)'}`,
+                      background: activeNoteId === note.id ? 'rgba(59, 130, 246, 0.14)' : 'var(--bg-main)',
+                      color: 'var(--text-main)',
+                      border: `1px solid ${activeNoteId === note.id ? '#3b82f6' : 'var(--border-color)'}`,
                       cursor: 'pointer',
                       transition: 'all 0.2s',
                       display: 'flex', flexDirection: 'column', gap: '6px'
@@ -149,7 +150,7 @@ export default function NotesPanel({
                       </span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         {note.shareWithAi && (
-                          <span title="Shared with AI Agent" style={{ fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '4px', background: activeNoteId === note.id ? 'rgba(255,255,255,0.25)' : 'rgba(34,197,94,0.15)', color: activeNoteId === note.id ? '#fff' : '#22c55e', padding: '2px 8px', borderRadius: '10px', fontWeight: 700 }}>
+                          <span title="Shared with AI Agent" style={{ fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '4px', background: activeNoteId === note.id ? 'rgba(59,130,246,0.2)' : 'rgba(34,197,94,0.15)', color: activeNoteId === note.id ? 'var(--accent-blue)' : '#22c55e', padding: '2px 8px', borderRadius: '10px', fontWeight: 700 }}>
                             🤖 AI Shared
                           </span>
                         )}
@@ -162,7 +163,7 @@ export default function NotesPanel({
                             setNotesList(next);
                             if (activeNoteId === note.id && next.length > 0) setActiveNoteId(next[0].id);
                           }}
-                          style={{ background: 'transparent', border: 'none', color: activeNoteId === note.id ? '#fff' : '#ef4444', cursor: 'pointer', padding: '2px', opacity: 0.8 }}
+                          style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '2px', opacity: 0.8 }}
                           title="Move to Trash (Kept for 49 days)"
                         >
                           <Trash2 size={15} />
@@ -289,25 +290,11 @@ export default function NotesPanel({
                       )}
                       <button
                         onClick={() => handleManualSave(currentNote)}
-                        className="blue-btn"
-                        style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+                        style={{ padding: '8px 18px', borderRadius: '30px', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-muted)', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}
                       >
                         Save Note
                       </button>
 
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', fontWeight: 700, color: currentNote.shareWithAi ? '#22c55e' : 'var(--text-muted)', cursor: 'pointer', background: currentNote.shareWithAi ? 'rgba(34, 197, 94, 0.12)' : 'var(--bg-card)', padding: '8px 16px', borderRadius: '20px', border: `1px solid ${currentNote.shareWithAi ? 'rgba(34, 197, 94, 0.4)' : 'var(--border-color)'}`, transition: 'all 0.2s' }}>
-                        <input
-                          type="checkbox"
-                          checked={currentNote.shareWithAi}
-                          onChange={(e) => {
-                            const nextState = e.target.checked;
-                            setNotesList(notesList.map(n => n.id === currentNote.id ? { ...n, shareWithAi: nextState } : n));
-                            handleUpdateNoteDb({ ...currentNote, shareWithAi: nextState });
-                          }}
-                          style={{ accentColor: '#22c55e', cursor: 'pointer', width: '16px', height: '16px' }}
-                        />
-                        <span>{currentNote.shareWithAi ? '🤖 Shared with Personal AI Assistant (Allowed)' : '🔒 Private Note (AI Blocked)'}</span>
-                      </label>
 
                       <button
                         onClick={() => {
