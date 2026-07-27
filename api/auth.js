@@ -58,6 +58,11 @@ export default async function handler(req, res) {
       }
 
       const user = userRes.rows[0];
+
+      // Safety: skip accounts with no email (blank/test rows)
+      if (!user.email || !EMAIL_REGEX.test(user.email.trim())) {
+        return res.status(404).json({ error: 'No valid email address found for this account. Please contact support.' });
+      }
       // Generate 6-digit OTP code
       const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = Date.now() + 15 * 60 * 1000; // 15 minutes
@@ -74,14 +79,17 @@ export default async function handler(req, res) {
       });
 
       // SECURITY: Never expose the reset code to the client, even in dev.
-      // If email fails, log it server-side only.
+      // If email fails, return an error so the user knows.
       if (!emailResult?.success) {
         console.error('[ForgotPassword] Email delivery failed for user:', user.id, emailResult?.error);
+        return res.status(500).json({
+          error: `We couldn't send the reset email. Please check that your email is correct or try again later. (Error: ${emailResult?.error || 'Email service unavailable'})`
+        });
       }
 
       return res.status(200).json({
         message: 'If an account with that email or username exists, a reset code has been sent to the registered email address.',
-        emailSent: Boolean(emailResult?.success)
+        emailSent: true
       });
     }
 
