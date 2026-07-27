@@ -4,7 +4,36 @@ import {
 } from 'lucide-react';
 import { todayKey } from '../utils/date';
 
-export default function AnalyticsPanel({ token, showToast, currency = '$', timeRange = '7d', userProfile }) {
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '20px', background: '#fee2e2', color: '#991b1b', borderRadius: '12px' }}>
+          <h3>Analytics Panel Crashed</h3>
+          <pre style={{ whiteSpace: 'pre-wrap', fontSize: '0.8rem' }}>{this.state.error.toString()}</pre>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+export default function AnalyticsPanel(props) {
+  return (
+    <ErrorBoundary>
+      <AnalyticsPanelInner {...props} />
+    </ErrorBoundary>
+  );
+}
+
+function AnalyticsPanelInner({ token, showToast, currency = '$', timeRange = '7d', userProfile }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [range, setRange] = useState('7d');
