@@ -106,6 +106,25 @@ function AnalyticsPanelInner({ token, showToast, currency = '$', timeRange = '7d
     };
   }, [token, range, customStart, customEnd, retryCount, userProfile?.timezone]);
 
+  useEffect(() => {
+    if (activeTab === 'logs' && token) {
+      setLoadingMetrics(true);
+      fetch('/api/analytics?type=logs', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then(data => {
+        setMetrics(data);
+        setLoadingMetrics(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoadingMetrics(false);
+      });
+    }
+  }, [activeTab, token]);
+
+
   const renderFilterButtons = () => {
     const ranges = [
       { label: '7 Days', value: '7d' },
@@ -205,24 +224,6 @@ function AnalyticsPanelInner({ token, showToast, currency = '$', timeRange = '7d
     : range === '30d' ? 'past 30 days'
     : range === '90d' ? 'past 90 days'
     : 'selected range';
-
-  useEffect(() => {
-    if (activeTab === 'logs' && token) {
-      setLoadingMetrics(true);
-      fetch('/api/analytics?type=logs', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
-      .then(res => res.json())
-      .then(data => {
-        setMetrics(data);
-        setLoadingMetrics(false);
-      })
-      .catch(err => {
-        console.error(err);
-        setLoadingMetrics(false);
-      });
-    }
-  }, [activeTab, token]);
 
   return (
     <div className="animate-entrance">
