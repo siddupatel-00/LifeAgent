@@ -70,14 +70,16 @@ export default async function handler(req, res) {
       await db.execute({
         sql: 'UPDATE users SET name = ?, email = ?, phone = ?, handle = ?, theme = ?, ai_name = ?, gemini_api_key = ?, groq_api_key = ?, ai_provider = ?, currency = ?, ai_tone = ?, morning_audit = ?, smart_alerts = ? WHERE id = ?',
         args: [
-          name !== undefined ? name : current.name,
-          email !== undefined ? email : current.email,
+          // For name/handle/email: only overwrite if explicitly provided AND non-empty
+          (name !== undefined && name !== '') ? name : current.name,
+          (email !== undefined && email !== '') ? email : current.email,
           phone !== undefined ? phone : current.phone,
-          handle !== undefined ? handle : current.handle,
+          (handle !== undefined && handle !== '') ? handle : current.handle,
           theme !== undefined ? theme : current.theme,
-          ai_name !== undefined ? ai_name : current.ai_name,
-          gemini_api_key !== undefined ? gemini_api_key : current.gemini_api_key,
-          groq_api_key !== undefined ? groq_api_key : current.groq_api_key,
+          (ai_name !== undefined && ai_name !== '') ? ai_name : (current.ai_name || 'AI'),
+          // API keys: only overwrite if explicitly a non-empty string
+          (gemini_api_key !== undefined && gemini_api_key !== '') ? gemini_api_key : current.gemini_api_key,
+          (groq_api_key !== undefined && groq_api_key !== '') ? groq_api_key : current.groq_api_key,
           ai_provider !== undefined ? ai_provider : current.ai_provider,
           currency !== undefined ? currency : current.currency,
           ai_tone !== undefined ? ai_tone : (current.ai_tone || 'Analytical & Direct'),
