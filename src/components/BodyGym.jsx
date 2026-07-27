@@ -829,7 +829,7 @@ export default function BodyGym({ token, showToast }) {
                         placeholder="Sets (e.g. 5x2)" 
                         id={`ex-sets-${idx}`}
                         className="glass-input" 
-                        style={{ width: '80px', padding: '4px 8px', fontSize: '0.75rem' }}
+                        style={{ width: '110px', padding: '4px 8px', fontSize: '0.75rem' }}
                       />
                       <button 
                         type="button" 
