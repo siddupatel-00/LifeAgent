@@ -115,7 +115,9 @@ export default function BodyGym({ token, showToast }) {
 
   // Derived metrics for body stats
   const latestStat = bodyStats.length > 0 ? bodyStats[0] : null;
-  const currentProtein = Number(latestStat?.protein) || 0;
+  const todayStat = bodyStats.find(s => s.date === todayStr) || null;
+  
+  const currentProtein = Number(todayStat?.protein) || 0;
   const targetWeight = Number(latestStat?.target_weight) || 0;
   const targetProteinGoal = targetWeight > 0 ? Math.round(targetWeight * 2) : 150;
   const proteinPercentComplete = Math.min(100, Math.max(0, Math.round((currentProtein / targetProteinGoal) * 100)));
@@ -222,10 +224,10 @@ export default function BodyGym({ token, showToast }) {
 
   const openStatsModal = () => {
     setStatsForm({
-      weight: latestStat?.weight ?? '',
-      target_weight: latestStat?.target_weight ?? '',
-      protein: latestStat?.protein ?? '',
-      hydration: latestStat?.hydration ?? ''
+      weight: todayStat?.weight ?? latestStat?.weight ?? '',
+      target_weight: todayStat?.target_weight ?? latestStat?.target_weight ?? '',
+      protein: todayStat?.protein ?? '',
+      hydration: todayStat?.hydration ?? ''
     });
     setIsAddStatsOpen(true);
   };
@@ -413,10 +415,10 @@ export default function BodyGym({ token, showToast }) {
                 <div style={{ fontSize: '0.95rem', fontWeight: 700 }}>💧 Daily Hydration</div>
               </div>
               <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#06b6d4' }}>
-                {Number(latestStat?.hydration || 0)} L <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>/ 3.5 L target</span>
+                {Number(todayStat?.hydration || 0)} L <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>/ 3.5 L target</span>
               </div>
               <div style={{ width: '100%', height: '8px', background: 'var(--border-color)', borderRadius: '4px', marginTop: '10px', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${Math.min(100, Math.round(((Number(latestStat?.hydration || 0)) / 3.5) * 100))}%`, background: '#06b6d4', borderRadius: '4px' }} />
+                <div style={{ height: '100%', width: `${Math.min(100, Math.round(((Number(todayStat?.hydration || 0)) / 3.5) * 100))}%`, background: '#06b6d4', borderRadius: '4px' }} />
               </div>
             </div>
           </div>
