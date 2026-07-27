@@ -11,9 +11,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@capacitor/android": "^8.4.2",
-    "@capacitor/cli": "^8.4.2",
-    "@capacitor/core": "^8.4.2",
     "@google/generative-ai": "^0.24.1",
     "@libsql/client": "^0.17.4",
     "bcryptjs": "^3.0.3",
