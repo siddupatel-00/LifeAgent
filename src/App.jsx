@@ -106,7 +106,7 @@ export default function App() {
   // Dashboard state & Global Timeframe Filter
   const [activeTab, setActiveTab] = useState('ai'); // 'ai', 'habits', 'finance', 'body', 'sleep', 'analytics', 'settings'
   const [previewTab, setPreviewTab] = useState('Money'); // 'Money', 'Sleep', 'Calendar', 'Notes', 'Gym', 'Analytics', 'AI', 'Habits'
-  const [timeRange, setTimeRange] = useState('today'); // 'today', '3d', '7d', '14d', '25d', '30d', '1m', '3m', '6m', '12m', 'lifetime'
+  const [timeRange, setTimeRange] = useState(() => localStorage.getItem('active_timeframe') || '1m'); // 'today', '3d', '7d', '14d', '25d', '30d', '1m', '3m', '6m', '12m', 'lifetime'
   const [isTimeMenuOpen, setIsTimeMenuOpen] = useState(false);
   const timeDropdownRef = useRef(null);
 
@@ -2483,7 +2483,11 @@ const handleDeleteHabitDb = async (id) => {
                         <button
                           key={opt.id}
                           className={`theme-dropdown-item ${timeRange === opt.id ? 'active' : ''}`}
-                          onClick={() => { setTimeRange(opt.id); setIsTimeMenuOpen(false); }}
+                          onClick={() => { 
+                            setTimeRange(opt.id); 
+                            localStorage.setItem('active_timeframe', opt.id);
+                            setIsTimeMenuOpen(false); 
+                          }}
                           style={{ fontWeight: timeRange === opt.id ? 800 : 500 }}
                         >
                           <Calendar size={14} /> {opt.label}

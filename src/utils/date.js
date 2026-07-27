@@ -61,6 +61,8 @@ export const getNextWeekRange = (todayStr) => {
 
 export const TIME_RANGE_OPTIONS = [
   { id: 'today', label: 'Today' },
+  { id: 'this_month', label: 'This Month' },
+  { id: 'last_month', label: 'Last Month' },
   { id: '3d', label: 'Last 3 Days' },
   { id: '7d', label: 'Last 7 Days' },
   { id: '14d', label: 'Last 14 Days' },
