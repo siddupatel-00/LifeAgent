@@ -73,13 +73,15 @@ export default async function handler(req, res) {
         resetCode
       });
 
-      const emailSent = Boolean(emailResult && emailResult.success && emailResult.method === 'resend');
-      const devCode = (!emailResult || !emailResult.success || emailResult.method === 'console') ? resetCode : undefined;
+      // SECURITY: Never expose the reset code to the client, even in dev.
+      // If email fails, log it server-side only.
+      if (!emailResult?.success) {
+        console.error('[ForgotPassword] Email delivery failed for user:', user.id, emailResult?.error);
+      }
 
       return res.status(200).json({
-        message: 'Password reset code generated successfully',
-        emailSent,
-        devCode
+        message: 'If an account with that email or username exists, a reset code has been sent to the registered email address.',
+        emailSent: Boolean(emailResult?.success)
       });
     }
 

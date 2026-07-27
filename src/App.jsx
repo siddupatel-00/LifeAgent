@@ -272,10 +272,7 @@ export default function App() {
       if (!res.ok) throw new Error(data.error || 'Account not found');
 
       setResetStep(2);
-      setResetSuccessMsg('Reset code generated successfully!');
-      if (data.devCode) {
-        setDevCodeNotice(`🔑 Test Reset Code: ${data.devCode}`);
-      }
+      setResetSuccessMsg('✉️ Check your email inbox for the 6-digit reset code. It expires in 15 minutes.');
     } catch (err) {
       setAuthError(err.message);
     } finally {
