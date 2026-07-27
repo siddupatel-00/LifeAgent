@@ -1260,7 +1260,7 @@ const handleDeleteHabitDb = async (id) => {
               <h1 style={{ fontSize: '1.35rem', fontWeight: 800, letterSpacing: '-0.5px' }}>
                 LIFE <span className="serif-italic">AGENT</span>
               </h1>
-              <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 500 }}>Personal AI Operating System</p>
+              <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 500 }}>Personal AI Life & Growth Companion</p>
             </div>
           </div>
 
@@ -1338,7 +1338,7 @@ const handleDeleteHabitDb = async (id) => {
 
 
             <h1 style={{ fontSize: '3.8rem', fontWeight: 900, lineHeight: 1.08, letterSpacing: '-2px', marginBottom: '22px', color: 'var(--text-main)' }}>
-              Your Personal AI Operating System
+              Your Life Connected with Your Personal AI Agent
             </h1>
 
             <p style={{ maxWidth: '780px', margin: '0 auto 36px', fontSize: '1.25rem', color: 'var(--text-muted)', lineHeight: 1.6, fontWeight: 400 }}>
@@ -1876,7 +1876,7 @@ const handleDeleteHabitDb = async (id) => {
           {/* BOTTOM CTA CARD */}
           <div className="glass-card scroll-swipe-up scroll-delay-3" style={{ padding: '50px 30px', textAlign: 'center', borderRadius: '24px', border: '1px solid var(--border-color)', marginBottom: '40px' }}>
             <h3 style={{ fontSize: '2.2rem', fontWeight: 800, marginBottom: '14px', letterSpacing: '-1px' }}>
-              Ready for your Personal AI Operating System?
+              Ready to connect your life with your Personal AI Agent?
             </h3>
             <p style={{ color: 'var(--text-muted)', marginBottom: '28px', fontSize: '1.1rem', maxWidth: '600px', margin: '0 auto 28px' }}>
               Start organizing your habits, money, sleep, workouts, and calendar with intelligence today.
