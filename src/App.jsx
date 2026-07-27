@@ -223,6 +223,7 @@ export default function App() {
   // Password Reset State
   const [resetStep, setResetStep] = useState(1); // 1: request code, 2: enter code & new pass
   const [resetEmailOrHandle, setResetEmailOrHandle] = useState('');
+  const [resetCode, setResetCode] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showFinanceForm, setShowFinanceForm] = useState(false);
   const [resetNewPassword, setResetNewPassword] = useState('');
