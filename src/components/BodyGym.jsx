@@ -58,7 +58,7 @@ export default function BodyGym({ token, showToast }) {
   // Body stats form state
   const [isAddStatsOpen, setIsAddStatsOpen] = useState(false);
   const [statsForm, setStatsForm] = useState({
-    weight: '', target_weight: '', protein: '', hydration: ''
+    weight: '', target_weight: '', protein: '', target_protein: '', hydration: ''
   });
 
   const fetchWorkouts = useCallback(async () => {
@@ -119,7 +119,7 @@ export default function BodyGym({ token, showToast }) {
   
   const currentProtein = Number(todayStat?.protein) || 0;
   const targetWeight = Number(latestStat?.target_weight) || 0;
-  const targetProteinGoal = targetWeight > 0 ? Math.round(targetWeight * 2) : 150;
+  const targetProteinGoal = Number(latestStat?.target_protein) || (targetWeight > 0 ? Math.round(targetWeight * 2) : 150);
   const proteinPercentComplete = Math.min(100, Math.max(0, Math.round((currentProtein / targetProteinGoal) * 100)));
 
   // Check if today's scheduled workout has been logged
@@ -227,6 +227,7 @@ export default function BodyGym({ token, showToast }) {
       weight: todayStat?.weight ?? latestStat?.weight ?? '',
       target_weight: todayStat?.target_weight ?? latestStat?.target_weight ?? '',
       protein: todayStat?.protein ?? '',
+      target_protein: todayStat?.target_protein ?? latestStat?.target_protein ?? '',
       hydration: todayStat?.hydration ?? ''
     });
     setIsAddStatsOpen(true);
@@ -234,7 +235,7 @@ export default function BodyGym({ token, showToast }) {
 
   const closeStatsModal = () => {
     setIsAddStatsOpen(false);
-    setStatsForm({ weight: '', target_weight: '', protein: '', hydration: '' });
+    setStatsForm({ weight: '', target_weight: '', protein: '', target_protein: '', hydration: '' });
   };
 
   const closeWorkoutModal = () => {
@@ -249,6 +250,7 @@ export default function BodyGym({ token, showToast }) {
         weight: Number(statsForm.weight) || 0,
         target_weight: Number(statsForm.target_weight) || 0,
         protein: Number(statsForm.protein) || 0,
+        target_protein: Number(statsForm.target_protein) || 0,
         hydration: Number(statsForm.hydration) || 0,
         date: todayKey()
       };
@@ -759,9 +761,27 @@ export default function BodyGym({ token, showToast }) {
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
-                    <div className="input-group">
-                      <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Protein (g)</label>
-                      <input type="number" className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="120" value={statsForm.protein} onChange={e => setStatsForm({...statsForm, protein: e.target.value})} />
+                    <div style={{ flex: 1 }}>
+                      <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Daily Protein (g)</label>
+                      <input 
+                        type="number" 
+                        value={statsForm.protein} 
+                        onChange={(e) => setStatsForm({...statsForm, protein: e.target.value})} 
+                        className="glass-input" 
+                        style={{ width: '100%', padding: '10px 14px', fontSize: '0.95rem' }} 
+                        placeholder="e.g. 120"
+                      />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Target Protein Goal (g)</label>
+                      <input 
+                        type="number" 
+                        value={statsForm.target_protein} 
+                        onChange={(e) => setStatsForm({...statsForm, target_protein: e.target.value})} 
+                        className="glass-input" 
+                        style={{ width: '100%', padding: '10px 14px', fontSize: '0.95rem' }} 
+                        placeholder="e.g. 150"
+                      />
                     </div>
                     <div className="input-group">
                       <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Hydration (L)</label>

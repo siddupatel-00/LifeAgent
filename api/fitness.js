@@ -44,18 +44,18 @@ export default async function handler(req, res) {
         return res.status(200).json(result.rows);
       }
       if (req.method === 'POST') {
-        const { weight, target_weight, protein, hydration, date } = req.body;
+        const { weight, target_weight, protein, target_protein, hydration, date } = req.body;
         const result = await db.execute({
-          sql: 'INSERT INTO body_stats (user_id, weight, target_weight, protein, hydration, date) VALUES (?, ?, ?, ?, ?, ?)',
-          args: [userId, weight || 0, target_weight || 0, protein || 0, hydration || 0, date || new Date().toISOString().split('T')[0]]
+          sql: 'INSERT INTO body_stats (user_id, weight, target_weight, protein, target_protein, hydration, date) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          args: [userId, weight || 0, target_weight || 0, protein || 0, target_protein || 0, hydration || 0, date || new Date().toISOString().split('T')[0]]
         });
-        return res.status(201).json({ id: Number(result.lastInsertRowid), weight, target_weight, protein, hydration, date });
+        return res.status(201).json({ id: Number(result.lastInsertRowid), weight, target_weight, protein, target_protein, hydration, date });
       }
       if (req.method === 'PUT') {
-        const { id, weight, target_weight, protein, hydration } = req.body;
+        const { id, weight, target_weight, protein, target_protein, hydration } = req.body;
         await db.execute({
-          sql: 'UPDATE body_stats SET weight = ?, target_weight = ?, protein = ?, hydration = ? WHERE id = ? AND user_id = ?',
-          args: [weight, target_weight, protein, hydration, id, userId]
+          sql: 'UPDATE body_stats SET weight = ?, target_weight = ?, protein = ?, target_protein = ?, hydration = ? WHERE id = ? AND user_id = ?',
+          args: [weight, target_weight, protein, target_protein, hydration, id, userId]
         });
         return res.status(200).json({ success: true });
       }

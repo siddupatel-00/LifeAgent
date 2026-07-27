@@ -551,15 +551,8 @@ export default function App() {
         
         setTrashNotes(trashedNotes);
 
-        // Check if a note exists for today's date
-        const todayNote = activeNotes.find(n => n.date === clientDate);
-        // Always set the notes list
+        // Always set the notes list, but do NOT auto-select a note
         setNotesList(activeNotes);
-        if (todayNote) {
-          setActiveNoteId(todayNote.id);
-        } else if (activeNotes.length > 0) {
-          setActiveNoteId(activeNotes[0].id);
-        }
       }
     } catch (err) {
       console.error('Failed to fetch dashboard data:', err);
@@ -3047,13 +3040,13 @@ const handleDeleteHabitDb = async (id) => {
                         <div>
                           <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Pillar / Category</label>
                           {newHabitData.category === 'Other' ? (
-                            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                            <div style={{ position: 'relative', width: '100%' }}>
                               <input 
                                 type="text" 
                                 placeholder="Enter custom category name..."
                                 value={customPillarInput}
                                 onChange={(e) => setCustomPillarInput(e.target.value)}
-                                style={{ flex: 1, width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.92rem', fontWeight: 600, outline: 'none' }}
+                                style={{ width: '100%', padding: '12px 40px 12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.92rem', fontWeight: 600, outline: 'none', boxSizing: 'border-box' }}
                                 autoFocus
                               />
                               <button 
@@ -3063,7 +3056,7 @@ const handleDeleteHabitDb = async (id) => {
                                   setCustomPillarInput('');
                                 }}
                                 title="Re-select category"
-                                style={{ padding: '12px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-muted)', border: '1px solid var(--border-color)', cursor: 'pointer', height: '46px' }}
+                                style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                               >
                                 <X size={16} />
                               </button>
@@ -3390,7 +3383,7 @@ const handleDeleteHabitDb = async (id) => {
                         <button
                           onClick={() => {
                             setNotesViewMode('active');
-                            if (notesList.length > 0) setActiveNoteId(notesList[0].id);
+                            setActiveNoteId(null);
                           }}
                           style={{
                             flex: 1, padding: '8px', borderRadius: '10px', border: 'none',
@@ -3404,7 +3397,7 @@ const handleDeleteHabitDb = async (id) => {
                         <button
                           onClick={() => {
                             setNotesViewMode('trash');
-                            if (trashNotes.length > 0) setActiveNoteId(trashNotes[0].id);
+                            setActiveNoteId(null);
                           }}
                           style={{
                             flex: 1, padding: '8px', borderRadius: '10px', border: 'none',
@@ -3571,7 +3564,7 @@ const handleDeleteHabitDb = async (id) => {
                     {/* RIGHT NOTE CONTENT EDITOR */}
                     {(() => {
                       const currentList = notesViewMode === 'active' ? notesList : trashNotes;
-                      const currentNote = currentList.find(n => n.id === activeNoteId) || currentList[0];
+                      const currentNote = currentList.find(n => n.id === activeNoteId);
                       if (!currentNote) {
                         return (
                           <div style={{ background: 'var(--bg-main)', borderRadius: '18px', border: '1px solid var(--border-color)', padding: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', gap: '12px' }}>
