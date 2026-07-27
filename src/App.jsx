@@ -711,7 +711,7 @@ export default function App() {
         const match = h.target ? h.target.match(/\d+/) : null;
         const numValue = match ? match[0] : "1";
         
-        fetch('/api/metrics', {
+        fetch('/api/analytics?type=metrics', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({

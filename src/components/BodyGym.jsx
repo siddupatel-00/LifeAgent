@@ -153,7 +153,7 @@ export default function BodyGym({ token, showToast }) {
         const currentSplit = splitList[todaySplitIdx];
         if (currentSplit && currentSplit.exercises && currentSplit.exercises.length > 0) {
           for (const ex of currentSplit.exercises) {
-            await fetch('/api/metrics', {
+            await fetch('/api/analytics?type=metrics', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
               body: JSON.stringify({

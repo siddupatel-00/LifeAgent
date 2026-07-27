@@ -209,7 +209,7 @@ function AnalyticsPanelInner({ token, showToast, currency = '$', timeRange = '7d
   useEffect(() => {
     if (activeTab === 'logs' && token) {
       setLoadingMetrics(true);
-      fetch('/api/metrics', {
+      fetch('/api/analytics?type=logs', {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       .then(res => res.json())

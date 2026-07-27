@@ -14,8 +14,35 @@ export default async function handler(req, res) {
   const userId = getUserId(req);
   if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  const currentUserReq = await db.execute({ sql: 'SELECT email FROM users WHERE id = ?', args: [userId] });
+  const userEmail = currentUserReq.rows[0]?.email;
 
+  if (req.method === 'POST' && req.query.type === 'metrics') {
+    try {
+      const { date, metric_type, metric_name, metric_value } = req.body;
+      await db.execute({
+        sql: 'INSERT INTO daily_metrics (user_email, date, metric_type, metric_name, metric_value) VALUES (?, ?, ?, ?, ?)',
+        args: [userEmail, date, metric_type, metric_name, metric_value.toString()]
+      });
+      return res.status(200).json({ success: true });
+    } catch (e) {
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
+  if (req.method === 'GET' && req.query.type === 'logs') {
+    try {
+      const result = await db.execute({
+        sql: 'SELECT * FROM daily_metrics WHERE user_email = ? ORDER BY created_at DESC',
+        args: [userEmail]
+      });
+      return res.status(200).json(result.rows);
+    } catch (e) {
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
   const range = req.query?.range || '7d';
   const clientDate = /^\d{4}-\d{2}-\d{2}$/.test(req.query?.client_date || '') 
     ? req.query.client_date 
