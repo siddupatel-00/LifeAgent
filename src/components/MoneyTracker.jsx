@@ -14,6 +14,7 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
   const [newNotes, setNewNotes] = useState('');
   const [newDate, setNewDate] = useState(todayKey(timezone || userProfile?.timezone));
   const [loading, setLoading] = useState(false);
+  const [rightPanelView, setRightPanelView] = useState('charts');
   // Fetch initial transactions
   useEffect(() => {
     const fetchTransactions = async () => {
@@ -38,7 +39,6 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
     fetchTransactions();
   }, []);
   
-  const [showCharts, setShowCharts] = useState(false);
   const [chartType, setChartType] = useState('bar');
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
@@ -157,6 +157,7 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
         setNewAmount('');
         setNewNotes('');
         showToast('Transaction Added', 'success');
+        setRightPanelView('charts');
       }
     } catch (err) {
       console.error(err);
@@ -241,34 +242,11 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
           </div>
         </div>
 
-        {/* Charts / List toggle */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
           <h3 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0 }}>Transactions</h3>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button
-              onClick={() => setShowCharts(false)}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.88rem', background: !showCharts ? 'var(--accent-blue)' : 'var(--bg-main)', color: !showCharts ? '#fff' : 'var(--text-muted)', transition: 'all 0.2s' }}
-            ><List size={15} /> List</button>
-            <button
-              onClick={() => setShowCharts(true)}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.88rem', background: showCharts ? 'var(--accent-blue)' : 'var(--bg-main)', color: showCharts ? '#fff' : 'var(--text-muted)', transition: 'all 0.2s' }}
-            ><BarChart2 size={15} /> Charts</button>
-          </div>
         </div>
 
-        {/* Chart type selector when charts are shown */}
-        {showCharts && (
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
-            {['bar', 'line', 'pie'].map(t => (
-              <button key={t} onClick={() => setChartType(t)} style={{ padding: '7px 18px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', textTransform: 'capitalize', background: chartType === t ? 'var(--accent-blue)' : 'var(--bg-main)', color: chartType === t ? '#fff' : 'var(--text-muted)', transition: 'all 0.2s' }}>{t}</button>
-            ))}
-          </div>
-        )}
-
-        {showCharts ? (
-          <MoneyCharts transactions={filteredTransactions} chartType={chartType} currency={currency} />
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {filteredTransactions.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '30px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px dashed var(--border-color)' }}>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', fontWeight: 600 }}>No transactions recorded for selected timeframe.</p>
@@ -329,13 +307,34 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
               </div>
             ))
           )}
-          </div>
-        )}
+        </div>
       </div>
 
       <div style={{ background: 'var(--bg-main)', padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)', height: 'fit-content' }}>
-        <h4 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '16px' }}>Add Transaction</h4>
-        <form onSubmit={addTransaction} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        {rightPanelView === 'charts' ? (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h4 style={{ fontSize: '1.15rem', fontWeight: 700, margin: 0 }}>Charts</h4>
+              <button onClick={() => setRightPanelView('add')} className="blue-btn" style={{ padding: '8px 12px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Plus size={16} /> Record Entry
+              </button>
+            </div>
+            
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+              {['bar', 'line', 'pie'].map(t => (
+                <button key={t} onClick={() => setChartType(t)} style={{ flex: 1, padding: '7px 0', borderRadius: '8px', border: chartType === t ? 'none' : '1px solid var(--border-color)', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', textTransform: 'capitalize', background: chartType === t ? 'var(--accent-blue)' : 'var(--bg-main)', color: chartType === t ? '#fff' : 'var(--text-muted)', transition: 'all 0.2s' }}>{t}</button>
+              ))}
+            </div>
+
+            <MoneyCharts transactions={filteredTransactions} chartType={chartType} currency={currency} />
+          </div>
+        ) : (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h4 style={{ fontSize: '1.15rem', fontWeight: 700, margin: 0 }}>Add Transaction</h4>
+              <button onClick={() => setRightPanelView('charts')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={20}/></button>
+            </div>
+            <form onSubmit={addTransaction} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <div>
             <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Type</label>
             <select 
@@ -375,6 +374,8 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
           </div>
           <button type="submit" className="blue-btn" style={{ justifyContent: 'center', marginTop: '6px' }}><Plus size={18} /> Record Entry</button>
         </form>
+          </div>
+        )}
       </div>
     </div>
   );
