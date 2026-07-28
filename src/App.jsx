@@ -543,7 +543,7 @@ export default function App() {
   // Auto-open AI side panel when switching tabs if setting is enabled
   useEffect(() => {
     localStorage.setItem('auto_open_ai_sidechat', userProfile.auto_open_ai_sidechat);
-    if (userProfile.auto_open_ai_sidechat !== false) {
+    if (userProfile.auto_open_ai_sidechat === true) {
       if (activeTab !== 'settings' && activeTab !== 'ai') {
         setIsAiSidePanelOpen(true);
       }
@@ -1386,7 +1386,12 @@ const handleDeleteHabitDb = async (id) => {
       
     } catch (error) {
       console.error("AI API Error:", error);
-      const aiMsg = { id: Date.now() + 1, sender: 'ai', text: `Error calling API: ${error.message}`, time: nowTime };
+      let errorText = `Error calling API: ${error.message}`;
+      const errStr = error?.message?.toLowerCase() || '';
+      if (errStr.includes('429') || errStr.includes('quota') || errStr.includes('rate limit')) {
+        errorText = "I'm temporarily experiencing high traffic right now! ⚡ You can also enter your own free Gemini or Groq API key in Settings & Profile for unlimited instant responses.";
+      }
+      const aiMsg = { id: Date.now() + 1, sender: 'ai', text: errorText, time: nowTime };
       setAiMessages(prev => prev.map(m => m.id === 'loading' ? aiMsg : m));
       
       fetch('/api/chat', {

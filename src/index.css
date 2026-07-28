@@ -639,6 +639,12 @@ input[type="checkbox"]:checked::after {
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
 }
 
+/* Hide mobile specific elements on desktop */
+.mobile-bottom-nav,
+.mobile-header-bar {
+  display: none !important;
+}
+
 /* MOBILE NATIVE APP EXPERIENCE OVERRIDES */
 @media (max-width: 768px) {
   /* Dashboard entrance & layout */
