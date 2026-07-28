@@ -73,7 +73,7 @@ export default async function handler(req, res) {
         resetCode
       });
 
-      const emailSent = Boolean(emailResult && emailResult.success && emailResult.method === 'resend');
+      const emailSent = Boolean(emailResult && emailResult.success && (emailResult.method === 'gmail' || emailResult.method === 'resend'));
 
       if (!emailSent) {
         console.error('[Auth] Email delivery failed:', emailResult?.error);
