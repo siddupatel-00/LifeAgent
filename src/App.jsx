@@ -59,8 +59,14 @@ export default function App() {
     const path = window.location.pathname;
     const isAuth = !!localStorage.getItem('token');
     
-    if (path.includes('/dashboard')) return isAuth ? 'dashboard' : 'auth';
-    if (path.includes('/auth')) return 'auth';
+    if (path.includes('/dashboard')) {
+      if (!isAuth) window.history.replaceState({}, '', '/auth');
+      return isAuth ? 'dashboard' : 'auth';
+    }
+    if (path.includes('/auth')) {
+      if (isAuth) window.history.replaceState({}, '', '/dashboard');
+      return isAuth ? 'dashboard' : 'auth';
+    }
     if (path.includes('/waitlist')) return 'waitlist';
     if (path.includes('/contact')) return 'contact';
     return 'landing';
@@ -68,6 +74,12 @@ export default function App() {
 
   // Helper to change page and URL address bar simultaneously
   const navigate = (page, path) => {
+    const isAuth = !!localStorage.getItem('token');
+    if (page === 'auth' && isAuth) {
+      setCurrentPage('dashboard');
+      window.history.pushState({}, '', '/dashboard');
+      return;
+    }
     setCurrentPage(page);
     window.history.pushState({}, '', path);
   };
@@ -78,11 +90,19 @@ export default function App() {
       const path = window.location.pathname;
       const isAuth = !!localStorage.getItem('token');
       
-      if (path.includes('/dashboard')) setCurrentPage(isAuth ? 'dashboard' : 'auth');
-      else if (path.includes('/auth')) setCurrentPage('auth');
-      else if (path.includes('/waitlist')) setCurrentPage('waitlist');
-      else if (path.includes('/contact')) setCurrentPage('contact');
-      else setCurrentPage('landing');
+      if (path.includes('/dashboard')) {
+        if (!isAuth) window.history.replaceState({}, '', '/auth');
+        setCurrentPage(isAuth ? 'dashboard' : 'auth');
+      } else if (path.includes('/auth')) {
+        if (isAuth) window.history.replaceState({}, '', '/dashboard');
+        setCurrentPage(isAuth ? 'dashboard' : 'auth');
+      } else if (path.includes('/waitlist')) {
+        setCurrentPage('waitlist');
+      } else if (path.includes('/contact')) {
+        setCurrentPage('contact');
+      } else {
+        setCurrentPage('landing');
+      }
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
