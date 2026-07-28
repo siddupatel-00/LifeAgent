@@ -75,20 +75,15 @@ export default async function handler(req, res) {
 
       const emailSent = Boolean(emailResult && emailResult.success && emailResult.method === 'resend');
 
-      if (emailSent) {
-        return res.status(200).json({
-          message: `✉️ Reset code sent to ${user.email}! Check your inbox.`,
-          emailSent: true
-        });
-      } else {
-        // Email failed - return the code as fallback so user isn't blocked
-        console.error('[Auth] Email failed:', emailResult?.error);
-        return res.status(200).json({
-          message: `Reset code generated.`,
-          emailSent: false,
-          devCode: resetCode
-        });
+      if (!emailSent) {
+        console.error('[Auth] Email delivery failed:', emailResult?.error);
+        return res.status(500).json({ error: `Failed to send reset email. Please try again. (${emailResult?.error || 'Unknown error'})` });
       }
+
+      return res.status(200).json({
+        message: `✉️ Reset code sent! Check your inbox.`,
+        emailSent: true
+      });
     }
 
     if (action === 'verify-reset-code') {
