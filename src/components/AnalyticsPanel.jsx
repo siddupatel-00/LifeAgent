@@ -34,8 +34,20 @@ export default function AnalyticsPanel(props) {
 }
 
 function AnalyticsPanelInner({ token, showToast, currency = '$', timeRange = '7d', userProfile }) {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState(() => {
+    try {
+      const cached = localStorage.getItem('cache_analytics_data');
+      if (cached) return JSON.parse(cached);
+    } catch (e) {}
+    return null;
+  });
+  const [loading, setLoading] = useState(() => {
+    try {
+      return !localStorage.getItem('cache_analytics_data');
+    } catch (e) {
+      return true;
+    }
+  });
   const [range, setRange] = useState('7d');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
@@ -65,7 +77,9 @@ function AnalyticsPanelInner({ token, showToast, currency = '$', timeRange = '7d
     
     const fetchAnalytics = async () => {
       try {
-        setLoading(true);
+        if (!data) {
+          setLoading(true);
+        }
         let query = `/api/analytics?range=${range}&client_date=${todayKey(userProfile?.timezone)}`;
         if (range === 'custom' && customStart && customEnd) {
           query += `&start_date=${customStart}&end_date=${customEnd}`;
@@ -83,11 +97,10 @@ function AnalyticsPanelInner({ token, showToast, currency = '$', timeRange = '7d
         const result = await res.json();
         if (mounted) {
           setData(result);
+          try { localStorage.setItem('cache_analytics_data', JSON.stringify(result)); } catch (e) {}
         }
       } catch (err) {
-        if (mounted) {
-          showToast?.(err.message || 'Analytics fetch error', 'error');
-        }
+        // background fetch error
       } finally {
         if (mounted) {
           setLoading(false);
@@ -146,7 +159,7 @@ function AnalyticsPanelInner({ token, showToast, currency = '$', timeRange = '7d
                 borderRadius: '20px',
                 border: '1px solid',
                 borderColor: range === r.value ? 'var(--accent-blue)' : 'var(--border-color)',
-                background: range === r.value ? 'rgba(59, 130, 246, 0.12)' : 'var(--bg-card)',
+                background: range === r.value ? 'var(--accent-blue-dim)' : 'var(--bg-card)',
                 color: range === r.value ? 'var(--accent-blue)' : 'var(--text-muted)',
                 fontSize: '0.85rem',
                 fontWeight: 700,
@@ -269,7 +282,7 @@ function AnalyticsPanelInner({ token, showToast, currency = '$', timeRange = '7d
           </div>
         </div>
 
-        <div className="glass-card" style={{ padding: '24px', background: 'var(--bg-card)', border: '2px solid var(--accent-blue)', boxShadow: '0 0 25px rgba(59, 130, 246, 0.15)' }}>
+        <div className="glass-card" style={{ padding: '24px', background: 'var(--bg-card)', border: '2px solid var(--accent-blue)', boxShadow: '0 0 25px var(--accent-blue-dim)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem', fontWeight: 800, color: 'var(--accent-blue)', letterSpacing: '0.5px', marginBottom: '12px' }}>
             <DollarSign size={16} /> NET MONEY SAVINGS
           </div>
@@ -316,7 +329,7 @@ function AnalyticsPanelInner({ token, showToast, currency = '$', timeRange = '7d
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                   <div style={{ width: '140px', fontSize: '0.85rem', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{h.label}</div>
                   <div style={{ flex: 1, height: '28px', background: 'var(--bg-main)', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color)', position: 'relative' }}>
-                    <div style={{ height: '100%', width: `${pct}%`, background: pct > 0 ? `linear-gradient(90deg, #3b82f6, ${pct >= 80 ? '#22c55e' : pct >= 50 ? '#f59e0b' : '#ef4444'})` : 'transparent', borderRadius: '8px', transition: 'width 0.5s ease', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: '8px' }}>
+                    <div style={{ height: '100%', width: `${pct}%`, background: pct > 0 ? `linear-gradient(90deg, var(--accent-blue), ${pct >= 80 ? '#22c55e' : pct >= 50 ? '#f59e0b' : '#ef4444'})` : 'transparent', borderRadius: '8px', transition: 'width 0.5s ease', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: '8px' }}>
                       {pct >= 80 && <Check size={14} color="#fff" />}
                     </div>
                   </div>
@@ -397,7 +410,7 @@ function AnalyticsPanelInner({ token, showToast, currency = '$', timeRange = '7d
                       <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent-blue)' }}>{catData.checkedDays ?? catData.done}/{catData.totalDays ?? catData.total} ({pct}%)</span>
                     </div>
                     <div style={{ height: '10px', background: 'var(--bg-main)', borderRadius: '5px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
-                      <div style={{ height: '100%', width: `${pct}%`, background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)', borderRadius: '5px', transition: 'width 0.5s ease' }} />
+                      <div style={{ height: '100%', width: `${pct}%`, background: 'linear-gradient(90deg, var(--accent-blue), #8b5cf6)', borderRadius: '5px', transition: 'width 0.5s ease' }} />
                     </div>
                   </div>
                 );

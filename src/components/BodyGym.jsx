@@ -1,8 +1,41 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Dumbbell, Target, Plus, Trash2, Activity, Flame, Clock, Check } from 'lucide-react';
+import { Dumbbell, Target, Plus, Trash2, Activity, Flame, Clock, Check, Edit2 } from 'lucide-react';
 import { todayKey } from '../utils/date';
 
-export default function BodyGym({ token, showToast }) {
+class BodyGymErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error("BodyGym Error:", error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '24px', background: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
+          <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '12px', color: 'var(--accent-blue)' }}>Body & Gym Panel</h3>
+          <p style={{ color: 'var(--text-muted)', marginBottom: '16px' }}>{this.state.error?.toString()}</p>
+          <button className="blue-btn" style={{ margin: '0 auto' }} onClick={() => this.setState({ hasError: false })}>Reload Panel</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+export default function BodyGym(props) {
+  return (
+    <BodyGymErrorBoundary>
+      <BodyGymInner {...props} />
+    </BodyGymErrorBoundary>
+  );
+}
+
+function BodyGymInner({ token, showToast }) {
   const [activeSubTab, setActiveSubTab] = useState('today'); // 'today', 'workouts', 'stats'
   const [workouts, setWorkouts] = useState([]);
   const [bodyStats, setBodyStats] = useState([]);
@@ -114,8 +147,9 @@ export default function BodyGym({ token, showToast }) {
   }, [fetchWorkouts, fetchStats, token]);
 
   // Derived metrics for body stats
-  const latestStat = bodyStats.length > 0 ? bodyStats[0] : null;
-  const todayStat = bodyStats.find(s => s.date === todayStr) || null;
+  const statsList = Array.isArray(bodyStats) ? bodyStats : (bodyStats ? [bodyStats] : []);
+  const latestStat = statsList.length > 0 ? statsList[0] : null;
+  const todayStat = statsList.find(s => s.date === todayStr) || latestStat || null;
   
   const currentProtein = Number(todayStat?.protein) || 0;
   const targetWeight = Number(latestStat?.target_weight) || 0;
@@ -303,7 +337,8 @@ export default function BodyGym({ token, showToast }) {
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
   const thisWeekCount = workouts.filter(w => new Date(w.date) >= oneWeekAgo).length;
 
-  const last7Days = bodyStats.slice(0, 7).reverse();
+  const statsArray = Array.isArray(bodyStats) ? bodyStats : (bodyStats ? [bodyStats] : []);
+  const last7Days = statsArray.slice(0, 7).reverse();
   const maxWeight = Math.max(...last7Days.map(s => s.weight || 0), 1);
 
   return (
@@ -360,7 +395,7 @@ export default function BodyGym({ token, showToast }) {
                   🏋️ {todayWorkoutTitle}
                 </h2>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', maxWidth: '520px', lineHeight: '1.5' }}>
-                  Your split automatically advances day by day ({splitList.join(' → ')}). Complete it or let it roll automatically to tomorrow!
+                  Your split automatically advances day by day ({splitList.map(s => typeof s === 'string' ? s : (s?.name || s?.title || 'Workout')).join(' → ')}). Complete it or let it roll automatically to tomorrow!
                 </p>
               </div>
 
@@ -383,7 +418,7 @@ export default function BodyGym({ token, showToast }) {
 
             {/* Rotation Timeline Preview */}
             <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid var(--border-color)', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
-              <div style={{ background: 'var(--accent-blue-dim)', border: '1px solid rgba(59, 130, 246, 0.3)', padding: '12px 16px', borderRadius: '14px' }}>
+              <div style={{ background: 'var(--accent-blue-dim)', border: '1px solid var(--accent-blue-dim)', padding: '12px 16px', borderRadius: '14px' }}>
                 <div style={{ fontSize: '0.72rem', color: 'var(--accent-blue)', fontWeight: 800 }}>TODAY (DAY {todaySplitIdx + 1})</div>
                 <div style={{ fontSize: '0.95rem', fontWeight: 700, marginTop: '2px' }}>{todayWorkoutTitle}</div>
               </div>
@@ -398,8 +433,8 @@ export default function BodyGym({ token, showToast }) {
             </div>
           </div>
 
-          {/* Bottom Grid: Quick Protein & Hydration Summary (Read Only display on Today tab) */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+          {/* Bottom Grid: Quick Protein Summary (Read Only display on Today tab) */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '20px' }}>
             <div className="glass-card" style={{ padding: '20px', borderRadius: '18px', border: '1px solid var(--border-color)', background: 'var(--bg-card)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                 <div style={{ fontSize: '0.95rem', fontWeight: 700 }}>🥩 Daily Protein Tracker</div>
@@ -409,18 +444,6 @@ export default function BodyGym({ token, showToast }) {
               </div>
               <div style={{ width: '100%', height: '8px', background: 'var(--border-color)', borderRadius: '4px', marginTop: '10px', overflow: 'hidden' }}>
                 <div style={{ height: '100%', width: `${proteinPercentComplete}%`, background: 'var(--accent-blue)', borderRadius: '4px' }} />
-              </div>
-            </div>
-
-            <div className="glass-card" style={{ padding: '20px', borderRadius: '18px', border: '1px solid var(--border-color)', background: 'var(--bg-card)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <div style={{ fontSize: '0.95rem', fontWeight: 700 }}>💧 Daily Hydration</div>
-              </div>
-              <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#06b6d4' }}>
-                {Number(todayStat?.hydration || 0)} L <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>/ 3.5 L target</span>
-              </div>
-              <div style={{ width: '100%', height: '8px', background: 'var(--border-color)', borderRadius: '4px', marginTop: '10px', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${Math.min(100, Math.round(((Number(todayStat?.hydration || 0)) / 3.5) * 100))}%`, background: '#06b6d4', borderRadius: '4px' }} />
               </div>
             </div>
           </div>
@@ -646,7 +669,7 @@ export default function BodyGym({ token, showToast }) {
             <div className="glass-card" style={{ padding: '24px', borderRadius: '18px', border: '1px solid var(--border-color)', background: 'var(--bg-card)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                 <h3 style={{ fontSize: '1.15rem', fontWeight: 700 }}>Current Body Metrics</h3>
-                <button className="secondary-btn" style={{ padding: '6px 12px', fontSize: '0.82rem' }} onClick={openStatsModal}>Edit All Stats</button>
+                <button className="blue-btn" style={{ padding: '6px 14px', fontSize: '0.82rem', borderRadius: '10px' }} onClick={openStatsModal}><Edit2 size={14} /> Edit</button>
               </div>
 
               {latestStat ? (
@@ -665,11 +688,11 @@ export default function BodyGym({ token, showToast }) {
                   </div>
                   <div style={{ background: 'var(--bg-main)', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
                     <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Daily Hydration</span>
-                    <span style={{ fontWeight: 800, fontSize: '1.1rem', color: '#06b6d4' }}>{latestStat.hydration} L</span>
+                    <span style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--accent-blue)' }}>{latestStat.hydration} L</span>
                   </div>
                 </div>
               ) : (
-                <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '20px 0' }}>No stats recorded yet. Click "Edit All Stats" to start!</p>
+                <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '20px 0' }}>No stats recorded yet. Click "Edit" to start!</p>
               )}
             </div>
 
@@ -691,7 +714,7 @@ export default function BodyGym({ token, showToast }) {
                         }} />
                       </div>
                       <span style={{ fontSize: '0.7rem', marginTop: '6px', color: 'var(--text-muted)' }}>
-                        {day.date.split('-')[2]}
+                        {day.date ? (String(day.date).includes('-') ? String(day.date).split('-')[2] : String(day.date)) : ''}
                       </span>
                     </div>
                   ))}
@@ -706,13 +729,13 @@ export default function BodyGym({ token, showToast }) {
             <h3 style={{ fontSize: '1.2rem', fontWeight: 700 }}>History</h3>
           </div>
 
-          {bodyStats.length === 0 ? (
+          {statsList.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px', background: 'var(--bg-card)', borderRadius: '18px', border: '1px solid var(--border-color)' }}>
               <p style={{ color: 'var(--text-muted)' }}>No stats recorded yet.</p>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {bodyStats.map(stat => (
+              {statsList.map(stat => (
                 <div key={stat.id} className="glass-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderRadius: '18px', border: '1px solid var(--border-color)', background: 'var(--bg-card)' }}>
                   <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
                     <div style={{ minWidth: '80px' }}>

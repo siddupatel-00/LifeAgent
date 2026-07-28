@@ -5,7 +5,7 @@ import {
   CheckCircle2, ArrowRight, XCircle, ShieldCheck, Mail, User, 
   Send, Plus, Clock, Award, Trash2, ChevronRight, LogIn, ExternalLink,
   Sun, Moon, Monitor, ChevronDown, Lock, Phone, AtSign, Activity, Zap, Check, X,
-  Dumbbell, Moon as SleepIcon, BarChart3, PieChart, Flame, Heart, Target, Filter,
+  Dumbbell, Moon as SleepIcon, BarChart3, PieChart, Flame, Heart, Target, Filter, Droplet,
   Home, LayoutDashboard, LogOut, Sliders, Settings, Save, Bell, Shield, PenTool, MessageSquare, Sidebar as SidebarIcon, FileText, Unlock, Smile,
   MoreVertical, List
 } from 'lucide-react';
@@ -18,6 +18,7 @@ import SettingsPanel from './components/SettingsPanel';
 import CalendarPanel from './components/CalendarPanel';
 import ConfirmModal from './components/ConfirmModal';
 import { todayKey, localTimeZone } from './utils/date';
+import WaterReminder from './components/WaterReminder';
 
 const getFormattedDateTitle = (dateStr) => {
   let targetDate = new Date();
@@ -221,14 +222,14 @@ export default function App() {
   const [authError, setAuthError] = useState('');
 
   // Password Reset State
-  const [resetStep, setResetStep] = useState(1); // 1: request code, 2: enter code & new pass
+  const [resetStep, setResetStep] = useState(1); // 1: request code, 2: verify code, 3: set new password twice
   const [resetEmailOrHandle, setResetEmailOrHandle] = useState('');
   const [resetCode, setResetCode] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showFinanceForm, setShowFinanceForm] = useState(false);
   const [resetNewPassword, setResetNewPassword] = useState('');
+  const [resetConfirmPassword, setResetConfirmPassword] = useState('');
   const [resetSuccessMsg, setResetSuccessMsg] = useState('');
-  const [devCodeNotice, setDevCodeNotice] = useState('');
 
   const handleAuth = async (e) => {
     e.preventDefault();
@@ -262,7 +263,6 @@ export default function App() {
     setAuthLoading(true);
     setAuthError('');
     setResetSuccessMsg('');
-    setDevCodeNotice('');
     try {
       const res = await fetch('/api/auth?action=forgot-password', {
         method: 'POST',
@@ -273,7 +273,35 @@ export default function App() {
       if (!res.ok) throw new Error(data.error || 'Account not found');
 
       setResetStep(2);
-      setResetSuccessMsg('✉️ Check your email inbox for the 6-digit reset code. It expires in 15 minutes.');
+      setResetCode('');
+      setResetSuccessMsg(data.message || '✉️ Check your email inbox for the 6-digit reset code. It expires in 15 minutes.');
+    } catch (err) {
+      setAuthError(err.message);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleVerifyResetCode = async (e) => {
+    e.preventDefault();
+    if (!resetCode.trim()) return setAuthError('Please enter the 6-digit reset code');
+    setAuthLoading(true);
+    setAuthError('');
+    setResetSuccessMsg('');
+    try {
+      const res = await fetch('/api/auth?action=verify-reset-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          emailOrHandle: resetEmailOrHandle,
+          code: resetCode
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Invalid reset code');
+
+      setResetStep(3);
+      setResetSuccessMsg('✅ Reset code verified! Set your new password below.');
     } catch (err) {
       setAuthError(err.message);
     } finally {
@@ -283,6 +311,8 @@ export default function App() {
 
   const handleResetPassword = async (e) => {
     e.preventDefault();
+    if (!resetNewPassword) return setAuthError('Please enter a new password');
+    if (resetNewPassword !== resetConfirmPassword) return setAuthError('Passwords do not match. Please re-enter.');
     setAuthLoading(true);
     setAuthError('');
     setResetSuccessMsg('');
@@ -306,6 +336,9 @@ export default function App() {
         setAuthError('');
         setResetSuccessMsg('');
         setDevCodeNotice('');
+        setResetCode('');
+        setResetNewPassword('');
+        setResetConfirmPassword('');
       }, 1800);
     } catch (err) {
       setAuthError(err.message);
@@ -411,6 +444,10 @@ export default function App() {
   // 4) Body & Gym state
   const [workouts, setWorkouts] = useState([]);
   const [bodyStats, setBodyStats] = useState({ currentWeight: '', targetWeight: '', dailyProtein: '', hydration: '' });
+
+  const handleSaveBodyStat = async (updated) => {
+    setBodyStats(updated);
+  };
 
   // 5) Sleep state
   const [sleepLogs, setSleepLogs] = useState([]);
@@ -673,11 +710,12 @@ export default function App() {
   const handleToggleAllToday = () => {
     const allAreChecked = todayItems.every(i => i.checked);
     const targetState = !allAreChecked;
+    
+    // 1. Sync Today Habits
     setTodayItems(prev => prev.map(i => {
       handleUpdateTodayDb(i.id, targetState);
       return { ...i, checked: targetState };
     }));
-    // Sync all linked habits
     setHabits(prevHabits => prevHabits.map(h => {
       const linkedToday = todayItems.find(ti => ti.habitId === h.id);
       if (!linkedToday) return h;
@@ -685,20 +723,109 @@ export default function App() {
       handleUpdateHabitDb(h.id, newStreak, targetState, h.pausedUntil);
       return { ...h, checkedToday: targetState, streak: newStreak };
     }));
+
+    const todayStr = todayKey(userProfile?.timezone);
+
+    // 2. Mark Today's Gym Workout Split Complete
+    if (targetState) {
+      const splitList = ['Push Day', 'Leg Day', 'Pull Day', 'Cardio / Running', 'Rest & Recovery'];
+      const daysEpoch = Math.floor(new Date(todayStr).getTime() / (1000 * 60 * 60 * 24));
+      const todaySplitIdx = Math.abs(daysEpoch) % splitList.length;
+      const currentTitle = splitList[todaySplitIdx] || 'Workout';
+      
+      const isAlreadyCompleted = (Array.isArray(workouts) ? workouts : []).some(w => w.date === todayStr);
+      if (!isAlreadyCompleted) {
+        const newWorkout = {
+          title: currentTitle,
+          category: 'Strength',
+          duration_mins: 45,
+          calories: 320,
+          notes: `Completed scheduled ${currentTitle}`,
+          date: todayStr,
+          id: Date.now()
+        };
+        if (token) {
+          fetch('/api/fitness?type=workouts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(newWorkout)
+          }).catch(console.error);
+        }
+        setWorkouts(prev => [newWorkout, ...(Array.isArray(prev) ? prev : [])]);
+      }
+    }
+
+    // 3. Mark Protein & Hydration Trackers to 100% Goal Target
+    if (targetState) {
+      const latestStat = Array.isArray(bodyStats) && bodyStats.length > 0 ? bodyStats[0] : (bodyStats || {});
+      const targetW = Number(latestStat?.target_weight) || 70;
+      const proteinGoal = targetW > 0 ? Math.round(targetW * 2) : 150;
+      const hydrationGoal = 3.5;
+
+      const payload = {
+        weight: Number(latestStat?.weight) || 70,
+        target_weight: targetW,
+        protein: proteinGoal,
+        hydration: hydrationGoal,
+        date: todayStr
+      };
+
+      if (latestStat?.date === todayStr && latestStat?.id) {
+        payload.id = latestStat.id;
+      }
+
+      if (token) {
+        fetch('/api/fitness?type=body-stats', {
+          method: payload.id ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify(payload)
+        }).catch(console.error);
+      }
+
+      setBodyStats(prev => {
+        if (Array.isArray(prev)) {
+          const exists = prev.some(s => s.date === todayStr);
+          if (exists) return prev.map(s => s.date === todayStr ? { ...s, protein: proteinGoal, hydration: hydrationGoal } : s);
+          return [payload, ...prev];
+        }
+        return { ...prev, protein: proteinGoal, hydration: hydrationGoal };
+      });
+    }
+
+    showToast?.(targetState ? '🎉 Ticked All Today (Habits, Workout, Protein & Water)!' : 'Unchecked items for today', 'success');
   };
 
   const handleToggleHabitItem = (targetHabitId) => {
     setHabits(prev => prev.map(h => {
-      if (h.id !== targetHabitId) return h;
+      if (String(h.id) !== String(targetHabitId)) return h;
       const nextChecked = !h.checkedToday;
       const newStreak = nextChecked ? h.streak + 1 : Math.max(0, h.streak - 1);
       
-      // Sync the linked today item
-      setTodayItems(prevToday => prevToday.map(ti => {
-        if (ti.habitId !== targetHabitId) return ti;
-        handleUpdateTodayDb(ti.id, nextChecked);
-        return { ...ti, checked: nextChecked };
-      }));
+      // Sync linked today item
+      setTodayItems(prevToday => {
+        const exists = prevToday.some(ti => String(ti.habitId) === String(targetHabitId) || (ti.title && h.title && ti.title.toLowerCase() === h.title.toLowerCase()));
+        if (exists) {
+          return prevToday.map(ti => {
+            if (String(ti.habitId) === String(targetHabitId) || (ti.title && h.title && ti.title.toLowerCase() === h.title.toLowerCase())) {
+              handleUpdateTodayDb(ti.id, nextChecked);
+              return { ...ti, checked: nextChecked, habitId: targetHabitId };
+            }
+            return ti;
+          });
+        }
+        if (nextChecked) {
+          const newTodayItem = { id: Date.now(), habitId: targetHabitId, title: h.title, category: h.category, checked: true, time: 'Daily' };
+          if (token) {
+            fetch('/api/today', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              body: JSON.stringify({ label: h.title, category: h.category, checked: 1, habit_id: targetHabitId, time: 'Daily', client_date: todayKey(userProfile?.timezone) })
+            }).catch(console.error);
+          }
+          return [...prevToday, newTodayItem];
+        }
+        return prevToday;
+      });
 
       handleUpdateHabitDb(h.id, newStreak, nextChecked, h.pausedUntil);
 
@@ -717,6 +844,10 @@ export default function App() {
             metric_value: numValue
           })
         }).catch(err => console.error('Failed to log habit metric:', err));
+
+        showToast?.(`🎉 Checked off "${h.title}"! Streak: ${newStreak} days`, 'success');
+      } else {
+        showToast?.(`Unchecked "${h.title}"`, 'info');
       }
 
       return { ...h, checkedToday: nextChecked, streak: newStreak };
@@ -2036,7 +2167,11 @@ const handleDeleteHabitDb = async (id) => {
               </h2>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', marginTop: '8px' }}>
                 {authMode === 'forgot'
-                  ? (resetStep === 1 ? 'Enter your registered email or username to get a reset code.' : 'Enter your 6-digit reset code and new password.')
+                  ? (resetStep === 1 
+                      ? 'Enter your registered email or username to get a reset code.' 
+                      : (resetStep === 2 
+                          ? 'Enter the 6-digit reset code sent to your email.' 
+                          : 'Create your new password below.'))
                   : (authMode === 'login' ? 'Sign in to access your AI workspace.' : 'Sign up to get your Personal AI Assistant.')}
               </p>
             </div>
@@ -2051,12 +2186,6 @@ const handleDeleteHabitDb = async (id) => {
             {resetSuccessMsg && (
               <div style={{ background: 'rgba(16, 185, 129, 0.12)', border: '1px solid #10b981', color: '#10b981', padding: '12px 16px', borderRadius: '12px', marginBottom: '20px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <CheckCircle2 size={18} /> {resetSuccessMsg}
-              </div>
-            )}
-
-            {devCodeNotice && (
-              <div style={{ background: 'rgba(59, 130, 246, 0.15)', border: '1px solid var(--accent-blue)', color: 'var(--accent-blue-light)', padding: '12px 16px', borderRadius: '12px', marginBottom: '20px', fontSize: '0.92rem', fontWeight: 700, fontFamily: 'monospace' }}>
-                {devCodeNotice}
               </div>
             )}
 
@@ -2081,9 +2210,9 @@ const handleDeleteHabitDb = async (id) => {
                     {authLoading ? 'Sending Reset Code...' : 'Get Reset Code'}
                   </button>
                 </form>
-              ) : (
-                /* Step 2: Verify Code & Set Password */
-                <form onSubmit={handleResetPassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              ) : resetStep === 2 ? (
+                /* Step 2: Verify 6-Digit Code */
+                <form onSubmit={handleVerifyResetCode} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   <div>
                     <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>6-Digit Reset Code</label>
                     <input 
@@ -2096,6 +2225,13 @@ const handleDeleteHabitDb = async (id) => {
                     />
                   </div>
 
+                  <button type="submit" className="blue-btn" disabled={authLoading} style={{ width: '100%', padding: '14px', fontSize: '1rem', marginTop: '8px', opacity: authLoading ? 0.7 : 1 }}>
+                    {authLoading ? 'Verifying Code...' : 'Verify Code'}
+                  </button>
+                </form>
+              ) : (
+                /* Step 3: Enter New Password Twice & Save */
+                <form onSubmit={handleResetPassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   <div>
                     <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>New Password</label>
                     <input 
@@ -2104,7 +2240,19 @@ const handleDeleteHabitDb = async (id) => {
                       value={resetNewPassword} 
                       onChange={e => setResetNewPassword(e.target.value)} 
                       style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', outline: 'none' }} 
-                      placeholder="Enter your new password..." 
+                      placeholder="Enter new password..." 
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Confirm New Password</label>
+                    <input 
+                      type="password" 
+                      required 
+                      value={resetConfirmPassword} 
+                      onChange={e => setResetConfirmPassword(e.target.value)} 
+                      style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', outline: 'none' }} 
+                      placeholder="Re-enter new password to confirm..." 
                     />
                   </div>
 
@@ -2239,7 +2387,7 @@ const handleDeleteHabitDb = async (id) => {
                   style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     padding: '12px 14px', borderRadius: '12px', border: 'none',
-                    background: activeTab === 'ai' ? 'rgba(59, 130, 246, 0.14)' : 'transparent',
+                    background: activeTab === 'ai' ? 'var(--accent-blue-dim)' : 'transparent',
                     color: activeTab === 'ai' ? 'var(--accent-blue)' : 'var(--text-muted)',
                     fontWeight: activeTab === 'ai' ? 700 : 500, cursor: 'pointer',
                     fontSize: '0.92rem', transition: 'all 0.2s', textAlign: 'left'
@@ -2255,8 +2403,8 @@ const handleDeleteHabitDb = async (id) => {
                   onClick={() => setActiveTab('today')}
                   style={{ 
                     display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '12px', border: 'none',
-                    background: activeTab === 'today' ? 'rgba(59, 130, 246, 0.14)' : 'transparent',
-                    color: activeTab === 'today' ? '#3b82f6' : 'var(--text-muted)',
+                    background: activeTab === 'today' ? 'var(--accent-blue-dim)' : 'transparent',
+                    color: activeTab === 'today' ? 'var(--accent-blue)' : 'var(--text-muted)',
                     fontSize: '0.95rem', fontWeight: activeTab === 'today' ? 700 : 500, cursor: 'pointer', transition: 'all 0.2s', textAlign: 'left'
                   }}
                 >
@@ -2264,24 +2412,38 @@ const handleDeleteHabitDb = async (id) => {
                 </button>
 
                 <button 
-                onClick={() => setActiveTab('habits')}
-                style={{ 
-                  display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '12px', border: 'none',
-                  background: activeTab === 'habits' ? 'rgba(59, 130, 246, 0.14)' : 'transparent',
-                  color: activeTab === 'habits' ? '#3b82f6' : 'var(--text-muted)',
-                  fontSize: '0.95rem', fontWeight: activeTab === 'habits' ? 700 : 500, cursor: 'pointer', transition: 'all 0.2s', textAlign: 'left'
-                }}
-              >
-                <CheckCircle2 size={18} /> Daily Works
-              </button>
+                  onClick={() => setActiveTab('habits')}
+                  style={{ 
+                    display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '12px', border: 'none',
+                    background: activeTab === 'habits' ? 'var(--accent-blue-dim)' : 'transparent',
+                    color: activeTab === 'habits' ? 'var(--accent-blue)' : 'var(--text-muted)',
+                    fontSize: '0.95rem', fontWeight: activeTab === 'habits' ? 700 : 500, cursor: 'pointer', transition: 'all 0.2s', textAlign: 'left'
+                  }}
+                >
+                  <CheckCircle2 size={18} /> Daily Works
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('water')}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '12px',
+                    padding: '12px 14px', borderRadius: '12px', border: 'none',
+                    background: activeTab === 'water' ? 'var(--accent-blue-dim)' : 'transparent',
+                    color: activeTab === 'water' ? 'var(--accent-blue)' : 'var(--text-muted)',
+                    fontWeight: activeTab === 'water' ? 700 : 500, cursor: 'pointer',
+                    fontSize: '0.92rem', transition: 'all 0.2s', textAlign: 'left'
+                  }}
+                >
+                  <Droplet size={18} /> Drink Water
+                </button>
 
                 <button
                   onClick={() => setActiveTab('notes')}
                   style={{
                     display: 'flex', alignItems: 'center', gap: '12px',
                     padding: '12px 14px', borderRadius: '12px', border: 'none',
-                    background: activeTab === 'notes' ? 'rgba(59, 130, 246, 0.14)' : 'transparent',
-                    color: activeTab === 'notes' ? '#3b82f6' : 'var(--text-muted)',
+                    background: activeTab === 'notes' ? 'var(--accent-blue-dim)' : 'transparent',
+                    color: activeTab === 'notes' ? 'var(--accent-blue)' : 'var(--text-muted)',
                     fontWeight: activeTab === 'notes' ? 700 : 500, cursor: 'pointer',
                     fontSize: '0.92rem', transition: 'all 0.2s', textAlign: 'left'
                   }}
@@ -2294,8 +2456,8 @@ const handleDeleteHabitDb = async (id) => {
                   style={{
                     display: 'flex', alignItems: 'center', gap: '12px',
                     padding: '12px 14px', borderRadius: '12px', border: 'none',
-                    background: activeTab === 'calendar' ? 'rgba(59, 130, 246, 0.14)' : 'transparent',
-                    color: activeTab === 'calendar' ? '#3b82f6' : 'var(--text-muted)',
+                    background: activeTab === 'calendar' ? 'var(--accent-blue-dim)' : 'transparent',
+                    color: activeTab === 'calendar' ? 'var(--accent-blue)' : 'var(--text-muted)',
                     fontWeight: activeTab === 'calendar' ? 700 : 500, cursor: 'pointer',
                     fontSize: '0.92rem', transition: 'all 0.2s', textAlign: 'left'
                   }}
@@ -2308,8 +2470,8 @@ const handleDeleteHabitDb = async (id) => {
                   style={{
                     display: 'flex', alignItems: 'center', gap: '12px',
                     padding: '12px 14px', borderRadius: '12px', border: 'none',
-                    background: activeTab === 'finance' ? 'rgba(59, 130, 246, 0.14)' : 'transparent',
-                    color: activeTab === 'finance' ? '#3b82f6' : 'var(--text-muted)',
+                    background: activeTab === 'finance' ? 'var(--accent-blue-dim)' : 'transparent',
+                    color: activeTab === 'finance' ? 'var(--accent-blue)' : 'var(--text-muted)',
                     fontWeight: activeTab === 'finance' ? 700 : 500, cursor: 'pointer',
                     fontSize: '0.92rem', transition: 'all 0.2s', textAlign: 'left'
                   }}
@@ -2322,8 +2484,8 @@ const handleDeleteHabitDb = async (id) => {
                   style={{
                     display: 'flex', alignItems: 'center', gap: '12px',
                     padding: '12px 14px', borderRadius: '12px', border: 'none',
-                    background: activeTab === 'body' ? 'rgba(59, 130, 246, 0.14)' : 'transparent',
-                    color: activeTab === 'body' ? '#3b82f6' : 'var(--text-muted)',
+                    background: activeTab === 'body' ? 'var(--accent-blue-dim)' : 'transparent',
+                    color: activeTab === 'body' ? 'var(--accent-blue)' : 'var(--text-muted)',
                     fontWeight: activeTab === 'body' ? 700 : 500, cursor: 'pointer',
                     fontSize: '0.92rem', transition: 'all 0.2s', textAlign: 'left'
                   }}
@@ -2336,8 +2498,8 @@ const handleDeleteHabitDb = async (id) => {
                   style={{
                     display: 'flex', alignItems: 'center', gap: '12px',
                     padding: '12px 14px', borderRadius: '12px', border: 'none',
-                    background: activeTab === 'sleep' ? 'rgba(59, 130, 246, 0.14)' : 'transparent',
-                    color: activeTab === 'sleep' ? '#3b82f6' : 'var(--text-muted)',
+                    background: activeTab === 'sleep' ? 'var(--accent-blue-dim)' : 'transparent',
+                    color: activeTab === 'sleep' ? 'var(--accent-blue)' : 'var(--text-muted)',
                     fontWeight: activeTab === 'sleep' ? 700 : 500, cursor: 'pointer',
                     fontSize: '0.92rem', transition: 'all 0.2s', textAlign: 'left'
                   }}
@@ -2350,7 +2512,7 @@ const handleDeleteHabitDb = async (id) => {
                   style={{
                     display: 'flex', alignItems: 'center', gap: '12px',
                     padding: '12px 14px', borderRadius: '12px', border: 'none',
-                    background: activeTab === 'analytics' ? 'rgba(59, 130, 246, 0.14)' : 'transparent',
+                    background: activeTab === 'analytics' ? 'var(--accent-blue-dim)' : 'transparent',
                     color: activeTab === 'analytics' ? 'var(--accent-blue)' : 'var(--text-muted)',
                     fontWeight: activeTab === 'analytics' ? 700 : 500, cursor: 'pointer',
                     fontSize: '0.92rem', transition: 'all 0.2s', textAlign: 'left'
@@ -2370,7 +2532,7 @@ const handleDeleteHabitDb = async (id) => {
                   width: '100%',
                   display: 'flex', alignItems: 'center', gap: '12px',
                   padding: '12px 16px', borderRadius: '12px', border: 'none',
-                  background: activeTab === 'settings' ? 'rgba(59, 130, 246, 0.14)' : 'transparent',
+                  background: activeTab === 'settings' ? 'var(--accent-blue-dim)' : 'transparent',
                   color: activeTab === 'settings' ? 'var(--accent-blue)' : 'var(--text-muted)',
                   fontWeight: activeTab === 'settings' ? 700 : 500, cursor: 'pointer',
                   fontSize: '0.95rem', transition: 'all 0.2s', textAlign: 'left'
@@ -2397,6 +2559,7 @@ const handleDeleteHabitDb = async (id) => {
                   <h2 style={{ fontSize: '1.9rem', fontWeight: 900, letterSpacing: '-0.5px', color: 'var(--text-main)' }}>
                     {activeTab === 'gym' ? 'Body & Gym' : 
                      activeTab === 'sleep' ? 'Sleep & Recovery' : 
+                     activeTab === 'water' ? 'Drink Water & Hydration' :
                      activeTab === 'finance' ? 'Finance & Money' : 
                      activeTab === 'notes' ? 'Notes & Diary' : 
                      activeTab === 'calendar' ? 'Calendar' :
@@ -2519,14 +2682,9 @@ const handleDeleteHabitDb = async (id) => {
                 </div>
                 
                 <button 
-                  onClick={() => setShowFinanceForm(!showFinanceForm)} 
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '8px',
-                    padding: '10px 18px', borderRadius: '30px', border: '1px solid var(--border-color)',
-                    background: 'var(--bg-card)', color: 'var(--text-main)',
-                    fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.08)', transition: 'all 0.2s'
-                  }}
+                  className="blue-btn"
+                  onClick={() => setShowFinanceForm(!showFinanceForm)}
+                  style={{ fontSize: '0.9rem', padding: '10px 22px' }}
                 >
                   {showFinanceForm ? 'View Charts' : '+ Record Entry'}
                 </button>
@@ -2562,12 +2720,9 @@ const handleDeleteHabitDb = async (id) => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <button 
                         onClick={handleToggleAllToday}
+                        className="blue-btn"
                         style={{
-                          display: 'flex', alignItems: 'center', gap: '8px',
-                          padding: '10px 18px', borderRadius: '30px', border: '1px solid var(--border-color)',
-                          background: 'var(--bg-card)', color: 'var(--text-main)',
-                          fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer',
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.08)', transition: 'all 0.2s', flexShrink: 0, whiteSpace: 'nowrap'
+                          padding: '10px 20px', borderRadius: '30px', fontSize: '0.9rem', flexShrink: 0, whiteSpace: 'nowrap'
                         }}
                       >
                         <Check size={18} /> Tick All Today
@@ -2663,11 +2818,8 @@ const handleDeleteHabitDb = async (id) => {
                     <div style={{ background: 'var(--bg-main)', borderRadius: '20px', border: '1px solid var(--border-color)', padding: '24px', marginBottom: '28px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <h4 style={{ fontSize: '1.2rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-main)', margin: 0 }}>
-                          <Dumbbell size={22} color="var(--accent-blue)" /> Today Workout & Nutrition Summary
+                          <Dumbbell size={22} color="var(--accent-blue)" /> Body
                         </h4>
-                        <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--accent-blue)', background: 'var(--accent-blue-dim)', padding: '4px 12px', borderRadius: '12px', border: '1px solid rgba(59,130,246,0.2)' }}>
-                          Fitness & Health Pillar
-                        </span>
                       </div>
 
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
@@ -2689,7 +2841,7 @@ const handleDeleteHabitDb = async (id) => {
                             <div style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '14px' }}>
                               <div>
 
-                                <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--accent-blue)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                   🏋️ {isDone ? (workouts.find(w => w.date === todayKeyStr)?.title || currentTitle) : currentTitle}
                                 </div>
 
@@ -2870,31 +3022,31 @@ const handleDeleteHabitDb = async (id) => {
                             <div style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '14px' }}>
                               <div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#06b6d4', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--accent-blue)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                                     💧 Daily Hydration Tracker
                                   </span>
-                                  <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#06b6d4' }}>
+                                  <span style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--accent-blue)' }}>
                                     {pct}%
                                   </span>
                                 </div>
-                                <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#06b6d4', marginBottom: '8px' }}>
+                                <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--accent-blue)', marginBottom: '8px' }}>
                                   {hydration} L <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>/ {goal} L target</span>
                                 </div>
                                 <div style={{ width: '100%', height: '10px', background: 'var(--bg-main)', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
-                                  <div style={{ width: `${pct}%`, height: '100%', background: '#06b6d4', borderRadius: '10px', transition: 'width 0.3s ease', boxShadow: '0 0 8px rgba(6,182,212,0.3)' }} />
+                                  <div style={{ width: `${pct}%`, height: '100%', background: 'var(--accent-blue)', borderRadius: '10px', transition: 'width 0.3s ease', boxShadow: '0 0 8px var(--accent-blue-dim)' }} />
                                 </div>
                               </div>
 
                               <div style={{ display: 'flex', gap: '8px' }}>
                                 <button
                                   onClick={() => handleAddHydration(0.5)}
-                                  style={{ flex: 1, padding: '7px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+                                  style={{ flex: 1, padding: '7px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--accent-blue-dim)', color: 'var(--accent-blue)', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
                                 >
                                   +0.5 L
                                 </button>
                                 <button
                                   onClick={() => handleAddHydration(1.0)}
-                                  style={{ flex: 1, padding: '7px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+                                  style={{ flex: 1, padding: '7px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--accent-blue-dim)', color: 'var(--accent-blue)', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
                                 >
                                   +1.0 L
                                 </button>
@@ -3407,9 +3559,9 @@ const handleDeleteHabitDb = async (id) => {
                           )}
                         </div>
 
-                          <h5 style={{ fontWeight: 800, fontSize: '1.15rem', marginBottom: '6px', textDecoration: item.checkedToday ? 'line-through' : 'none' }}>{item.category}</h5>
+                          <h5 style={{ fontWeight: 800, fontSize: '1.15rem', marginBottom: '6px', textDecoration: item.checkedToday ? 'line-through' : 'none' }}>{item.title}</h5>
                           <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Daily Goal: <strong style={{ color: 'var(--text-main)' }}>{item.target}</strong></p>
-                          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '16px' }}>Habit Name: <strong style={{ color: 'var(--text-main)' }}>{item.title}</strong></p>
+                          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '16px' }}>Category: <strong style={{ color: 'var(--text-main)' }}>{item.category}</strong></p>
                         </div>
 
                         <div>
@@ -3606,25 +3758,46 @@ const handleDeleteHabitDb = async (id) => {
                               onClick={async () => {
                                 if (!editingHabitData.title.trim()) return showToast('Title required', 'error');
                                 const finalCategory = editingHabitData.category === 'Other' ? (customPillarInput.trim() || 'Custom') : editingHabitData.category;
-                                
+                                const challengeDays = editingHabitData.challengeMode ? Number(editingHabitData.challengeDays || 30) : 0;
+
                                 try {
-                                  await fetch('/api/habits', {
-                                    method: 'PUT',
-                                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                    body: JSON.stringify({
-                                      id: editingHabitData.id,
-                                      label: editingHabitData.title,
-                                      category: finalCategory,
-                                      target: editingHabitData.target,
-                                      challenge_days: editingHabitData.challengeMode ? Number(editingHabitData.challengeDays) : 0
-                                    })
-                                  });
+                                  if (token) {
+                                    const res = await fetch('/api/habits', {
+                                      method: 'PUT',
+                                      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                      body: JSON.stringify({
+                                        id: editingHabitData.id,
+                                        label: editingHabitData.title,
+                                        category: finalCategory,
+                                        target: editingHabitData.target,
+                                        challenge_days: challengeDays
+                                      })
+                                    });
+                                    if (!res.ok) {
+                                      const errData = await res.json().catch(() => ({}));
+                                      throw new Error(errData.error || 'Failed to update habit');
+                                    }
+                                  }
+
+                                  // Optimistically update local React state
+                                  setHabits(prev => prev.map(h => h.id === editingHabitData.id ? {
+                                    ...h,
+                                    title: editingHabitData.title,
+                                    label: editingHabitData.title,
+                                    category: finalCategory,
+                                    target: editingHabitData.target,
+                                    challengeDays: challengeDays,
+                                    challenge_days: challengeDays,
+                                    startDate: challengeDays > 0 ? (h.startDate || todayKey()) : null,
+                                    start_date: challengeDays > 0 ? (h.start_date || todayKey()) : null
+                                  } : h));
+
                                   setIsEditHabitModalOpen(false);
                                   showToast('Habit updated!', 'success');
-                                  fetchHabits(); // reload
+                                  if (token) fetchDashboardData(); // reload backend
                                 } catch (e) {
                                   console.error(e);
-                                  showToast('Failed to update habit', 'error');
+                                  showToast(e.message || 'Failed to update habit', 'error');
                                 }
                               }}
                             >
@@ -3636,6 +3809,15 @@ const handleDeleteHabitDb = async (id) => {
                     </div>
                   )}
                 </div>
+              )}
+
+              {/* 2.2) DRINK WATER & HYDRATION TAB */}
+              {activeTab === 'water' && (
+                <WaterReminder 
+                  todayStat={bodyStats}
+                  onLogStat={handleSaveBodyStat}
+                  showToast={showToast}
+                />
               )}
 
               {/* 2.5) CALENDAR TAB */}
@@ -3666,6 +3848,7 @@ const handleDeleteHabitDb = async (id) => {
                       </p>
                     </div>
                     <button 
+                      className="blue-btn"
                       onClick={async () => {
                         const baseTitle = getFormattedDateTitle();
                         const count = notesList.filter(n => n.title === baseTitle || n.title.startsWith(`${baseTitle} (`)).length;
@@ -3676,7 +3859,7 @@ const handleDeleteHabitDb = async (id) => {
                           setActiveNoteId(newNote.id);
                         });
                       }}
-                      style={{ padding: '10px 20px', borderRadius: '30px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: 700, fontSize: '0.92rem', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s' }}
+                      style={{ padding: '10px 22px', fontSize: '0.92rem' }}
                     >
                       <Plus size={18} /> New Diary Page / Note
                     </button>
@@ -3900,20 +4083,6 @@ const handleDeleteHabitDb = async (id) => {
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                               {notesViewMode === 'active' ? (
                                 <>
-                                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', fontWeight: 700, color: currentNote.shareWithAi ? '#22c55e' : 'var(--text-muted)', cursor: 'pointer', background: currentNote.shareWithAi ? 'rgba(34, 197, 94, 0.12)' : 'var(--bg-card)', padding: '8px 16px', borderRadius: '20px', border: `1px solid ${currentNote.shareWithAi ? 'rgba(34, 197, 94, 0.4)' : 'var(--border-color)'}`, transition: 'all 0.2s' }}>
-                                    <input
-                                      type="checkbox"
-                                      checked={currentNote.shareWithAi}
-                                      onChange={(e) => {
-                                        const nextState = e.target.checked;
-                                        setNotesList(notesList.map(n => n.id === currentNote.id ? { ...n, shareWithAi: nextState } : n));
-                                        handleUpdateNoteDb({ ...currentNote, shareWithAi: nextState });
-                                      }}
-                                      style={{ accentColor: '#22c55e', cursor: 'pointer', width: '16px', height: '16px' }}
-                                    />
-                                    <span>{currentNote.shareWithAi ? '🤖 Shared with Personal AI Assistant (Allowed)' : '🔒 Private Note (AI Blocked)'}</span>
-                                  </label>
-
                                   <button
                                     onClick={() => {
                                       const trashedNote = { ...currentNote, deletedAt: Date.now(), is_trashed: 1 };
@@ -4009,7 +4178,7 @@ const handleDeleteHabitDb = async (id) => {
                           />
 
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                            <span>{notesViewMode === 'active' ? '💡 Tip: Any note with "🤖 Shared with Personal AI Assistant" checked can be queried directly in your AI Assistant!' : '🗑️ Viewing note in Trash. Restore it to edit or keep permanently.'}</span>
+                            <span>{notesViewMode === 'active' ? '' : '🗑️ Viewing note in Trash. Restore it to edit or keep permanently.'}</span>
                             {notesViewMode === 'active' ? (
                               <button
                                 onClick={async () => {

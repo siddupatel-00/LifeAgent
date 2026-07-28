@@ -34,7 +34,7 @@ export default function CalendarPanel({
       const res = await fetch('/api/calendar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ title: newEventTitle.trim(), date: newEventDate, color: '#3b82f6' })
+        body: JSON.stringify({ title: newEventTitle.trim(), date: newEventDate, color: 'var(--accent-blue)' })
       });
       if (res.ok) {
         const ev = await res.json();
@@ -165,7 +165,7 @@ export default function CalendarPanel({
       case 'completed': return { icon: '✅', label: 'Completed', bg: 'rgba(34, 197, 94, 0.15)', color: '#22c55e' };
       case 'failed': return { icon: '❌', label: 'Failed', bg: 'rgba(239, 68, 68, 0.15)', color: '#ef4444' };
       case 'expired': return { icon: '⏰', label: 'Expired', bg: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b' };
-      default: return { icon: '📅', label: 'Real-Time / Upcoming', bg: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6' };
+      default: return { icon: '📅', label: 'Real-Time / Upcoming', bg: 'var(--accent-blue-dim)', color: 'var(--accent-blue)' };
     }
   };
 
@@ -181,7 +181,7 @@ export default function CalendarPanel({
   const sortedEventsList = [...filteredEventsList].sort((a, b) => a.date.localeCompare(b.date));
 
   const groupedSections = [
-    { key: 'today', title: `📌 Today (${todayStr})`, badgeBg: 'rgba(59, 130, 246, 0.15)', badgeColor: 'var(--accent-blue)', events: [] },
+    { key: 'today', title: `📌 Today (${todayStr})`, badgeBg: 'var(--accent-blue-dim)', badgeColor: 'var(--accent-blue)', events: [] },
     { key: 'tomorrow', title: `🌅 Tomorrow (${tomorrowStr})`, badgeBg: 'rgba(139, 92, 246, 0.15)', badgeColor: '#8b5cf6', events: [] },
     { key: 'upcoming', title: '🚀 Upcoming', badgeBg: 'rgba(16, 185, 129, 0.15)', badgeColor: '#10b981', events: [] },
     { key: 'past', title: '⏳ Earlier / Past', badgeBg: 'rgba(107, 114, 128, 0.15)', badgeColor: '#6b7280', events: [] }
@@ -316,7 +316,7 @@ export default function CalendarPanel({
                 style={{
                   padding: '8px 16px', borderRadius: '50px', border: '1px solid',
                   borderColor: isActive ? 'var(--accent-blue)' : 'var(--border-color)',
-                  background: isActive ? 'rgba(59, 130, 246, 0.15)' : 'var(--bg-card)',
+                  background: isActive ? 'var(--accent-blue-dim)' : 'var(--bg-card)',
                   color: isActive ? 'var(--accent-blue)' : 'var(--text-muted)',
                   fontWeight: isActive ? 800 : 500, cursor: 'pointer',
                   fontSize: '0.85rem', transition: 'all 0.2s', whiteSpace: 'nowrap'
@@ -409,7 +409,7 @@ export default function CalendarPanel({
                     onClick={() => setSelectedCalendarDate(isSelected ? '' : dateStr)}
                     style={{ 
                       padding: '10px 0', borderRadius: '10px', 
-                      background: isSelected ? 'var(--accent-blue)' : isToday ? 'rgba(59, 130, 246, 0.15)' : 'var(--bg-main)', 
+                      background: isSelected ? 'var(--accent-blue)' : isToday ? 'var(--accent-blue-dim)' : 'var(--bg-main)', 
                       color: isSelected ? '#fff' : 'var(--text-main)',
                       cursor: 'pointer', position: 'relative',
                       fontWeight: isSelected || isToday ? 800 : 500,

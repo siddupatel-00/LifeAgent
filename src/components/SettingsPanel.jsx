@@ -180,6 +180,23 @@ const SettingsPanel = ({
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
               <div>
+                <div style={{ fontWeight: 700, fontSize: '1rem' }}>Display Theme Mode</div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Choose your overall workspace theme appearance mode.</div>
+              </div>
+              <select 
+                value={themeMode || 'pc'}
+                onChange={(e) => setThemeMode(e.target.value)} 
+                style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600, outline: 'none', appearance: 'none' }}
+              >
+                <option value="dark">Dark Mode</option>
+                <option value="night">🌙 Night Mode</option>
+                <option value="light">Light Mode</option>
+                <option value="pc">PC / System</option>
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
+              <div>
                 <div style={{ fontWeight: 700, fontSize: '1rem' }}>Accent Color Theme</div>
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Personalize your dashboard's accent colors.</div>
               </div>

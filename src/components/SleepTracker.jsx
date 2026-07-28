@@ -3,9 +3,21 @@ import { Plus, X, Trash2, Edit2, Moon, Clock, Calendar, Activity, Filter } from 
 import { todayKey } from '../utils/date';
 import ConfirmModal from './ConfirmModal';
 
-export default function SleepTracker({ token, showToast, userProfile }) {
-  const [logs, setLogs] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+export default function SleepTracker({ token, showToast, userProfile, todayStat }) {
+  const [logs, setLogs] = useState(() => {
+    try {
+      const cached = localStorage.getItem('cache_sleep_logs');
+      if (cached) return JSON.parse(cached);
+    } catch (e) {}
+    return [];
+  });
+  const [isLoading, setIsLoading] = useState(() => {
+    try {
+      return !localStorage.getItem('cache_sleep_logs');
+    } catch (e) {
+      return true;
+    }
+  });
   const [showModal, setShowModal] = useState(false);
   const [editingLogId, setEditingLogId] = useState(null);
   const [formData, setFormData] = useState({
@@ -104,11 +116,10 @@ export default function SleepTracker({ token, showToast, userProfile }) {
       if (res.ok) {
         const data = await res.json();
         setLogs(data);
-      } else {
-        showToast?.('Failed to load sleep logs', 'error');
+        try { localStorage.setItem('cache_sleep_logs', JSON.stringify(data)); } catch (e) {}
       }
     } catch (error) {
-      showToast?.('Network error', 'error');
+      // quiet background error handling
     } finally {
       setIsLoading(false);
     }
@@ -215,10 +226,10 @@ export default function SleepTracker({ token, showToast, userProfile }) {
   const getQualityColor = (quality) => {
     switch(quality) {
       case 'Excellent': return '#10b981';
-      case 'Good': return '#3b82f6';
+      case 'Good': return 'var(--accent-blue)';
       case 'Fair': return '#f59e0b';
       case 'Poor': return '#ef4444';
-      default: return '#3b82f6';
+      default: return 'var(--accent-blue)';
     }
   };
 
@@ -363,7 +374,7 @@ export default function SleepTracker({ token, showToast, userProfile }) {
             style={{
               padding: '6px 14px', borderRadius: '20px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer',
               border: rangeMode === 'today' ? '1px solid var(--accent-blue)' : '1px solid var(--border-color)',
-              background: rangeMode === 'today' ? 'rgba(59, 130, 246, 0.12)' : 'var(--bg-card)',
+              background: rangeMode === 'today' ? 'var(--accent-blue-dim)' : 'var(--bg-card)',
               color: rangeMode === 'today' ? 'var(--accent-blue)' : 'var(--text-muted)',
               transition: 'all 0.2s'
             }}
@@ -376,7 +387,7 @@ export default function SleepTracker({ token, showToast, userProfile }) {
             style={{
               padding: '6px 14px', borderRadius: '20px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer',
               border: rangeMode === '7d' ? '1px solid var(--accent-blue)' : '1px solid var(--border-color)',
-              background: rangeMode === '7d' ? 'rgba(59, 130, 246, 0.12)' : 'var(--bg-card)',
+              background: rangeMode === '7d' ? 'var(--accent-blue-dim)' : 'var(--bg-card)',
               color: rangeMode === '7d' ? 'var(--accent-blue)' : 'var(--text-muted)',
               transition: 'all 0.2s'
             }}
@@ -389,7 +400,7 @@ export default function SleepTracker({ token, showToast, userProfile }) {
             style={{
               padding: '6px 14px', borderRadius: '20px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer',
               border: rangeMode === 'this_month' ? '1px solid var(--accent-blue)' : '1px solid var(--border-color)',
-              background: rangeMode === 'this_month' ? 'rgba(59, 130, 246, 0.12)' : 'var(--bg-card)',
+              background: rangeMode === 'this_month' ? 'var(--accent-blue-dim)' : 'var(--bg-card)',
               color: rangeMode === 'this_month' ? 'var(--accent-blue)' : 'var(--text-muted)',
               transition: 'all 0.2s'
             }}
@@ -402,7 +413,7 @@ export default function SleepTracker({ token, showToast, userProfile }) {
             style={{
               padding: '6px 14px', borderRadius: '20px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer',
               border: rangeMode === 'past_month' ? '1px solid var(--accent-blue)' : '1px solid var(--border-color)',
-              background: rangeMode === 'past_month' ? 'rgba(59, 130, 246, 0.12)' : 'var(--bg-card)',
+              background: rangeMode === 'past_month' ? 'var(--accent-blue-dim)' : 'var(--bg-card)',
               color: rangeMode === 'past_month' ? 'var(--accent-blue)' : 'var(--text-muted)',
               transition: 'all 0.2s'
             }}
@@ -415,7 +426,7 @@ export default function SleepTracker({ token, showToast, userProfile }) {
             style={{
               padding: '6px 14px', borderRadius: '20px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer',
               border: rangeMode === 'custom' ? '1px solid var(--accent-blue)' : '1px solid var(--border-color)',
-              background: rangeMode === 'custom' ? 'rgba(59, 130, 246, 0.12)' : 'var(--bg-card)',
+              background: rangeMode === 'custom' ? 'var(--accent-blue-dim)' : 'var(--bg-card)',
               color: rangeMode === 'custom' ? 'var(--accent-blue)' : 'var(--text-muted)',
               transition: 'all 0.2s'
             }}
@@ -505,7 +516,7 @@ export default function SleepTracker({ token, showToast, userProfile }) {
           {chartData.map(day => {
             const totalHrs = day.hours + day.minutes / 60;
             const heightPct = Math.min((totalHrs / 12) * 100, 100); 
-            const color = day.quality ? getQualityColor(day.quality) : totalHrs >= 8 ? '#10b981' : totalHrs >= 7 ? '#3b82f6' : totalHrs >= 5 ? '#f59e0b' : totalHrs > 0 ? '#ef4444' : 'var(--border-color)';
+            const color = day.quality ? getQualityColor(day.quality) : totalHrs >= 8 ? '#10b981' : totalHrs >= 7 ? 'var(--accent-blue)' : totalHrs >= 5 ? '#f59e0b' : totalHrs > 0 ? '#ef4444' : 'var(--border-color)';
             const formattedDate = new Date(day.date).toLocaleDateString('en', { month: 'numeric', day: 'numeric' });
             const dayName = new Date(day.date).toLocaleDateString('en', { weekday: 'short' });
 
@@ -711,8 +722,8 @@ export default function SleepTracker({ token, showToast, userProfile }) {
                     style={{ 
                       display: 'inline-block', marginTop: '4px', padding: '4px 10px', borderRadius: '12px', 
                       fontSize: '0.82rem', fontWeight: 700,
-                      background: formData.quality === 'Excellent' ? 'rgba(16, 185, 129, 0.15)' : formData.quality === 'Good' ? 'rgba(59, 130, 246, 0.15)' : formData.quality === 'Fair' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                      color: formData.quality === 'Excellent' ? '#10b981' : formData.quality === 'Good' ? '#3b82f6' : formData.quality === 'Fair' ? '#f59e0b' : '#ef4444'
+                      background: formData.quality === 'Excellent' ? 'rgba(16, 185, 129, 0.15)' : formData.quality === 'Good' ? 'var(--accent-blue-dim)' : formData.quality === 'Fair' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                      color: formData.quality === 'Excellent' ? '#10b981' : formData.quality === 'Good' ? 'var(--accent-blue)' : formData.quality === 'Fair' ? '#f59e0b' : '#ef4444'
                     }}
                   >
                     {formData.quality === 'Excellent' && '🌟 Excellent'}

@@ -403,14 +403,14 @@ body {
   align-items: center;
   gap: 10px;
   transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--accent-blue) 30%, transparent);
   transform: translateZ(0);
 }
 
 .blue-btn:hover {
   background: var(--accent-blue-light);
   transform: translateY(-2px) translateZ(0);
-  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.45);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--accent-blue) 45%, transparent);
 }
 
 .secondary-btn {
@@ -556,7 +556,7 @@ body {
   line-height: 1.4;
 }
 
-/* Custom checkbox appearance — muted unchecked state */
+/* Custom checkbox appearance — crisp high-contrast state */
 input[type="checkbox"] {
   appearance: none;
   -webkit-appearance: none;
@@ -572,8 +572,8 @@ input[type="checkbox"] {
 }
 
 input[type="checkbox"]:checked {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.4);
+  background: var(--accent-blue);
+  border-color: var(--accent-blue);
 }
 
 input[type="checkbox"]:checked::after {
@@ -583,7 +583,7 @@ input[type="checkbox"]:checked::after {
   top: 1px;
   width: 5px;
   height: 9px;
-  border: 2px solid rgba(255, 255, 255, 0.9);
+  border: 2px solid var(--accent-text);
   border-top: none;
   border-left: none;
   transform: rotate(45deg);
@@ -594,3 +594,40 @@ input[type="checkbox"]:checked::after {
   border-color: #cbd5e1;
 }
 
+[data-theme="light"] input[type="checkbox"]:checked {
+  background: var(--accent-blue);
+  border-color: var(--accent-blue);
+}
+
+[data-theme="light"] input[type="checkbox"]:checked::after {
+  border-color: var(--accent-text);
+}
+
+
+/* NIGHT MODE */
+[data-theme="night"] {
+  --bg-main: #07080c;
+  --bg-card: #0e1017;
+  --bg-card-hover: rgba(255, 255, 255, 0.05);
+  --border-color: rgba(255, 255, 255, 0.08);
+  --text-main: #ffffff;
+  --text-muted: #8b949e;
+  --accent-blue: #ffffff;
+  --accent-blue-dim: rgba(255, 255, 255, 0.1);
+  --accent-text: #000000;
+  --active-bg: rgba(255, 255, 255, 0.08);
+  --active-border: rgba(255, 255, 255, 0.25);
+}
+
+[data-theme="night"] .blue-btn {
+  background: var(--bg-card);
+  color: #ffffff;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="night"] .blue-btn:hover {
+  background: var(--bg-card-hover);
+  border-color: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}

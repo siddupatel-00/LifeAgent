@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, X, Check } from 'lucide-react';
 import { todayKey } from '../utils/date';
 
-const CATEGORIES = ['General', 'Food', 'Transport', 'Shopping', 'Bills', 'Entertainment', 'Education', 'Health', 'Other'];
+const SPEND_CATEGORIES = ['Choose Category', 'General', 'Food', 'Transport', 'Shopping', 'Bills', 'Entertainment', 'Education', 'Health', 'Other'];
+const EARNING_CATEGORIES = ['Choose Category', 'Job', 'Business', 'Freelancing', 'Startup', 'Other'];
 
 export default function MoneyTracker({ transactions, setTransactions, token, showToast, currency, timeRange = 'today', timeframe, timezone, userProfile }) {
   const [newTitle, setNewTitle] = useState('');
   const [newAmount, setNewAmount] = useState('');
   const [newType, setNewType] = useState('spend');
-  const [newCategory, setNewCategory] = useState('General');
+  const [newCategory, setNewCategory] = useState('Choose Category');
   const [newNotes, setNewNotes] = useState('');
   const [newDate, setNewDate] = useState(todayKey(timezone || userProfile?.timezone));
   const [loading, setLoading] = useState(false);
@@ -253,12 +254,19 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
                       <input type="text" value={editForm.amount} onChange={e => setEditForm({...editForm, amount: e.target.value})} style={{ width: '100px', padding: '8px', borderRadius: '6px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
                     </div>
                     <div style={{ display: 'flex', gap: '12px' }}>
-                      <select value={editForm.type} onChange={e => setEditForm({...editForm, type: e.target.value})} style={{ flex: 1, padding: '8px', borderRadius: '6px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}>
+                      <select 
+                        value={editForm.type} 
+                        onChange={e => {
+                          const val = e.target.value;
+                          setEditForm({ ...editForm, type: val, category: val === 'earn' ? 'Job' : 'General' });
+                        }} 
+                        style={{ flex: 1, padding: '8px', borderRadius: '6px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}
+                      >
                         <option value="spend">Spending</option>
                         <option value="earn">Earning</option>
                       </select>
                       <select value={editForm.category} onChange={e => setEditForm({...editForm, category: e.target.value})} style={{ flex: 1, padding: '8px', borderRadius: '6px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}>
-                        {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                        {(editForm.type === 'earn' ? EARNING_CATEGORIES : SPEND_CATEGORIES).map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
                     </div>
                     <input type="text" placeholder="Notes (optional)" value={editForm.notes || ''} onChange={e => setEditForm({...editForm, notes: e.target.value})} style={{ padding: '8px', borderRadius: '6px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
@@ -300,7 +308,15 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
         <form onSubmit={addTransaction} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <div>
             <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Type</label>
-            <select value={newType} onChange={(e) => setNewType(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}>
+            <select 
+              value={newType} 
+              onChange={(e) => {
+                const val = e.target.value;
+                setNewType(val);
+                setNewCategory('Choose Category');
+              }} 
+              style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}
+            >
               <option value="spend">Spending (-)</option>
               <option value="earn">Earning (+)</option>
             </select>
@@ -316,7 +332,7 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
           <div>
             <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Category</label>
             <select value={newCategory} onChange={(e) => setNewCategory(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}>
-              {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              {(newType === 'earn' ? EARNING_CATEGORIES : SPEND_CATEGORIES).map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div>

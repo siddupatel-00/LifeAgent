@@ -72,7 +72,7 @@ export default function NotesPanel({
             <BookOpen size={24} color="var(--accent-blue)" /> Notes & Personal Diary
           </h3>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: '4px' }}>
-            Create daily logs, 2026 master goals, and wishlists. Toggle AI sharing to give your agent context during chats!
+            Create daily logs, 2026 master goals, and wishlists.
           </p>
         </div>
         <button 
@@ -101,9 +101,9 @@ export default function NotesPanel({
               onClick={() => setNotesViewMode('active')}
               style={{
                 flex: 1, padding: '8px', borderRadius: '10px', border: '1px solid',
-                borderColor: notesViewMode === 'active' ? '#3b82f6' : 'transparent',
-                background: notesViewMode === 'active' ? 'rgba(59, 130, 246, 0.14)' : 'transparent',
-                color: notesViewMode === 'active' ? '#3b82f6' : 'var(--text-muted)',
+                borderColor: notesViewMode === 'active' ? 'var(--accent-blue)' : 'transparent',
+                background: notesViewMode === 'active' ? 'var(--accent-blue-dim)' : 'transparent',
+                color: notesViewMode === 'active' ? 'var(--accent-blue)' : 'var(--text-muted)',
                 fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', transition: 'all 0.2s'
               }}
             >
@@ -136,9 +136,9 @@ export default function NotesPanel({
                     style={{
                       padding: '14px 16px',
                       borderRadius: '14px',
-                      background: activeNoteId === note.id ? 'rgba(59, 130, 246, 0.14)' : 'var(--bg-main)',
+                      background: activeNoteId === note.id ? 'var(--accent-blue-dim)' : 'var(--bg-main)',
                       color: 'var(--text-main)',
-                      border: `1px solid ${activeNoteId === note.id ? '#3b82f6' : 'var(--border-color)'}`,
+                      border: `1px solid ${activeNoteId === note.id ? 'var(--accent-blue)' : 'var(--border-color)'}`,
                       cursor: 'pointer',
                       transition: 'all 0.2s',
                       display: 'flex', flexDirection: 'column', gap: '6px'
@@ -150,7 +150,7 @@ export default function NotesPanel({
                       </span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         {note.shareWithAi && (
-                          <span title="Shared with AI Agent" style={{ fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '4px', background: activeNoteId === note.id ? 'rgba(59,130,246,0.2)' : 'rgba(34,197,94,0.15)', color: activeNoteId === note.id ? 'var(--accent-blue)' : '#22c55e', padding: '2px 8px', borderRadius: '10px', fontWeight: 700 }}>
+                          <span title="Shared with AI Agent" style={{ fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '4px', background: activeNoteId === note.id ? 'var(--accent-blue-dim)' : 'rgba(34,197,94,0.15)', color: activeNoteId === note.id ? 'var(--accent-blue)' : '#22c55e', padding: '2px 8px', borderRadius: '10px', fontWeight: 700 }}>
                             🤖 AI Shared
                           </span>
                         )}
@@ -295,7 +295,6 @@ export default function NotesPanel({
                         Save Note
                       </button>
 
-
                       <button
                         onClick={() => {
                           const trashedNote = { ...currentNote, deletedAt: Date.now(), is_trashed: 1 };
@@ -377,7 +376,7 @@ export default function NotesPanel({
               />
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                <span>{notesViewMode === 'active' ? '💡 Tip: Any note with "🤖 Shared with Personal AI Assistant" checked can be queried directly in your AI Assistant!' : '🗑️ Viewing note in Trash. Restore it to edit or keep permanently.'}</span>
+                <span>{notesViewMode === 'active' ? '' : '🗑️ Viewing note in Trash. Restore it to edit or keep permanently.'}</span>
                 <span style={{ fontWeight: 700, color: notesViewMode === 'active' ? 'transparent' : '#ef4444' }}>{notesViewMode === 'active' ? '' : 'In Trash Bin'}</span>
               </div>
             </div>
