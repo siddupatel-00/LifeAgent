@@ -1573,7 +1573,11 @@ const handleDeleteHabitDb = async (id) => {
                 border: '1px solid var(--border-color)', 
                 overflow: 'hidden', 
                 boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.5), 0 0 35px rgba(59, 130, 246, 0.15)',
-                background: 'var(--bg-card)'
+                background: 'var(--bg-card)',
+                height: '480px',
+                maxHeight: '480px',
+                display: 'flex',
+                flexDirection: 'column'
               }}
             >
               {/* Window Titlebar Header */}
@@ -1661,7 +1665,7 @@ const handleDeleteHabitDb = async (id) => {
               </div>
 
               {/* Tab Display Area */}
-              <div style={{ padding: '28px', minHeight: '420px', background: 'var(--bg-main)' }}>
+              <div style={{ padding: '28px', height: '100%', overflowY: 'auto', background: 'var(--bg-main)' }}>
                 
                 {/* 1. MONEY TAB MOCK */}
                 {previewTab === 'Money' && (
