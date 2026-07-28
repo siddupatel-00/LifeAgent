@@ -73,10 +73,22 @@ export default async function handler(req, res) {
         resetCode
       });
 
-      return res.status(200).json({
-        message: `Check your email inbox (${user.email}) for the 6-digit reset code!`,
-        emailSent: true
-      });
+      const emailSent = Boolean(emailResult && emailResult.success && emailResult.method === 'resend');
+
+      if (emailSent) {
+        return res.status(200).json({
+          message: `✉️ Reset code sent to ${user.email}! Check your inbox.`,
+          emailSent: true
+        });
+      } else {
+        // Email failed - return the code as fallback so user isn't blocked
+        console.error('[Auth] Email failed:', emailResult?.error);
+        return res.status(200).json({
+          message: `Reset code generated.`,
+          emailSent: false,
+          devCode: resetCode
+        });
+      }
     }
 
     if (action === 'verify-reset-code') {

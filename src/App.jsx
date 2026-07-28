@@ -273,8 +273,16 @@ export default function App() {
       if (!res.ok) throw new Error(data.error || 'Account not found');
 
       setResetStep(2);
-      setResetCode('');
-      setResetSuccessMsg(data.message || '✉️ Check your email inbox for the 6-digit reset code. It expires in 15 minutes.');
+      if (data.emailSent) {
+        setResetCode('');
+        setResetSuccessMsg(data.message || '✉️ Check your email inbox for the 6-digit reset code. It expires in 15 minutes.');
+      } else if (data.devCode) {
+        // Email failed - auto-fill code so user isn't blocked
+        setResetCode(String(data.devCode));
+        setResetSuccessMsg(`⚠️ Email delivery failed. Your code is: ${data.devCode} (auto-filled below)`);
+      } else {
+        setResetSuccessMsg('✉️ Check your email inbox for the 6-digit reset code.');
+      }
     } catch (err) {
       setAuthError(err.message);
     } finally {
