@@ -220,16 +220,22 @@ export default function App() {
   }, [currentPage, previewTab]);
 
   // User Profile & Settings State
-  const [userProfile, setUserProfile] = useState({
-    name: '',
-    handle: '',
-    email: '',
-    aiTone: 'Analytical & Direct',
-    morningAudit: false,
-    smartAlerts: false,
-    auto_open_ai_sidechat: localStorage.getItem('auto_open_ai_sidechat') === 'true',
-    currency: '$',
-    timezone: localTimeZone()
+  const [userProfile, setUserProfile] = useState(() => {
+    try {
+      const cached = JSON.parse(localStorage.getItem('cache_userProfile'));
+      if (cached) return cached;
+    } catch(e) {}
+    return {
+      name: '',
+      handle: '',
+      email: '',
+      aiTone: 'Analytical & Direct',
+      morningAudit: false,
+      smartAlerts: false,
+      auto_open_ai_sidechat: localStorage.getItem('auto_open_ai_sidechat') === 'true',
+      currency: '$',
+      timezone: localTimeZone()
+    };
   });
   const [settingsSaved, setSettingsSaved] = useState(false);
 
@@ -369,9 +375,19 @@ export default function App() {
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('cache_userProfile');
+    localStorage.removeItem('cache_aiMessages');
+    localStorage.removeItem('cache_habits');
+    localStorage.removeItem('cache_todayItems');
+    localStorage.removeItem('cache_transactions');
+    localStorage.removeItem('cache_workouts');
+    localStorage.removeItem('cache_bodyStats');
+    localStorage.removeItem('cache_notesList');
+    localStorage.removeItem('cache_trashNotes');
+    localStorage.removeItem('cache_calendarEvents');
     setToken('');
     setIsAuthenticated(false);
-    setUserProfile({ name: '', handle: '', email: '', aiTone: 'Analytical & Direct', morningAudit: false, smartAlerts: false });
+    setUserProfile({ name: '', handle: '', email: '', aiTone: 'Analytical & Direct', morningAudit: false, smartAlerts: false, currency: '$', timezone: localTimeZone() });
     navigate('landing', '/');
   };
 
@@ -392,7 +408,9 @@ export default function App() {
   ];
 
   // 1) AI Chat state with Autonomous Executive Engine
-  const [aiMessages, setAiMessages] = useState([]);
+  const [aiMessages, setAiMessages] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('cache_aiMessages')) || []; } catch(e) { return []; }
+  });
   const [inputMessage, setInputMessage] = useState('');
   const [aiName, setAiName] = useState('AI');
   const mainAiChatScrollRef = useRef(null);
@@ -443,7 +461,9 @@ export default function App() {
 
   // 2) Habit Tracker state
   // Habits state with exact daily tracking items: Gym, Study, Code, Reading
-  const [habits, setHabits] = useState([]);
+  const [habits, setHabits] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('cache_habits')) || []; } catch(e) { return []; }
+  });
   const [isAddHabitModalOpen, setIsAddHabitModalOpen] = useState(false);
   const [isEditHabitModalOpen, setIsEditHabitModalOpen] = useState(false);
   const [editingHabitData, setEditingHabitData] = useState(null);
@@ -451,19 +471,27 @@ export default function App() {
   const [customPillarInput, setCustomPillarInput] = useState('');
   const [newTodayItemData, setNewTodayItemData] = useState({ title: '', category: 'Coding', time: '10:00 AM' });
   const [isAddTodayItemOpen, setIsAddTodayItemOpen] = useState(false);
-  const [todayItems, setTodayItems] = useState([]);
+  const [todayItems, setTodayItems] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('cache_todayItems')) || []; } catch(e) { return []; }
+  });
   const [habitCardViews, setHabitCardViews] = useState({}); // { habitId: 'progress' | 'heatmap' }
   const [habitMenuOpen, setHabitMenuOpen] = useState(null); // habitId
 
   // 3) Finance state
-  const [transactions, setTransactions] = useState([]);
+  const [transactions, setTransactions] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('cache_transactions')) || []; } catch(e) { return []; }
+  });
   const [newTitle, setNewTitle] = useState('');
   const [newAmount, setNewAmount] = useState('');
   const [newType, setNewType] = useState('spend');
 
   // 4) Body & Gym state
-  const [workouts, setWorkouts] = useState([]);
-  const [bodyStats, setBodyStats] = useState({ currentWeight: '', targetWeight: '', dailyProtein: '', hydration: '' });
+  const [workouts, setWorkouts] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('cache_workouts')) || []; } catch(e) { return []; }
+  });
+  const [bodyStats, setBodyStats] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('cache_bodyStats')) || { currentWeight: '', targetWeight: '', dailyProtein: '', hydration: '' }; } catch(e) { return { currentWeight: '', targetWeight: '', dailyProtein: '', hydration: '' }; }
+  });
 
   const handleSaveBodyStat = async (updated) => {
     setBodyStats(updated);
@@ -473,12 +501,16 @@ export default function App() {
   const [sleepLogs, setSleepLogs] = useState([]);
 
   // 6) Notes & Diary state (with AI sharing permissions)
-  const [notesList, setNotesList] = useState([]);
+  const [notesList, setNotesList] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('cache_notesList')) || []; } catch(e) { return []; }
+  });
   const [activeNoteId, setActiveNoteId] = useState(null);
   const [isFloatingDiaryOpen, setIsFloatingDiaryOpen] = useState(false);
   const [floatingDiaryContent, setFloatingDiaryContent] = useState("");
   const [floatingDiaryShare, setFloatingDiaryShare] = useState(true);
-  const [trashNotes, setTrashNotes] = useState([]);
+  const [trashNotes, setTrashNotes] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('cache_trashNotes')) || []; } catch(e) { return []; }
+  });
   const [notesViewMode, setNotesViewMode] = useState('active'); // 'active' | 'trash'
 
   // Auto-clean trash: if note deleted from trash -> permanently deleted; else in 49 days automatically purged
@@ -517,7 +549,9 @@ export default function App() {
   }, [activeTab, userProfile.auto_open_ai_sidechat]);
 
   // 8) Calendar state
-  const [calendarEvents, setCalendarEvents] = useState([]);
+  const [calendarEvents, setCalendarEvents] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('cache_calendarEvents')) || []; } catch(e) { return []; }
+  });
   const [calendarSubTab, setCalendarSubTab] = useState('today');
   const [selectedCalendarDate, setSelectedCalendarDate] = useState(null);
   const [calendarMonth, setCalendarMonth] = useState(() => {
@@ -547,7 +581,11 @@ export default function App() {
           // Fresh accounts have a UTC database default; use the device timezone until
           // the user chooses a different timezone in Settings.
           timezone = sData.timezone && sData.timezone !== 'UTC' ? sData.timezone : timezone;
-          setUserProfile(prev => ({ ...prev, ...sData, currency: sData.currency || '$', timezone }));
+          setUserProfile(prev => {
+            const next = { ...prev, ...sData, currency: sData.currency || '$', timezone };
+            localStorage.setItem('cache_userProfile', JSON.stringify(next));
+            return next;
+          });
           setGeminiApiKey(sData.gemini_api_key || '');
           setGroqApiKey(sData.groq_api_key || '');
           setAiProvider(sData.ai_provider || 'gemini');
@@ -559,48 +597,60 @@ export default function App() {
       let todayData = [];
       if (todayRes.ok) {
         todayData = await todayRes.json();
-        setTodayItems(todayData.map(t => ({ id: t.id, time: t.time, title: t.label, category: t.category, checked: !!t.checked, habitId: t.habit_id || null })));
+        const mappedToday = todayData.map(t => ({ id: t.id, time: t.time, title: t.label, category: t.category, checked: !!t.checked, habitId: t.habit_id || null }));
+        setTodayItems(mappedToday);
+        localStorage.setItem('cache_todayItems', JSON.stringify(mappedToday));
       }
       const habitsRes = await fetch('/api/habits', { headers });
       if (habitsRes.ok) {
         const hData = await habitsRes.json();
-        setHabits(hData.map(h => ({
+        const mappedHabits = hData.map(h => ({
           id: h.id, title: h.label, category: h.category, streak: h.streak, target: h.target || '',
           challengeDays: h.challenge_days || 0, startDate: h.start_date || null,
           // A habit's completion belongs to its record for this calendar date.
           checkedToday: todayData.some(item => item.habit_id === h.id && !!item.checked),
           pausedUntil: h.paused_until || null
-        })));
+        }));
+        setHabits(mappedHabits);
+        localStorage.setItem('cache_habits', JSON.stringify(mappedHabits));
       }
 
       const txRes = await fetch('/api/transactions', { headers });
       if (txRes.ok) {
         const txData = await txRes.json();
-        setTransactions(txData.map(t => ({ id: t.id, title: t.title, amount: t.amount, type: t.type, date: t.date })));
+        const mappedTx = txData.map(t => ({ id: t.id, title: t.title, amount: t.amount, type: t.type, date: t.date }));
+        setTransactions(mappedTx);
+        localStorage.setItem('cache_transactions', JSON.stringify(mappedTx));
       }
 
       const chatRes = await fetch('/api/chat', { headers });
       if (chatRes.ok) {
         const cData = await chatRes.json();
-        setAiMessages(cData.map(c => ({ id: c.id, sender: c.sender, text: c.text, time: c.time })));
+        const mappedChat = cData.map(c => ({ id: c.id, sender: c.sender, text: c.text, time: c.time }));
+        setAiMessages(mappedChat);
+        localStorage.setItem('cache_aiMessages', JSON.stringify(mappedChat));
       }
 
       const calRes = await fetch('/api/calendar', { headers });
       if (calRes.ok) {
         const calData = await calRes.json();
-        setCalendarEvents(calData.map(c => ({ id: c.id, title: c.title, date: c.date, color: c.color })));
+        const mappedCal = calData.map(c => ({ id: c.id, title: c.title, date: c.date, color: c.color }));
+        setCalendarEvents(mappedCal);
+        localStorage.setItem('cache_calendarEvents', JSON.stringify(mappedCal));
       }
       
       const workoutsRes = await fetch('/api/fitness?type=workouts', { headers });
       if (workoutsRes.ok) {
         const wData = await workoutsRes.json();
         setWorkouts(wData);
+        localStorage.setItem('cache_workouts', JSON.stringify(wData));
       }
 
       const statsRes = await fetch('/api/fitness?type=body-stats', { headers });
       if (statsRes.ok) {
         const sData = await statsRes.json();
         setBodyStats(sData);
+        localStorage.setItem('cache_bodyStats', JSON.stringify(sData));
       }
 
       const notesRes = await fetch('/api/notes', { headers });
@@ -610,9 +660,11 @@ export default function App() {
         const trashedNotes = notesData.filter(n => !!n.is_trashed).map(n => ({ id: n.id, title: n.title, content: n.content, category: n.category, date: n.date, shareWithAi: !!n.share_with_ai, deletedAt: n.deleted_at ? new Date(n.deleted_at).getTime() : Date.now() }));
         
         setTrashNotes(trashedNotes);
+        localStorage.setItem('cache_trashNotes', JSON.stringify(trashedNotes));
 
         // Always set the notes list, but do NOT auto-select a note
         setNotesList(activeNotes);
+        localStorage.setItem('cache_notesList', JSON.stringify(activeNotes));
       }
     } catch (err) {
       console.error('Failed to fetch dashboard data:', err);
