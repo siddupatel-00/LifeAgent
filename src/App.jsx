@@ -1666,7 +1666,7 @@ const handleDeleteHabitDb = async (id) => {
               </div>
 
               {/* Tab Display Area */}
-              <div style={{ padding: '28px', height: '100%', overflowY: 'auto', background: 'var(--bg-main)' }}>
+              <div style={{ padding: '28px', height: '100%', overflow: 'hidden', overflowY: 'hidden', background: 'var(--bg-main)' }}>
                 
                 {/* 1. MONEY TAB MOCK */}
                 {previewTab === 'Money' && (
@@ -1699,7 +1699,7 @@ const handleDeleteHabitDb = async (id) => {
                           { title: 'Client Retainer Payment', category: 'Income', amount: '+$3,200.00', date: 'Yesterday', type: 'income' },
                           { title: 'Organic Whole Foods & Grocery', category: 'Health & Food', amount: '-$124.50', date: '2 days ago', type: 'expense' },
                           { title: 'Gym Membership & Recovery', category: 'Fitness', amount: '-$85.00', date: '3 days ago', type: 'expense' },
-                        ].map((tx, idx) => (
+                        ].slice(0, 3).map((tx, idx) => (
                           <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderRadius: '12px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                               <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: tx.type === 'income' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -1792,30 +1792,6 @@ const handleDeleteHabitDb = async (id) => {
                           { day: 'Mon, Jul 28', title: '🤖 Attend AI Strategy Meeting', tag: 'Work', color: 'var(--accent-blue)' },
                           { day: 'Wed, Jul 30', title: '🚗 Car Servicing & Oil Change', tag: 'Personal', color: '#f59e0b' },
                           { day: 'Fri, Aug 1', title: '💰 Freelance Invoice Due', tag: 'Finance', color: '#10b981' },
-                        ].map((item, idx) => (
-                          <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '12px 16px', borderRadius: '14px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
-                            <div style={{ fontSize: '0.78rem', fontWeight: 700, fontFamily: 'monospace', color: 'var(--text-muted)', width: '90px', flexShrink: 0 }}>
-                              {item.day}
-                            </div>
-                            <div style={{ width: '4px', height: '32px', borderRadius: '2px', background: item.color, flexShrink: 0 }} />
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>{item.title}</div>
-                              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{item.tag}</div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Next Week */}
-                    <div>
-                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#8b5cf6', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>🗓️ Next Week</div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        {[
-                          { day: 'Mon, Aug 4', title: '🏥 Annual Health Check-up', tag: 'Health', color: '#ec4899' },
-                          { day: 'Tue, Aug 5', title: '📦 Amazon Return Pickup', tag: 'Personal', color: '#f59e0b' },
-                          { day: 'Thu, Aug 7', title: '🎂 Mom\'s Birthday – Gift Shopping', tag: 'Family', color: '#ef4444' },
-                          { day: 'Sat, Aug 9', title: '✈️ Weekend Trip to Goa', tag: 'Travel', color: '#06b6d4' },
                         ].map((item, idx) => (
                           <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '12px 16px', borderRadius: '14px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
                             <div style={{ fontSize: '0.78rem', fontWeight: 700, fontFamily: 'monospace', color: 'var(--text-muted)', width: '90px', flexShrink: 0 }}>
@@ -2024,7 +2000,7 @@ const handleDeleteHabitDb = async (id) => {
                         { title: 'Push Day', category: 'Fitness', streak: '12 day streak', checked: true },
                         { title: 'No Junk Food & Hit 180g Protein Target', category: 'Nutrition', streak: '8 day streak', checked: true },
                         { title: 'Evening Book Reading (30 mins)', category: 'Mindset', streak: '15 day streak', checked: false },
-                      ].map((habit, idx) => (
+                      ].slice(0, 3).map((habit, idx) => (
                         <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderRadius: '14px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                             <div style={{ width: '22px', height: '22px', borderRadius: '6px', background: habit.checked ? 'var(--accent-blue)' : 'transparent', border: habit.checked ? 'none' : '2px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -3215,7 +3191,7 @@ const handleDeleteHabitDb = async (id) => {
 
               {/* 1) AI CHAT MODE */}
               {activeTab === 'ai' && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px', height: 'calc(100vh - 160px)' }}>
+                <div className="ai-chat-view" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px', height: 'calc(100vh - 160px)' }}>
                   
                   {/* LEFT PANE: LIVE AI CHAT INTERACTION */}
                   <div style={{ background: 'var(--bg-main)', borderRadius: '20px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
@@ -3249,7 +3225,7 @@ const handleDeleteHabitDb = async (id) => {
                       ))}
                     </div>
 
-                    <form onSubmit={handleSendAi} style={{ padding: '16px 24px', background: 'var(--bg-card)', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '12px' }}>
+                    <form className="ai-chat-input-container" onSubmit={handleSendAi} style={{ padding: '16px 24px', background: 'var(--bg-card)', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '12px' }}>
                       <input 
                         type="text" 
                         placeholder="Ask Agent to compare today vs yesterday, check time, or create tasks..."
