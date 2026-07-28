@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Dumbbell, Target, Plus, Trash2, Activity, Flame, Clock, Check, Edit2 } from 'lucide-react';
 import { todayKey } from '../utils/date';
+import CustomSelect from './CustomSelect';
 
 class BodyGymErrorBoundary extends React.Component {
   constructor(props) {
@@ -579,7 +580,7 @@ function BodyGymInner({ token, showToast }) {
 
       {/* Add Workout Modal */}
       {isAddWorkoutOpen && (
-        <div className="modal-overlay" onClick={closeWorkoutModal} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="modal-overlay" onClick={closeWorkoutModal}>
           <div className="animate-entrance" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', padding: '32px', borderRadius: '24px', width: '90%', maxWidth: '400px', border: '1px solid var(--border-color)' }}>
             <h3 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '20px' }}>Log Workout</h3>
             <form onSubmit={handleAddWorkout}>
@@ -590,13 +591,19 @@ function BodyGymInner({ token, showToast }) {
               
               <div className="input-group" style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Category</label>
-                <select className="glass-input" style={{ width: '100%', padding: '10px 14px' }} value={workoutForm.category} onChange={e => setWorkoutForm({...workoutForm, category: e.target.value})}>
-                  <option value="General">General</option>
-                  <option value="Cardio">Cardio</option>
-                  <option value="Strength">Strength</option>
-                  <option value="Flexibility">Flexibility</option>
-                  <option value="Sports">Sports</option>
-                </select>
+                <CustomSelect 
+                  className="glass-input" 
+                  style={{ width: '100%', padding: '10px 14px' }} 
+                  value={workoutForm.category} 
+                  onChange={e => setWorkoutForm({...workoutForm, category: e.target.value})}
+                  options={[
+                    { value: "General", label: "General" },
+                    { value: "Cardio", label: "Cardio" },
+                    { value: "Strength", label: "Strength" },
+                    { value: "Flexibility", label: "Flexibility" },
+                    { value: "Sports", label: "Sports" }
+                  ]}
+                />
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
@@ -804,7 +811,7 @@ function BodyGymInner({ token, showToast }) {
 
       {/* Add Stats Modal */}
       {isAddStatsOpen && (
-        <div className="modal-overlay" onClick={closeStatsModal} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="modal-overlay" onClick={closeStatsModal}>
           <div className="animate-entrance" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', padding: '32px', borderRadius: '24px', width: '90%', maxWidth: '400px', border: '1px solid var(--border-color)', maxHeight: '90vh', overflowY: 'auto' }}>
             <h3 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '20px' }}>Log Body Stats</h3>
             <form onSubmit={handleAddStats}>
@@ -859,7 +866,7 @@ function BodyGymInner({ token, showToast }) {
 
       {/* Customize Workout Split Modal */}
       {isEditSplitOpen && (
-        <div className="modal-overlay" onClick={() => setIsEditSplitOpen(false)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="modal-overlay" onClick={() => setIsEditSplitOpen(false)}>
           <div className="glass-card animate-entrance" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', padding: '32px', borderRadius: '24px', width: '90%', maxWidth: '440px', border: '1px solid var(--border-color)' }}>
             <h3 style={{ fontSize: '1.3rem', fontWeight: 800, marginBottom: '8px' }}>Customize Workout Split</h3>
             <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', marginBottom: '20px' }}>
@@ -952,7 +959,7 @@ function BodyGymInner({ token, showToast }) {
             </form>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <select 
+              <CustomSelect 
                 className="glass-input"
                 style={{ padding: '6px 12px', fontSize: '0.85rem' }}
                 value={workoutSettings.split_type}
@@ -965,10 +972,11 @@ function BodyGymInner({ token, showToast }) {
                     body: JSON.stringify({ workout_split_type: newType })
                   });
                 }}
-              >
-                <option value="weekly">Weekly Rotation</option>
-                <option value="rotational">Count-based Rotation</option>
-              </select>
+                options={[
+                  { value: "weekly", label: "Weekly Rotation" },
+                  { value: "rotational", label: "Count-based Rotation" }
+                ]}
+              />
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

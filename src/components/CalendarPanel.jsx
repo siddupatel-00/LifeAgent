@@ -240,8 +240,6 @@ export default function CalendarPanel({
               padding: '24px',
               minWidth: '300px',
               maxWidth: '440px',
-              maxHeight: '90vh',
-              overflowY: 'auto',
             }}
             onClick={e => e.stopPropagation()}
           >

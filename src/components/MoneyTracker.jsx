@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, X, Check, BarChart2, List } from 'lucide-react';
 import { todayKey } from '../utils/date';
 import MoneyCharts from './MoneyCharts';
+import CustomSelect from './CustomSelect';
 
 const SPEND_CATEGORIES = ['Choose Category', 'General', 'Food', 'Transport', 'Shopping', 'Bills', 'Entertainment', 'Education', 'Health', 'Other'];
 const EARNING_CATEGORIES = ['Choose Category', 'Job', 'Business', 'Freelancing', 'Startup', 'Other'];
@@ -261,20 +262,24 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
                       <input type="text" value={editForm.amount} onChange={e => setEditForm({...editForm, amount: e.target.value})} style={{ width: '100px', padding: '8px', borderRadius: '6px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
                     </div>
                     <div style={{ display: 'flex', gap: '12px' }}>
-                      <select 
+                      <CustomSelect 
                         value={editForm.type} 
                         onChange={e => {
                           const val = e.target.value;
                           setEditForm({ ...editForm, type: val, category: val === 'earn' ? 'Job' : 'General' });
                         }} 
                         style={{ flex: 1, padding: '8px', borderRadius: '6px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}
-                      >
-                        <option value="spend">Spending</option>
-                        <option value="earn">Earning</option>
-                      </select>
-                      <select value={editForm.category} onChange={e => setEditForm({...editForm, category: e.target.value})} style={{ flex: 1, padding: '8px', borderRadius: '6px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}>
-                        {(editForm.type === 'earn' ? EARNING_CATEGORIES : SPEND_CATEGORIES).map(c => <option key={c} value={c}>{c}</option>)}
-                      </select>
+                        options={[
+                          { value: "spend", label: "Spending" },
+                          { value: "earn", label: "Earning" }
+                        ]}
+                      />
+                      <CustomSelect 
+                        value={editForm.category} 
+                        onChange={e => setEditForm({...editForm, category: e.target.value})} 
+                        style={{ flex: 1, padding: '8px', borderRadius: '6px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}
+                        options={(editForm.type === 'earn' ? EARNING_CATEGORIES : SPEND_CATEGORIES).map(c => ({ value: c, label: c }))}
+                      />
                     </div>
                     <input type="text" placeholder="Notes (optional)" value={editForm.notes || ''} onChange={e => setEditForm({...editForm, notes: e.target.value})} style={{ padding: '8px', borderRadius: '6px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
                     <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
@@ -311,72 +316,78 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
       </div>
 
       <div style={{ background: 'var(--bg-main)', padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)', height: 'fit-content' }}>
-        {rightPanelView === 'charts' ? (
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h4 style={{ fontSize: '1.15rem', fontWeight: 700, margin: 0 }}>Charts</h4>
-              <button onClick={() => setRightPanelView('add')} className="blue-btn" style={{ padding: '8px 12px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Plus size={16} /> Record Entry
-              </button>
-            </div>
-            
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
-              {['bar', 'line', 'pie'].map(t => (
-                <button key={t} onClick={() => setChartType(t)} style={{ flex: 1, padding: '7px 0', borderRadius: '8px', border: chartType === t ? 'none' : '1px solid var(--border-color)', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', textTransform: 'capitalize', background: chartType === t ? 'var(--accent-blue)' : 'var(--bg-main)', color: chartType === t ? '#fff' : 'var(--text-muted)', transition: 'all 0.2s' }}>{t}</button>
-              ))}
-            </div>
-
-            <MoneyCharts transactions={filteredTransactions} chartType={chartType} currency={currency} />
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h4 style={{ fontSize: '1.15rem', fontWeight: 700, margin: 0 }}>Charts</h4>
+            <button onClick={() => setRightPanelView('add')} className="blue-btn" style={{ padding: '8px 12px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Plus size={16} /> Record Entry
+            </button>
           </div>
-        ) : (
-          <div>
+          
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+            {['bar', 'line', 'pie'].map(t => (
+              <button key={t} onClick={() => setChartType(t)} style={{ flex: 1, padding: '7px 0', borderRadius: '8px', border: chartType === t ? 'none' : '1px solid var(--border-color)', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', textTransform: 'capitalize', background: chartType === t ? 'var(--accent-blue)' : 'var(--bg-main)', color: chartType === t ? '#fff' : 'var(--text-muted)', transition: 'all 0.2s' }}>{t}</button>
+            ))}
+          </div>
+
+          <MoneyCharts transactions={filteredTransactions} chartType={chartType} currency={currency} />
+        </div>
+      </div>
+      
+      {rightPanelView === 'add' && (
+        <div className="modal-overlay" onClick={() => setRightPanelView('charts')}>
+          <div style={{ background: 'var(--bg-main)', padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)', width: '100%', maxWidth: '400px' }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <h4 style={{ fontSize: '1.15rem', fontWeight: 700, margin: 0 }}>Add Transaction</h4>
               <button onClick={() => setRightPanelView('charts')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={20}/></button>
             </div>
             <form onSubmit={addTransaction} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <div>
-            <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Type</label>
-            <select 
-              value={newType} 
-              onChange={(e) => {
-                const val = e.target.value;
-                setNewType(val);
-                setNewCategory('Choose Category');
-              }} 
-              style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}
-            >
-              <option value="spend">Spending (-)</option>
-              <option value="earn">Earning (+)</option>
-            </select>
+              <div>
+                <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Type</label>
+                <CustomSelect 
+                  value={newType} 
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setNewType(val);
+                    setNewCategory('Choose Category');
+                  }} 
+                  style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}
+                  options={[
+                    { value: "spend", label: "Spending (-)" },
+                    { value: "earn", label: "Earning (+)" }
+                  ]}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Description</label>
+                <input type="text" placeholder="Enter description..." value={newTitle} onChange={(e) => setNewTitle(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Amount ({currency})</label>
+                <input type="text" placeholder="e.g., 950+300 or 1250" value={newAmount} onChange={(e) => setNewAmount(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Category</label>
+                <CustomSelect 
+                  value={newCategory} 
+                  onChange={(e) => setNewCategory(e.target.value)} 
+                  style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}
+                  options={(newType === 'earn' ? EARNING_CATEGORIES : SPEND_CATEGORIES).map(c => ({ value: c, label: c }))}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Date</label>
+                <input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Notes (Optional)</label>
+                <input type="text" placeholder="Enter notes..." value={newNotes} onChange={(e) => setNewNotes(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
+              </div>
+              <button type="submit" className="blue-btn" style={{ justifyContent: 'center', marginTop: '6px' }}><Plus size={18} /> Record Entry</button>
+            </form>
           </div>
-          <div>
-            <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Description</label>
-            <input type="text" placeholder="Enter description..." value={newTitle} onChange={(e) => setNewTitle(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
-          </div>
-          <div>
-            <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Amount ({currency})</label>
-            <input type="text" placeholder="e.g., 950+300 or 1250" value={newAmount} onChange={(e) => setNewAmount(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
-          </div>
-          <div>
-            <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Category</label>
-            <select value={newCategory} onChange={(e) => setNewCategory(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}>
-              {(newType === 'earn' ? EARNING_CATEGORIES : SPEND_CATEGORIES).map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-          <div>
-            <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Date</label>
-            <input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
-          </div>
-          <div>
-            <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Notes (Optional)</label>
-            <input type="text" placeholder="Enter notes..." value={newNotes} onChange={(e) => setNewNotes(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
-          </div>
-          <button type="submit" className="blue-btn" style={{ justifyContent: 'center', marginTop: '6px' }}><Plus size={18} /> Record Entry</button>
-        </form>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

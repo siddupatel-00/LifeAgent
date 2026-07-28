@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, X, Trash2, Edit2, Moon, Clock, Calendar, Activity, Filter } from 'lucide-react';
 import { todayKey } from '../utils/date';
 import ConfirmModal from './ConfirmModal';
+import CustomSelect from './CustomSelect';
 
 export default function SleepTracker({ token, showToast, userProfile, todayStat }) {
   const [logs, setLogs] = useState(() => {
@@ -736,16 +737,17 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat 
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: '6px', color: 'var(--text-muted)' }}>Sleep Quality (Override if needed)</label>
-                <select 
+                <CustomSelect 
                   value={formData.quality} 
                   onChange={(e) => setFormData({...formData, quality: e.target.value})}
-                  style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.9rem', outline: 'none' }}
-                >
-                  <option value="Excellent">🌟 Excellent (8+ hours)</option>
-                  <option value="Good">😊 Good (7-8 hours)</option>
-                  <option value="Fair">😐 Moderate (5.5-7 hours)</option>
-                  <option value="Poor">🥱 Poor (&lt; 5.5 hours)</option>
-                </select>
+                  style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.9rem' }}
+                  options={[
+                    { value: "Excellent", label: "🌟 Excellent (8+ hours)" },
+                    { value: "Good", label: "😊 Good (7-8 hours)" },
+                    { value: "Fair", label: "😐 Moderate (5.5-7 hours)" },
+                    { value: "Poor", label: "🥱 Poor (< 5.5 hours)" }
+                  ]}
+                />
               </div>
 
               <div>

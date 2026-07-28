@@ -1,5 +1,6 @@
 import React from 'react';
 import { Check, User, Bot, Save, LogOut } from 'lucide-react';
+import CustomSelect from './CustomSelect';
 
 const SettingsPanel = ({
   userProfile,
@@ -145,20 +146,21 @@ const SettingsPanel = ({
                 <div style={{ fontWeight: 700, fontSize: '1rem' }}>Timezone</div>
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Select your primary timezone for automated audits and reminders.</div>
               </div>
-              <select 
+              <CustomSelect 
                 value={userProfile.timezone || 'UTC'} 
                 onChange={(e) => setUserProfile({ ...userProfile, timezone: e.target.value })} 
-                style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600, outline: 'none' }}
-              >
-                <option value="UTC">UTC (Coordinated Universal Time)</option>
-                <option value="Asia/Kolkata">Asia/Kolkata (IST +5:30)</option>
-                <option value="America/New_York">America/New_York (EST -5:00 / EDT -4:00)</option>
-                <option value="America/Los_Angeles">America/Los_Angeles (PST -8:00 / PDT -7:00)</option>
-                <option value="Europe/London">Europe/London (GMT / BST)</option>
-                <option value="Europe/Paris">Europe/Paris (CET +1:00)</option>
-                <option value="Asia/Tokyo">Asia/Tokyo (JST +9:00)</option>
-                <option value="Australia/Sydney">Australia/Sydney (AEST +10:00)</option>
-              </select>
+                style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600 }}
+                options={[
+                  { value: "UTC", label: "UTC (Coordinated Universal Time)" },
+                  { value: "Asia/Kolkata", label: "Asia/Kolkata (IST +5:30)" },
+                  { value: "America/New_York", label: "America/New_York (EST -5:00 / EDT -4:00)" },
+                  { value: "America/Los_Angeles", label: "America/Los_Angeles (PST -8:00 / PDT -7:00)" },
+                  { value: "Europe/London", label: "Europe/London (GMT / BST)" },
+                  { value: "Europe/Paris", label: "Europe/Paris (CET +1:00)" },
+                  { value: "Asia/Tokyo", label: "Asia/Tokyo (JST +9:00)" },
+                  { value: "Australia/Sydney", label: "Australia/Sydney (AEST +10:00)" }
+                ]}
+              />
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
@@ -166,16 +168,17 @@ const SettingsPanel = ({
                 <div style={{ fontWeight: 700, fontSize: '1rem' }}>Currency Preference</div>
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Choose your default currency for the Money Tracker.</div>
               </div>
-              <select 
+              <CustomSelect 
                 value={userProfile.currency || '$'} 
                 onChange={(e) => setUserProfile({ ...userProfile, currency: e.target.value })} 
-                style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600, outline: 'none', appearance: 'none' }}
-              >
-                <option value="$">Dollar ($)</option>
-                <option value="₹">Rupee (₹)</option>
-                <option value="€">Euro (€)</option>
-                <option value="£">Pound (£)</option>
-              </select>
+                style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600 }}
+                options={[
+                  { value: "$", label: "Dollar ($)" },
+                  { value: "₹", label: "Rupee (₹)" },
+                  { value: "€", label: "Euro (€)" },
+                  { value: "£", label: "Pound (£)" }
+                ]}
+              />
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
@@ -183,16 +186,17 @@ const SettingsPanel = ({
                 <div style={{ fontWeight: 700, fontSize: '1rem' }}>Display Theme Mode</div>
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Choose your overall workspace theme appearance mode.</div>
               </div>
-              <select 
+              <CustomSelect 
                 value={themeMode || 'pc'}
                 onChange={(e) => setThemeMode(e.target.value)} 
-                style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600, outline: 'none', appearance: 'none' }}
-              >
-                <option value="dark">Dark Mode</option>
-                <option value="night">🌙 Night Mode</option>
-                <option value="light">Light Mode</option>
-                <option value="pc">PC / System</option>
-              </select>
+                style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600 }}
+                options={[
+                  { value: "dark", label: "Dark Mode" },
+                  { value: "night", label: "🌙 Night Mode" },
+                  { value: "light", label: "Light Mode" },
+                  { value: "pc", label: "PC / System" }
+                ]}
+              />
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
@@ -200,21 +204,22 @@ const SettingsPanel = ({
                 <div style={{ fontWeight: 700, fontSize: '1rem' }}>Accent Color Theme</div>
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Personalize your dashboard's accent colors.</div>
               </div>
-              <select 
+              <CustomSelect 
                 value={typeof window !== 'undefined' ? (localStorage.getItem('themeColor') || 'blue') : 'blue'}
                 onChange={(e) => {
                   localStorage.setItem('themeColor', e.target.value);
                   document.documentElement.setAttribute('data-color-theme', e.target.value);
                   window.dispatchEvent(new Event('storage'));
                 }} 
-                style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600, outline: 'none', appearance: 'none' }}
-              >
-                <option value="blue">Classic Blue</option>
-                <option value="professional">Black & White</option>
-                <option value="pink">Vibrant Pink</option>
-                <option value="neon">Neon Tech</option>
-                <option value="emerald">Emerald Green</option>
-              </select>
+                style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600 }}
+                options={[
+                  { value: "blue", label: "Classic Blue" },
+                  { value: "professional", label: "Black & White" },
+                  { value: "pink", label: "Vibrant Pink" },
+                  { value: "neon", label: "Neon Tech" },
+                  { value: "emerald", label: "Emerald Green" }
+                ]}
+              />
             </div>
 
           </div>
@@ -247,14 +252,15 @@ const SettingsPanel = ({
                 <div style={{ fontWeight: 700, fontSize: '1rem' }}>Preferred AI Provider</div>
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Choose which AI brain powers your dashboard assistant.</div>
               </div>
-              <select 
+              <CustomSelect 
                 value={aiProvider} 
                 onChange={(e) => setAiProvider(e.target.value)} 
-                style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600, outline: 'none', appearance: 'none' }}
-              >
-                <option value="gemini">Google Gemini</option>
-                <option value="groq">Groq (Llama 3)</option>
-              </select>
+                style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600 }}
+                options={[
+                  { value: "gemini", label: "Google Gemini" },
+                  { value: "groq", label: "Groq (Llama 3)" }
+                ]}
+              />
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
@@ -262,20 +268,18 @@ const SettingsPanel = ({
                 <div style={{ fontWeight: 700, fontSize: '1rem' }}>AI Chat Reset Time</div>
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Choose when your daily AI chat history resets.</div>
               </div>
-              <select 
+              <CustomSelect 
                 value={chatResetTime} 
                 onChange={(e) => setChatResetTime(e.target.value)} 
-                style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600, outline: 'none', appearance: 'none' }}
-              >
-                {[...Array(24)].map((_, i) => {
+                style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600 }}
+                options={[...Array(24)].map((_, i) => {
                   const hour = i.toString().padStart(2, '0');
-                  return (
-                    <option key={hour} value={`${hour}:00`}>
-                      {i === 0 ? 'Midnight (12:00 AM)' : i < 12 ? `${i}:00 AM` : i === 12 ? 'Noon (12:00 PM)' : `${i - 12}:00 PM`}
-                    </option>
-                  );
+                  return {
+                    value: `${hour}:00`,
+                    label: i === 0 ? 'Midnight (12:00 AM)' : i < 12 ? `${i}:00 AM` : i === 12 ? 'Noon (12:00 PM)' : `${i - 12}:00 PM`
+                  };
                 })}
-              </select>
+              />
             </div>
 
 
@@ -430,18 +434,19 @@ const SettingsPanel = ({
                 <div style={{ fontWeight: 700, fontSize: '1rem' }}>Personal AI Assistant Tone & Personality</div>
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Choose how strict, encouraging, or concise the AI audits your metrics.</div>
               </div>
-              <select 
+              <CustomSelect 
                 value={userProfile.aiTone || userProfile.ai_tone || 'Analytical & Direct'}
                 onChange={(e) => {
                   const val = e.target.value;
                   setUserProfile({ ...userProfile, aiTone: val, ai_tone: val });
                 }}
-                style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.92rem', fontWeight: 600, outline: 'none', cursor: 'pointer' }}
-              >
-                <option value="Analytical & Direct">Analytical & Direct</option>
-                <option value="Encouraging & Supportive">Encouraging & Supportive</option>
-                <option value="Minimalist Executive">Minimalist Executive</option>
-              </select>
+                style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.92rem', fontWeight: 600 }}
+                options={[
+                  { value: "Analytical & Direct", label: "Analytical & Direct" },
+                  { value: "Encouraging & Supportive", label: "Encouraging & Supportive" },
+                  { value: "Minimalist Executive", label: "Minimalist Executive" }
+                ]}
+              />
             </div>
 
           </div>
