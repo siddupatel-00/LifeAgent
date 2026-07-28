@@ -93,6 +93,7 @@ function BodyGymInner({ token, showToast }) {
   const [statsForm, setStatsForm] = useState({
     weight: '', target_weight: '', protein: '', target_protein: '', hydration: ''
   });
+  const [statsHistoryFilter, setStatsHistoryFilter] = useState('today');
 
   const fetchWorkouts = useCallback(async () => {
     if (!token) return;
@@ -280,17 +281,22 @@ function BodyGymInner({ token, showToast }) {
   const handleAddStats = async (e) => {
     e.preventDefault();
     try {
+      const today = todayKey();
+      const existingTodayStat = Array.isArray(bodyStats) ? bodyStats.find(s => s.date === today) : null;
+      const isUpdating = !!existingTodayStat;
+      
       const payload = {
+        ...(isUpdating ? { id: existingTodayStat.id } : {}),
         weight: Number(statsForm.weight) || 0,
         target_weight: Number(statsForm.target_weight) || 0,
         protein: Number(statsForm.protein) || 0,
         target_protein: Number(statsForm.target_protein) || 0,
         hydration: Number(statsForm.hydration) || 0,
-        date: todayKey()
+        date: today
       };
       
       const res = await fetch('/api/fitness?type=body-stats', {
-        method: 'POST',
+        method: isUpdating ? 'PUT' : 'POST',
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
@@ -726,46 +732,71 @@ function BodyGymInner({ token, showToast }) {
             </div>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
             <h3 style={{ fontSize: '1.2rem', fontWeight: 700 }}>History</h3>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <button onClick={() => setStatsHistoryFilter('today')} className={statsHistoryFilter === 'today' ? 'blue-btn' : 'secondary-btn'} style={{ padding: '4px 10px', fontSize: '0.75rem', borderRadius: '8px' }}>Today / Prev</button>
+              <button onClick={() => setStatsHistoryFilter('7days')} className={statsHistoryFilter === '7days' ? 'blue-btn' : 'secondary-btn'} style={{ padding: '4px 10px', fontSize: '0.75rem', borderRadius: '8px' }}>Past 7 Days</button>
+              <button onClick={() => setStatsHistoryFilter('30days')} className={statsHistoryFilter === '30days' ? 'blue-btn' : 'secondary-btn'} style={{ padding: '4px 10px', fontSize: '0.75rem', borderRadius: '8px' }}>Past 30 Days</button>
+              <button onClick={() => setStatsHistoryFilter('all')} className={statsHistoryFilter === 'all' ? 'blue-btn' : 'secondary-btn'} style={{ padding: '4px 10px', fontSize: '0.75rem', borderRadius: '8px' }}>All</button>
+            </div>
           </div>
 
-          {statsList.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px', background: 'var(--bg-card)', borderRadius: '18px', border: '1px solid var(--border-color)' }}>
-              <p style={{ color: 'var(--text-muted)' }}>No stats recorded yet.</p>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {statsList.map(stat => (
-                <div key={stat.id} className="glass-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderRadius: '18px', border: '1px solid var(--border-color)', background: 'var(--bg-card)' }}>
-                  <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
-                    <div style={{ minWidth: '80px' }}>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Date</div>
-                      <div style={{ fontWeight: 600 }}>{stat.date}</div>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Weight</div>
-                      <div style={{ fontWeight: 600 }}>{stat.weight} kg</div>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Protein</div>
-                      <div style={{ fontWeight: 600 }}>{stat.protein} g</div>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Hydration</div>
-                      <div style={{ fontWeight: 600 }}>{stat.hydration} L</div>
-                    </div>
-                  </div>
-                  <button 
-                    onClick={() => handleDeleteStat(stat.id)}
-                    style={{ background: 'none', border: 'none', color: '#ff5252', cursor: 'pointer', padding: '8px' }}
-                  >
-                    <Trash2 size={16} />
-                  </button>
+          {(() => {
+            const getFilteredStats = () => {
+              if (statsHistoryFilter === 'all') return statsList;
+              const now = new Date(todayKey());
+              return statsList.filter(stat => {
+                const statDate = new Date(stat.date);
+                const diffTime = Math.abs(now - statDate);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                if (statsHistoryFilter === 'today') return diffDays <= 1;
+                if (statsHistoryFilter === '7days') return diffDays <= 7;
+                if (statsHistoryFilter === '30days') return diffDays <= 30;
+                return true;
+              });
+            };
+            const filteredStats = getFilteredStats();
+            if (filteredStats.length === 0) {
+              return (
+                <div style={{ textAlign: 'center', padding: '40px', background: 'var(--bg-card)', borderRadius: '18px', border: '1px solid var(--border-color)' }}>
+                  <p style={{ color: 'var(--text-muted)' }}>No stats recorded yet.</p>
                 </div>
-              ))}
-            </div>
-          )}
+              );
+            }
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {filteredStats.map(stat => (
+                  <div key={stat.id} className="glass-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderRadius: '18px', border: '1px solid var(--border-color)', background: 'var(--bg-card)' }}>
+                    <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
+                      <div style={{ minWidth: '80px' }}>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Date</div>
+                        <div style={{ fontWeight: 600 }}>{stat.date}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Weight</div>
+                        <div style={{ fontWeight: 600 }}>{stat.weight} kg</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Protein</div>
+                        <div style={{ fontWeight: 600 }}>{stat.protein} g</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Hydration</div>
+                        <div style={{ fontWeight: 600 }}>{stat.hydration} L</div>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => handleDeleteStat(stat.id)}
+                      style={{ background: 'none', border: 'none', color: '#ff5252', cursor: 'pointer', padding: '8px' }}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
 
 
         </div>
@@ -774,7 +805,7 @@ function BodyGymInner({ token, showToast }) {
       {/* Add Stats Modal */}
       {isAddStatsOpen && (
         <div className="modal-overlay" onClick={closeStatsModal} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="animate-entrance" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', padding: '32px', borderRadius: '24px', width: '90%', maxWidth: '400px', border: '1px solid var(--border-color)' }}>
+          <div className="animate-entrance" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', padding: '32px', borderRadius: '24px', width: '90%', maxWidth: '400px', border: '1px solid var(--border-color)', maxHeight: '90vh', overflowY: 'auto' }}>
             <h3 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '20px' }}>Log Body Stats</h3>
             <form onSubmit={handleAddStats}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
