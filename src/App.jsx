@@ -7,7 +7,7 @@ import {
   Sun, Moon, Monitor, ChevronDown, Lock, Phone, AtSign, Activity, Zap, Check, X,
   Dumbbell, Moon as SleepIcon, BarChart3, PieChart, Flame, Heart, Target, Filter, Droplet,
   Home, LayoutDashboard, LogOut, Sliders, Settings, Save, Bell, Shield, PenTool, MessageSquare, Sidebar as SidebarIcon, FileText, Unlock, Smile,
-  MoreVertical, List
+  MoreVertical, List, Menu
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import AnalyticsPanel from './components/AnalyticsPanel';
@@ -253,6 +253,7 @@ export default function App() {
   const [resetCode, setResetCode] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showFinanceForm, setShowFinanceForm] = useState(false);
+  const [showMobileMoreMenu, setShowMobileMoreMenu] = useState(false);
   const [resetNewPassword, setResetNewPassword] = useState('');
   const [resetConfirmPassword, setResetConfirmPassword] = useState('');
   const [resetSuccessMsg, setResetSuccessMsg] = useState('');
@@ -2429,7 +2430,7 @@ const handleDeleteHabitDb = async (id) => {
         <div className="animate-entrance" style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg-main)' }}>
           
           {/* FIXED / STICKY LEFT SIDEBAR THAT NEVER SCROLLS */}
-          <aside style={{
+          <aside className="desktop-sidebar" style={{
             width: '240px',
             height: '100vh',
             position: 'sticky',
@@ -4411,7 +4412,75 @@ const handleDeleteHabitDb = async (id) => {
             </aside>
           )}
 
-
+          {/* MOBILE BOTTOM NAVIGATION BAR & DRAWER */}
+          <nav className="mobile-bottom-nav">
+            <button className={`mobile-nav-btn ${activeTab === 'today' ? 'active' : ''}`} onClick={() => setActiveTab('today')}>
+              <Clock size={22} />
+              <span>Today</span>
+            </button>
+            <button className={`mobile-nav-btn ${activeTab === 'habits' ? 'active' : ''}`} onClick={() => setActiveTab('habits')}>
+              <CheckCircle2 size={22} />
+              <span>Daily</span>
+            </button>
+            <div className="mobile-nav-btn ai-nav-item">
+              <button className="ai-center-btn" onClick={() => setActiveTab('ai')}>
+                <Bot size={24} />
+              </button>
+            </div>
+            <button className={`mobile-nav-btn ${activeTab === 'finance' ? 'active' : ''}`} onClick={() => setActiveTab('finance')}>
+              <DollarSign size={22} />
+              <span>Money</span>
+            </button>
+            <button className={`mobile-nav-btn ${activeTab === 'body' ? 'active' : ''}`} onClick={() => setActiveTab('body')}>
+              <Dumbbell size={22} />
+              <span>Body</span>
+            </button>
+            <button className="mobile-nav-btn" onClick={() => setShowMobileMoreMenu(true)}>
+              <Menu size={22} />
+              <span>More</span>
+            </button>
+          </nav>
+          
+          {showMobileMoreMenu && (
+            <div className="mobile-more-overlay" onClick={() => setShowMobileMoreMenu(false)}>
+              <div className="mobile-more-drawer animate-entrance" onClick={e => e.stopPropagation()}>
+                <div className="drawer-header">
+                  <h3>More Options</h3>
+                  <button onClick={() => setShowMobileMoreMenu(false)}><X size={20}/></button>
+                </div>
+                <div className="drawer-grid">
+                  <button className={`drawer-btn ${activeTab === 'notes' ? 'active' : ''}`} onClick={() => { setActiveTab('notes'); setShowMobileMoreMenu(false); }}>
+                    <BookOpen size={20} />
+                    <span>Notes</span>
+                  </button>
+                  <button className={`drawer-btn ${activeTab === 'calendar' ? 'active' : ''}`} onClick={() => { setActiveTab('calendar'); setShowMobileMoreMenu(false); }}>
+                    <Calendar size={20} />
+                    <span>Calendar</span>
+                  </button>
+                  <button className={`drawer-btn ${activeTab === 'water' ? 'active' : ''}`} onClick={() => { setActiveTab('water'); setShowMobileMoreMenu(false); }}>
+                    <Droplet size={20} />
+                    <span>Water</span>
+                  </button>
+                  <button className={`drawer-btn ${activeTab === 'sleep' ? 'active' : ''}`} onClick={() => { setActiveTab('sleep'); setShowMobileMoreMenu(false); }}>
+                    <SleepIcon size={20} />
+                    <span>Sleep</span>
+                  </button>
+                  <button className={`drawer-btn ${activeTab === 'analytics' ? 'active' : ''}`} onClick={() => { setActiveTab('analytics'); setShowMobileMoreMenu(false); }}>
+                    <BarChart3 size={20} />
+                    <span>Analytics</span>
+                  </button>
+                  <button className={`drawer-btn ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => { setActiveTab('settings'); setShowMobileMoreMenu(false); }}>
+                    <Settings size={20} />
+                    <span>Settings</span>
+                  </button>
+                  <button className="drawer-btn logout-btn" onClick={handleLogout}>
+                    <LogOut size={20} />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
         </div>
       )}
