@@ -3119,13 +3119,13 @@ const handleDeleteHabitDb = async (id) => {
                           }}
                           style={{
                             display: 'flex', alignItems: 'center', gap: '8px',
-                            padding: '10px 18px', borderRadius: '30px', border: '1px solid var(--border-color)',
-                            background: 'var(--bg-card)', color: 'var(--text-main)',
+                            padding: '10px 18px', borderRadius: '30px', border: item.checked ? 'none' : '1px solid var(--border-color)',
+                            background: item.checked ? 'var(--accent-blue)' : 'var(--bg-card)', color: item.checked ? 'var(--accent-text)' : 'var(--text-main)',
                             fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer',
                             boxShadow: '0 4px 12px rgba(0,0,0,0.08)', transition: 'all 0.2s', flexShrink: 0
                           }}
                         >
-                          {item.checked ? 'Done' : 'Pending'}
+                          {item.checked ? <><Check size={16} /> Done</> : 'Pending'}
                         </button>
                       </div>
                     ))
@@ -3182,8 +3182,8 @@ const handleDeleteHabitDb = async (id) => {
                       />
                       <button type="submit" style={{
                         display: 'flex', alignItems: 'center', gap: '8px',
-                        padding: '10px 24px', borderRadius: '30px', border: '1px solid var(--border-color)',
-                        background: 'var(--bg-card)', color: 'var(--text-main)',
+                        padding: '10px 24px', borderRadius: '30px', border: 'none',
+                        background: 'var(--accent-blue)', color: 'var(--accent-text)',
                         fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer',
                         boxShadow: '0 4px 12px rgba(0,0,0,0.08)', transition: 'all 0.2s'
                       }}>
@@ -3641,14 +3641,15 @@ const handleDeleteHabitDb = async (id) => {
                                   handleToggleHabitItem(item.id);
                                 }}
                                 style={{
-                                  width: '100%', padding: '12px', borderRadius: '12px', border: 'none',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%',
+                                  padding: '12px', borderRadius: '12px', border: item.checkedToday ? 'none' : '1px solid var(--border-color)',
                                   background: item.checkedToday ? 'var(--accent-blue)' : 'var(--bg-card)',
                                   color: item.checkedToday ? 'var(--accent-text)' : 'var(--text-main)',
                                   fontWeight: 800, fontSize: '0.95rem', cursor: 'pointer', transition: 'all 0.2s',
                                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
                                 }}
                               >
-                                {item.checkedToday ? <><CheckCircle2 size={18} /> Completed Today ✓</> : 'Quick Check-In Today'}
+                                {item.checkedToday ? <><Check size={16} /> Done</> : 'Quick Check-In Today'}
                               </button>
                             );
                           })()}
