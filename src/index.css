@@ -722,22 +722,66 @@ input[type="checkbox"]:checked::after {
     grid-template-columns: repeat(7, 1fr) !important;
   }
 
-  /* Modals to 95vw and touch-friendly */
+  /* Modals and Cards width to fit mobile screen without scrollbar overflow */
   .blur-overlay > div,
   .glass-card {
-    width: 95vw !important;
-    max-width: 95vw !important;
+    width: 100% !important;
+    max-width: calc(100vw - 24px) !important;
     box-sizing: border-box !important;
-    padding: 20px 14px !important;
+    padding: 18px 14px !important;
+  }
+
+  /* Full screen mobile AI Chat styling */
+  .ai-chat-view {
+    height: calc(100dvh - 145px) !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .ai-chat-input-container {
+    position: sticky !important;
+    bottom: 70px !important;
+    z-index: 100 !important;
+    backdrop-filter: blur(16px) !important;
   }
   
-  /* Form input sizing */
+  /* Form input sizing & focus feedback (Prevents iOS auto-zoom + provides mobile focus rings) */
   input[style*="width: 320px"],
   input[type="text"],
   input[type="password"],
   input[type="email"],
+  input[type="number"],
+  input[type="date"],
+  input[type="time"],
+  textarea,
   select {
-    font-size: 16px !important; /* Prevents iOS auto-zoom */
+    font-size: 16px !important;
+  }
+
+  input:focus,
+  textarea:focus,
+  select:focus {
+    outline: none !important;
+    border-color: var(--accent-blue) !important;
+    box-shadow: 0 0 0 3px var(--accent-blue-dim) !important;
+  }
+
+  /* Prevent modal scroll bleed */
+  .blur-overlay {
+    overscroll-behavior: contain !important;
+  }
+
+  /* Touch target expansion for small checkboxes */
+  input[type="checkbox"] {
+    position: relative;
+  }
+  input[type="checkbox"]::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    bottom: -10px;
+    left: -10px;
+    right: -10px;
   }
   
   /* Add touch-friendly padding to buttons inside modals */
