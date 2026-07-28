@@ -205,9 +205,9 @@ export default function App() {
     handle: '',
     email: '',
     aiTone: 'Analytical & Direct',
-    morningAudit: true,
-    smartAlerts: true,
-    auto_open_ai_sidechat: localStorage.getItem('auto_open_ai_sidechat') !== 'false',
+    morningAudit: false,
+    smartAlerts: false,
+    auto_open_ai_sidechat: localStorage.getItem('auto_open_ai_sidechat') === 'true',
     currency: '$',
     timezone: localTimeZone()
   });
@@ -351,7 +351,7 @@ export default function App() {
     localStorage.removeItem('token');
     setToken('');
     setIsAuthenticated(false);
-    setUserProfile({ name: '', handle: '', email: '', aiTone: 'Analytical & Direct', morningAudit: true, smartAlerts: true });
+    setUserProfile({ name: '', handle: '', email: '', aiTone: 'Analytical & Direct', morningAudit: false, smartAlerts: false });
     navigate('landing', '/');
   };
 
