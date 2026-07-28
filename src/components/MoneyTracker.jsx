@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, X, Check } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Check, BarChart2, List } from 'lucide-react';
 import { todayKey } from '../utils/date';
+import MoneyCharts from './MoneyCharts';
 
 const SPEND_CATEGORIES = ['Choose Category', 'General', 'Food', 'Transport', 'Shopping', 'Bills', 'Entertainment', 'Education', 'Health', 'Other'];
 const EARNING_CATEGORIES = ['Choose Category', 'Job', 'Business', 'Freelancing', 'Startup', 'Other'];
@@ -37,6 +38,8 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
     fetchTransactions();
   }, []);
   
+  const [showCharts, setShowCharts] = useState(false);
+  const [chartType, setChartType] = useState('bar');
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
 
@@ -238,8 +241,34 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
           </div>
         </div>
 
-        <h3 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '16px' }}>Transactions</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {/* Charts / List toggle */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+          <h3 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0 }}>Transactions</h3>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              onClick={() => setShowCharts(false)}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.88rem', background: !showCharts ? 'var(--accent-blue)' : 'var(--bg-main)', color: !showCharts ? '#fff' : 'var(--text-muted)', transition: 'all 0.2s' }}
+            ><List size={15} /> List</button>
+            <button
+              onClick={() => setShowCharts(true)}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.88rem', background: showCharts ? 'var(--accent-blue)' : 'var(--bg-main)', color: showCharts ? '#fff' : 'var(--text-muted)', transition: 'all 0.2s' }}
+            ><BarChart2 size={15} /> Charts</button>
+          </div>
+        </div>
+
+        {/* Chart type selector when charts are shown */}
+        {showCharts && (
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+            {['bar', 'line', 'pie'].map(t => (
+              <button key={t} onClick={() => setChartType(t)} style={{ padding: '7px 18px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', textTransform: 'capitalize', background: chartType === t ? 'var(--accent-blue)' : 'var(--bg-main)', color: chartType === t ? '#fff' : 'var(--text-muted)', transition: 'all 0.2s' }}>{t}</button>
+            ))}
+          </div>
+        )}
+
+        {showCharts ? (
+          <MoneyCharts transactions={filteredTransactions} chartType={chartType} currency={currency} />
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {filteredTransactions.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '30px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px dashed var(--border-color)' }}>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', fontWeight: 600 }}>No transactions recorded for selected timeframe.</p>
@@ -300,7 +329,8 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
               </div>
             ))
           )}
-        </div>
+          </div>
+        )}
       </div>
 
       <div style={{ background: 'var(--bg-main)', padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)', height: 'fit-content' }}>

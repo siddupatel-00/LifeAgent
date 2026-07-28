@@ -318,15 +318,25 @@ const SettingsPanel = ({
                 <div style={{ fontWeight: 700, fontSize: '1rem' }}>Daily Morning Audit Summary</div>
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>AI automatically generates a schedule & spendings audit every morning at 7:00 AM.</div>
               </div>
-              <input 
-                type="checkbox" 
-                checked={userProfile.morningAudit !== undefined ? !!userProfile.morningAudit : (userProfile.morning_audit !== undefined ? userProfile.morning_audit !== 0 : true)} 
-                onChange={(e) => {
-                  const val = e.target.checked;
+              <div
+                onClick={() => {
+                  const val = !(userProfile.morningAudit !== undefined ? !!userProfile.morningAudit : (userProfile.morning_audit !== undefined ? userProfile.morning_audit !== 0 : false));
                   setUserProfile({ ...userProfile, morningAudit: val, morning_audit: val ? 1 : 0 });
                 }}
-                style={{ width: '22px', height: '22px', accentColor: 'var(--accent-blue)', cursor: 'pointer' }}
-              />
+                style={{
+                  width: '52px', height: '28px', borderRadius: '14px', cursor: 'pointer', flexShrink: 0,
+                  background: (userProfile.morningAudit !== undefined ? !!userProfile.morningAudit : (userProfile.morning_audit !== undefined ? userProfile.morning_audit !== 0 : false)) ? 'var(--accent-blue)' : 'var(--border-color)',
+                  position: 'relative', transition: 'background 0.25s'
+                }}
+              >
+                <div style={{
+                  position: 'absolute', top: '3px',
+                  left: (userProfile.morningAudit !== undefined ? !!userProfile.morningAudit : (userProfile.morning_audit !== undefined ? userProfile.morning_audit !== 0 : false)) ? '26px' : '3px',
+                  width: '22px', height: '22px', borderRadius: '50%',
+                  background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+                  transition: 'left 0.25s'
+                }} />
+              </div>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
@@ -334,15 +344,25 @@ const SettingsPanel = ({
                 <div style={{ fontWeight: 700, fontSize: '1rem' }}>Real-Time Smart Streak Alerts</div>
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Notify instantly when a study pomodoro or gym habit streak is about to expire.</div>
               </div>
-              <input 
-                type="checkbox" 
-                checked={userProfile.smartAlerts !== undefined ? !!userProfile.smartAlerts : (userProfile.smart_alerts !== undefined ? userProfile.smart_alerts !== 0 : true)} 
-                onChange={(e) => {
-                  const val = e.target.checked;
+              <div
+                onClick={() => {
+                  const val = !(userProfile.smartAlerts !== undefined ? !!userProfile.smartAlerts : (userProfile.smart_alerts !== undefined ? userProfile.smart_alerts !== 0 : false));
                   setUserProfile({ ...userProfile, smartAlerts: val, smart_alerts: val ? 1 : 0 });
                 }}
-                style={{ width: '22px', height: '22px', accentColor: 'var(--accent-blue)', cursor: 'pointer' }}
-              />
+                style={{
+                  width: '52px', height: '28px', borderRadius: '14px', cursor: 'pointer', flexShrink: 0,
+                  background: (userProfile.smartAlerts !== undefined ? !!userProfile.smartAlerts : (userProfile.smart_alerts !== undefined ? userProfile.smart_alerts !== 0 : false)) ? 'var(--accent-blue)' : 'var(--border-color)',
+                  position: 'relative', transition: 'background 0.25s'
+                }}
+              >
+                <div style={{
+                  position: 'absolute', top: '3px',
+                  left: (userProfile.smartAlerts !== undefined ? !!userProfile.smartAlerts : (userProfile.smart_alerts !== undefined ? userProfile.smart_alerts !== 0 : false)) ? '26px' : '3px',
+                  width: '22px', height: '22px', borderRadius: '50%',
+                  background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+                  transition: 'left 0.25s'
+                }} />
+              </div>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
@@ -350,15 +370,25 @@ const SettingsPanel = ({
                 <div style={{ fontWeight: 700, fontSize: '1rem' }}>Auto-Open AI Side Chat</div>
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Automatically open the AI assistant panel when navigating to different tabs.</div>
               </div>
-              <input 
-                type="checkbox" 
-                checked={userProfile.auto_open_ai_sidechat !== false} 
-                onChange={(e) => {
-                  const val = e.target.checked;
+              <div
+                onClick={() => {
+                  const val = !(userProfile.auto_open_ai_sidechat === true);
                   setUserProfile({ ...userProfile, auto_open_ai_sidechat: val });
                 }}
-                style={{ width: '22px', height: '22px', accentColor: 'var(--accent-blue)', cursor: 'pointer' }}
-              />
+                style={{
+                  width: '52px', height: '28px', borderRadius: '14px', cursor: 'pointer', flexShrink: 0,
+                  background: (userProfile.auto_open_ai_sidechat === true) ? 'var(--accent-blue)' : 'var(--border-color)',
+                  position: 'relative', transition: 'background 0.25s'
+                }}
+              >
+                <div style={{
+                  position: 'absolute', top: '3px',
+                  left: (userProfile.auto_open_ai_sidechat === true) ? '26px' : '3px',
+                  width: '22px', height: '22px', borderRadius: '50%',
+                  background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+                  transition: 'left 0.25s'
+                }} />
+              </div>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>

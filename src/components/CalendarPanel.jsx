@@ -74,21 +74,23 @@ export default function CalendarPanel({
 
   const handleUpdateStatus = async (id, status) => {
     try {
+      const safeId = Number(id); // Convert BigInt/string to number for JSON serialization
       const res = await fetch('/api/calendar', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ id, status })
+        body: JSON.stringify({ id: safeId, status })
       });
       if (res.ok) {
-        setCalendarEvents(prev => prev.map(ev => ev.id === id ? { ...ev, status } : ev));
+        setCalendarEvents(prev => prev.map(ev => Number(ev.id) === safeId ? { ...ev, status } : ev));
         setOpenStatusDropdown(null);
-        showToast?.('Event status updated', 'success');
+        showToast?.('Status updated', 'success');
       } else {
-        showToast?.('Failed to update status', 'error');
+        const err = await res.json().catch(() => ({}));
+        showToast?.('Failed to update status: ' + (err.error || res.status), 'error');
       }
     } catch (err) {
-      console.error(err);
-      showToast?.('Network error updating status', 'error');
+      console.error('Status update error:', err);
+      showToast?.('Error updating status', 'error');
     }
   };
 
@@ -165,7 +167,7 @@ export default function CalendarPanel({
       case 'completed': return { icon: '✅', label: 'Completed', bg: 'rgba(34, 197, 94, 0.15)', color: '#22c55e' };
       case 'failed': return { icon: '❌', label: 'Failed', bg: 'rgba(239, 68, 68, 0.15)', color: '#ef4444' };
       case 'expired': return { icon: '⏰', label: 'Expired', bg: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b' };
-      default: return { icon: '📅', label: 'Real-Time / Upcoming', bg: 'var(--accent-blue-dim)', color: 'var(--accent-blue)' };
+      default: return { icon: '⏳', label: 'Not Done Yet', bg: 'var(--accent-blue-dim)', color: 'var(--accent-blue)' };
     }
   };
 

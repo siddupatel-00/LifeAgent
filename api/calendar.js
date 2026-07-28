@@ -12,7 +12,7 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       const today = new Date().toISOString().split('T')[0];
       await db.execute({
-        sql: `UPDATE calendar_events SET status = 'expired' WHERE user_id = ? AND date < ? AND (status = 'upcoming' OR status IS NULL)`,
+        sql: `UPDATE calendar_events SET status = 'expired' WHERE user_id = ? AND date < ? AND (status = 'upcoming' OR status IS NULL) AND status != 'completed'`,
         args: [userId, today]
       });
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Plus, Trash2 } from 'lucide-react';
+import { BookOpen, Plus, Trash2, Search } from 'lucide-react';
 import { getFormattedDateTitle } from '../utils/date';
 
 export default function NotesPanel({
@@ -16,6 +16,7 @@ export default function NotesPanel({
 }) {
   const [savedSnapshot, setSavedSnapshot] = useState({ title: '', content: '' });
   const [noteUnsaved, setNoteUnsaved] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const note = notesList.find(n => n.id === activeNoteId);
@@ -93,7 +94,7 @@ export default function NotesPanel({
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '24px', minHeight: '460px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '24px', height: 'calc(100vh - 260px)', minHeight: '480px' }}>
         {/* LEFT NOTEBOOK LIST / TRASH VIEW SWITCHER */}
         <div style={{ background: 'var(--bg-main)', borderRadius: '18px', border: '1px solid var(--border-color)', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <div style={{ display: 'flex', gap: '6px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
@@ -122,14 +123,28 @@ export default function NotesPanel({
             </button>
           </div>
 
+          {/* Search bar */}
+          <div style={{ position: 'relative' }}>
+            <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
+            <input
+              type="text"
+              placeholder="Search notes..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              style={{ width: '100%', padding: '8px 10px 8px 30px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.83rem', outline: 'none', boxSizing: 'border-box' }}
+            />
+          </div>
+
           {notesViewMode === 'active' ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto', flex: 1 }}>
               {notesList.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
                   No notes yet. Click + to add one.
                 </div>
               ) : (
-                [...notesList].sort((a, b) => new Date(b.updated_at || b.date || 0) - new Date(a.updated_at || a.date || 0)).map(note => (
+                [...notesList]
+                  .filter(note => !searchQuery || note.title?.toLowerCase().includes(searchQuery.toLowerCase()) || note.content?.toLowerCase().includes(searchQuery.toLowerCase()))
+                  .sort((a, b) => new Date(b.updated_at || b.date || 0) - new Date(a.updated_at || a.date || 0)).map(note => (
                   <div
                     key={note.id}
                     onClick={() => setActiveNoteId(note.id)}
@@ -372,7 +387,7 @@ export default function NotesPanel({
                   }
                 }}
                 placeholder="Write your diary entry, personal reflection, or goals..."
-                style={{ flex: 1, width: '100%', minHeight: '280px', padding: '18px', borderRadius: '14px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '1rem', lineHeight: '1.6', outline: 'none', resize: 'none', opacity: notesViewMode === 'trash' ? 0.7 : 1 }}
+                style={{ flex: 1, width: '100%', height: '100%', minHeight: '220px', padding: '18px', borderRadius: '14px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '1rem', lineHeight: '1.6', outline: 'none', resize: 'none', overflowY: 'auto', opacity: notesViewMode === 'trash' ? 0.7 : 1 }}
               />
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', color: 'var(--text-muted)' }}>

@@ -568,52 +568,53 @@ function BodyGymInner({ token, showToast }) {
             </div>
           )}
 
-          {/* Add Workout Modal */}
-          {isAddWorkoutOpen && (
-            <div className="modal-overlay" onClick={closeWorkoutModal} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <div className="glass-card animate-entrance" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', padding: '32px', borderRadius: '24px', width: '90%', maxWidth: '400px', border: '1px solid var(--border-color)' }}>
-                <h3 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '20px' }}>Log Workout</h3>
-                <form onSubmit={handleAddWorkout}>
-                  <div className="input-group" style={{ marginBottom: '16px' }}>
-                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Title</label>
-                    <input type="text" required className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="Enter workout name..." value={workoutForm.title} onChange={e => setWorkoutForm({...workoutForm, title: e.target.value})} />
-                  </div>
-                  
-                  <div className="input-group" style={{ marginBottom: '16px' }}>
-                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Category</label>
-                    <select className="glass-input" style={{ width: '100%', padding: '10px 14px' }} value={workoutForm.category} onChange={e => setWorkoutForm({...workoutForm, category: e.target.value})}>
-                      <option value="General">General</option>
-                      <option value="Cardio">Cardio</option>
-                      <option value="Strength">Strength</option>
-                      <option value="Flexibility">Flexibility</option>
-                      <option value="Sports">Sports</option>
-                    </select>
-                  </div>
+        </div>
+      )}
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-                    <div className="input-group">
-                      <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Duration (mins)</label>
-                      <input type="number" required className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="45" value={workoutForm.duration_mins} onChange={e => setWorkoutForm({...workoutForm, duration_mins: e.target.value})} />
-                    </div>
-                    <div className="input-group">
-                      <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Calories (Optional)</label>
-                      <input type="number" className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="Optional (e.g. 300)" value={workoutForm.calories} onChange={e => setWorkoutForm({...workoutForm, calories: e.target.value})} />
-                    </div>
-                  </div>
-
-                  <div className="input-group" style={{ marginBottom: '24px' }}>
-                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Notes</label>
-                    <input type="text" className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="Enter notes..." value={workoutForm.notes} onChange={e => setWorkoutForm({...workoutForm, notes: e.target.value})} />
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-                    <button type="button" className="secondary-btn" onClick={closeWorkoutModal}>Cancel</button>
-                    <button type="submit" className="blue-btn">Save Workout</button>
-                  </div>
-                </form>
+      {/* Add Workout Modal */}
+      {isAddWorkoutOpen && (
+        <div className="modal-overlay" onClick={closeWorkoutModal} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="animate-entrance" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', padding: '32px', borderRadius: '24px', width: '90%', maxWidth: '400px', border: '1px solid var(--border-color)' }}>
+            <h3 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '20px' }}>Log Workout</h3>
+            <form onSubmit={handleAddWorkout}>
+              <div className="input-group" style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Title</label>
+                <input type="text" required className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="Enter workout name..." value={workoutForm.title} onChange={e => setWorkoutForm({...workoutForm, title: e.target.value})} />
               </div>
-            </div>
-          )}
+              
+              <div className="input-group" style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Category</label>
+                <select className="glass-input" style={{ width: '100%', padding: '10px 14px' }} value={workoutForm.category} onChange={e => setWorkoutForm({...workoutForm, category: e.target.value})}>
+                  <option value="General">General</option>
+                  <option value="Cardio">Cardio</option>
+                  <option value="Strength">Strength</option>
+                  <option value="Flexibility">Flexibility</option>
+                  <option value="Sports">Sports</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                <div className="input-group">
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Duration (mins)</label>
+                  <input type="number" required className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="45" value={workoutForm.duration_mins} onChange={e => setWorkoutForm({...workoutForm, duration_mins: e.target.value})} />
+                </div>
+                <div className="input-group">
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Calories (Optional)</label>
+                  <input type="number" className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="Optional (e.g. 300)" value={workoutForm.calories} onChange={e => setWorkoutForm({...workoutForm, calories: e.target.value})} />
+                </div>
+              </div>
+
+              <div className="input-group" style={{ marginBottom: '24px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Notes</label>
+                <input type="text" className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="Enter notes..." value={workoutForm.notes} onChange={e => setWorkoutForm({...workoutForm, notes: e.target.value})} />
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                <button type="button" className="secondary-btn" onClick={closeWorkoutModal}>Cancel</button>
+                <button type="submit" className="blue-btn">Save Workout</button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
@@ -766,61 +767,62 @@ function BodyGymInner({ token, showToast }) {
             </div>
           )}
 
-          {/* Add Stats Modal */}
-          {isAddStatsOpen && (
-            <div className="modal-overlay" onClick={closeStatsModal} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <div className="glass-card animate-entrance" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', padding: '32px', borderRadius: '24px', width: '90%', maxWidth: '400px', border: '1px solid var(--border-color)' }}>
-                <h3 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '20px' }}>Log Body Stats</h3>
-                <form onSubmit={handleAddStats}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-                    <div className="input-group">
-                      <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Weight (kg)</label>
-                      <input type="number" step="0.1" required className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="75.5" value={statsForm.weight} onChange={e => setStatsForm({...statsForm, weight: e.target.value})} />
-                    </div>
-                    <div className="input-group">
-                      <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Target (kg)</label>
-                      <input type="number" step="0.1" className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="70" value={statsForm.target_weight} onChange={e => setStatsForm({...statsForm, target_weight: e.target.value})} />
-                    </div>
-                  </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Daily Protein (g)</label>
-                      <input 
-                        type="number" 
-                        value={statsForm.protein} 
-                        onChange={(e) => setStatsForm({...statsForm, protein: e.target.value})} 
-                        className="glass-input" 
-                        style={{ width: '100%', padding: '10px 14px', fontSize: '0.95rem' }} 
-                        placeholder="e.g. 120"
-                      />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Target Protein Goal (g)</label>
-                      <input 
-                        type="number" 
-                        value={statsForm.target_protein} 
-                        onChange={(e) => setStatsForm({...statsForm, target_protein: e.target.value})} 
-                        className="glass-input" 
-                        style={{ width: '100%', padding: '10px 14px', fontSize: '0.95rem' }} 
-                        placeholder="e.g. 150"
-                      />
-                    </div>
-                    <div className="input-group">
-                      <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Hydration (L)</label>
-                      <input type="number" step="0.1" className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="2.5" value={statsForm.hydration} onChange={e => setStatsForm({...statsForm, hydration: e.target.value})} />
-                    </div>
-                  </div>
+        </div>
+      )}
 
-                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-                    <button type="button" className="secondary-btn" onClick={closeStatsModal}>Cancel</button>
-                    <button type="submit" className="blue-btn">Save Stats</button>
-                  </div>
-                </form>
+      {/* Add Stats Modal */}
+      {isAddStatsOpen && (
+        <div className="modal-overlay" onClick={closeStatsModal} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="animate-entrance" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', padding: '32px', borderRadius: '24px', width: '90%', maxWidth: '400px', border: '1px solid var(--border-color)' }}>
+            <h3 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '20px' }}>Log Body Stats</h3>
+            <form onSubmit={handleAddStats}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                <div className="input-group">
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Weight (kg)</label>
+                  <input type="number" step="0.1" required className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="75.5" value={statsForm.weight} onChange={e => setStatsForm({...statsForm, weight: e.target.value})} />
+                </div>
+                <div className="input-group">
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Target (kg)</label>
+                  <input type="number" step="0.1" className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="70" value={statsForm.target_weight} onChange={e => setStatsForm({...statsForm, target_weight: e.target.value})} />
+                </div>
               </div>
-            </div>
-          )}
 
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Daily Protein (g)</label>
+                  <input 
+                    type="number" 
+                    value={statsForm.protein} 
+                    onChange={(e) => setStatsForm({...statsForm, protein: e.target.value})} 
+                    className="glass-input" 
+                    style={{ width: '100%', padding: '10px 14px', fontSize: '0.95rem' }} 
+                    placeholder="e.g. 120"
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Target Protein Goal (g)</label>
+                  <input 
+                    type="number" 
+                    value={statsForm.target_protein} 
+                    onChange={(e) => setStatsForm({...statsForm, target_protein: e.target.value})} 
+                    className="glass-input" 
+                    style={{ width: '100%', padding: '10px 14px', fontSize: '0.95rem' }} 
+                    placeholder="e.g. 150"
+                  />
+                </div>
+                <div className="input-group">
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Hydration (L)</label>
+                  <input type="number" step="0.1" className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="2.5" value={statsForm.hydration} onChange={e => setStatsForm({...statsForm, hydration: e.target.value})} />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                <button type="button" className="secondary-btn" onClick={closeStatsModal}>Cancel</button>
+                <button type="submit" className="blue-btn">Save Stats</button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
