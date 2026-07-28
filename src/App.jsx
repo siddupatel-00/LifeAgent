@@ -2622,7 +2622,7 @@ const handleDeleteHabitDb = async (id) => {
               </div>
 
               {!isAiSidePanelOpen && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                   {activeTab !== 'ai' && (
                     <button
                       onClick={() => setIsAiSidePanelOpen(!isAiSidePanelOpen)}
@@ -2750,7 +2750,7 @@ const handleDeleteHabitDb = async (id) => {
               {/* 0) TODAY DAILY ROUTINE & HABITS CHECKLIST (Ultra-neat & clean UI) */}
               {activeTab === 'today' && (
                 <div className="animate-entrance">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px', gap: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px', gap: '16px', flexWrap: 'wrap' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       <h3 style={{ fontSize: '1.55rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <Clock size={24} color="var(--accent-blue)" /> Today's Works
@@ -3137,16 +3137,18 @@ const handleDeleteHabitDb = async (id) => {
                           alignItems: 'center',
                           justifyContent: 'space-between',
                           gap: '16px',
+                          flexWrap: 'wrap',
                           transition: 'all 0.2s',
                           cursor: 'pointer',
                           userSelect: 'none',
                           boxShadow: item.checked ? '0 4px 16px rgba(59,130,246,0.12)' : 'none'
                         }}
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '18px', flexWrap: 'wrap' }}>
                           <span style={{ 
                             fontSize: '0.8rem', fontWeight: 800, color: item.checked ? 'var(--accent-blue)' : 'var(--text-muted)',
-                            background: 'var(--bg-card)', padding: '6px 12px', borderRadius: '10px', border: '1px solid var(--border-color)', minWidth: '110px', textAlign: 'center'
+                            background: 'var(--bg-card)', padding: '6px 12px', borderRadius: '10px', border: '1px solid var(--border-color)', minWidth: '110px', textAlign: 'center',
+                            display: item.time ? 'block' : 'none'
                           }}>
                             {item.time}
                           </span>

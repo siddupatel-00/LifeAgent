@@ -225,9 +225,9 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
   };
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '28px' }}>
+    <div className="money-tracker-grid">
       <div>
-        <div style={{ display: 'flex', gap: '24px', marginBottom: '24px' }}>
+        <div className="money-summary-cards">
           <div style={{ flex: 1, padding: '20px', background: 'var(--bg-main)', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
             <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '8px' }}>Total Earned</div>
             <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--accent-blue)' }}>{currency}{totalEarned.toFixed(2)}</div>
@@ -294,7 +294,7 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
                       {item.notes && <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '8px', fontStyle: 'italic' }}>{item.notes}</div>}
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
-                      <div style={{ fontSize: '1.2rem', fontWeight: 800, color: item.type === 'earn' ? '#22c55e' : '#ef4444' }}>
+                      <div style={{ fontSize: '1.2rem', fontWeight: 800, color: item.type === 'earn' ? '#22c55e' : '#ef4444', whiteSpace: 'nowrap' }}>
                         {item.type === 'earn' ? '+' : '-'}{currency}{item.amount}
                       </div>
                       <div style={{ display: 'flex', gap: '8px' }}>
