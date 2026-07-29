@@ -397,20 +397,11 @@ export default function App() {
 
   const timeOptions = [
     { id: 'today', label: 'Today' },
-    { id: '3d', label: 'Last 3 Days' },
     { id: '7d', label: 'Last 7 Days' },
-    { id: '14d', label: 'Last 14 Days' },
-    { id: '25d', label: 'Last 25 Days' },
-    { id: '30d', label: 'Last 30 Days' },
-    { id: '1m', label: '1 Month' },
-    { id: '3m', label: '3 Months' },
-    { id: '6m', label: '6 Months' },
-    { id: '12m', label: '12 Months' },
-    { id: 'this_month', label: 'This Month' },
-    { id: 'last_month', label: 'Last Month' },
+    { id: '30d', label: '1 Month' },
     { id: 'this_year', label: 'This Year' },
-    { id: 'lifetime', label: 'All Time' },
-    { id: 'custom', label: '📅 Custom Range' }
+    { id: 'custom', label: '📅 Custom Range' },
+    { id: 'lifetime', label: 'All Time' }
   ];
 
   // 1) AI Chat state with Autonomous Executive Engine
@@ -2797,24 +2788,24 @@ const handleDeleteHabitDb = async (id) => {
                       ))}
                     </div>
                   )}
+                  {timeRange === 'custom' && (
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginLeft: '8px' }}>
+                      <input 
+                        type="date" 
+                        value={customStartDate}
+                        onChange={(e) => setCustomStartDate(e.target.value)}
+                        style={{ padding: '8px 12px', borderRadius: '20px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.85rem' }} 
+                      />
+                      <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>-</span>
+                      <input 
+                        type="date" 
+                        value={customEndDate}
+                        onChange={(e) => setCustomEndDate(e.target.value)}
+                        style={{ padding: '8px 12px', borderRadius: '20px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.85rem' }} 
+                      />
+                    </div>
+                  )}
                 </div>
-                {timeRange === 'custom' && (
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <input 
-                      type="date" 
-                      value={customStartDate}
-                      onChange={(e) => setCustomStartDate(e.target.value)}
-                      style={{ padding: '8px', borderRadius: '8px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.85rem' }} 
-                    />
-                    <span style={{ color: 'var(--text-muted)' }}>-</span>
-                    <input 
-                      type="date" 
-                      value={customEndDate}
-                      onChange={(e) => setCustomEndDate(e.target.value)}
-                      style={{ padding: '8px', borderRadius: '8px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.85rem' }} 
-                    />
-                  </div>
-                )}
               </div>
             )}
 
