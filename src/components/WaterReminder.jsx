@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Droplet, Bell, BellOff, Plus, RotateCcw, Clock, X, Edit2, Check } from 'lucide-react';
+import { Droplet, Bell, BellOff, Plus, RotateCcw, Clock, X, Edit2, Check, MoreVertical } from 'lucide-react';
 
 const DEFAULT_PRESETS = [50, 150, 200];
 
@@ -36,6 +36,43 @@ export default function WaterReminder({ todayStat, onLogStat, showToast }) {
     return Number(localStorage.getItem('water_reminder_interval')) || 60;
   });
 
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [modalTargetGoal, setModalTargetGoal] = useState(targetGoal.toString());
+  const [modalReminderInterval, setModalReminderInterval] = useState(reminderIntervalMinutes.toString());
+  const [modalCustomInterval, setModalCustomInterval] = useState('');
+
+  const handleSaveAllSettings = async () => {
+    const newTarget = parseFloat(modalTargetGoal) || 3.0;
+    const newInterval = parseInt(modalReminderInterval, 10) || 60;
+    
+    setTargetGoal(newTarget);
+    setReminderIntervalMinutes(newInterval);
+    
+    localStorage.setItem('water_target_goal', newTarget.toString());
+    localStorage.setItem('water_reminder_interval', newInterval.toString());
+    
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        await fetch('/api/settings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ 
+            water_target_goal: newTarget,
+            water_reminder_interval: newInterval,
+            water_reminder_enabled: isReminderEnabled 
+          })
+        });
+      }
+    } catch (e) {
+      console.error('Failed to save water settings', e);
+    }
+    
+    setIsSettingsOpen(false);
+    showToast?.('Water settings saved successfully!', 'success');
+  };
+
+
   useEffect(() => {
     const currentStat = Array.isArray(todayStat) ? todayStat[0] : todayStat;
     setHydrationLiters(Number(currentStat?.hydration || 0));
@@ -63,7 +100,8 @@ export default function WaterReminder({ todayStat, onLogStat, showToast }) {
   }, [isReminderEnabled, reminderIntervalMinutes]);
 
   const toggleReminder = async () => {
-    if (!isReminderEnabled) {
+    const newState = !isReminderEnabled;
+    if (newState) {
       if (typeof window !== 'undefined' && 'Notification' in window) {
         if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
           const perm = await Notification.requestPermission();
@@ -80,27 +118,37 @@ export default function WaterReminder({ todayStat, onLogStat, showToast }) {
       localStorage.setItem('water_reminder_enabled', 'false');
       showToast?.('Water reminder disabled', 'info');
     }
+
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        fetch('/api/settings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ water_reminder_enabled: newState })
+        });
+      }
+    } catch (e) {}
   };
 
   const handleIntervalChange = (mins) => {
     setReminderIntervalMinutes(mins);
+    setModalReminderInterval(mins.toString());
     localStorage.setItem('water_reminder_interval', mins.toString());
     if (isReminderEnabled) {
       showToast?.(`Reminder interval updated to ${mins} minutes.`, 'success');
     }
-  };
-
-  const handleSaveTargetGoal = (e) => {
-    e.preventDefault();
-    const val = parseFloat(targetGoalInput.trim());
-    if (!val || val <= 0) {
-      showToast?.('Please enter a valid target goal in Liters (e.g. 2.5)', 'error');
-      return;
-    }
-    setTargetGoal(val);
-    localStorage.setItem('water_target_goal', val.toString());
-    setIsEditingTarget(false);
-    showToast?.(`Daily target goal set to ${val} L!`, 'success');
+    
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        fetch('/api/settings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ water_reminder_interval: mins })
+        });
+      }
+    } catch (e) {}
   };
 
   const handleAddWater = (mlToAdd) => {
@@ -165,18 +213,37 @@ export default function WaterReminder({ todayStat, onLogStat, showToast }) {
           </div>
         </div>
 
-        {/* Reminder Toggle Button */}
-        <button
-          className="blue-btn"
-          onClick={toggleReminder}
-          style={{
-            display: 'flex', alignItems: 'center', gap: '8px',
-            padding: '8px 16px', fontSize: '0.85rem'
-          }}
-        >
-          {isReminderEnabled ? <Bell size={16} /> : <BellOff size={16} />}
-          <span>{isReminderEnabled ? `Reminders Active (${reminderIntervalMinutes}m)` : 'Enable Reminders'}</span>
-        </button>
+        {/* Reminder Toggle Button & 3-dots Menu */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button
+            className="blue-btn"
+            onClick={toggleReminder}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '8px',
+              padding: '8px 16px', fontSize: '0.85rem'
+            }}
+          >
+            {isReminderEnabled ? <Bell size={16} /> : <BellOff size={16} />}
+            <span>{isReminderEnabled ? `Reminders Active (${reminderIntervalMinutes}m)` : 'Enable Reminders'}</span>
+          </button>
+          
+          <button
+            onClick={() => {
+              setModalTargetGoal(targetGoal.toString());
+              setModalReminderInterval(reminderIntervalMinutes.toString());
+              setIsSettingsOpen(true);
+            }}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: '8px', borderRadius: '12px', background: 'var(--bg-card-hover)',
+              border: '1px solid var(--border-color)', color: 'var(--text-main)',
+              cursor: 'pointer'
+            }}
+            title="Settings"
+          >
+            <MoreVertical size={18} />
+          </button>
+        </div>
       </div>
 
       {/* Progress Card */}
@@ -185,52 +252,9 @@ export default function WaterReminder({ todayStat, onLogStat, showToast }) {
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--text-main)' }}>{hydrationLiters} L</span>
             
-            {isEditingTarget ? (
-              <form onSubmit={handleSaveTargetGoal} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 600 }}>/</span>
-                <input
-                  type="number"
-                  step="0.1"
-                  placeholder="3.0"
-                  value={targetGoalInput}
-                  onChange={e => setTargetGoalInput(e.target.value)}
-                  style={{
-                    width: '70px', padding: '4px 8px', borderRadius: '8px',
-                    border: '1px solid var(--border-color)', background: 'var(--bg-card)',
-                    color: 'var(--text-main)', fontSize: '0.9rem', fontWeight: 700, outline: 'none'
-                  }}
-                  autoFocus
-                />
-                <span style={{ fontSize: '0.88rem', color: 'var(--text-muted)', fontWeight: 600 }}>L</span>
-                <button
-                  type="submit"
-                  style={{
-                    padding: '4px 10px', borderRadius: '8px', border: 'none',
-                    background: 'var(--bg-card-hover)', color: 'var(--text-main)',
-                    fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer'
-                  }}
-                >
-                  <Check size={12} /> Save
-                </button>
-              </form>
-            ) : (
-              <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                / {targetGoal} L target ({Math.round(hydrationLiters * 1000)} ml)
-                <button
-                  onClick={() => {
-                    setTargetGoalInput(targetGoal.toString());
-                    setIsEditingTarget(true);
-                  }}
-                  title="Edit daily water target goal"
-                  style={{
-                    background: 'transparent', border: 'none', color: 'var(--text-muted)',
-                    cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center'
-                  }}
-                >
-                  <Edit2 size={13} />
-                </button>
-              </span>
-            )}
+            <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              / {targetGoal} L target ({Math.round(hydrationLiters * 1000)} ml)
+            </span>
           </div>
           <div style={{ fontSize: '0.95rem', fontWeight: 800, color: percentComplete >= 100 ? '#10b981' : 'var(--text-main)' }}>
             {percentComplete}% {percentComplete >= 100 && '🎉 Goal Met!'}
@@ -331,26 +355,99 @@ export default function WaterReminder({ todayStat, onLogStat, showToast }) {
         </div>
       </div>
 
-      {/* Reminder Frequency Selector */}
-      {isReminderEnabled && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingTop: '12px', borderTop: '1px solid var(--border-color)', flexWrap: 'wrap' }}>
-          <Clock size={14} color="var(--text-muted)" />
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Reminder Interval:</span>
-          {[30, 45, 60, 90, 120].map(mins => (
+      {/* Settings Modal */}
+      {isSettingsOpen && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0, 0, 0, 0.6)', display: 'flex',
+          alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+          padding: '20px'
+        }}>
+          <div className="glass-card" style={{
+            background: 'var(--bg-main)', padding: '24px', borderRadius: '20px',
+            border: '1px solid var(--border-color)', width: '100%', maxWidth: '400px'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-main)' }}>Hydration Settings</h3>
+              <button onClick={() => setIsSettingsOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px' }}>
+                Daily Target (Liters)
+              </label>
+              <input
+                type="number"
+                step="0.1"
+                value={modalTargetGoal}
+                onChange={e => setModalTargetGoal(e.target.value)}
+                style={{
+                  width: '100%', padding: '10px 14px', borderRadius: '12px',
+                  border: '1px solid var(--border-color)', background: 'var(--bg-card)',
+                  color: 'var(--text-main)', fontSize: '1rem', outline: 'none'
+                }}
+              />
+            </div>
+            
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px' }}>
+                Reminder Interval
+              </label>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '12px' }}>
+                {[15, 30, 45, 60, 90, 120].map(mins => (
+                  <button
+                    key={mins}
+                    onClick={() => setModalReminderInterval(mins.toString())}
+                    style={{
+                      padding: '8px 12px', borderRadius: '12px', border: '1px solid',
+                      borderColor: modalReminderInterval === mins.toString() ? 'rgba(255, 255, 255, 0.3)' : 'var(--border-color)',
+                      background: modalReminderInterval === mins.toString() ? 'rgba(255, 255, 255, 0.08)' : 'var(--bg-card-hover)',
+                      color: 'var(--text-main)', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer'
+                    }}
+                  >
+                    {mins < 60 ? `${mins}m` : `${mins / 60}h`}
+                  </button>
+                ))}
+              </div>
+              
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <input
+                  type="number"
+                  placeholder="Custom minutes"
+                  value={modalCustomInterval}
+                  onChange={e => setModalCustomInterval(e.target.value)}
+                  style={{
+                    flex: 1, padding: '10px 14px', borderRadius: '12px',
+                    border: '1px solid var(--border-color)', background: 'var(--bg-card)',
+                    color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none'
+                  }}
+                />
+                <button
+                  onClick={() => {
+                    const mins = parseInt(modalCustomInterval, 10);
+                    if (mins > 0) {
+                      setModalReminderInterval(mins.toString());
+                      setModalCustomInterval('');
+                    }
+                  }}
+                  className="blue-btn"
+                  style={{ padding: '10px 16px', borderRadius: '12px' }}
+                >
+                  Set
+                </button>
+              </div>
+            </div>
+            
             <button
-              key={mins}
-              onClick={() => handleIntervalChange(mins)}
-              style={{
-                padding: '4px 10px', borderRadius: '12px', border: '1px solid',
-                borderColor: reminderIntervalMinutes === mins ? 'rgba(255, 255, 255, 0.3)' : 'var(--border-color)',
-                background: reminderIntervalMinutes === mins ? 'rgba(255, 255, 255, 0.08)' : 'var(--bg-card-hover)',
-                color: 'var(--text-main)',
-                fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer'
-              }}
+              onClick={handleSaveAllSettings}
+              className="blue-btn"
+              style={{ width: '100%', padding: '12px', fontSize: '1rem', borderRadius: '14px', display: 'flex', justifyContent: 'center', gap: '8px' }}
             >
-              {mins < 60 ? `${mins}m` : `${mins / 60}h`}
+              <Check size={18} /> Save Settings
             </button>
-          ))}
+          </div>
         </div>
       )}
     </div>
