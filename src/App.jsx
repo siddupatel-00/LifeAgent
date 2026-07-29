@@ -3039,6 +3039,12 @@ const handleDeleteHabitDb = async (id) => {
 
                   {/* Dedicated 'Today Workout & Nutrition Summary' Section */}
                   {(todayWidgetsConfig.showWorkout || todayWidgetsConfig.showProtein || todayWidgetsConfig.showHydration) && (
+                    (() => {
+                      const hasWorkoutData = Array.isArray(workouts) && workouts.length > 0;
+                      const hasProteinSetup = Array.isArray(bodyStats) && bodyStats.some(s => Number(s.target_protein) > 0 || Number(s.protein) > 0);
+                      const hasWaterSetup = !!localStorage.getItem('water_target_goal');
+                      if (!hasWorkoutData && !hasProteinSetup && !hasWaterSetup) return null;
+                      return (
                     <div style={{ background: 'var(--bg-main)', borderRadius: '20px', border: '1px solid var(--border-color)', padding: '24px', marginBottom: '28px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <h4 style={{ fontSize: '1.2rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-main)', margin: 0 }}>
@@ -3048,7 +3054,7 @@ const handleDeleteHabitDb = async (id) => {
 
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
                         {/* a) Today's Scheduled Workout Split */}
-                        {todayWidgetsConfig.showWorkout && (() => {
+                        {todayWidgetsConfig.showWorkout && Array.isArray(workouts) && workouts.length > 0 && (() => {
                           const todayKeyStr = todayKey(userProfile?.timezone);
                           const daysEpoch = Math.floor(new Date(todayKeyStr).getTime() / (1000 * 60 * 60 * 24));
                           const splitList = (() => {
@@ -3110,7 +3116,7 @@ const handleDeleteHabitDb = async (id) => {
                         })()}
 
                         {/* b) Daily Protein Tracker with Progress Bar */}
-                        {todayWidgetsConfig.showProtein && (() => {
+                        {todayWidgetsConfig.showProtein && (Array.isArray(bodyStats) && bodyStats.some(s => Number(s.target_protein) > 0 || Number(s.protein) > 0)) && (() => {
                           const latestStat = Array.isArray(bodyStats) && bodyStats.length > 0 ? bodyStats[0] : null;
                           const isToday = latestStat?.date === todayKey(userProfile?.timezone);
                           const protein = isToday ? (Number(latestStat?.protein) || 0) : 0;
@@ -3212,7 +3218,7 @@ const handleDeleteHabitDb = async (id) => {
                         })()}
 
                         {/* c) Daily Hydration Tracker */}
-                        {todayWidgetsConfig.showHydration && (() => {
+                        {todayWidgetsConfig.showHydration && !!localStorage.getItem('water_target_goal') && (() => {
                           const latestStat = Array.isArray(bodyStats) && bodyStats.length > 0 ? bodyStats[0] : null;
                           const isToday = latestStat?.date === todayKey(userProfile?.timezone);
                           const hydration = isToday ? (Number(latestStat?.hydration) || 0) : 0;
@@ -3310,7 +3316,10 @@ const handleDeleteHabitDb = async (id) => {
                         })()}
                       </div>
                     </div>
+                    );
+                    })()
                   )}
+
 
                   {/* Clean List of Today Items */}
                     {(!todayItems || todayItems.length === 0) ? (
