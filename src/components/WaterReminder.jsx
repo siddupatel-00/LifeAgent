@@ -12,11 +12,16 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
     : (todayStat?.date ? (todayStat.date === todayDateStr ? todayStat : null) : todayStat);
   const [hydrationLiters, setHydrationLiters] = useState(Number(statObj?.hydration || 0));
   const [targetGoal, setTargetGoal] = useState(() => {
-    return Number(localStorage.getItem('water_target_goal')) || 3.0;
+    const stored = localStorage.getItem('water_target_goal');
+    return stored !== null ? Number(stored) : null;
   });
 
+  // Empty-state goal setup
+  const [goalInput, setGoalInput] = useState('');
+  const [goalInputError, setGoalInputError] = useState('');
+
   const [isEditingTarget, setIsEditingTarget] = useState(false);
-  const [targetGoalInput, setTargetGoalInput] = useState(targetGoal.toString());
+  const [targetGoalInput, setTargetGoalInput] = useState(targetGoal != null ? targetGoal.toString() : '');
 
   // Custom Quick Presets (stored in localStorage for permanent persistence across sessions)
   const [presets, setPresets] = useState(() => {
@@ -42,9 +47,22 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
   });
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [modalTargetGoal, setModalTargetGoal] = useState(targetGoal.toString());
+  const [modalTargetGoal, setModalTargetGoal] = useState(targetGoal != null ? targetGoal.toString() : '');
   const [modalReminderInterval, setModalReminderInterval] = useState(reminderIntervalMinutes.toString());
   const [modalCustomInterval, setModalCustomInterval] = useState('');
+
+  const handleSetGoal = () => {
+    const val = parseFloat(goalInput);
+    if (!val || val <= 0) {
+      setGoalInputError('Please enter a valid target greater than 0 litres.');
+      return;
+    }
+    setGoalInputError('');
+    setTargetGoal(val);
+    setModalTargetGoal(val.toString());
+    localStorage.setItem('water_target_goal', val.toString());
+    showToast?.(`🎯 Daily water goal set to ${val} L!`, 'success');
+  };
 
   const handleSaveAllSettings = async () => {
     const newTarget = parseFloat(modalTargetGoal) || 3.0;
@@ -210,6 +228,90 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
 
   const percentComplete = Math.min(100, Math.round((hydrationLiters / targetGoal) * 100));
 
+  // ── Empty-state: no goal set yet ──────────────────────────────────────────
+  if (targetGoal === null) {
+    return (
+      <div className="animate-entrance" style={{ marginTop: '24px', marginBottom: '24px' }}>
+        {/* Page header (icon + title) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '28px' }}>
+          <div style={{ background: 'var(--bg-card-hover)', padding: '10px', borderRadius: '14px', color: 'var(--text-main)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Droplet size={22} />
+          </div>
+          <div>
+            <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+              💧 Water
+            </h3>
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
+              Track daily water intake, customize quick buttons, set target goals, and receive reminders.
+            </p>
+          </div>
+        </div>
+
+        {/* Empty-state goal setup card */}
+        <div style={{
+          background: 'var(--bg-card)',
+          border: '1px dashed var(--border-color)',
+          borderRadius: '20px',
+          padding: '40px 32px',
+          textAlign: 'center',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px',
+          maxWidth: '440px', margin: '0 auto'
+        }}>
+          <div style={{
+            width: '64px', height: '64px', borderRadius: '50%',
+            background: 'linear-gradient(135deg, var(--accent-blue) 0%, rgba(59,130,246,0.3) 100%)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}>
+            <Droplet size={30} style={{ color: '#fff' }} />
+          </div>
+
+          <div>
+            <h4 style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--text-main)', margin: '0 0 6px 0' }}>
+              Set Your Daily Water Goal
+            </h4>
+            <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.6 }}>
+              Enter how many litres of water you aim to drink each day.
+              You can always change this later from the settings menu.
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', width: '100%', maxWidth: '300px' }}>
+            <input
+              id="water-goal-input"
+              type="number"
+              step="0.1"
+              min="0.1"
+              placeholder="e.g. 2.5"
+              value={goalInput}
+              onChange={e => { setGoalInput(e.target.value); setGoalInputError(''); }}
+              onKeyDown={e => e.key === 'Enter' && handleSetGoal()}
+              style={{
+                flex: 1, padding: '10px 14px', borderRadius: '12px',
+                border: `1px solid ${goalInputError ? '#ef4444' : 'var(--border-color)'}`,
+                background: 'var(--bg-main)', color: 'var(--text-main)',
+                fontSize: '1rem', outline: 'none', fontWeight: 600
+              }}
+            />
+            <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 700 }}>L</span>
+            <button
+              id="water-goal-save-btn"
+              className="blue-btn"
+              onClick={handleSetGoal}
+              style={{ padding: '10px 18px', borderRadius: '12px', fontWeight: 700, fontSize: '0.9rem' }}
+            >
+              Save
+            </button>
+          </div>
+
+          {goalInputError && (
+            <p style={{ fontSize: '0.82rem', color: '#ef4444', margin: 0 }}>{goalInputError}</p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Normal tracker UI (goal is set) ─────────────────────────────────────────
   return (
     <div className="animate-entrance" style={{ marginTop: '24px', marginBottom: '24px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>

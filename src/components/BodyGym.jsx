@@ -44,6 +44,11 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
 
   // Workout Split Rotation State
   const [workoutSettings, setWorkoutSettings] = useState({ split_type: 'weekly', templates: null });
+  const [hasCustomSplit] = useState(() => {
+    try {
+      return !!localStorage.getItem('gym_workout_split');
+    } catch (e) { return false; }
+  });
   const [splitList, setSplitList] = useState(() => {
     try {
       const saved = localStorage.getItem('gym_workout_split');
@@ -505,7 +510,8 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
       {activeSubTab === 'today' && (
         <div className="animate-entrance" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           
-          {/* Main Hero Card: Today's Scheduled Workout */}
+          {/* Main Hero Card: Today's Scheduled Workout — only shown when user has workouts or a custom split */}
+          {(workouts.length > 0 || hasCustomSplit) && (
           <div className="glass-card" style={{ padding: '28px', borderRadius: '22px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', position: 'relative', overflow: 'hidden' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
               <div>
@@ -553,8 +559,10 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
               </div>
             </div>
           </div>
+          )}
 
-          {/* Bottom Grid: Quick Protein Summary (Read Only display on Today tab) */}
+          {/* Bottom Grid: Quick Protein Summary — only shown when user has protein data */}
+          {(Number(latestStat?.protein) > 0 || Number(latestStat?.target_protein) > 0) && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '20px' }}>
             <div className="glass-card" style={{ padding: '20px', borderRadius: '18px', border: '1px solid var(--border-color)', background: 'var(--bg-card)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
@@ -572,6 +580,7 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
               </div>
             </div>
           </div>
+          )}
         </div>
       )}
 

@@ -3712,7 +3712,7 @@ const handleDeleteHabitDb = async (id) => {
 
 
                   {/* GRID OF HABIT CARDS WITH ACTIVITY PILL HEATMAPS */}
-                  <h4 style={{ fontSize: '1.15rem', fontWeight: 800, marginBottom: '16px' }}>Your Daily Items & 7-Day Activity Matrix</h4>
+
                   
                   {habits.filter(h => showHabitHistory ? h.archived : !h.archived).length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)' }}>
