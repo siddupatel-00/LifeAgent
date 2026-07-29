@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, X, Trash2, Edit2, Moon, Clock, Calendar, Activity, Filter } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { todayKey } from '../utils/date';
 import ConfirmModal from './ConfirmModal';
 import CustomSelect from './CustomSelect';
@@ -35,6 +36,9 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat 
   const [rangeMode, setRangeMode] = useState('7d');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
+  
+  // Chart type: 'bar' | 'line'
+  const [chartType, setChartType] = useState('bar');
 
   const handleOpenAddModal = () => {
     setEditingLogId(null);
@@ -459,7 +463,7 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat 
 
       {/* DYNAMIC SLEEP GRAPH */}
       <div style={{ background: 'var(--bg-card)', padding: '24px', borderRadius: '18px', border: '1px solid var(--border-color)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
           <div>
             <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0 }}>
               Sleep Duration Graph ({rangeMode === 'today' ? 'Today' : rangeMode === '7d' ? 'Past 7 Days' : rangeMode === 'this_month' ? 'This Month' : rangeMode === 'past_month' ? 'Past Month' : 'Custom Range'})
@@ -468,39 +472,99 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat 
               Green (8h+ Excellent) • Blue (7-8h Good) • Orange (5-7h Fair) • Red (&lt;5h Poor)
             </p>
           </div>
+          <div style={{ display: 'flex', background: 'var(--bg-main)', borderRadius: '12px', padding: '4px', border: '1px solid var(--border-color)' }}>
+            <button
+              onClick={() => setChartType('bar')}
+              style={{
+                padding: '6px 12px',
+                borderRadius: '8px',
+                border: 'none',
+                background: chartType === 'bar' ? 'var(--bg-card)' : 'transparent',
+                color: chartType === 'bar' ? 'var(--text-main)' : 'var(--text-muted)',
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                boxShadow: chartType === 'bar' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
+                transition: 'all 0.2s'
+              }}
+            >
+              📊 Bar
+            </button>
+            <button
+              onClick={() => setChartType('line')}
+              style={{
+                padding: '6px 12px',
+                borderRadius: '8px',
+                border: 'none',
+                background: chartType === 'line' ? 'var(--bg-card)' : 'transparent',
+                color: chartType === 'line' ? 'var(--text-main)' : 'var(--text-muted)',
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                boxShadow: chartType === 'line' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
+                transition: 'all 0.2s'
+              }}
+            >
+              📈 Line
+            </button>
+          </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: chartData.length > 20 ? '4px' : '8px', height: '180px', paddingTop: '10px' }}>
-          {chartData.map(day => {
-            const totalHrs = day.hours + day.minutes / 60;
-            const heightPct = Math.min((totalHrs / 12) * 100, 100); 
-            const color = day.quality ? getQualityColor(day.quality) : totalHrs >= 8 ? '#10b981' : totalHrs >= 7 ? 'var(--accent-blue)' : totalHrs >= 5 ? '#f59e0b' : totalHrs > 0 ? '#ef4444' : 'var(--border-color)';
-            const formattedDate = new Date(day.date).toLocaleDateString('en', { month: 'numeric', day: 'numeric' });
-            const dayName = new Date(day.date).toLocaleDateString('en', { weekday: 'short' });
-
-            return (
-              <div 
-                key={day.date} 
-                title={`${day.date}: ${day.hours}h ${day.minutes}m (${day.quality || 'Unlogged'})`}
-                style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}
-              >
-                {totalHrs > 0 && (
-                  <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '4px', whiteSpace: 'nowrap' }}>
-                    {totalHrs.toFixed(1)}h
+        {chartType === 'line' ? (
+          <div style={{ height: '220px', width: '100%', marginTop: '10px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData.map(d => ({
+                ...d,
+                totalHrs: parseFloat((d.hours + d.minutes / 60).toFixed(1)),
+                displayDate: chartData.length <= 14 
+                  ? new Date(d.date).toLocaleDateString('en', { weekday: 'short' })
+                  : new Date(d.date).toLocaleDateString('en', { month: 'numeric', day: 'numeric' })
+              }))} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <XAxis dataKey="displayDate" stroke="var(--text-muted)" fontSize={11} tickLine={false} axisLine={false} dy={10} />
+                <YAxis stroke="var(--text-muted)" fontSize={11} tickLine={false} axisLine={false} />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)', borderRadius: '8px', color: 'var(--text-main)', fontSize: '0.85rem' }}
+                  itemStyle={{ color: 'var(--accent-blue)', fontWeight: 'bold' }}
+                  formatter={(val) => [`${val} hrs`, 'Duration']}
+                  labelStyle={{ color: 'var(--text-muted)', marginBottom: '4px' }}
+                />
+                <Line type="monotone" dataKey="totalHrs" stroke="var(--accent-blue)" strokeWidth={3} dot={{ r: 4, fill: 'var(--accent-blue)' }} activeDot={{ r: 6 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: chartData.length > 20 ? '4px' : '8px', height: '180px', paddingTop: '10px' }}>
+            {chartData.map(day => {
+              const totalHrs = day.hours + day.minutes / 60;
+              const heightPct = Math.min((totalHrs / 12) * 100, 100); 
+              const color = day.quality ? getQualityColor(day.quality) : totalHrs >= 8 ? '#10b981' : totalHrs >= 7 ? 'var(--accent-blue)' : totalHrs >= 5 ? '#f59e0b' : totalHrs > 0 ? '#ef4444' : 'var(--border-color)';
+              const formattedDate = new Date(day.date).toLocaleDateString('en', { month: 'numeric', day: 'numeric' });
+              const dayName = new Date(day.date).toLocaleDateString('en', { weekday: 'short' });
+  
+              return (
+                <div 
+                  key={day.date} 
+                  title={`${day.date}: ${day.hours}h ${day.minutes}m (${day.quality || 'Unlogged'})`}
+                  style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}
+                >
+                  {totalHrs > 0 && (
+                    <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '4px', whiteSpace: 'nowrap' }}>
+                      {totalHrs.toFixed(1)}h
+                    </span>
+                  )}
+                  <div style={{
+                    width: '100%', background: color, borderRadius: '6px 6px 0 0',
+                    height: `${heightPct || 2}%`, minHeight: '4px', transition: 'height 0.4s ease',
+                    opacity: totalHrs > 0 ? 1 : 0.25
+                  }} />
+                  <span style={{ fontSize: '0.68rem', marginTop: '6px', color: 'var(--text-muted)', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                    {chartData.length <= 14 ? dayName : formattedDate}
                   </span>
-                )}
-                <div style={{
-                  width: '100%', background: color, borderRadius: '6px 6px 0 0',
-                  height: `${heightPct || 2}%`, minHeight: '4px', transition: 'height 0.4s ease',
-                  opacity: totalHrs > 0 ? 1 : 0.25
-                }} />
-                <span style={{ fontSize: '0.68rem', marginTop: '6px', color: 'var(--text-muted)', fontWeight: 700, whiteSpace: 'nowrap' }}>
-                  {chartData.length <= 14 ? dayName : formattedDate}
-                </span>
-              </div>
-            );
-          })}
-        </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* SLEEP LOGS HISTORY TABLE */}
