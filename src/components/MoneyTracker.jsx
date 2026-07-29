@@ -71,7 +71,7 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
       return (transactions || []).filter(t => getNormalizedDate(t?.date) === todayStr);
     }
 
-    if (activeTf === 'lifetime') {
+    if (activeTf === 'lifetime' || activeTf === 'all' || activeTf === 'all_time') {
       return transactions || [];
     }
 
@@ -112,6 +112,12 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
       const year = pastDate.getFullYear();
       const month = String(pastDate.getMonth() + 1).padStart(2, '0');
       const prefix = `${year}-${month}-`;
+      return (transactions || []).filter(t => getNormalizedDate(t?.date).startsWith(prefix));
+    }
+
+    if (activeTf === 'this_year') {
+      const year = now.getFullYear();
+      const prefix = `${year}-`;
       return (transactions || []).filter(t => getNormalizedDate(t?.date).startsWith(prefix));
     }
 

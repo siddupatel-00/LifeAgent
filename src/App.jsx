@@ -406,7 +406,8 @@ export default function App() {
     { id: '12m', label: '12 Months' },
     { id: 'this_month', label: 'This Month' },
     { id: 'last_month', label: 'Last Month' },
-    { id: 'lifetime', label: 'Lifetime' }
+    { id: 'this_year', label: 'This Year' },
+    { id: 'lifetime', label: 'All Time' }
   ];
 
   // 1) AI Chat state with Autonomous Executive Engine
