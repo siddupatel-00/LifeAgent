@@ -16,7 +16,7 @@ async function resetUserData(userId) {
     { sql: 'DELETE FROM calendar_events WHERE user_id = ?', args: [userId] },
     { sql: 'DELETE FROM chat_history WHERE user_id = ?', args: [userId] },
     { sql: 'DELETE FROM daily_metrics WHERE user_id = ? OR (user_email IS NOT NULL AND user_email = ?)', args: [userId, userEmail || ''] },
-    { sql: 'DELETE FROM user_settings WHERE user_id = ?', args: [userId] }
+    { sql: "INSERT INTO user_settings (user_id, workout_templates, workout_split_type) VALUES (?, NULL, 'weekly') ON CONFLICT (user_id) DO UPDATE SET workout_templates = NULL, workout_split_type = 'weekly'", args: [userId] }
   ];
 
   for (const q of queries) {

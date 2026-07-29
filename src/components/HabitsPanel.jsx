@@ -124,34 +124,82 @@ export default function HabitsPanel({
               </div>
 
               {newHabitData.frequency === 'custom' && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '4px', marginTop: '6px' }}>
-                  {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => {
-                    const selectedDays = Array.isArray(newHabitData.customDays)
-                      ? newHabitData.customDays
-                      : (typeof newHabitData.customDays === 'string' ? newHabitData.customDays.split(',').map(s=>s.trim()).filter(Boolean) : ['Mon', 'Wed', 'Fri']);
-                    const isSelected = selectedDays.includes(day);
-                    return (
-                      <button
-                        key={day}
-                        type="button"
-                        onClick={() => {
-                          const nextDays = isSelected
-                            ? selectedDays.filter(d => d !== day)
-                            : [...selectedDays, day];
-                          setNewHabitData({ ...newHabitData, customDays: nextDays });
+                <div style={{ background: 'var(--bg-main)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)', marginTop: '8px' }}>
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setNewHabitData({ ...newHabitData, intervalDays: 0, interval_days: 0 })}
+                      style={{
+                        flex: 1, padding: '6px 10px', borderRadius: '6px',
+                        border: `1px solid ${(!newHabitData.intervalDays || newHabitData.intervalDays === 0) ? 'var(--accent-blue)' : 'var(--border-color)'}`,
+                        background: (!newHabitData.intervalDays || newHabitData.intervalDays === 0) ? 'var(--accent-blue-dim)' : 'var(--bg-card)',
+                        color: (!newHabitData.intervalDays || newHabitData.intervalDays === 0) ? 'var(--accent-blue)' : 'var(--text-muted)',
+                        fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer'
+                      }}
+                    >
+                      Specific Days
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNewHabitData({ ...newHabitData, intervalDays: (newHabitData.intervalDays > 0 ? newHabitData.intervalDays : 2), interval_days: (newHabitData.intervalDays > 0 ? newHabitData.intervalDays : 2) })}
+                      style={{
+                        flex: 1, padding: '6px 10px', borderRadius: '6px',
+                        border: `1px solid ${(newHabitData.intervalDays > 0) ? 'var(--accent-blue)' : 'var(--border-color)'}`,
+                        background: (newHabitData.intervalDays > 0) ? 'var(--accent-blue-dim)' : 'var(--bg-card)',
+                        color: (newHabitData.intervalDays > 0) ? 'var(--accent-blue)' : 'var(--text-muted)',
+                        fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer'
+                      }}
+                    >
+                      Every N Days
+                    </button>
+                  </div>
+
+                  {(newHabitData.intervalDays > 0) ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>Repeat every</span>
+                      <input
+                        type="number"
+                        min="1"
+                        value={newHabitData.intervalDays || 2}
+                        onChange={(e) => {
+                          const val = Math.max(1, parseInt(e.target.value) || 1);
+                          setNewHabitData({ ...newHabitData, intervalDays: val, interval_days: val });
                         }}
-                        style={{
-                          flex: 1, padding: '6px 0', borderRadius: '6px',
-                          border: `1px solid ${isSelected ? 'var(--accent-blue)' : 'var(--border-color)'}`,
-                          background: isSelected ? 'var(--accent-blue-dim)' : 'var(--bg-main)',
-                          color: isSelected ? 'var(--accent-blue)' : 'var(--text-muted)',
-                          fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer'
-                        }}
-                      >
-                        {day}
-                      </button>
-                    );
-                  })}
+                        style={{ width: '70px', padding: '6px 10px', borderRadius: '8px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.88rem', fontWeight: 700, outline: 'none' }}
+                      />
+                      <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>days</span>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '4px' }}>
+                      {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => {
+                        const selectedDays = Array.isArray(newHabitData.customDays)
+                          ? newHabitData.customDays
+                          : (typeof newHabitData.customDays === 'string' ? newHabitData.customDays.split(',').map(s=>s.trim()).filter(Boolean) : ['Mon', 'Wed', 'Fri']);
+                        const isSelected = selectedDays.includes(day);
+                        return (
+                          <button
+                            key={day}
+                            type="button"
+                            onClick={() => {
+                              const nextDays = isSelected
+                                ? selectedDays.filter(d => d !== day)
+                                : [...selectedDays, day];
+                              setNewHabitData({ ...newHabitData, customDays: nextDays, intervalDays: 0, interval_days: 0 });
+                            }}
+                            style={{
+                              flex: 1, padding: '6px 0', borderRadius: '6px',
+                              border: `1px solid ${isSelected ? 'var(--accent-blue)' : 'var(--border-color)'}`,
+                              background: isSelected ? 'var(--accent-blue-dim)' : 'var(--bg-main)',
+                              color: isSelected ? 'var(--accent-blue)' : 'var(--text-muted)',
+                              fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer'
+                            }}
+                          >
+                            {day}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -163,21 +211,24 @@ export default function HabitsPanel({
                 try {
                   const freq = newHabitData.frequency || 'daily';
                   const cDays = Array.isArray(newHabitData.customDays) ? newHabitData.customDays.join(',') : (newHabitData.customDays || '');
+                  const iDays = freq === 'custom' ? Number(newHabitData.intervalDays || newHabitData.interval_days || 0) : 0;
                   const res = await fetch('/api/habits', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ label: newHabitData.title, category: newHabitData.category, target: newHabitData.target, frequency: freq, custom_days: cDays })
+                    body: JSON.stringify({ label: newHabitData.title, category: newHabitData.category, target: newHabitData.target, frequency: freq, custom_days: cDays, interval_days: iDays })
                   });
                   if (res.ok) {
                     const saved = await res.json();
                     const newItem = {
                       id: saved.id, title: saved.label, category: saved.category,
                       target: saved.target, checkedToday: false, streak: 0,
+                      startDate: saved.start_date || new Date().toISOString().split('T')[0],
                       completionRate: 0, history: [0,0,0,0,0,0,0],
-                      frequency: saved.frequency || freq, customDays: saved.custom_days || cDays
+                      frequency: saved.frequency || freq, customDays: saved.custom_days || cDays,
+                      interval_days: saved.interval_days || iDays, intervalDays: saved.interval_days || iDays
                     };
                     setHabits([newItem, ...habits]);
-                    setNewHabitData({ title: '', category: '', target: '', frequency: 'daily', customDays: ['Mon', 'Wed', 'Fri'] });
+                    setNewHabitData({ title: '', category: '', target: '', frequency: 'daily', customDays: ['Mon', 'Wed', 'Fri'], intervalDays: 0, interval_days: 0 });
                     showToast('Habit Added', 'success');
                   }
                 } catch (e) {}
@@ -340,34 +391,82 @@ export default function HabitsPanel({
             </div>
 
             {newHabitData.frequency === 'custom' && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '4px', marginTop: '6px' }}>
-                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => {
-                  const selectedDays = Array.isArray(newHabitData.customDays)
-                    ? newHabitData.customDays
-                    : (typeof newHabitData.customDays === 'string' ? newHabitData.customDays.split(',').map(s=>s.trim()).filter(Boolean) : ['Mon', 'Wed', 'Fri']);
-                  const isSelected = selectedDays.includes(day);
-                  return (
-                    <button
-                      key={day}
-                      type="button"
-                      onClick={() => {
-                        const nextDays = isSelected
-                          ? selectedDays.filter(d => d !== day)
-                          : [...selectedDays, day];
-                        setNewHabitData({ ...newHabitData, customDays: nextDays });
+              <div style={{ background: 'var(--bg-main)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)', marginTop: '8px' }}>
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setNewHabitData({ ...newHabitData, intervalDays: 0, interval_days: 0 })}
+                    style={{
+                      flex: 1, padding: '6px 10px', borderRadius: '6px',
+                      border: `1px solid ${(!newHabitData.intervalDays || newHabitData.intervalDays === 0) ? 'var(--accent-blue)' : 'var(--border-color)'}`,
+                      background: (!newHabitData.intervalDays || newHabitData.intervalDays === 0) ? 'var(--accent-blue-dim)' : 'var(--bg-card)',
+                      color: (!newHabitData.intervalDays || newHabitData.intervalDays === 0) ? 'var(--accent-blue)' : 'var(--text-muted)',
+                      fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer'
+                    }}
+                  >
+                    Specific Days
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewHabitData({ ...newHabitData, intervalDays: (newHabitData.intervalDays > 0 ? newHabitData.intervalDays : 2), interval_days: (newHabitData.intervalDays > 0 ? newHabitData.intervalDays : 2) })}
+                    style={{
+                      flex: 1, padding: '6px 10px', borderRadius: '6px',
+                      border: `1px solid ${(newHabitData.intervalDays > 0) ? 'var(--accent-blue)' : 'var(--border-color)'}`,
+                      background: (newHabitData.intervalDays > 0) ? 'var(--accent-blue-dim)' : 'var(--bg-card)',
+                      color: (newHabitData.intervalDays > 0) ? 'var(--accent-blue)' : 'var(--text-muted)',
+                      fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer'
+                    }}
+                  >
+                    Every N Days
+                  </button>
+                </div>
+
+                {(newHabitData.intervalDays > 0) ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>Repeat every</span>
+                    <input
+                      type="number"
+                      min="1"
+                      value={newHabitData.intervalDays || 2}
+                      onChange={(e) => {
+                        const val = Math.max(1, parseInt(e.target.value) || 1);
+                        setNewHabitData({ ...newHabitData, intervalDays: val, interval_days: val });
                       }}
-                      style={{
-                        flex: 1, padding: '6px 0', borderRadius: '6px',
-                        border: `1px solid ${isSelected ? 'var(--accent-blue)' : 'var(--border-color)'}`,
-                        background: isSelected ? 'var(--accent-blue-dim)' : 'var(--bg-main)',
-                        color: isSelected ? 'var(--accent-blue)' : 'var(--text-muted)',
-                        fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer'
-                      }}
-                    >
-                      {day}
-                    </button>
-                  );
-                })}
+                      style={{ width: '70px', padding: '6px 10px', borderRadius: '8px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.88rem', fontWeight: 700, outline: 'none' }}
+                    />
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>days</span>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '4px' }}>
+                    {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => {
+                      const selectedDays = Array.isArray(newHabitData.customDays)
+                        ? newHabitData.customDays
+                        : (typeof newHabitData.customDays === 'string' ? newHabitData.customDays.split(',').map(s=>s.trim()).filter(Boolean) : ['Mon', 'Wed', 'Fri']);
+                      const isSelected = selectedDays.includes(day);
+                      return (
+                        <button
+                          key={day}
+                          type="button"
+                          onClick={() => {
+                            const nextDays = isSelected
+                              ? selectedDays.filter(d => d !== day)
+                              : [...selectedDays, day];
+                            setNewHabitData({ ...newHabitData, customDays: nextDays, intervalDays: 0, interval_days: 0 });
+                          }}
+                          style={{
+                            flex: 1, padding: '6px 0', borderRadius: '6px',
+                            border: `1px solid ${isSelected ? 'var(--accent-blue)' : 'var(--border-color)'}`,
+                            background: isSelected ? 'var(--accent-blue-dim)' : 'var(--bg-main)',
+                            color: isSelected ? 'var(--accent-blue)' : 'var(--text-muted)',
+                            fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer'
+                          }}
+                        >
+                          {day}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -387,21 +486,24 @@ export default function HabitsPanel({
                 try {
                   const freq = newHabitData.frequency || 'daily';
                   const cDays = Array.isArray(newHabitData.customDays) ? newHabitData.customDays.join(',') : (newHabitData.customDays || '');
+                  const iDays = freq === 'custom' ? Number(newHabitData.intervalDays || newHabitData.interval_days || 0) : 0;
                   const res = await fetch('/api/habits', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ label: newHabitData.title, category: newHabitData.category, target: newHabitData.target, frequency: freq, custom_days: cDays })
+                    body: JSON.stringify({ label: newHabitData.title, category: newHabitData.category, target: newHabitData.target, frequency: freq, custom_days: cDays, interval_days: iDays })
                   });
                   if (res.ok) {
                     const saved = await res.json();
                     const newItem = {
                       id: saved.id, title: saved.label, category: saved.category,
                       target: saved.target, checkedToday: false, streak: 0,
+                      startDate: saved.start_date || new Date().toISOString().split('T')[0],
                       completionRate: 0, history: [0,0,0,0,0,0,0],
-                      frequency: saved.frequency || freq, customDays: saved.custom_days || cDays
+                      frequency: saved.frequency || freq, customDays: saved.custom_days || cDays,
+                      interval_days: saved.interval_days || iDays, intervalDays: saved.interval_days || iDays
                     };
                     setHabits([newItem, ...habits]);
-                    setNewHabitData({ title: '', category: '', target: '', frequency: 'daily', customDays: ['Mon', 'Wed', 'Fri'] });
+                    setNewHabitData({ title: '', category: '', target: '', frequency: 'daily', customDays: ['Mon', 'Wed', 'Fri'], intervalDays: 0, interval_days: 0 });
                     setIsAddHabitModalOpen(false);
                     showToast('Habit Added', 'success');
                   }

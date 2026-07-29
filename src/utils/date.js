@@ -32,8 +32,60 @@ export const getWeekDays = (startDayName = 'Monday') => {
   return result;
 };
 
-export const isHabitScheduledOnDay = (habit, dayCode) => {
+export const getEpochDays = (d) => {
+  if (!d) return Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+  let dateObj;
+  if (d instanceof Date) {
+    dateObj = d;
+  } else if (typeof d === 'string') {
+    if (d.includes('-')) {
+      const parts = d.split('T')[0].split('-').map(Number);
+      if (parts.length === 3 && !parts.some(isNaN)) {
+        dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
+      } else {
+        dateObj = new Date(d);
+      }
+    } else {
+      dateObj = new Date(d);
+    }
+  } else if (typeof d === 'number') {
+    dateObj = new Date(d);
+  } else {
+    dateObj = new Date();
+  }
+  if (isNaN(dateObj.getTime())) dateObj = new Date();
+  return Math.floor(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()) / (1000 * 60 * 60 * 24));
+};
+
+export const isHabitScheduledOnDay = (habit, day) => {
   if (!habit) return true;
+  const intervalDays = Number(habit.interval_days || habit.intervalDays) || 0;
+  if (intervalDays > 0) {
+    const startStr = habit.start_date || habit.startDate || habit.created_at || habit.createdAt || habit.date;
+    const habitStartIndex = getEpochDays(startStr);
+    
+    let targetDayIndex;
+    if (typeof day === 'number') {
+      targetDayIndex = day;
+    } else if (day && (day instanceof Date || (typeof day === 'string' && day.includes('-')))) {
+      targetDayIndex = getEpochDays(day);
+    } else if (day && typeof day === 'object' && (day.date || day.dateStr)) {
+      targetDayIndex = getEpochDays(day.dateStr || day.date);
+    } else {
+      const dayCode = typeof day === 'string' ? day : (day?.code || day?.name || '');
+      const todayObj = new Date();
+      const todayJsDay = todayObj.getDay();
+      const matched = ALL_WEEK_DAYS.find(d => d.code === dayCode || d.name === dayCode);
+      const targetJsDay = matched ? matched.dayIdx : todayJsDay;
+      const diff = targetJsDay - todayJsDay;
+      const targetDate = new Date(todayObj.getFullYear(), todayObj.getMonth(), todayObj.getDate() + diff);
+      targetDayIndex = getEpochDays(targetDate);
+    }
+
+    const elapsedDays = targetDayIndex - habitStartIndex;
+    return Math.abs(elapsedDays) % intervalDays === 0;
+  }
+
   if (!habit.frequency || habit.frequency === 'daily') return true;
   if (habit.frequency === 'custom') {
     const rawDays = habit.customDays || habit.custom_days || '';
@@ -48,6 +100,7 @@ export const isHabitScheduledOnDay = (habit, dayCode) => {
       }
     }
     const cleanDays = dayList.map(d => String(d).trim().slice(0, 3));
+    const dayCode = typeof day === 'string' ? day : (day?.code || day?.name || '');
     return cleanDays.includes(dayCode);
   }
   return true;
