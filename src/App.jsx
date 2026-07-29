@@ -1477,58 +1477,60 @@ const handleDeleteHabitDb = async (id) => {
           </div>
 
           <div style={{ display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <CustomSelect 
-              value={themeColor || 'blue'}
-              onChange={(e) => {
-                localStorage.setItem('themeColor', e.target.value);
-                document.documentElement.setAttribute('data-color-theme', e.target.value);
-                window.dispatchEvent(new Event('storage'));
-              }} 
-              style={{ padding: '7px 14px', borderRadius: '40px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.85rem', fontWeight: 600, width: '170px' }}
-              options={[
-                { value: "blue", label: "🔵 Classic Blue" },
-                { value: "professional", label: "⚫ Black & White" },
-                { value: "pink", label: "🌸 Vibrant Pink" },
-                { value: "neon", label: "⚡ Neon Tech" },
-                { value: "emerald", label: "🌿 Emerald" }
-              ]}
-            />
+            <div className="landing-theme-controls" style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
+              <CustomSelect 
+                value={themeColor || 'blue'}
+                onChange={(e) => {
+                  localStorage.setItem('themeColor', e.target.value);
+                  document.documentElement.setAttribute('data-color-theme', e.target.value);
+                  window.dispatchEvent(new Event('storage'));
+                }} 
+                style={{ padding: '7px 14px', borderRadius: '40px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.85rem', fontWeight: 600, width: '170px' }}
+                options={[
+                  { value: "blue", label: "🔵 Classic Blue" },
+                  { value: "professional", label: "⚫ Black & White" },
+                  { value: "pink", label: "🌸 Vibrant Pink" },
+                  { value: "neon", label: "⚡ Neon Tech" },
+                  { value: "emerald", label: "🌿 Emerald" }
+                ]}
+              />
 
-            <div className="theme-dropdown" ref={themeDropdownRef}>
-              <button 
-                className="theme-toggle-btn"
-                style={{ padding: '8px 12px', borderRadius: '40px' }}
-                onClick={() => setIsThemeMenuOpen(!isThemeMenuOpen)}
-                title="Change Theme Mode"
-              >
-                {themeMode === 'dark' && <Moon size={18} />}
-                {themeMode === 'light' && <Sun size={18} />}
-                {themeMode === 'pc' && <Monitor size={18} />}
-                <ChevronDown size={14} style={{ transform: isThemeMenuOpen ? 'rotate(180deg)' : 'none', transition: '0.2s' }} />
-              </button>
+              <div className="theme-dropdown" ref={themeDropdownRef}>
+                <button 
+                  className="theme-toggle-btn"
+                  style={{ padding: '8px 12px', borderRadius: '40px' }}
+                  onClick={() => setIsThemeMenuOpen(!isThemeMenuOpen)}
+                  title="Change Theme Mode"
+                >
+                  {themeMode === 'dark' && <Moon size={18} />}
+                  {themeMode === 'light' && <Sun size={18} />}
+                  {themeMode === 'pc' && <Monitor size={18} />}
+                  <ChevronDown size={14} style={{ transform: isThemeMenuOpen ? 'rotate(180deg)' : 'none', transition: '0.2s' }} />
+                </button>
 
-              {isThemeMenuOpen && (
-                <div className="theme-dropdown-menu">
-                  <button 
-                    className={`theme-dropdown-item ${themeMode === 'dark' ? 'active' : ''}`}
-                    onClick={() => { setThemeMode('dark'); setIsThemeMenuOpen(false); }}
-                  >
-                    <Moon size={14} /> Dark Mode
-                  </button>
-                  <button 
-                    className={`theme-dropdown-item ${themeMode === 'light' ? 'active' : ''}`}
-                    onClick={() => { setThemeMode('light'); setIsThemeMenuOpen(false); }}
-                  >
-                    <Sun size={14} /> Light Mode
-                  </button>
-                  <button 
-                    className={`theme-dropdown-item ${themeMode === 'pc' ? 'active' : ''}`}
-                    onClick={() => { setThemeMode('pc'); setIsThemeMenuOpen(false); }}
-                  >
-                    <Monitor size={14} /> PC / System
-                  </button>
-                </div>
-              )}
+                {isThemeMenuOpen && (
+                  <div className="theme-dropdown-menu">
+                    <button 
+                      className={`theme-dropdown-item ${themeMode === 'dark' ? 'active' : ''}`}
+                      onClick={() => { setThemeMode('dark'); setIsThemeMenuOpen(false); }}
+                    >
+                      <Moon size={14} /> Dark Mode
+                    </button>
+                    <button 
+                      className={`theme-dropdown-item ${themeMode === 'light' ? 'active' : ''}`}
+                      onClick={() => { setThemeMode('light'); setIsThemeMenuOpen(false); }}
+                    >
+                      <Sun size={14} /> Light Mode
+                    </button>
+                    <button 
+                      className={`theme-dropdown-item ${themeMode === 'pc' ? 'active' : ''}`}
+                      onClick={() => { setThemeMode('pc'); setIsThemeMenuOpen(false); }}
+                    >
+                      <Monitor size={14} /> PC / System
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             <button 
@@ -2607,7 +2609,7 @@ const handleDeleteHabitDb = async (id) => {
           {/* MAIN RIGHT AREA (MeraBaazar layout without Verified Pro, Live, or top Log Out) */}
           <section style={{ flex: 1, height: '100vh', padding: '24px 16px', overflowY: 'auto' }}>
             
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+            <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
               <div>
                 {activeTab === 'today' ? (
                   <>
@@ -2630,16 +2632,16 @@ const handleDeleteHabitDb = async (id) => {
               </div>
 
               {!isAiSidePanelOpen && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                   {activeTab !== 'ai' && (
                     <button
                       onClick={() => setIsAiSidePanelOpen(!isAiSidePanelOpen)}
                       style={{
                         display: 'flex', alignItems: 'center', gap: '8px',
                         padding: '8px 16px', borderRadius: '30px',
-                        background: isAiSidePanelOpen ? 'var(--accent-blue)' : 'var(--bg-card)',
-                        color: isAiSidePanelOpen ? 'var(--accent-text)' : 'var(--text-main)',
-                        border: `1px solid ${isAiSidePanelOpen ? 'var(--accent-blue)' : 'var(--border-color)'}`,
+                        background: isAiSidePanelOpen ? 'var(--accent-blue)' : 'rgba(59,130,246,0.15)',
+                        color: isAiSidePanelOpen ? 'var(--accent-text)' : '#3b82f6',
+                        border: `1px solid ${isAiSidePanelOpen ? 'var(--accent-blue)' : 'rgba(59,130,246,0.4)'}`,
                         fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.2s',
                         boxShadow: isAiSidePanelOpen ? '0 0 16px rgba(59,130,246,0.35)' : 'none'
                       }}

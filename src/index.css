@@ -652,6 +652,61 @@ input[type="checkbox"]:checked::after {
 
 /* MOBILE NATIVE APP EXPERIENCE OVERRIDES */
 @media (max-width: 768px) {
+  /* Hide theme/color pickers on landing page for mobile */
+  .landing-theme-controls {
+    display: none !important;
+  }
+
+  /* Dashboard header - title and buttons row */
+  .dashboard-header {
+    position: sticky;
+    top: 0;
+    z-index: 500;
+    background: var(--bg-main);
+    padding: 12px 14px !important;
+    margin: 0 -12px;
+    border-bottom: 1px solid var(--border-color);
+  }
+  
+  /* Make title smaller on mobile */
+  .dashboard-header h2 {
+    font-size: 1.3rem !important;
+  }
+  
+  /* Header buttons row */
+  .header-actions {
+    gap: 6px !important;
+  }
+
+  /* Remove excessive padding from cards on mobile */
+  div[style*="padding: '20px'"],
+  div[style*="padding: 20px"] {
+    padding: 14px !important;
+  }
+  
+  /* Better font sizing */
+  h1 { font-size: 1.8rem !important; }
+  h2 { font-size: 1.4rem !important; }
+  h3 { font-size: 1.1rem !important; }
+  
+  /* Cards look cleaner */
+  .glass-card, [style*="border-radius: '16px'"], [style*="borderRadius: '16px'"] {
+    border-radius: 14px !important;
+  }
+  
+  /* Better button sizing for touch */
+  .blue-btn {
+    min-height: 44px !important;
+    padding: 10px 18px !important;
+    font-size: 0.9rem !important;
+    border-radius: 22px !important;
+  }
+  
+  /* Bottom nav improvements */
+  .mobile-bottom-nav {
+    padding-bottom: max(10px, env(safe-area-inset-bottom)) !important;
+  }
+
   /* Dashboard entrance & layout */
   .animate-entrance {
     flex-direction: column !important;
