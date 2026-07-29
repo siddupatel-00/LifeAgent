@@ -496,7 +496,38 @@ export default function App() {
   });
 
   const handleSaveBodyStat = async (updated) => {
-    setBodyStats(updated);
+    const todayStr = todayKey(userProfile?.timezone);
+    const isToday = updated.date === todayStr;
+    const payload = {
+      weight: Number(updated.weight) || 0,
+      target_weight: Number(updated.target_weight) || 0,
+      protein: isToday ? (Number(updated.protein) || 0) : 0,
+      hydration: Number(updated.hydration) || 0,
+      date: todayStr
+    };
+    if (isToday && updated.id) {
+       payload.id = updated.id;
+    }
+    
+    if (token) {
+      fetch('/api/fitness?type=body-stats', {
+        method: payload.id ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(payload)
+      }).catch(console.error);
+    }
+    
+    setBodyStats(prev => {
+       const arr = Array.isArray(prev) ? prev : (prev ? [prev] : []);
+       const existingIdx = arr.findIndex(s => s.date === todayStr);
+       if (existingIdx >= 0) {
+          const next = [...arr];
+          next[existingIdx] = { ...next[existingIdx], ...payload };
+          return next;
+       } else {
+          return [{ ...payload, id: payload.id || Date.now() }, ...arr];
+       }
+    });
   };
 
   // 5) Sleep state
@@ -2943,7 +2974,8 @@ const handleDeleteHabitDb = async (id) => {
                         {/* b) Daily Protein Tracker with Progress Bar */}
                         {todayWidgetsConfig.showProtein && (() => {
                           const latestStat = Array.isArray(bodyStats) && bodyStats.length > 0 ? bodyStats[0] : null;
-                          const protein = Number(latestStat?.protein) || 0;
+                          const isToday = latestStat?.date === todayKey(userProfile?.timezone);
+                          const protein = isToday ? (Number(latestStat?.protein) || 0) : 0;
                           const targetW = Number(latestStat?.target_weight) || 0;
                           const goal = targetW > 0 ? Math.round(targetW * 2) : 150;
                           const pct = Math.min(100, Math.max(0, Math.round((protein / goal) * 100)));
@@ -2951,7 +2983,7 @@ const handleDeleteHabitDb = async (id) => {
                           const handleAddProtein = async (amount) => {
                             const todayStr = todayKey(userProfile?.timezone);
                             const newProtein = Math.max(0, protein + amount);
-                            const hydrationVal = Number(latestStat?.hydration) || 0;
+                            const hydrationVal = isToday ? (Number(latestStat?.hydration) || 0) : 0;
                             const payload = {
                               weight: Number(latestStat?.weight) || 70,
                               target_weight: targetW || 70,
@@ -3042,14 +3074,15 @@ const handleDeleteHabitDb = async (id) => {
                         {/* c) Daily Hydration Tracker */}
                         {todayWidgetsConfig.showHydration && (() => {
                           const latestStat = Array.isArray(bodyStats) && bodyStats.length > 0 ? bodyStats[0] : null;
-                          const hydration = Number(latestStat?.hydration) || 0;
-                          const goal = 3.5;
+                          const isToday = latestStat?.date === todayKey(userProfile?.timezone);
+                          const hydration = isToday ? (Number(latestStat?.hydration) || 0) : 0;
+                          const goal = Number(localStorage.getItem('water_target_goal')) || 3.0;
                           const pct = Math.min(100, Math.max(0, Math.round((hydration / goal) * 100)));
 
-                          const handleAddHydration = async (amount) => {
+                          const handleAddWater = async (liters) => {
                             const todayStr = todayKey(userProfile?.timezone);
-                            const newHydration = Math.max(0, parseFloat((hydration + amount).toFixed(2)));
-                            const proteinVal = Number(latestStat?.protein) || 0;
+                            const newHydration = parseFloat((hydration + liters).toFixed(2));
+                            const proteinVal = isToday ? (Number(latestStat?.protein) || 0) : 0;
                             const targetW = Number(latestStat?.target_weight) || 70;
                             const payload = {
                               weight: Number(latestStat?.weight) || 70,
