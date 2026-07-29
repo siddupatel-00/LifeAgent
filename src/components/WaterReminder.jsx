@@ -267,7 +267,7 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
             <span style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--text-main)' }}>{hydrationLiters} L</span>
             
             <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-              / {targetGoal} L target ({Math.round(hydrationLiters * 1000)} ml)
+              / {targetGoal} L target
             </span>
           </div>
           <div style={{ fontSize: '0.95rem', fontWeight: 800, color: percentComplete >= 100 ? '#10b981' : 'var(--text-main)' }}>

@@ -3089,7 +3089,8 @@ const handleDeleteHabitDb = async (id) => {
                           const isToday = latestStat?.date === todayKey(userProfile?.timezone);
                           const protein = isToday ? (Number(latestStat?.protein) || 0) : 0;
                           const targetW = Number(latestStat?.target_weight) || 0;
-                          const goal = targetW > 0 ? Math.round(targetW * 2) : 150;
+                          const targetP = Number(latestStat?.target_protein) || 0;
+                          const goal = targetP > 0 ? targetP : (targetW > 0 ? Math.round(targetW * 2) : 150);
                           const pct = Math.min(100, Math.max(0, Math.round((protein / goal) * 100)));
 
                           const handleAddProtein = async (amount) => {
@@ -3100,6 +3101,7 @@ const handleDeleteHabitDb = async (id) => {
                               weight: Number(latestStat?.weight) || 70,
                               target_weight: targetW || 70,
                               protein: newProtein,
+                              target_protein: goal,
                               hydration: hydrationVal,
                               date: todayStr
                             };
@@ -3200,6 +3202,7 @@ const handleDeleteHabitDb = async (id) => {
                               weight: Number(latestStat?.weight) || 70,
                               target_weight: targetW,
                               protein: proteinVal,
+                              target_protein: Number(latestStat?.target_protein) || 0,
                               hydration: newHydration,
                               date: todayStr
                             };
