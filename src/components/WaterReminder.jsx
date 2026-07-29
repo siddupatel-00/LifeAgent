@@ -11,7 +11,10 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
     ? todayStat.find(s => s?.date === todayDateStr)
     : (todayStat?.date ? (todayStat.date === todayDateStr ? todayStat : null) : todayStat);
   const [hydrationLiters, setHydrationLiters] = useState(Number(statObj?.hydration || 0));
-  const [targetGoal, setTargetGoal] = useState(null);
+  const [targetGoal, setTargetGoal] = useState(() => {
+    const saved = localStorage.getItem('water_target_goal');
+    return saved && Number(saved) > 0 ? Number(saved) : null;
+  });
 
   // Empty-state goal setup
   const [goalInput, setGoalInput] = useState('');
@@ -43,6 +46,7 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
     }
     setGoalInputError('');
     setTargetGoal(val);
+    localStorage.setItem('water_target_goal', val.toString());
     setModalTargetGoal(val.toString());
     showToast?.(`🎯 Daily water goal set to ${val} L!`, 'success');
   };
@@ -52,6 +56,7 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
     const newInterval = parseInt(modalReminderInterval, 10) || 60;
     
     setTargetGoal(newTarget);
+    localStorage.setItem('water_target_goal', newTarget.toString());
     setReminderIntervalMinutes(newInterval);
     
     try {
@@ -82,6 +87,13 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
       ? todayStat.find(s => s?.date === todayStr)
       : (todayStat?.date ? (todayStat.date === todayStr ? todayStat : null) : todayStat);
     setHydrationLiters(Number(currentStat?.hydration || 0));
+
+    const saved = localStorage.getItem('water_target_goal');
+    if (saved && Number(saved) > 0) {
+      setTargetGoal(Number(saved));
+    } else {
+      setTargetGoal(null);
+    }
   }, [todayStat, userProfile?.timezone]);
 
   // Handle Reminder Timer

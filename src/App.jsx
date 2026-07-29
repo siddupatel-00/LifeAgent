@@ -785,6 +785,7 @@ export default function App() {
         if (savedToken) localStorage.setItem('token', savedToken);
         if (savedThemeMode) localStorage.setItem('themeMode', savedThemeMode);
         if (savedThemeColor) localStorage.setItem('themeColor', savedThemeColor);
+        localStorage.removeItem('water_target_goal');
 
         // Call showToast('Account reset to fresh start!', 'info')
         showToast('Account reset to fresh start!', 'info');
@@ -3069,7 +3070,7 @@ const handleDeleteHabitDb = async (id) => {
                     (() => {
                       const hasWorkoutData = Array.isArray(workouts) && workouts.length > 0;
                       const hasProteinSetup = Array.isArray(bodyStats) && bodyStats.some(s => Number(s.target_protein) > 0 || Number(s.protein) > 0);
-                      const hasWaterSetup = todayWidgetsConfig.showHydration;
+                      const hasWaterSetup = !!localStorage.getItem('water_target_goal') && Number(localStorage.getItem('water_target_goal')) > 0;
                       if (!hasWorkoutData && !hasProteinSetup && !hasWaterSetup) return null;
                       return (
                     <div style={{ background: 'var(--bg-main)', borderRadius: '20px', border: '1px solid var(--border-color)', padding: '24px', marginBottom: '28px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -3240,11 +3241,11 @@ const handleDeleteHabitDb = async (id) => {
                         })()}
 
                         {/* c) Daily Hydration Tracker */}
-                        {todayWidgetsConfig.showHydration && (() => {
+                        {todayWidgetsConfig.showHydration && !!localStorage.getItem('water_target_goal') && Number(localStorage.getItem('water_target_goal')) > 0 && (() => {
                           const latestStat = Array.isArray(bodyStats) && bodyStats.length > 0 ? bodyStats[0] : null;
                           const isToday = latestStat?.date === todayKey(userProfile?.timezone);
                           const hydration = isToday ? (Number(latestStat?.hydration) || 0) : 0;
-                          const goal = 3.0;
+                          const goal = Number(localStorage.getItem('water_target_goal')) || 3.0;
                           const pct = Math.min(100, Math.max(0, Math.round((hydration / goal) * 100)));
 
                           const handleAddWater = async (liters) => {
