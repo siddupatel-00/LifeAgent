@@ -209,7 +209,7 @@ export default function CalendarPanel({
             <CalendarIcon size={24} color="var(--accent-blue)" /> Universal Calendar
           </h3>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: '4px' }}>
-            Manage your events, meetings, and deadlines. Live Sync.
+            Manage your events, meetings, and deadlines.
           </p>
         </div>
         <button 

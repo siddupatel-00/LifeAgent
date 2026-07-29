@@ -352,7 +352,7 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat 
             <Moon size={22} color="var(--accent-blue)" /> Sleep & Recovery Tracking
           </h2>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: '4px' }}>
-            Log sleep duration (hours & minutes), track circadian rhythms, and view past trends.
+            Log sleep duration (hours & minutes) and view past trends.
           </p>
         </div>
 

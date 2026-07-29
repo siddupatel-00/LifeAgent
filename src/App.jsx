@@ -2696,11 +2696,12 @@ const handleDeleteHabitDb = async (id) => {
                   <h2 style={{ fontSize: '1.9rem', fontWeight: 900, letterSpacing: '-0.5px', color: 'var(--text-main)' }}>
                     {activeTab === 'gym' ? 'Body & Gym' : 
                      activeTab === 'sleep' ? 'Sleep & Recovery' : 
-                     activeTab === 'water' ? 'Drink Water & Hydration' :
+                     activeTab === 'water' ? 'Water' :
                      activeTab === 'finance' ? 'Finance & Money' : 
                      activeTab === 'notes' ? 'Notes & Diary' : 
                      activeTab === 'calendar' ? 'Calendar' :
-                     activeTab === 'settings' ? 'Settings' : 'Dashboard'}
+                     activeTab === 'settings' ? 'Settings' : 
+                     activeTab === 'ai' ? aiName : 'Dashboard'}
                   </h2>
                 )}
               </div>
@@ -3320,10 +3321,12 @@ const handleDeleteHabitDb = async (id) => {
                   border: '1px solid var(--border-color)'
                 }}>
                   {/* Header */}
-                  <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-card)', flexShrink: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 8px #22c55e' }} />
-                    <span style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--accent-blue)' }}>AI Life Agent</span>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginLeft: 'auto' }}>Chat with your personal AI</span>
+                  <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-card)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                    <div style={{ position: 'absolute', left: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 8px #22c55e' }} />
+                    </div>
+                    <span style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--accent-blue)' }}>{aiName}</span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', position: 'absolute', right: '20px' }}>Chat with your personal AI</span>
                   </div>
                   {/* Messages - ONLY THIS SCROLLS */}
                   <div ref={mainAiChatScrollRef} style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px', WebkitOverflowScrolling: 'touch' }}>
@@ -4059,7 +4062,7 @@ const handleDeleteHabitDb = async (id) => {
                         <BookOpen size={24} color="var(--accent-blue)" /> Notes & Personal Diary
                       </h3>
                       <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: '4px' }}>
-                        Create daily logs, 2026 master goals, and wishlists. Toggle AI sharing to give your agent context during chats!
+                        Create daily logs, goals, and notes.
                       </p>
                     </div>
                     <button 

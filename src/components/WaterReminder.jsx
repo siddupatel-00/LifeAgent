@@ -205,7 +205,7 @@ export default function WaterReminder({ todayStat, onLogStat, showToast }) {
           </div>
           <div>
             <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
-              💧 Drink Water & Hydration Coach
+              💧 Water
             </h3>
             <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
               Track daily water intake, customize quick buttons, set target goals, and receive reminders.
