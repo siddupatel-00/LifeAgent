@@ -314,6 +314,7 @@ export default function App() {
       if (savedThemeMode) localStorage.setItem('themeMode', savedThemeMode);
       if (savedThemeColor) localStorage.setItem('themeColor', savedThemeColor);
 
+      resetLoadedTabs();
       localStorage.setItem('token', data.token);
       setToken(data.token);
       setIsAuthenticated(true);
@@ -417,6 +418,7 @@ export default function App() {
 
   const handleLogout = () => {
     // Purge all localStorage data on logout while retaining essential theme options
+    resetLoadedTabs();
     const savedThemeMode = localStorage.getItem('themeMode');
     const savedThemeColor = localStorage.getItem('themeColor');
     localStorage.clear();
@@ -613,15 +615,38 @@ export default function App() {
   const [aiProvider, setAiProvider] = useState('gemini');
   const [aiLoading, setAiLoading] = useState(false);
 
+  // Lazy Loading & Memory Cache Tracking Flags Ref
+  const loadedTabsRef = useRef({
+    startup: false,
+    body: false,
+    finance: false,
+    notes: false,
+    sleep: false,
+    calendar: false,
+    ai: false
+  });
+
+  const resetLoadedTabs = () => {
+    loadedTabsRef.current = {
+      startup: false,
+      body: false,
+      finance: false,
+      notes: false,
+      sleep: false,
+      calendar: false,
+      ai: false
+    };
+  };
+
   // Request Memoization & In-Flight Tracking Refs
   const isFetchingRef = useRef(false);
   const lastFetchTimestampRef = useRef(0);
 
-  const fetchDashboardData = async (force = false) => {
+  // 1. Initial Startup Data Loader: fetches ONLY essential startup data (/api/settings, /api/today, /api/habits)
+  const fetchStartupData = async (force = false) => {
     if (!token) return;
     const now = Date.now();
-    if (!force && isFetchingRef.current) return;
-    if (!force && (now - lastFetchTimestampRef.current < 5000)) return;
+    if (!force && loadedTabsRef.current.startup && (now - lastFetchTimestampRef.current < 5000)) return;
 
     isFetchingRef.current = true;
     lastFetchTimestampRef.current = now;
@@ -630,32 +655,11 @@ export default function App() {
       const headers = { 'Authorization': `Bearer ${token}` };
       const timezone = userProfile?.timezone || localTimeZone();
       const clientDate = todayKey(timezone);
-      
-      // Parallel fetch all user API endpoints concurrently via Promise.all for maximum speedup
-      const [
-        settingsRes, 
-        todayRes, 
-        habitsRes, 
-        txRes, 
-        financeRes, 
-        chatRes, 
-        calRes, 
-        workoutsRes, 
-        statsRes, 
-        notesRes, 
-        sleepRes
-      ] = await Promise.all([
+
+      const [settingsRes, todayRes, habitsRes] = await Promise.all([
         fetch('/api/settings', { headers }).catch(e => null),
         fetch(`/api/today?client_date=${clientDate}`, { headers }).catch(e => null),
-        fetch('/api/habits', { headers }).catch(e => null),
-        fetch('/api/transactions', { headers }).catch(e => null),
-        fetch('/api/finance', { headers }).catch(e => null),
-        fetch('/api/chat', { headers }).catch(e => null),
-        fetch('/api/calendar', { headers }).catch(e => null),
-        fetch('/api/fitness?type=workouts', { headers }).catch(e => null),
-        fetch('/api/fitness?type=body-stats', { headers }).catch(e => null),
-        fetch('/api/notes', { headers }).catch(e => null),
-        fetch('/api/sleep', { headers }).catch(e => null)
+        fetch('/api/habits', { headers }).catch(e => null)
       ]);
 
       if (settingsRes && settingsRes.ok) {
@@ -695,27 +699,27 @@ export default function App() {
         localStorage.setItem('cache_habits', JSON.stringify(mappedHabits));
       }
 
-      const validTxRes = (txRes && txRes.ok) ? txRes : (financeRes && financeRes.ok ? financeRes : null);
-      if (validTxRes) {
-        const txData = await validTxRes.json();
-        const mappedTx = txData.map(t => ({ id: t.id, title: t.title, amount: t.amount, type: t.type, date: t.date }));
-        setTransactions(mappedTx);
-        localStorage.setItem('cache_transactions', JSON.stringify(mappedTx));
+      loadedTabsRef.current.startup = true;
+    } catch (err) {
+      console.error('Failed to fetch startup data:', err);
+      if (err?.status === 401 || err?.message?.includes('401')) {
+        handleLogout();
       }
+    } finally {
+      isFetchingRef.current = false;
+    }
+  };
 
-      if (chatRes && chatRes.ok) {
-        const cData = await chatRes.json();
-        const mappedChat = cData.map(c => ({ id: c.id, sender: c.sender, text: c.text, time: c.time }));
-        setAiMessages(mappedChat);
-        localStorage.setItem('cache_aiMessages', JSON.stringify(mappedChat));
-      }
-
-      if (calRes && calRes.ok) {
-        const calData = await calRes.json();
-        const mappedCal = calData.map(c => ({ id: c.id, title: c.title, date: c.date, color: c.color, status: c.status, endDate: c.end_date }));
-        setCalendarEvents(mappedCal);
-        localStorage.setItem('cache_calendarEvents', JSON.stringify(mappedCal));
-      }
+  // 2. Active Tab Domain Lazy Loaders
+  const fetchBodyData = async (force = false) => {
+    if (!token) return;
+    if (!force && loadedTabsRef.current.body) return;
+    try {
+      const headers = { 'Authorization': `Bearer ${token}` };
+      const [workoutsRes, statsRes] = await Promise.all([
+        fetch('/api/fitness?type=workouts', { headers }).catch(e => null),
+        fetch('/api/fitness?type=body-stats', { headers }).catch(e => null)
+      ]);
 
       if (workoutsRes && workoutsRes.ok) {
         const wData = await workoutsRes.json();
@@ -728,30 +732,106 @@ export default function App() {
         setBodyStats(sData);
         localStorage.setItem('cache_bodyStats', JSON.stringify(sData));
       }
+      loadedTabsRef.current.body = true;
+    } catch (err) {
+      console.error('Failed to fetch body data:', err);
+    }
+  };
 
+  const fetchFinanceData = async (force = false) => {
+    if (!token) return;
+    if (!force && loadedTabsRef.current.finance) return;
+    try {
+      const headers = { 'Authorization': `Bearer ${token}` };
+      const [txRes, financeRes] = await Promise.all([
+        fetch('/api/transactions', { headers }).catch(e => null),
+        fetch('/api/finance', { headers }).catch(e => null)
+      ]);
+      const validTxRes = (txRes && txRes.ok) ? txRes : (financeRes && financeRes.ok ? financeRes : null);
+      if (validTxRes) {
+        const txData = await validTxRes.json();
+        const mappedTx = txData.map(t => ({ id: t.id, title: t.title, amount: t.amount, type: t.type, date: t.date }));
+        setTransactions(mappedTx);
+        localStorage.setItem('cache_transactions', JSON.stringify(mappedTx));
+      }
+      loadedTabsRef.current.finance = true;
+    } catch (err) {
+      console.error('Failed to fetch finance data:', err);
+    }
+  };
+
+  const fetchNotesData = async (force = false) => {
+    if (!token) return;
+    if (!force && loadedTabsRef.current.notes) return;
+    try {
+      const headers = { 'Authorization': `Bearer ${token}` };
+      const notesRes = await fetch('/api/notes', { headers }).catch(e => null);
       if (notesRes && notesRes.ok) {
         const notesData = await notesRes.json();
         let activeNotes = notesData.filter(n => !n.is_trashed).map(n => ({ id: n.id, title: n.title, content: n.content, category: n.category, date: n.date, shareWithAi: !!n.share_with_ai }));
         const trashedNotes = notesData.filter(n => !!n.is_trashed).map(n => ({ id: n.id, title: n.title, content: n.content, category: n.category, date: n.date, shareWithAi: !!n.share_with_ai, deletedAt: n.deleted_at ? new Date(n.deleted_at).getTime() : Date.now() }));
-        
+
         setTrashNotes(trashedNotes);
         localStorage.setItem('cache_trashNotes', JSON.stringify(trashedNotes));
         setNotesList(activeNotes);
         localStorage.setItem('cache_notesList', JSON.stringify(activeNotes));
       }
+      loadedTabsRef.current.notes = true;
+    } catch (err) {
+      console.error('Failed to fetch notes data:', err);
+    }
+  };
 
+  const fetchSleepData = async (force = false) => {
+    if (!token) return;
+    if (!force && loadedTabsRef.current.sleep) return;
+    try {
+      const headers = { 'Authorization': `Bearer ${token}` };
+      const sleepRes = await fetch('/api/sleep', { headers }).catch(e => null);
       if (sleepRes && sleepRes.ok) {
         const sLogs = await sleepRes.json();
         setSleepLogs(sLogs);
         localStorage.setItem('cache_sleepLogs', JSON.stringify(sLogs));
       }
+      loadedTabsRef.current.sleep = true;
     } catch (err) {
-      console.error('Failed to fetch dashboard data:', err);
-      if (err?.status === 401 || err?.message?.includes('401')) {
-        handleLogout();
+      console.error('Failed to fetch sleep data:', err);
+    }
+  };
+
+  const fetchCalendarData = async (force = false) => {
+    if (!token) return;
+    if (!force && loadedTabsRef.current.calendar) return;
+    try {
+      const headers = { 'Authorization': `Bearer ${token}` };
+      const calRes = await fetch('/api/calendar', { headers }).catch(e => null);
+      if (calRes && calRes.ok) {
+        const calData = await calRes.json();
+        const mappedCal = calData.map(c => ({ id: c.id, title: c.title, date: c.date, color: c.color, status: c.status, endDate: c.end_date }));
+        setCalendarEvents(mappedCal);
+        localStorage.setItem('cache_calendarEvents', JSON.stringify(mappedCal));
       }
-    } finally {
-      isFetchingRef.current = false;
+      loadedTabsRef.current.calendar = true;
+    } catch (err) {
+      console.error('Failed to fetch calendar data:', err);
+    }
+  };
+
+  const fetchAiData = async (force = false) => {
+    if (!token) return;
+    if (!force && loadedTabsRef.current.ai) return;
+    try {
+      const headers = { 'Authorization': `Bearer ${token}` };
+      const chatRes = await fetch('/api/chat', { headers }).catch(e => null);
+      if (chatRes && chatRes.ok) {
+        const cData = await chatRes.json();
+        const mappedChat = cData.map(c => ({ id: c.id, sender: c.sender, text: c.text, time: c.time }));
+        setAiMessages(mappedChat);
+        localStorage.setItem('cache_aiMessages', JSON.stringify(mappedChat));
+      }
+      loadedTabsRef.current.ai = true;
+    } catch (err) {
+      console.error('Failed to fetch AI chat data:', err);
     }
   };
 
@@ -777,6 +857,7 @@ export default function App() {
         setCalendarEvents([]);
         setTodayItems([]);
         setAiMessages([]);
+        resetLoadedTabs();
 
         // Clear localStorage except token and theme
         const savedToken = localStorage.getItem('token');
@@ -792,7 +873,7 @@ export default function App() {
         showToast('Account reset to fresh start!', 'info');
 
         // Reload/re-fetch dashboard so the UI updates to 100% clean empty states immediately
-        await fetchDashboardData(true);
+        await fetchStartupData(true);
       } else {
         showToast(data.error || 'Failed to reset account data', 'error');
       }
@@ -867,13 +948,35 @@ export default function App() {
       } catch(e) {}
     };
 
+  // Requirement 1: On initial login / app mount when isAuthenticated is true, fetch ONLY essential startup data
   useEffect(() => {
     if (isAuthenticated) {
-      fetchDashboardData();
+      fetchStartupData();
     }
   }, [isAuthenticated, token]);
 
-  // Reload the dashboard after the user's local calendar day changes.
+  // Requirement 2: Active Tab Lazy Loading (useEffect watching activeTab)
+  useEffect(() => {
+    if (!isAuthenticated || !token) return;
+
+    if (activeTab === 'body' || activeTab === 'gym') {
+      fetchBodyData();
+    } else if (activeTab === 'finance') {
+      fetchFinanceData();
+    } else if (activeTab === 'notes') {
+      fetchNotesData();
+    } else if (activeTab === 'sleep') {
+      fetchSleepData();
+    } else if (activeTab === 'calendar') {
+      fetchCalendarData();
+    } else if (activeTab === 'ai') {
+      fetchAiData();
+    } else if (activeTab === 'today' || activeTab === 'habits') {
+      fetchStartupData();
+    }
+  }, [activeTab, isAuthenticated, token]);
+
+  // Reload the startup data after the user's local calendar day changes.
   useEffect(() => {
     if (!isAuthenticated) return;
     const currentDate = () => todayKey(userProfile.timezone);
@@ -882,7 +985,8 @@ export default function App() {
       const nextDate = currentDate();
       if (nextDate !== lastDate) {
         lastDate = nextDate;
-        fetchDashboardData();
+        resetLoadedTabs();
+        fetchStartupData(true);
       }
     }, 60_000);
     return () => window.clearInterval(interval);
@@ -2944,7 +3048,7 @@ const handleDeleteHabitDb = async (id) => {
                   className="blue-btn"
                   style={{ padding: '10px 18px', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '8px', borderRadius: '30px', fontWeight: 700 }}
                 >
-                  ⚙️ Customize Split Routine
+                  + Add Routine
                 </button>
               </div>
             )}

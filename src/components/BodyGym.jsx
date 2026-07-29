@@ -625,7 +625,7 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
                 onClick={() => setIsEditSplitOpen(true)}
                 style={{ background: 'var(--accent-blue-dim)', color: 'var(--accent-blue)', border: '1px solid var(--accent-blue)', padding: '8px 16px', fontSize: '0.84rem', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
               >
-                ⚙️ Customize Split Routine
+                + Add Routine
               </button>
             </div>
 
