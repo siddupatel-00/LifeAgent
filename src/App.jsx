@@ -7,7 +7,7 @@ import {
   Sun, Moon, Monitor, ChevronDown, Lock, Phone, AtSign, Activity, Zap, Check, X,
   Dumbbell, Moon as SleepIcon, BarChart3, PieChart, Flame, Heart, Target, Filter, Droplet,
   Home, LayoutDashboard, LogOut, Sliders, Settings, Save, Bell, Shield, PenTool, MessageSquare, Sidebar as SidebarIcon, FileText, Unlock, Smile,
-  MoreVertical, List, Menu, History, Edit2
+  MoreVertical, List, Menu, History, Edit2, RotateCcw
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import CustomSelect from './components/CustomSelect';
@@ -1130,6 +1130,21 @@ const handleDeleteHabitDb = async (id) => {
     }
   };
 
+  const handleClearAiChat = async () => {
+    setAiMessages([]);
+    showToast?.('AI Chat history cleared', 'info');
+    try {
+      if (token) {
+        await fetch('/api/chat', {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+      }
+    } catch (err) {
+      console.error("Failed to clear chat history", err);
+    }
+  };
+
   const handleSendAi = async (e, customText = null) => {
     e?.preventDefault();
     const textToProcess = customText || inputMessage;
@@ -1167,15 +1182,23 @@ const handleDeleteHabitDb = async (id) => {
         CRITICAL TIME CONTEXT: Today's current date is ${todayStr} (Year: ${currentYear}).
         ALWAYS calculate dates relative to today's date ${todayStr} and year ${currentYear}.
 
-        User's live dashboard data context:
-        - Calendar events: ${JSON.stringify(calendarEvents)}
-        - Habits / Today items: ${JSON.stringify(todayItems)}
-        - Money Transactions: ${JSON.stringify(transactions)}
-        - Shared notes: ${JSON.stringify(notesList.filter(n => n.shareWithAi))}
+        User's complete live dashboard data context across ALL pages:
+        - User Profile & Settings: ${JSON.stringify(userProfile)} (Currency: ${currency})
+        - Calendar Events: ${JSON.stringify(calendarEvents)}
+        - Daily Routine & Today Checklist: ${JSON.stringify(todayItems)}
+        - Habits Tracker List: ${JSON.stringify(habits)}
+        - Money & Transactions: ${JSON.stringify(transactions)}
+        - Body & Gym Workouts Logged: ${JSON.stringify(workouts)}
+        - Body Stats (Weight, Protein Intake, Hydration Target): ${JSON.stringify(bodyStats)}
+        - Sleep Quality & Recovery Logs: ${JSON.stringify(sleepLogs)}
+        - Shared Notes & Diary Entries: ${JSON.stringify(notesList.filter(n => n.shareWithAi))}
 
-        MANDATORY INSTRUCTIONS FOR EXECUTING ACTIONS:
-        ONLY output action tags ([ADD_TRANSACTION], [ADD_HABIT], [CALENDAR_EVENT], [ADD_NOTE], [ADD_SLEEP], [ADD_WORKOUT], [ADD_BODY_STATS]) when the user EXPLICITLY COMMANDS you to log, create, add, or record data (e.g. "log my workout 45 mins", "add expense 50").
-        NEVER output action tags when answering general questions, giving summaries (like "how is my day today"), or giving advice/examples!
+        CRITICAL RESPONSE INSTRUCTIONS:
+        1. Always respond in natural, friendly, human-like chat language.
+        2. NEVER print raw JSON code blocks or mention code/tags in your conversational reply to the user.
+        3. Do NOT explain your internal JSON tags or output \`\`\`json code blocks. Talk directly and warmly like a personal human assistant!
+        4. ONLY output action tags ([ADD_TRANSACTION], [ADD_HABIT], [CALENDAR_EVENT], [ADD_NOTE], [ADD_SLEEP], [ADD_WORKOUT], [ADD_BODY_STATS]) when the user EXPLICITLY COMMANDS you to log, create, add, or record data (e.g. "log my workout 45 mins", "add expense 50").
+        5. NEVER output action tags when answering general questions, giving summaries (like "how is my day today"), or giving advice/examples!
 
         Required Action Tags:
         1. Log Money Spending or Earning:
@@ -1436,6 +1459,18 @@ const handleDeleteHabitDb = async (id) => {
             console.error("Failed to parse body stats JSON", err);
           }
         }
+      }
+
+      // 8. Clean up all residual action tags, markdown code blocks, or raw JSON text from final chat reply
+      finalReply = finalReply
+        .replace(/\[[A-Z_]+\][\s\S]*?\[\/[A-Z_]+\]/g, '')
+        .replace(/```json[\s\S]*?```/gi, '')
+        .replace(/```[\s\S]*?```/g, '')
+        .replace(/\{[\s\S]*?"(title|amount|label|weight)"[\s\S]*?\}/g, '')
+        .trim();
+
+      if (!finalReply) {
+        finalReply = "Done! I've updated that for you.";
       }
       
       const aiMsg = { id: Date.now() + 1, sender: 'ai', text: finalReply, time: nowTime };
@@ -3308,7 +3343,13 @@ const handleDeleteHabitDb = async (id) => {
                       <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 8px #22c55e' }} />
                     </div>
                     <span style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--accent-blue)' }}>{aiName}</span>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', position: 'absolute', right: '20px' }}>Chat with your personal AI</span>
+                    <button
+                      onClick={handleClearAiChat}
+                      title="Clear Chat History"
+                      style={{ position: 'absolute', right: '20px', background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', fontWeight: 600 }}
+                    >
+                      <RotateCcw size={15} /> Clear Chat
+                    </button>
                   </div>
                   {/* Messages - ONLY THIS SCROLLS */}
                   <div ref={mainAiChatScrollRef} style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px', WebkitOverflowScrolling: 'touch' }}>
@@ -4524,12 +4565,21 @@ const handleDeleteHabitDb = async (id) => {
                     <Bot size={18} /> {aiName}
                   </h4>
                 </div>
-                <button 
-                  onClick={() => setIsAiSidePanelOpen(false)}
-                  style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
-                >
-                  <X size={18} />
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <button 
+                    onClick={handleClearAiChat}
+                    title="Clear Chat History"
+                    style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}
+                  >
+                    <RotateCcw size={16} />
+                  </button>
+                  <button 
+                    onClick={() => setIsAiSidePanelOpen(false)}
+                    style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
               </div>
 
               <div ref={sideAiChatScrollRef} style={{ flex: 1, padding: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '14px' }}>

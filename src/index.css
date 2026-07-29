@@ -1041,14 +1041,22 @@ input[type="checkbox"]:checked::after {
     z-index: 100 !important;
   }
 
-  /* Style the AI button in header blue on mobile */
+  /* Style the AI button in header dynamically matching active theme on mobile */
   [title="Toggle Persistent AI Side Panel"] {
-    background: rgba(59, 130, 246, 0.15) !important;
+    background: var(--accent-blue-dim) !important;
     color: var(--accent-blue) !important;
-    border: 1px solid rgba(59, 130, 246, 0.4) !important;
+    border: 1px solid var(--accent-blue) !important;
     padding: 8px 12px !important;
     border-radius: 20px !important;
     font-size: 0.8rem !important;
+  }
+
+  /* Reset fixed max-height on stacked mobile columns for fluid native page scrolling */
+  div[style*="max-height: calc(100vh"],
+  div[style*="maxHeight: calc(100vh"],
+  .money-tracker-grid > div {
+    max-height: none !important;
+    overflow-y: visible !important;
   }
 
   /* Theme toggle and user button on mobile */
