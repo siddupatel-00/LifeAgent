@@ -244,7 +244,7 @@ export default function CalendarPanel({
               placeholder="Enter event title..."
               autoFocus
               style={{
-                width: '100%', padding: '12px 16px', borderRadius: '12px',
+                width: '100%', padding: '12px 14px', borderRadius: '12px',
                 border: '1px solid var(--border-color)', background: 'var(--bg-main)',
                 color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none'
               }}
@@ -260,7 +260,7 @@ export default function CalendarPanel({
               value={newEventDate}
               onChange={(e) => setNewEventDate(e.target.value)}
               style={{
-                width: '100%', padding: '12px 16px', borderRadius: '12px',
+                width: '100%', padding: '12px 14px', borderRadius: '12px',
                 border: '1px solid var(--border-color)', background: 'var(--bg-main)',
                 color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none'
               }}

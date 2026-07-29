@@ -47,7 +47,14 @@ export default async function handler(req, res) {
         const { weight, target_weight, protein, target_protein, hydration, date } = req.body;
         const result = await db.execute({
           sql: 'INSERT INTO body_stats (user_id, weight, target_weight, protein, target_protein, hydration, date) VALUES (?, ?, ?, ?, ?, ?, ?)',
-          args: [userId, weight || 0, target_weight || 0, protein || 0, target_protein || 0, hydration || 0, date || new Date().toISOString().split('T')[0]]
+          args: [
+            weight !== undefined && weight !== null ? weight : 0, 
+            target_weight !== undefined && target_weight !== null ? target_weight : 0, 
+            protein !== undefined && protein !== null ? protein : 0, 
+            target_protein !== undefined && target_protein !== null ? target_protein : 0, 
+            hydration !== undefined && hydration !== null ? hydration : 0, 
+            date || new Date().toISOString().split('T')[0]
+          ]
         });
         return res.status(201).json({ id: Number(result.lastInsertRowid), weight, target_weight, protein, target_protein, hydration, date });
       }
@@ -55,7 +62,14 @@ export default async function handler(req, res) {
         const { id, weight, target_weight, protein, target_protein, hydration } = req.body;
         await db.execute({
           sql: 'UPDATE body_stats SET weight = ?, target_weight = ?, protein = ?, target_protein = ?, hydration = ? WHERE id = ? AND user_id = ?',
-          args: [weight, target_weight, protein, target_protein, hydration, id, userId]
+          args: [
+            weight !== undefined && weight !== null ? weight : 0, 
+            target_weight !== undefined && target_weight !== null ? target_weight : 0, 
+            protein !== undefined && protein !== null ? protein : 0, 
+            target_protein !== undefined && target_protein !== null ? target_protein : 0, 
+            hydration !== undefined && hydration !== null ? hydration : 0, 
+            id, userId
+          ]
         });
         return res.status(200).json({ success: true });
       }

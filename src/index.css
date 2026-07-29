@@ -604,6 +604,103 @@ body {
   line-height: 1.4;
 }
 
+/* Global Form Elements & Input Styles (Eliminates Browser Default White Inputs & Dropdowns) */
+input,
+select,
+textarea,
+option,
+.glass-input {
+  background-color: var(--bg-card);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+  font-family: var(--font-sans);
+}
+
+/* Detailed styling for native input, select, and textarea elements */
+input[type="text"],
+input[type="number"],
+input[type="password"],
+input[type="email"],
+input[type="date"],
+input[type="time"],
+input[type="search"],
+input[type="url"],
+input[type="tel"],
+select,
+textarea {
+  background-color: var(--bg-card);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 0.92rem;
+  font-weight: 500;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+/* Explicit Utility Class Definition for .glass-input */
+.glass-input {
+  background-color: var(--bg-card) !important;
+  color: var(--text-main) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 0.92rem;
+  font-weight: 500;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+/* Universal Focus States for Form Controls */
+input:focus,
+select:focus,
+textarea:focus,
+.glass-input:focus {
+  border-color: var(--accent-blue) !important;
+  box-shadow: 0 0 0 3px var(--accent-blue-dim) !important;
+  outline: none !important;
+}
+
+/* Placeholders color across themes */
+input::placeholder,
+textarea::placeholder,
+.glass-input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+/* Global option tag overrides to prevent browser white popups */
+option {
+  background-color: var(--bg-card) !important;
+  color: var(--text-main) !important;
+}
+
+option:checked,
+option:hover {
+  background-color: var(--bg-card-hover) !important;
+  color: var(--text-main) !important;
+}
+
+/* Webkit browser autofill override */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+textarea:-webkit-autofill:active,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus,
+select:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px var(--bg-card) inset !important;
+  -webkit-text-fill-color: var(--text-main) !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+
 /* Make native date input calendar picker icon bright & clearly visible */
 input[type="date"]::-webkit-calendar-picker-indicator {
   filter: invert(0.85) brightness(1.6);

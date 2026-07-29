@@ -708,7 +708,7 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat 
                 required
                 value={formData.sleep_time}
                 onChange={(e) => handleTimeChange('sleep_time', e.target.value)}
-                style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--accent-blue)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '1rem', fontWeight: 700, outline: 'none' }}
+                style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '1rem', fontWeight: 700, outline: 'none' }}
               />
             </div>
             <div style={{ flex: 1 }}>
@@ -718,7 +718,7 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat 
                 required
                 value={formData.wake_time}
                 onChange={(e) => handleTimeChange('wake_time', e.target.value)}
-                style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--accent-blue)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '1rem', fontWeight: 700, outline: 'none' }}
+                style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '1rem', fontWeight: 700, outline: 'none' }}
               />
             </div>
           </div>
@@ -734,7 +734,7 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat 
                   max="24"
                   value={formData.hours}
                   onChange={(e) => setFormData(prev => ({ ...prev, hours: Math.max(0, parseInt(e.target.value) || 0) }))}
-                  style={{ width: '56px', padding: '4px 6px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', color: 'var(--text-main)', fontSize: '0.95rem', fontWeight: 700, textAlign: 'center', outline: 'none' }}
+                  style={{ width: '70px', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.95rem', fontWeight: 700, textAlign: 'center', outline: 'none' }}
                 />
                 <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>hrs</span>
                 <input
@@ -743,7 +743,7 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat 
                   max="59"
                   value={formData.minutes}
                   onChange={(e) => setFormData(prev => ({ ...prev, minutes: Math.min(59, Math.max(0, parseInt(e.target.value) || 0)) }))}
-                  style={{ width: '56px', padding: '4px 6px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', color: 'var(--text-main)', fontSize: '0.95rem', fontWeight: 700, textAlign: 'center', outline: 'none' }}
+                  style={{ width: '70px', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.95rem', fontWeight: 700, textAlign: 'center', outline: 'none' }}
                 />
                 <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>mins</span>
               </div>

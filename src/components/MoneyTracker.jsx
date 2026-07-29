@@ -5,18 +5,24 @@ import MoneyCharts from './MoneyCharts';
 import CustomSelect from './CustomSelect';
 import Modal from './Modal';
 
-const SPEND_CATEGORIES = ['Choose Category', 'General', 'Food', 'Transport', 'Shopping', 'Bills', 'Entertainment', 'Education', 'Health', 'Other'];
-const EARNING_CATEGORIES = ['Choose Category', 'Job', 'Business', 'Freelancing', 'Startup', 'Other'];
+const SPEND_CATEGORIES = ['General', 'Food', 'Transport', 'Shopping', 'Bills', 'Entertainment', 'Education', 'Health', 'Other'];
+const EARNING_CATEGORIES = ['Job', 'Business', 'Freelancing', 'Startup', 'Other'];
 
-export default function MoneyTracker({ transactions, setTransactions, token, showToast, currency, timeRange = 'today', timeframe, timezone, userProfile, customStartDate, customEndDate }) {
+export default function MoneyTracker({ transactions, setTransactions, token, showToast, currency, timeRange = 'today', timeframe, timezone, userProfile, customStartDate, customEndDate, showForm, setShowForm }) {
   const [newTitle, setNewTitle] = useState('');
   const [newAmount, setNewAmount] = useState('');
   const [newType, setNewType] = useState('spend');
-  const [newCategory, setNewCategory] = useState('Choose Category');
+  const [newCategory, setNewCategory] = useState('General');
   const [newNotes, setNewNotes] = useState('');
   const [newDate, setNewDate] = useState(todayKey(timezone || userProfile?.timezone));
   const [loading, setLoading] = useState(false);
   const [rightPanelView, setRightPanelView] = useState('charts');
+
+  useEffect(() => {
+    if (showForm) {
+      setRightPanelView('add');
+    }
+  }, [showForm]);
   // Fetch initial transactions
   useEffect(() => {
     const fetchTransactions = async () => {
@@ -261,9 +267,6 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
           <h3 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0 }}>Transactions</h3>
-          <button onClick={() => setRightPanelView('add')} className="blue-btn" style={{ padding: '8px 12px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Plus size={16} /> Record Entry
-          </button>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -360,7 +363,7 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
               onChange={(e) => {
                 const val = e.target.value;
                 setNewType(val);
-                setNewCategory('Choose Category');
+                setNewCategory(val === 'earn' ? 'Job' : 'General');
               }} 
               style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}
               options={[
@@ -378,13 +381,33 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
             <input type="text" placeholder="e.g., 950+300 or 1250" value={newAmount} onChange={(e) => setNewAmount(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
           </div>
           <div>
-            <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Category</label>
-            <CustomSelect 
-              value={newCategory} 
-              onChange={(e) => setNewCategory(e.target.value)} 
-              style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}
-              options={(newType === 'earn' ? EARNING_CATEGORIES : SPEND_CATEGORIES).map(c => ({ value: c, label: c }))}
-            />
+            <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '8px' }}>Category</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {(newType === 'earn' ? EARNING_CATEGORIES : SPEND_CATEGORIES).map(cat => {
+                const isSelected = newCategory === cat;
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setNewCategory(cat)}
+                    style={{
+                      padding: '8px 14px',
+                      borderRadius: '20px',
+                      fontSize: '0.85rem',
+                      fontWeight: isSelected ? 600 : 500,
+                      border: isSelected ? '1px solid var(--accent-blue)' : '1px solid var(--border-color)',
+                      background: isSelected ? 'var(--accent-blue)' : 'var(--bg-card)',
+                      color: isSelected ? '#ffffff' : 'var(--text-main)',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {cat}
+                  </button>
+                );
+              })}
+            </div>
           </div>
           <div>
             <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Date</label>
@@ -433,13 +456,34 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
             <input type="text" placeholder="e.g., 950+300 or 1250" value={editForm.amount || ''} onChange={e => setEditForm({...editForm, amount: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
           </div>
           <div>
-            <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Category</label>
-            <CustomSelect 
-              value={editForm.category || 'General'} 
-              onChange={e => setEditForm({...editForm, category: e.target.value})} 
-              style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}
-              options={((editForm.type || 'spend') === 'earn' ? EARNING_CATEGORIES : SPEND_CATEGORIES).map(c => ({ value: c, label: c }))}
-            />
+            <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '8px' }}>Category</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {((editForm.type || 'spend') === 'earn' ? EARNING_CATEGORIES : SPEND_CATEGORIES).map(cat => {
+                const currentCat = editForm.category || ((editForm.type || 'spend') === 'earn' ? 'Job' : 'General');
+                const isSelected = currentCat === cat;
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setEditForm({ ...editForm, category: cat })}
+                    style={{
+                      padding: '8px 14px',
+                      borderRadius: '20px',
+                      fontSize: '0.85rem',
+                      fontWeight: isSelected ? 600 : 500,
+                      border: isSelected ? '1px solid var(--accent-blue)' : '1px solid var(--border-color)',
+                      background: isSelected ? 'var(--accent-blue)' : 'var(--bg-card)',
+                      color: isSelected ? '#ffffff' : 'var(--text-main)',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {cat}
+                  </button>
+                );
+              })}
+            </div>
           </div>
           <div>
             <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Date</label>

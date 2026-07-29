@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Droplet, Bell, BellOff, Plus, RotateCcw, Clock, X, Edit2, Check, MoreVertical } from 'lucide-react';
 import Modal from './Modal';
+import { todayKey } from '../utils/date';
 
 const DEFAULT_PRESETS = [50, 150, 200];
 
-export default function WaterReminder({ todayStat, onLogStat, showToast }) {
-  const statObj = Array.isArray(todayStat) ? todayStat[0] : todayStat;
+export default function WaterReminder({ todayStat, onLogStat, showToast, userProfile }) {
+  const todayDateStr = todayKey(userProfile?.timezone);
+  const statObj = Array.isArray(todayStat)
+    ? todayStat.find(s => s?.date === todayDateStr)
+    : (todayStat?.date ? (todayStat.date === todayDateStr ? todayStat : null) : todayStat);
   const [hydrationLiters, setHydrationLiters] = useState(Number(statObj?.hydration || 0));
   const [targetGoal, setTargetGoal] = useState(() => {
     return Number(localStorage.getItem('water_target_goal')) || 3.0;
@@ -75,9 +79,12 @@ export default function WaterReminder({ todayStat, onLogStat, showToast }) {
 
 
   useEffect(() => {
-    const currentStat = Array.isArray(todayStat) ? todayStat[0] : todayStat;
+    const todayStr = todayKey(userProfile?.timezone);
+    const currentStat = Array.isArray(todayStat)
+      ? todayStat.find(s => s?.date === todayStr)
+      : (todayStat?.date ? (todayStat.date === todayStr ? todayStat : null) : todayStat);
     setHydrationLiters(Number(currentStat?.hydration || 0));
-  }, [todayStat]);
+  }, [todayStat, userProfile?.timezone]);
 
   // Handle Reminder Timer
   useEffect(() => {
@@ -156,15 +163,21 @@ export default function WaterReminder({ todayStat, onLogStat, showToast }) {
     const litersToAdd = mlToAdd / 1000;
     const newTotal = parseFloat((hydrationLiters + litersToAdd).toFixed(2));
     setHydrationLiters(newTotal);
-    const currentStat = Array.isArray(todayStat) ? (todayStat[0] || {}) : (todayStat || {});
-    onLogStat?.({ ...currentStat, hydration: newTotal });
+    const todayStr = todayKey(userProfile?.timezone);
+    const currentStat = Array.isArray(todayStat)
+      ? todayStat.find(s => s?.date === todayStr)
+      : (todayStat?.date ? (todayStat.date === todayStr ? todayStat : null) : todayStat);
+    onLogStat?.({ ...(currentStat || {}), hydration: newTotal, date: todayStr });
     showToast?.(`Added +${mlToAdd} ml water! Total: ${newTotal} L`, 'success');
   };
 
   const handleReset = () => {
     setHydrationLiters(0);
-    const currentStat = Array.isArray(todayStat) ? (todayStat[0] || {}) : (todayStat || {});
-    onLogStat?.({ ...currentStat, hydration: 0 });
+    const todayStr = todayKey(userProfile?.timezone);
+    const currentStat = Array.isArray(todayStat)
+      ? todayStat.find(s => s?.date === todayStr)
+      : (todayStat?.date ? (todayStat.date === todayStr ? todayStat : null) : todayStat);
+    onLogStat?.({ ...(currentStat || {}), hydration: 0, date: todayStr });
     showToast?.('Daily water intake reset to 0 L', 'info');
   };
 
@@ -374,8 +387,8 @@ export default function WaterReminder({ todayStat, onLogStat, showToast }) {
             value={modalTargetGoal}
             onChange={e => setModalTargetGoal(e.target.value)}
             style={{
-              width: '100%', padding: '10px 14px', borderRadius: '12px',
-              border: '1px solid var(--border-color)', background: 'var(--bg-card)',
+              width: '100%', padding: '12px 14px', borderRadius: '12px',
+              border: '1px solid var(--border-color)', background: 'var(--bg-main)',
               color: 'var(--text-main)', fontSize: '1rem', outline: 'none'
             }}
           />
@@ -409,8 +422,8 @@ export default function WaterReminder({ todayStat, onLogStat, showToast }) {
               value={modalCustomInterval}
               onChange={e => setModalCustomInterval(e.target.value)}
               style={{
-                flex: 1, padding: '10px 14px', borderRadius: '12px',
-                border: '1px solid var(--border-color)', background: 'var(--bg-card)',
+                flex: 1, padding: '12px 14px', borderRadius: '12px',
+                border: '1px solid var(--border-color)', background: 'var(--bg-main)',
                 color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none'
               }}
             />

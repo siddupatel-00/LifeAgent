@@ -338,16 +338,17 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
 
   const handleResetProtein = async () => {
     try {
-      const today = todayKey();
+      const today = todayKey(userProfile?.timezone);
       const existingTodayStat = Array.isArray(bodyStats) ? bodyStats.find(s => s.date === today) : null;
       const isUpdating = !!existingTodayStat;
       
       const payload = {
         ...(isUpdating ? { id: existingTodayStat.id } : {}),
-        weight: isUpdating ? existingTodayStat.weight : (latestStat?.weight || 0),
-        target_weight: isUpdating ? existingTodayStat.target_weight : (latestStat?.target_weight || 0),
+        weight: existingTodayStat?.weight || (latestStat?.weight || 0),
+        target_weight: existingTodayStat?.target_weight || (latestStat?.target_weight || 0),
         protein: 0,
-        target_protein: isUpdating ? existingTodayStat.target_protein : (latestStat?.target_protein || 0),
+        target_protein: existingTodayStat?.target_protein || (latestStat?.target_protein || 0),
+        hydration: existingTodayStat?.hydration || 0,
         date: today
       };
 
@@ -366,16 +367,19 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
       closeLogProteinModal();
       
       // 2. Background DB sync
-      fetch('/api/fitness?type=body-stats', {
+      const res = await fetch('/api/fitness?type=body-stats', {
         method: isUpdating ? 'PUT' : 'POST',
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(payload)
-      }).then(() => fetchStats()).catch(e => console.error('Reset protein DB sync failed:', e));
+      });
+      if (res.ok) {
+        fetchStats();
+      }
     } catch (e) {
-      console.error(e);
+      console.error('Error resetting protein:', e);
       showToast('Error resetting protein', 'error');
     }
   };
@@ -694,14 +698,14 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
         <form onSubmit={handleAddWorkout}>
           <div className="input-group" style={{ marginBottom: '16px' }}>
             <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Title</label>
-            <input type="text" required className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="Enter workout name..." value={workoutForm.title} onChange={e => setWorkoutForm({...workoutForm, title: e.target.value})} autoFocus />
+            <input type="text" required className="glass-input" style={{ width: '100%', padding: '12px 14px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '12px' }} placeholder="Enter workout name..." value={workoutForm.title} onChange={e => setWorkoutForm({...workoutForm, title: e.target.value})} autoFocus />
           </div>
           
           <div className="input-group" style={{ marginBottom: '16px' }}>
             <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Category</label>
             <CustomSelect 
               className="glass-input" 
-              style={{ width: '100%', padding: '10px 14px' }} 
+              style={{ width: '100%', padding: '12px 14px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '12px' }} 
               value={workoutForm.category} 
               onChange={e => setWorkoutForm({...workoutForm, category: e.target.value})}
               options={[
@@ -717,17 +721,17 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
             <div className="input-group">
               <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Duration (mins)</label>
-              <input type="number" required className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="45" value={workoutForm.duration_mins} onChange={e => setWorkoutForm({...workoutForm, duration_mins: e.target.value})} />
+              <input type="number" required className="glass-input" style={{ width: '100%', padding: '12px 14px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '12px' }} placeholder="45" value={workoutForm.duration_mins} onChange={e => setWorkoutForm({...workoutForm, duration_mins: e.target.value})} />
             </div>
             <div className="input-group">
               <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Calories (Optional)</label>
-              <input type="number" className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="Optional (e.g. 300)" value={workoutForm.calories} onChange={e => setWorkoutForm({...workoutForm, calories: e.target.value})} />
+              <input type="number" className="glass-input" style={{ width: '100%', padding: '12px 14px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '12px' }} placeholder="Optional (e.g. 300)" value={workoutForm.calories} onChange={e => setWorkoutForm({...workoutForm, calories: e.target.value})} />
             </div>
           </div>
 
           <div className="input-group" style={{ marginBottom: '24px' }}>
             <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Notes</label>
-            <input type="text" className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="Enter notes..." value={workoutForm.notes} onChange={e => setWorkoutForm({...workoutForm, notes: e.target.value})} />
+            <input type="text" className="glass-input" style={{ width: '100%', padding: '12px 14px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '12px' }} placeholder="Enter notes..." value={workoutForm.notes} onChange={e => setWorkoutForm({...workoutForm, notes: e.target.value})} />
           </div>
 
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
@@ -759,8 +763,14 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
           });
         };
         const filteredStats = getFilteredStats();
-        // Recharts prefers chronological order
-        const chartData = [...filteredStats].reverse();
+        // Recharts prefers chronological order & fallback target goals so target lines never drop to 0
+        const chartData = [...filteredStats].reverse().map(item => ({
+          ...item,
+          protein: Number(item.protein) || 0,
+          weight: Number(item.weight) || 0,
+          target_protein: Number(item.target_protein) > 0 ? Number(item.target_protein) : targetProteinGoal,
+          target_weight: Number(item.target_weight) > 0 ? Number(item.target_weight) : (targetWeight > 0 ? targetWeight : 70)
+        }));
 
         return (
         <div className="animate-entrance">
@@ -793,14 +803,20 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
 
               {/* Protein Intake Graph */}
               <div className="glass-card" style={{ padding: '24px', borderRadius: '18px', border: '1px solid var(--border-color)', background: 'var(--bg-card)' }}>
-                <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '16px', color: 'var(--accent-blue)' }}>Protein Intake (g)</h4>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, color: '#10b981' }}>Protein Intake (g)</h4>
+                  <div style={{ display: 'flex', gap: '14px', fontSize: '0.78rem', fontWeight: 700 }}>
+                    <span style={{ color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px' }}>● Achieved</span>
+                    <span style={{ color: 'var(--accent-blue)', display: 'flex', alignItems: 'center', gap: '4px' }}>--- Target ({targetProteinGoal}g)</span>
+                  </div>
+                </div>
                 <div style={{ height: '220px', width: '100%' }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                       <defs>
                         <linearGradient id="colorProtein" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="var(--accent-blue)" stopOpacity={0.3}/>
-                          <stop offset="95%" stopColor="var(--accent-blue)" stopOpacity={0}/>
+                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.35}/>
+                          <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-color)" />
@@ -811,8 +827,8 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
                         itemStyle={{ color: 'var(--text-main)', fontWeight: 'bold' }}
                         labelStyle={{ color: 'var(--text-muted)', marginBottom: '4px' }}
                       />
-                      <Area type="monotone" dataKey="protein" stroke="var(--accent-blue)" strokeWidth={3} fillOpacity={1} fill="url(#colorProtein)" name="Protein" />
-                      <Line type="monotone" dataKey="target_protein" stroke="#10b981" strokeWidth={2} strokeDasharray="5 5" dot={false} name="Target" />
+                      <Area type="monotone" dataKey="protein" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorProtein)" name="Achieved Protein (g)" />
+                      <Line type="monotone" dataKey="target_protein" stroke="var(--accent-blue)" strokeWidth={2} strokeDasharray="5 5" dot={false} name="Protein Goal (g)" />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
@@ -820,7 +836,13 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
 
               {/* Body Weight Trend Graph */}
               <div className="glass-card" style={{ padding: '24px', borderRadius: '18px', border: '1px solid var(--border-color)', background: 'var(--bg-card)' }}>
-                <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '16px', color: 'var(--text-main)' }}>Weight (kg)</h4>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, color: 'var(--text-main)' }}>Weight (kg)</h4>
+                  <div style={{ display: 'flex', gap: '14px', fontSize: '0.78rem', fontWeight: 700 }}>
+                    <span style={{ color: 'var(--accent-blue)', display: 'flex', alignItems: 'center', gap: '4px' }}>● Actual</span>
+                    <span style={{ color: '#ef4444', display: 'flex', alignItems: 'center', gap: '4px' }}>--- Target ({targetWeight || 70}kg)</span>
+                  </div>
+                </div>
                 <div style={{ height: '220px', width: '100%' }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -832,8 +854,8 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
                         itemStyle={{ color: 'var(--text-main)', fontWeight: 'bold' }}
                         labelStyle={{ color: 'var(--text-muted)', marginBottom: '4px' }}
                       />
-                      <Line type="monotone" dataKey="weight" stroke="var(--text-main)" strokeWidth={3} dot={{r: 4, fill: 'var(--bg-card)', strokeWidth: 2}} name="Weight" />
-                      <Line type="monotone" dataKey="target_weight" stroke="#ef4444" strokeWidth={2} strokeDasharray="5 5" dot={false} name="Target" />
+                      <Line type="monotone" dataKey="weight" stroke="var(--accent-blue)" strokeWidth={3} dot={{r: 4, fill: 'var(--accent-blue)', strokeWidth: 2}} name="Actual Weight (kg)" />
+                      <Line type="monotone" dataKey="target_weight" stroke="#ef4444" strokeWidth={2} strokeDasharray="5 5" dot={false} name="Target Weight (kg)" />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -956,7 +978,7 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
               value={proteinInput} 
               onChange={(e) => setProteinInput(e.target.value)} 
               className="glass-input" 
-              style={{ width: '100%', padding: '12px 16px', fontSize: '1.2rem', textAlign: 'center', fontWeight: 700 }} 
+              style={{ width: '100%', padding: '12px 14px', fontSize: '1.2rem', textAlign: 'center', fontWeight: 700, background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '12px' }} 
               placeholder="e.g. 25"
               autoFocus
             />
@@ -988,11 +1010,11 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
             <div className="input-group">
               <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Current Weight (kg)</label>
-              <input type="number" step="0.1" required className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="75.5" value={statsForm.weight} onChange={e => setStatsForm({...statsForm, weight: e.target.value})} />
+              <input type="number" step="0.1" required className="glass-input" style={{ width: '100%', padding: '12px 14px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '12px' }} placeholder="75.5" value={statsForm.weight} onChange={e => setStatsForm({...statsForm, weight: e.target.value})} />
             </div>
             <div className="input-group">
               <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Target Weight (kg)</label>
-              <input type="number" step="0.1" className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="70" value={statsForm.target_weight} onChange={e => setStatsForm({...statsForm, target_weight: e.target.value})} />
+              <input type="number" step="0.1" className="glass-input" style={{ width: '100%', padding: '12px 14px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '12px' }} placeholder="70" value={statsForm.target_weight} onChange={e => setStatsForm({...statsForm, target_weight: e.target.value})} />
             </div>
           </div>
 
@@ -1004,7 +1026,7 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
                 value={statsForm.target_protein} 
                 onChange={(e) => setStatsForm({...statsForm, target_protein: e.target.value})} 
                 className="glass-input" 
-                style={{ width: '100%', padding: '10px 14px', fontSize: '0.95rem' }} 
+                style={{ width: '100%', padding: '12px 14px', fontSize: '0.95rem', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '12px' }} 
                 placeholder="e.g. 150"
               />
             </div>
@@ -1061,14 +1083,14 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
                     placeholder="Exercise (e.g. Dips)" 
                     id={`ex-name-${idx}`}
                     className="glass-input" 
-                    style={{ flex: 1, padding: '4px 8px', fontSize: '0.75rem' }}
+                    style={{ flex: 1, padding: '8px 12px', fontSize: '0.75rem', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '12px' }}
                   />
                   <input 
                     type="text" 
                     placeholder="Sets (e.g. 5x2)" 
                     id={`ex-sets-${idx}`}
                     className="glass-input" 
-                    style={{ width: '110px', padding: '4px 8px', fontSize: '0.75rem' }}
+                    style={{ width: '110px', padding: '8px 12px', fontSize: '0.75rem', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '12px' }}
                   />
                   <button 
                     type="button" 
@@ -1109,7 +1131,7 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
                 value={newSplitName} 
                 onChange={(e) => setNewSplitName(e.target.value)} 
                 className="glass-input" 
-                style={{ flex: 1, padding: '10px 14px', fontSize: '0.88rem' }}
+                style={{ flex: 1, padding: '12px 14px', fontSize: '0.88rem', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '12px' }}
               />
               <button type="submit" className="blue-btn" style={{ padding: '10px 16px', fontSize: '0.85rem' }}>+ Add</button>
             </form>
@@ -1117,7 +1139,7 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <CustomSelect 
                 className="glass-input"
-                style={{ padding: '6px 12px', fontSize: '0.85rem' }}
+                style={{ width: '100%', padding: '12px 14px', fontSize: '0.85rem', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '12px' }}
                 value={workoutSettings.split_type}
                 onChange={(e) => {
                   const newType = e.target.value;

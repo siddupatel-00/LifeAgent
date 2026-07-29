@@ -2856,6 +2856,14 @@ const handleDeleteHabitDb = async (id) => {
                     </div>
                   )}
                 </div>
+
+                <button
+                  onClick={() => setShowFinanceForm(true)}
+                  className="blue-btn"
+                  style={{ padding: '10px 18px', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '8px', borderRadius: '30px', fontWeight: 700 }}
+                >
+                  <Plus size={16} /> Record Entry
+                </button>
               </div>
             )}
 
@@ -3476,15 +3484,15 @@ const handleDeleteHabitDb = async (id) => {
                               border: '1px solid var(--border-color)', fontSize: '0.92rem', fontWeight: 600, outline: 'none', cursor: 'pointer' 
                             }}
                           >
-                            <option value="" disabled hidden>Select Category...</option>
-                            <option value="Coding">Coding Habit</option>
-                            <option value="Study">Study Habit</option>
-                            <option value="Reading">Reading</option>
-                            <option value="Body & Gym">Fitness & Health</option>
-                            <option value="Diet & Nutrition">Diet & Nutrition</option>
-                            <option value="Money">Money Habit</option>
-                            <option value="Deep Focus">Deep Focus</option>
-                            <option value="Other">+ Enter Custom Category...</option>
+                            <option value="" disabled hidden style={{ background: 'var(--bg-card)', color: 'var(--text-muted)' }}>Select Category...</option>
+                            <option value="Coding" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>Coding Habit</option>
+                            <option value="Study" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>Study Habit</option>
+                            <option value="Reading" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>Reading</option>
+                            <option value="Body & Gym" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>Fitness & Health</option>
+                            <option value="Diet & Nutrition" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>Diet & Nutrition</option>
+                            <option value="Money" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>Money Habit</option>
+                            <option value="Deep Focus" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>Deep Focus</option>
+                            <option value="Other" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>+ Enter Custom Category...</option>
                           </select>
                         )}
                       </div>
@@ -3526,13 +3534,13 @@ const handleDeleteHabitDb = async (id) => {
                               }}
                               style={{ padding: '6px 12px', borderRadius: '8px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.85rem', fontWeight: 700, outline: 'none', cursor: 'pointer' }}
                             >
-                              <option value={7}>7 Days</option>
-                              <option value={14}>14 Days</option>
-                              <option value={21}>21 Days</option>
-                              <option value={30}>30 Days</option>
-                              <option value={60}>60 Days</option>
-                              <option value={90}>90 Days</option>
-                              <option value="custom">Custom...</option>
+                              <option value={7} style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>7 Days</option>
+                              <option value={14} style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>14 Days</option>
+                              <option value={21} style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>21 Days</option>
+                              <option value={30} style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>30 Days</option>
+                              <option value={60} style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>60 Days</option>
+                              <option value={90} style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>90 Days</option>
+                              <option value="custom" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>Custom...</option>
                             </select>
 
                             {newHabitData.durationMode === 'custom' && (
@@ -4060,6 +4068,7 @@ const handleDeleteHabitDb = async (id) => {
                   todayStat={bodyStats}
                   onLogStat={handleSaveBodyStat}
                   showToast={showToast}
+                  userProfile={userProfile}
                 />
               )}
 
