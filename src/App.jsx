@@ -3754,9 +3754,9 @@ const handleDeleteHabitDb = async (id) => {
                                 onClick={() => setNewHabitData({ ...newHabitData, intervalDays: 0, interval_days: 0 })}
                                 style={{
                                   flex: 1, padding: '6px 10px', borderRadius: '6px',
-                                  border: `1px solid ${(!newHabitData.intervalDays || newHabitData.intervalDays === 0) ? 'var(--accent-blue)' : 'var(--border-color)'}`,
-                                  background: (!newHabitData.intervalDays || newHabitData.intervalDays === 0) ? 'var(--accent-blue-dim)' : 'var(--bg-card)',
-                                  color: (!newHabitData.intervalDays || newHabitData.intervalDays === 0) ? 'var(--accent-blue)' : 'var(--text-muted)',
+                                  border: `1px solid ${(newHabitData.intervalDays === 0 || !newHabitData.intervalDays) && newHabitData.intervalDays !== '' ? 'var(--accent-blue)' : 'var(--border-color)'}`,
+                                  background: ((newHabitData.intervalDays === 0 || !newHabitData.intervalDays) && newHabitData.intervalDays !== '') ? 'var(--accent-blue-dim)' : 'var(--bg-card)',
+                                  color: ((newHabitData.intervalDays === 0 || !newHabitData.intervalDays) && newHabitData.intervalDays !== '') ? 'var(--accent-blue)' : 'var(--text-muted)',
                                   fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer'
                                 }}
                               >
@@ -3764,12 +3764,12 @@ const handleDeleteHabitDb = async (id) => {
                               </button>
                               <button
                                 type="button"
-                                onClick={() => setNewHabitData({ ...newHabitData, intervalDays: (newHabitData.intervalDays > 0 ? newHabitData.intervalDays : 2), interval_days: (newHabitData.intervalDays > 0 ? newHabitData.intervalDays : 2) })}
+                                onClick={() => setNewHabitData({ ...newHabitData, intervalDays: (newHabitData.intervalDays > 0 ? newHabitData.intervalDays : 1), interval_days: (newHabitData.intervalDays > 0 ? newHabitData.intervalDays : 1) })}
                                 style={{
                                   flex: 1, padding: '6px 10px', borderRadius: '6px',
-                                  border: `1px solid ${(newHabitData.intervalDays > 0) ? 'var(--accent-blue)' : 'var(--border-color)'}`,
-                                  background: (newHabitData.intervalDays > 0) ? 'var(--accent-blue-dim)' : 'var(--bg-card)',
-                                  color: (newHabitData.intervalDays > 0) ? 'var(--accent-blue)' : 'var(--text-muted)',
+                                  border: `1px solid ${(newHabitData.intervalDays !== 0) ? 'var(--accent-blue)' : 'var(--border-color)'}`,
+                                  background: (newHabitData.intervalDays !== 0) ? 'var(--accent-blue-dim)' : 'var(--bg-card)',
+                                  color: (newHabitData.intervalDays !== 0) ? 'var(--accent-blue)' : 'var(--text-muted)',
                                   fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer'
                                 }}
                               >
@@ -3777,16 +3777,26 @@ const handleDeleteHabitDb = async (id) => {
                               </button>
                             </div>
 
-                            {(newHabitData.intervalDays > 0) ? (
+                            {(newHabitData.intervalDays !== 0) ? (
                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>Repeat every</span>
                                 <input
                                   type="number"
                                   min="1"
-                                  value={newHabitData.intervalDays || 2}
+                                  value={newHabitData.intervalDays === '' ? '' : (newHabitData.intervalDays ?? 1)}
                                   onChange={(e) => {
-                                    const val = Math.max(1, parseInt(e.target.value) || 1);
-                                    setNewHabitData({ ...newHabitData, intervalDays: val, interval_days: val });
+                                    const valStr = e.target.value;
+                                    if (valStr === '') {
+                                      setNewHabitData({ ...newHabitData, intervalDays: '', interval_days: '' });
+                                    } else {
+                                      const parsed = parseInt(valStr, 10);
+                                      setNewHabitData({ ...newHabitData, intervalDays: isNaN(parsed) ? '' : parsed, interval_days: isNaN(parsed) ? '' : parsed });
+                                    }
+                                  }}
+                                  onBlur={() => {
+                                    if (!newHabitData.intervalDays || Number(newHabitData.intervalDays) < 1) {
+                                      setNewHabitData({ ...newHabitData, intervalDays: 1, interval_days: 1 });
+                                    }
                                   }}
                                   style={{ width: '70px', padding: '6px 10px', borderRadius: '8px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.88rem', fontWeight: 700, outline: 'none' }}
                                 />
@@ -4355,9 +4365,9 @@ const handleDeleteHabitDb = async (id) => {
                                   onClick={() => setEditingHabitData({ ...editingHabitData, intervalDays: 0, interval_days: 0 })}
                                   style={{
                                     flex: 1, padding: '6px 10px', borderRadius: '6px',
-                                    border: `1px solid ${(!editingHabitData.intervalDays || editingHabitData.intervalDays === 0) ? 'var(--accent-blue)' : 'var(--border-color)'}`,
-                                    background: (!editingHabitData.intervalDays || editingHabitData.intervalDays === 0) ? 'var(--accent-blue-dim)' : 'var(--bg-card)',
-                                    color: (!editingHabitData.intervalDays || editingHabitData.intervalDays === 0) ? 'var(--accent-blue)' : 'var(--text-muted)',
+                                    border: `1px solid ${(editingHabitData.intervalDays === 0 || !editingHabitData.intervalDays) && editingHabitData.intervalDays !== '' ? 'var(--accent-blue)' : 'var(--border-color)'}`,
+                                    background: ((editingHabitData.intervalDays === 0 || !editingHabitData.intervalDays) && editingHabitData.intervalDays !== '') ? 'var(--accent-blue-dim)' : 'var(--bg-card)',
+                                    color: ((editingHabitData.intervalDays === 0 || !editingHabitData.intervalDays) && editingHabitData.intervalDays !== '') ? 'var(--accent-blue)' : 'var(--text-muted)',
                                     fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer'
                                   }}
                                 >
@@ -4365,12 +4375,12 @@ const handleDeleteHabitDb = async (id) => {
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => setEditingHabitData({ ...editingHabitData, intervalDays: (editingHabitData.intervalDays > 0 ? editingHabitData.intervalDays : 2), interval_days: (editingHabitData.intervalDays > 0 ? editingHabitData.intervalDays : 2) })}
+                                  onClick={() => setEditingHabitData({ ...editingHabitData, intervalDays: (editingHabitData.intervalDays > 0 ? editingHabitData.intervalDays : 1), interval_days: (editingHabitData.intervalDays > 0 ? editingHabitData.intervalDays : 1) })}
                                   style={{
                                     flex: 1, padding: '6px 10px', borderRadius: '6px',
-                                    border: `1px solid ${(editingHabitData.intervalDays > 0) ? 'var(--accent-blue)' : 'var(--border-color)'}`,
-                                    background: (editingHabitData.intervalDays > 0) ? 'var(--accent-blue-dim)' : 'var(--bg-card)',
-                                    color: (editingHabitData.intervalDays > 0) ? 'var(--accent-blue)' : 'var(--text-muted)',
+                                    border: `1px solid ${(editingHabitData.intervalDays !== 0) ? 'var(--accent-blue)' : 'var(--border-color)'}`,
+                                    background: (editingHabitData.intervalDays !== 0) ? 'var(--accent-blue-dim)' : 'var(--bg-card)',
+                                    color: (editingHabitData.intervalDays !== 0) ? 'var(--accent-blue)' : 'var(--text-muted)',
                                     fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer'
                                   }}
                                 >
@@ -4378,16 +4388,26 @@ const handleDeleteHabitDb = async (id) => {
                                 </button>
                               </div>
 
-                              {(editingHabitData.intervalDays > 0) ? (
+                              {(editingHabitData.intervalDays !== 0) ? (
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                   <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>Repeat every</span>
                                   <input
                                     type="number"
                                     min="1"
-                                    value={editingHabitData.intervalDays || 2}
+                                    value={editingHabitData.intervalDays === '' ? '' : (editingHabitData.intervalDays ?? 1)}
                                     onChange={(e) => {
-                                      const val = Math.max(1, parseInt(e.target.value) || 1);
-                                      setEditingHabitData({ ...editingHabitData, intervalDays: val, interval_days: val });
+                                      const valStr = e.target.value;
+                                      if (valStr === '') {
+                                        setEditingHabitData({ ...editingHabitData, intervalDays: '', interval_days: '' });
+                                      } else {
+                                        const parsed = parseInt(valStr, 10);
+                                        setEditingHabitData({ ...editingHabitData, intervalDays: isNaN(parsed) ? '' : parsed, interval_days: isNaN(parsed) ? '' : parsed });
+                                      }
+                                    }}
+                                    onBlur={() => {
+                                      if (!editingHabitData.intervalDays || Number(editingHabitData.intervalDays) < 1) {
+                                        setEditingHabitData({ ...editingHabitData, intervalDays: 1, interval_days: 1 });
+                                      }
                                     }}
                                     style={{ width: '70px', padding: '6px 10px', borderRadius: '8px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.88rem', fontWeight: 700, outline: 'none' }}
                                   />
