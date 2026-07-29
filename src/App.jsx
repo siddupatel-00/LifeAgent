@@ -901,13 +901,15 @@ export default function App() {
     if (targetState) {
       const latestStat = Array.isArray(bodyStats) && bodyStats.length > 0 ? bodyStats[0] : (bodyStats || {});
       const targetW = Number(latestStat?.target_weight) || 70;
-      const proteinGoal = targetW > 0 ? Math.round(targetW * 2) : 150;
-      const hydrationGoal = 3.5;
+      const targetP = Number(latestStat?.target_protein) || 0;
+      const proteinGoal = targetP > 0 ? targetP : (targetW > 0 ? Math.round(targetW * 2) : 150);
+      const hydrationGoal = Number(localStorage.getItem('water_target_goal')) || 3.0;
 
       const payload = {
         weight: Number(latestStat?.weight) || 70,
         target_weight: targetW,
         protein: proteinGoal,
+        target_protein: proteinGoal,
         hydration: hydrationGoal,
         date: todayStr
       };
