@@ -334,6 +334,42 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
     });
   };
 
+  const handleResetProtein = async () => {
+    try {
+      const today = todayKey();
+      const existingTodayStat = Array.isArray(bodyStats) ? bodyStats.find(s => s.date === today) : null;
+      const isUpdating = !!existingTodayStat;
+      
+      const payload = {
+        ...(isUpdating ? { id: existingTodayStat.id } : {}),
+        weight: isUpdating ? existingTodayStat.weight : (latestStat?.weight || 0),
+        target_weight: isUpdating ? existingTodayStat.target_weight : (latestStat?.target_weight || 0),
+        protein: 0,
+        target_protein: isUpdating ? existingTodayStat.target_protein : (latestStat?.target_protein || 0),
+        date: today
+      };
+      
+      const res = await fetch('/api/fitness?type=body-stats', {
+        method: isUpdating ? 'PUT' : 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+      
+      if (res.ok) {
+        showToast('Protein reset to 0g', 'success');
+        setProteinInput('0');
+        closeLogProteinModal();
+        fetchStats();
+      }
+    } catch (e) {
+      console.error(e);
+      showToast('Error resetting protein', 'error');
+    }
+  };
+
   const handleAddStats = async (e) => {
     e.preventDefault();
     try {
@@ -498,8 +534,12 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
           {/* Bottom Grid: Quick Protein Summary (Read Only display on Today tab) */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '20px' }}>
             <div className="glass-card" style={{ padding: '20px', borderRadius: '18px', border: '1px solid var(--border-color)', background: 'var(--bg-card)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
                 <div style={{ fontSize: '0.95rem', fontWeight: 700 }}>🥩 Daily Protein Tracker</div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button onClick={openLogProteinModal} className="blue-btn" style={{ padding: '4px 12px', fontSize: '0.78rem' }}>+ Log Protein</button>
+                  <button onClick={handleResetProtein} className="secondary-btn" style={{ padding: '4px 12px', fontSize: '0.78rem', color: '#ef4444', borderColor: 'rgba(239,68,68,0.3)' }}>Reset (0g)</button>
+                </div>
               </div>
               <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--accent-blue)' }}>
                 {currentProtein}g <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>/ {targetProteinGoal}g goal</span>
@@ -912,9 +952,12 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
                 <button type="button" className="secondary-btn" onClick={() => handleQuickAddProtein(20)} style={{ padding: '8px 16px', fontSize: '0.9rem' }}>+20g</button>
                 <button type="button" className="secondary-btn" onClick={() => handleQuickAddProtein(30)} style={{ padding: '8px 16px', fontSize: '0.9rem' }}>+30g</button>
               </div>
-              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-                <button type="button" className="secondary-btn" onClick={closeLogProteinModal}>Cancel</button>
-                <button type="submit" className="blue-btn">Save Protein</button>
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
+                <button type="button" className="secondary-btn" onClick={handleResetProtein} style={{ color: '#ef4444', borderColor: 'rgba(239,68,68,0.3)', padding: '8px 14px', fontSize: '0.85rem' }}>Reset to 0g</button>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button type="button" className="secondary-btn" onClick={closeLogProteinModal}>Cancel</button>
+                  <button type="submit" className="blue-btn">Save Protein</button>
+                </div>
               </div>
             </form>
           </div>

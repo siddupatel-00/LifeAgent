@@ -1622,8 +1622,7 @@ const handleDeleteHabitDb = async (id) => {
       {currentPage === 'landing' && (
         <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 16px' }}>
           {/* HERO SECTION */}
-          <section className="animate-entrance scroll-swipe-up" style={{ textAlign: 'center', padding: '60px 0 36px' }}>
-
+          <section className="animate-entrance" style={{ textAlign: 'center', padding: '60px 0 36px' }}>
 
             <h1 style={{ fontSize: '3.8rem', fontWeight: 900, lineHeight: 1.08, letterSpacing: '-2px', marginBottom: '22px', color: 'var(--text-main)' }}>
               Your Life Connected with Your Personal AI Agent
@@ -1634,7 +1633,7 @@ const handleDeleteHabitDb = async (id) => {
             </p>
 
             {/* CTAs */}
-            <div className="scroll-swipe-up scroll-delay-1" style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '32px' }}>
+            <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '32px' }}>
               <button 
                 className="blue-btn" 
                 style={{ fontSize: '1.05rem', padding: '14px 36px', borderRadius: '14px', boxShadow: '0 8px 24px rgba(59, 130, 246, 0.35)' }} 
@@ -1643,7 +1642,6 @@ const handleDeleteHabitDb = async (id) => {
                 Get Started Free <ArrowRight size={18} />
               </button>
             </div>
-
 
           </section>
 
@@ -3331,10 +3329,10 @@ const handleDeleteHabitDb = async (id) => {
                   {/* Messages - ONLY THIS SCROLLS */}
                   <div ref={mainAiChatScrollRef} style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px', WebkitOverflowScrolling: 'touch' }}>
                     {aiMessages.length === 0 && (
-                      <div style={{ textAlign: 'center', color: 'var(--text-muted)', paddingTop: '60px' }}>
-                        <div style={{ fontSize: '2.5rem', marginBottom: '16px' }}>🤖</div>
-                        <p style={{ fontWeight: 700 }}>Ask me anything about your life data</p>
-                        <p style={{ fontSize: '0.85rem', marginTop: '8px' }}>I can analyze your habits, money, sleep and more</p>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)', margin: 'auto' }}>
+                        <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🤖</div>
+                        <p style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--text-main)' }}>Ask me anything about your life data</p>
+                        <p style={{ fontSize: '0.88rem', marginTop: '8px', color: 'var(--text-muted)' }}>I can analyze your habits, money, sleep and more</p>
                       </div>
                     )}
                     {aiMessages.map(msg => (
