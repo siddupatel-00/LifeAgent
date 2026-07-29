@@ -7,7 +7,7 @@ import CustomSelect from './CustomSelect';
 const SPEND_CATEGORIES = ['Choose Category', 'General', 'Food', 'Transport', 'Shopping', 'Bills', 'Entertainment', 'Education', 'Health', 'Other'];
 const EARNING_CATEGORIES = ['Choose Category', 'Job', 'Business', 'Freelancing', 'Startup', 'Other'];
 
-export default function MoneyTracker({ transactions, setTransactions, token, showToast, currency, timeRange = 'today', timeframe, timezone, userProfile }) {
+export default function MoneyTracker({ transactions, setTransactions, token, showToast, currency, timeRange = 'today', timeframe, timezone, userProfile, customStartDate, customEndDate }) {
   const [newTitle, setNewTitle] = useState('');
   const [newAmount, setNewAmount] = useState('');
   const [newType, setNewType] = useState('spend');
@@ -119,6 +119,15 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
       const year = now.getFullYear();
       const prefix = `${year}-`;
       return (transactions || []).filter(t => getNormalizedDate(t?.date).startsWith(prefix));
+    }
+
+    if (activeTf === 'custom') {
+      return (transactions || []).filter(t => {
+        const d = getNormalizedDate(t?.date);
+        const start = customStartDate || '1970-01-01';
+        const end = customEndDate || '2999-12-31';
+        return d >= start && d <= end;
+      });
     }
 
     return transactions || [];

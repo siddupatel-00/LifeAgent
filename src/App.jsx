@@ -131,6 +131,8 @@ export default function App() {
   const [timeRange, setTimeRange] = useState(() => localStorage.getItem('active_timeframe') || '7d'); // 'today', '3d', '7d', '14d', '25d', '30d', '1m', '3m', '6m', '12m', 'lifetime'
   const [isTimeMenuOpen, setIsTimeMenuOpen] = useState(false);
   const timeDropdownRef = useRef(null);
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
 
   const [todayWidgetsConfig, setTodayWidgetsConfig] = useState(() => {
     try {
@@ -407,7 +409,8 @@ export default function App() {
     { id: 'this_month', label: 'This Month' },
     { id: 'last_month', label: 'Last Month' },
     { id: 'this_year', label: 'This Year' },
-    { id: 'lifetime', label: 'All Time' }
+    { id: 'lifetime', label: 'All Time' },
+    { id: 'custom', label: '📅 Custom Range' }
   ];
 
   // 1) AI Chat state with Autonomous Executive Engine
@@ -2795,6 +2798,23 @@ const handleDeleteHabitDb = async (id) => {
                     </div>
                   )}
                 </div>
+                {timeRange === 'custom' && (
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <input 
+                      type="date" 
+                      value={customStartDate}
+                      onChange={(e) => setCustomStartDate(e.target.value)}
+                      style={{ padding: '8px', borderRadius: '8px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.85rem' }} 
+                    />
+                    <span style={{ color: 'var(--text-muted)' }}>-</span>
+                    <input 
+                      type="date" 
+                      value={customEndDate}
+                      onChange={(e) => setCustomEndDate(e.target.value)}
+                      style={{ padding: '8px', borderRadius: '8px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.85rem' }} 
+                    />
+                  </div>
+                )}
               </div>
             )}
 
@@ -4390,6 +4410,8 @@ const handleDeleteHabitDb = async (id) => {
                   timezone={userProfile.timezone}
                   showForm={showFinanceForm}
                   setShowForm={setShowFinanceForm}
+                  customStartDate={customStartDate}
+                  customEndDate={customEndDate}
                 />
               )}
 
