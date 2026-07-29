@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Flame, CheckCircle2, MoreVertical, Trash2 } from 'lucide-react';
+import { Plus, Flame, CheckCircle2, MoreVertical, Trash2, X } from 'lucide-react';
 
 export default function HabitsPanel({
   habits, setHabits, todayItems, setTodayItems,
@@ -201,8 +201,18 @@ export default function HabitsPanel({
       {isAddHabitModalOpen && habits.length > 0 && (
         <div className="blur-overlay" onClick={() => setIsAddHabitModalOpen(false)}>
           <div className="glass-card animate-entrance" onClick={e => e.stopPropagation()}
-            style={{ padding: '32px', width: '90%', maxWidth: '400px',  }}>
-            <h3 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '24px' }}>Add New Habit</h3>
+            style={{ background: 'var(--bg-card)', padding: '28px', borderRadius: '24px', border: '1px solid var(--border-color)', boxShadow: '0 25px 60px rgba(0,0,0,0.4)', width: '90%', maxWidth: '400px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: 'var(--accent-blue-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-blue)' }}>
+                  <Plus size={20} />
+                </div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>Add New Habit</h3>
+              </div>
+              <button onClick={() => setIsAddHabitModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px' }}>
+                <X size={20} />
+              </button>
+            </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <input 
                 type="text" placeholder="Enter habit name..."

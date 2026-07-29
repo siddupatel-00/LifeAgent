@@ -22,16 +22,37 @@
   --radius-xl: 28px;
 }
 
-/* Global Scrollbar Hiding (Scrolling works 100%, but scrollbars are invisible) */
-*, *::before, *::after {
+/* Global Invisible Scrollbars for ALL containers, divs, modals, & sidebars (Scrolling works 100%, but scrollbars are invisible) */
+*, *::before, *::after,
+div, section, main, aside, article, nav, form, ul, ol, body, html {
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
 }
 
+*::-webkit-scrollbar,
 ::-webkit-scrollbar {
   display: none !important;
-  width: 0 !important;
-  height: 0 !important;
+  width: 0px !important;
+  height: 0px !important;
+  background: transparent !important;
+}
+
+*::-webkit-scrollbar-thumb,
+::-webkit-scrollbar-thumb {
+  display: none !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+*::-webkit-scrollbar-track,
+::-webkit-scrollbar-track {
+  display: none !important;
+  background: transparent !important;
+}
+
+*::-webkit-scrollbar-corner,
+::-webkit-scrollbar-corner {
+  display: none !important;
   background: transparent !important;
 }
 
@@ -579,6 +600,24 @@ body {
 .toast-message {
   flex: 1;
   line-height: 1.4;
+}
+
+/* Make native date input calendar picker icon bright & clearly visible */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.85) brightness(1.6);
+  cursor: pointer;
+  opacity: 0.95;
+  transition: opacity 0.2s, filter 0.2s;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+  filter: invert(1) brightness(2);
+}
+
+[data-theme="light"] input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: none;
+  opacity: 0.8;
 }
 
 /* Custom checkbox appearance — crisp high-contrast state */

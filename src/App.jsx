@@ -7,7 +7,7 @@ import {
   Sun, Moon, Monitor, ChevronDown, Lock, Phone, AtSign, Activity, Zap, Check, X,
   Dumbbell, Moon as SleepIcon, BarChart3, PieChart, Flame, Heart, Target, Filter, Droplet,
   Home, LayoutDashboard, LogOut, Sliders, Settings, Save, Bell, Shield, PenTool, MessageSquare, Sidebar as SidebarIcon, FileText, Unlock, Smile,
-  MoreVertical, List, Menu, History
+  MoreVertical, List, Menu, History, Edit2
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import CustomSelect from './components/CustomSelect';
@@ -1174,7 +1174,8 @@ const handleDeleteHabitDb = async (id) => {
         - Shared notes: ${JSON.stringify(notesList.filter(n => n.shareWithAi))}
 
         MANDATORY INSTRUCTIONS FOR EXECUTING ACTIONS:
-        When the user mentions ANY spending, expense, earning, habit creation, note, sleep, workout, or event, YOU MUST ALWAYS INCLUDE THE EXACT JSON ACTION BLOCK IN YOUR RESPONSE! Do NOT just claim you added it in text without including the JSON action block tag!
+        ONLY output action tags ([ADD_TRANSACTION], [ADD_HABIT], [CALENDAR_EVENT], [ADD_NOTE], [ADD_SLEEP], [ADD_WORKOUT], [ADD_BODY_STATS]) when the user EXPLICITLY COMMANDS you to log, create, add, or record data (e.g. "log my workout 45 mins", "add expense 50").
+        NEVER output action tags when answering general questions, giving summaries (like "how is my day today"), or giving advice/examples!
 
         Required Action Tags:
         1. Log Money Spending or Earning:
@@ -1199,7 +1200,7 @@ const handleDeleteHabitDb = async (id) => {
         7. Log Body Stats / Weight:
         [ADD_BODY_STATS]{"weight":75,"target_weight":70,"protein":120,"hydration":2.5}[/ADD_BODY_STATS]
 
-        Output the required action tag(s) first or alongside your natural language text confirmation.
+        Output the required action tag(s) alongside your natural language text confirmation ONLY when the user explicitly commands a record/add action.
       `;
       
       let responseText = "";
@@ -1229,34 +1230,41 @@ const handleDeleteHabitDb = async (id) => {
         let lastErr = null;
         for (const mName of modelsToTry) {
           try {
-            const model = genAI.getGenerativeModel({ model: mName });
-            result = await model.generateContent(`${systemPrompt}\n\nUser: ${userMsgText}`);
+            const model = genAI.getGenerativeModel({ model: mName, systemInstruction: systemPrompt });
+            result = await model.generateContent(userMsgText);
             if (result) break;
-          } catch (err) {
-            lastErr = err;
+          } catch (e) {
+            lastErr = e;
           }
         }
-        if (!result && lastErr) throw lastErr;
+        if (!result) throw lastErr || new Error("All Gemini models failed.");
         responseText = result.response.text();
       }
       
       let finalReply = responseText;
 
+      // Parse AI Action Tags silently without firing intrusive UI toasts during conversation
       // 1. Parse CALENDAR_EVENT
-      const eventMatches = [...responseText.matchAll(/\[CALENDAR_EVENT\](.*?)\[\/CALENDAR_EVENT\]/gs)];
-      if (eventMatches.length > 0) {
+      const calendarMatches = [...responseText.matchAll(/\[CALENDAR_EVENT\](.*?)\[\/CALENDAR_EVENT\]/gs)];
+      if (calendarMatches.length > 0) {
         const newEvents = [];
-        for (const match of eventMatches) {
+        for (const match of calendarMatches) {
           try {
-            const eventData = JSON.parse(match[1]);
+            const data = JSON.parse(match[1]);
             const res = await fetch('/api/calendar', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-              body: JSON.stringify({ title: eventData.title, date: eventData.date, end_date: eventData.endDate || null, color: eventData.color || '#3b82f6' })
+              body: JSON.stringify({
+                title: data.title || 'AI Event',
+                date: data.date || todayStr,
+                end_date: data.endDate || null,
+                color: data.color || '#3b82f6',
+                status: 'upcoming'
+              })
             });
             if (res.ok) {
-              const createdEv = await res.json();
-              newEvents.push(createdEv);
+              const saved = await res.json();
+              newEvents.push(saved);
             }
             finalReply = finalReply.replace(match[0], '').trim();
           } catch (err) {
@@ -1264,8 +1272,7 @@ const handleDeleteHabitDb = async (id) => {
           }
         }
         if (newEvents.length > 0) {
-          setCalendarEvents(prev => [...prev, ...newEvents]);
-          showToast?.(`${newEvents.length} Event(s) saved to Calendar`, 'success');
+          setCalendarEvents(prev => [...newEvents, ...prev]);
         }
       }
 
@@ -1279,20 +1286,15 @@ const handleDeleteHabitDb = async (id) => {
             const res = await fetch('/api/habits', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-              body: JSON.stringify({ label: data.label, category: data.category || 'General', target: data.target || 'Daily' })
+              body: JSON.stringify({
+                label: data.label || 'New Habit',
+                category: data.category || 'General',
+                target: data.target || 'Daily'
+              })
             });
             if (res.ok) {
-              const h = await res.json();
-              addedHabits.push({ id: h.id, title: h.label, category: h.category, streak: h.streak || 0, target: h.target || '', checkedToday: false });
-              
-              // Create linked today item
-              fetch('/api/today', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ label: h.label, category: h.category, habit_id: h.id, time: '10:00 AM' })
-              }).then(r => r.ok && r.json()).then(tItem => {
-                if (tItem) setTodayItems(prev => [...prev, { id: tItem.id, title: tItem.label, category: tItem.category, time: tItem.time, checked: false, habitId: h.id }]);
-              }).catch(() => {});
+              const saved = await res.json();
+              addedHabits.push(saved);
             }
             finalReply = finalReply.replace(match[0], '').trim();
           } catch (err) {
@@ -1300,15 +1302,15 @@ const handleDeleteHabitDb = async (id) => {
           }
         }
         if (addedHabits.length > 0) {
-          setHabits(prev => [...prev, ...addedHabits]);
-          showToast?.(`${addedHabits.length} Habit(s) created by ${aiName}`, 'success');
+          setHabits(prev => [...prev, ...addedHabits.map(h => ({
+            id: h.id, title: h.label, category: h.category, streak: h.streak, target: h.target || '', checkedToday: false
+          }))]);
         }
       }
 
-      // 3. Parse ADD_TRANSACTION (Money Tracker Spending / Earning)
+      // 3. Parse ADD_TRANSACTION
       const txMatches = [...responseText.matchAll(/\[ADD_TRANSACTION\](.*?)\[\/ADD_TRANSACTION\]/gs)];
       if (txMatches.length > 0) {
-        const addedTx = [];
         for (const match of txMatches) {
           try {
             const data = JSON.parse(match[1]);
@@ -1316,33 +1318,27 @@ const handleDeleteHabitDb = async (id) => {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
               body: JSON.stringify({
-                title: data.title,
+                title: data.title || 'Transaction',
                 amount: Number(data.amount) || 0,
                 type: data.type || 'spend',
                 category: data.category || 'General',
-                notes: data.notes || '',
                 date: data.date || todayStr
               })
             });
             if (res.ok) {
-              const tx = await res.json();
-              addedTx.push({ id: tx.id, title: tx.title, amount: tx.amount, type: tx.type, category: tx.category, date: tx.date });
+              const saved = await res.json();
+              setTransactions(prev => [saved, ...prev]);
             }
             finalReply = finalReply.replace(match[0], '').trim();
           } catch (err) {
             console.error("Failed to parse transaction JSON", err);
           }
         }
-        if (addedTx.length > 0) {
-          setTransactions(prev => [...addedTx, ...prev]);
-          showToast?.(`Transaction recorded by ${aiName}`, 'success');
-        }
       }
 
-      // 4. Parse ADD_NOTE (Notes & Journaling)
+      // 4. Parse ADD_NOTE
       const noteMatches = [...responseText.matchAll(/\[ADD_NOTE\](.*?)\[\/ADD_NOTE\]/gs)];
       if (noteMatches.length > 0) {
-        const addedNotes = [];
         for (const match of noteMatches) {
           try {
             const data = JSON.parse(match[1]);
@@ -1350,29 +1346,24 @@ const handleDeleteHabitDb = async (id) => {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
               body: JSON.stringify({
-                title: data.title || 'Untitled Note',
+                title: data.title || 'AI Note',
                 content: data.content || '',
                 category: data.category || 'General',
-                date: todayStr,
                 share_with_ai: true
               })
             });
             if (res.ok) {
-              const note = await res.json();
-              addedNotes.push({ id: note.id, title: note.title, content: note.content, category: note.category, date: note.date, shareWithAi: true });
+              const saved = await res.json();
+              setNotesList(prev => [saved, ...prev]);
             }
             finalReply = finalReply.replace(match[0], '').trim();
           } catch (err) {
             console.error("Failed to parse note JSON", err);
           }
         }
-        if (addedNotes.length > 0) {
-          setNotesList(prev => [...addedNotes, ...prev]);
-          showToast?.(`Note created by ${aiName}`, 'success');
-        }
       }
 
-      // 5. Parse ADD_SLEEP (Sleep & Recovery)
+      // 5. Parse ADD_SLEEP
       const sleepMatches = [...responseText.matchAll(/\[ADD_SLEEP\](.*?)\[\/ADD_SLEEP\]/gs)];
       if (sleepMatches.length > 0) {
         for (const match of sleepMatches) {
@@ -1392,14 +1383,13 @@ const handleDeleteHabitDb = async (id) => {
               })
             });
             finalReply = finalReply.replace(match[0], '').trim();
-            showToast?.(`Sleep log saved by ${aiName}`, 'success');
           } catch (err) {
             console.error("Failed to parse sleep JSON", err);
           }
         }
       }
 
-      // 6. Parse ADD_WORKOUT (Body & Gym)
+      // 6. Parse ADD_WORKOUT
       const workoutMatches = [...responseText.matchAll(/\[ADD_WORKOUT\](.*?)\[\/ADD_WORKOUT\]/gs)];
       if (workoutMatches.length > 0) {
         for (const match of workoutMatches) {
@@ -1418,14 +1408,13 @@ const handleDeleteHabitDb = async (id) => {
               })
             });
             finalReply = finalReply.replace(match[0], '').trim();
-            showToast?.(`Workout recorded by ${aiName}`, 'success');
           } catch (err) {
             console.error("Failed to parse workout JSON", err);
           }
         }
       }
 
-      // 7. Parse ADD_BODY_STATS (Body & Gym stats)
+      // 7. Parse ADD_BODY_STATS
       const bodyMatches = [...responseText.matchAll(/\[ADD_BODY_STATS\](.*?)\[\/ADD_BODY_STATS\]/gs)];
       if (bodyMatches.length > 0) {
         for (const match of bodyMatches) {
@@ -1443,7 +1432,6 @@ const handleDeleteHabitDb = async (id) => {
               })
             });
             finalReply = finalReply.replace(match[0], '').trim();
-            showToast?.(`Body stats logged by ${aiName}`, 'success');
           } catch (err) {
             console.error("Failed to parse body stats JSON", err);
           }
@@ -2711,11 +2699,11 @@ const handleDeleteHabitDb = async (id) => {
                       style={{
                         display: 'flex', alignItems: 'center', gap: '8px',
                         padding: '8px 16px', borderRadius: '30px',
-                        background: isAiSidePanelOpen ? 'var(--accent-blue)' : 'rgba(59,130,246,0.15)',
-                        color: isAiSidePanelOpen ? 'var(--accent-text)' : '#3b82f6',
-                        border: `1px solid ${isAiSidePanelOpen ? 'var(--accent-blue)' : 'rgba(59,130,246,0.4)'}`,
+                        background: isAiSidePanelOpen ? 'var(--accent-blue)' : 'var(--accent-blue-dim)',
+                        color: isAiSidePanelOpen ? 'var(--accent-text)' : 'var(--accent-blue)',
+                        border: `1px solid ${isAiSidePanelOpen ? 'var(--accent-blue)' : 'var(--border-color)'}`,
                         fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.2s',
-                        boxShadow: isAiSidePanelOpen ? '0 0 16px rgba(59,130,246,0.35)' : 'none'
+                        boxShadow: isAiSidePanelOpen ? '0 0 16px var(--accent-blue-dim)' : 'none'
                       }}
                       title="Toggle Persistent AI Side Panel"
                     >
@@ -3139,7 +3127,7 @@ const handleDeleteHabitDb = async (id) => {
 
                           const handleAddWater = async (liters) => {
                             const todayStr = todayKey(userProfile?.timezone);
-                            const newHydration = parseFloat((hydration + liters).toFixed(2));
+                            const newHydration = Math.max(0, parseFloat((hydration + liters).toFixed(2)));
                             const proteinVal = isToday ? (Number(latestStat?.protein) || 0) : 0;
                             const targetW = Number(latestStat?.target_weight) || 70;
                             const payload = {
@@ -3176,10 +3164,7 @@ const handleDeleteHabitDb = async (id) => {
                                     const data = await res.json();
                                     setBodyStats(prev => prev.map(s => s.id === tempId ? data : s));
                                   }
-                                  showToast('Hydration updated!', 'success');
                                 }
-                              } else {
-                                showToast('Hydration updated!', 'success');
                               }
                             } catch (e) {
                               console.error(e);
@@ -3207,20 +3192,20 @@ const handleDeleteHabitDb = async (id) => {
 
                               <div style={{ display: 'flex', gap: '8px' }}>
                                 <button
-                                  onClick={() => handleAddHydration(0.5)}
-                                  style={{ flex: 1, padding: '7px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--accent-blue-dim)', color: 'var(--accent-blue)', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+                                  onClick={() => handleAddWater(0.5)}
+                                  style={{ flex: 1, padding: '7px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
                                 >
                                   +0.5 L
                                 </button>
                                 <button
-                                  onClick={() => handleAddHydration(1.0)}
-                                  style={{ flex: 1, padding: '7px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--accent-blue-dim)', color: 'var(--accent-blue)', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+                                  onClick={() => handleAddWater(1.0)}
+                                  style={{ flex: 1, padding: '7px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
                                 >
                                   +1.0 L
                                 </button>
                                 <button
-                                  onClick={() => handleAddHydration(-0.5)}
-                                  style={{ padding: '7px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-muted)', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+                                  onClick={() => handleAddWater(-0.5)}
+                                  style={{ flex: 1, padding: '7px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
                                 >
                                   -0.5 L
                                 </button>
@@ -3394,10 +3379,24 @@ const handleDeleteHabitDb = async (id) => {
                   {/* INLINE ADD NEW PILLAR / DAILY ITEM FORM */}
                   {isAddHabitModalOpen && (
                     <div className="modal-overlay" onClick={() => setIsAddHabitModalOpen(false)}>
-                      <div className="animate-entrance" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-main)', padding: '24px', borderRadius: '18px', border: '1px solid var(--accent-blue)', boxShadow: '0 8px 24px rgba(59, 130, 246, 0.15)', width: '100%', maxWidth: '800px' }}>
-                        <h4 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-blue)' }}>
-                          <Plus size={18} /> Create New Daily Progress Item
-                        </h4>
+                      <div className="animate-entrance" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', padding: '28px', borderRadius: '24px', border: '1px solid var(--border-color)', boxShadow: '0 25px 60px rgba(0,0,0,0.4)', width: '100%', maxWidth: '780px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: 'var(--accent-blue-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-blue)' }}>
+                              <Plus size={20} />
+                            </div>
+                            <h4 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                              Create New Daily Progress Item
+                            </h4>
+                          </div>
+                          <button 
+                            onClick={() => setIsAddHabitModalOpen(false)}
+                            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '6px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                            title="Close modal"
+                          >
+                            <X size={20} />
+                          </button>
+                        </div>
                         
                         <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr auto', gap: '14px', alignItems: 'flex-end' }}>
                           <div>
@@ -3875,8 +3874,18 @@ const handleDeleteHabitDb = async (id) => {
                   {isEditHabitModalOpen && editingHabitData && (
                     <div className="blur-overlay" onClick={() => setIsEditHabitModalOpen(false)}>
                       <div className="glass-card animate-entrance" onClick={e => e.stopPropagation()}
-                        style={{ padding: '32px', width: '90%', maxWidth: '400px', maxHeight: '90vh', overflowY: 'auto' }}>
-                        <h3 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '24px' }}>Edit Habit</h3>
+                        style={{ background: 'var(--bg-card)', padding: '28px', borderRadius: '24px', border: '1px solid var(--border-color)', boxShadow: '0 25px 60px rgba(0,0,0,0.4)', width: '90%', maxWidth: '400px', maxHeight: '90vh', overflowY: 'auto' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: 'var(--accent-blue-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-blue)' }}>
+                              <Edit2 size={20} />
+                            </div>
+                            <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>Edit Habit</h3>
+                          </div>
+                          <button onClick={() => setIsEditHabitModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px' }}>
+                            <X size={20} />
+                          </button>
+                        </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                           <input 
                             type="text" placeholder="Enter habit name..."

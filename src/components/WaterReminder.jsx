@@ -363,13 +363,18 @@ export default function WaterReminder({ todayStat, onLogStat, showToast }) {
           alignItems: 'center', justifyContent: 'center', zIndex: 1000,
           padding: '20px'
         }}>
-          <div className="glass-card" style={{
-            background: 'var(--bg-main)', padding: '24px', borderRadius: '20px',
-            border: '1px solid var(--border-color)', width: '100%', maxWidth: '400px'
+          <div className="glass-card animate-entrance" style={{
+            background: 'var(--bg-card)', padding: '28px', borderRadius: '24px',
+            border: '1px solid var(--border-color)', boxShadow: '0 25px 60px rgba(0,0,0,0.4)', width: '100%', maxWidth: '440px'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-main)' }}>Hydration Settings</h3>
-              <button onClick={() => setIsSettingsOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: 'var(--accent-blue-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-blue)' }}>
+                  <Droplet size={20} />
+                </div>
+                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)' }}>Hydration Settings</h3>
+              </div>
+              <button onClick={() => setIsSettingsOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '6px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <X size={20} />
               </button>
             </div>

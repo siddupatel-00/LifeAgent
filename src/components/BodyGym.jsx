@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Dumbbell, Target, Plus, Trash2, Activity, Flame, Clock, Check, Edit2 } from 'lucide-react';
+import { Dumbbell, Target, Plus, Trash2, Activity, Flame, Clock, Check, Edit2, X } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { todayKey } from '../utils/date';
 import CustomSelect from './CustomSelect';
@@ -154,7 +154,8 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
   // Derived metrics for body stats
   const statsList = Array.isArray(bodyStats) ? bodyStats : (bodyStats ? [bodyStats] : []);
   const latestStat = statsList.length > 0 ? statsList[0] : null;
-  const todayStat = statsList.find(s => s.date === todayStr) || latestStat || null;
+  const exactTodayStat = statsList.find(s => s.date === todayStr);
+  const todayStat = exactTodayStat !== undefined ? exactTodayStat : null;
   
   const currentProtein = Number(todayStat?.protein) || 0;
   const targetWeight = Number(latestStat?.target_weight) || 0;
@@ -348,22 +349,30 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
         target_protein: isUpdating ? existingTodayStat.target_protein : (latestStat?.target_protein || 0),
         date: today
       };
+
+      // 1. Instant 0ms Optimistic UI update
+      setBodyStats(prev => {
+        const list = Array.isArray(prev) ? prev : [];
+        const exists = list.some(s => s.date === today);
+        if (exists) {
+          return list.map(s => s.date === today ? { ...s, protein: 0 } : s);
+        }
+        return [{ ...payload, protein: 0 }, ...list];
+      });
+
+      showToast('Protein reset to 0g', 'success');
+      setProteinInput('0');
+      closeLogProteinModal();
       
-      const res = await fetch('/api/fitness?type=body-stats', {
+      // 2. Background DB sync
+      fetch('/api/fitness?type=body-stats', {
         method: isUpdating ? 'PUT' : 'POST',
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(payload)
-      });
-      
-      if (res.ok) {
-        showToast('Protein reset to 0g', 'success');
-        setProteinInput('0');
-        closeLogProteinModal();
-        fetchStats();
-      }
+      }).then(() => fetchStats()).catch(e => console.error('Reset protein DB sync failed:', e));
     } catch (e) {
       console.error(e);
       showToast('Error resetting protein', 'error');
@@ -676,8 +685,18 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
       {/* Add Workout Modal */}
       {isAddWorkoutOpen && (
         <div className="modal-overlay" onClick={closeWorkoutModal}>
-          <div className="animate-entrance" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', padding: '32px', borderRadius: '24px', width: '90%', maxWidth: '400px', border: '1px solid var(--border-color)' }}>
-            <h3 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '20px' }}>Log Workout</h3>
+          <div className="animate-entrance" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', padding: '28px', borderRadius: '24px', width: '90%', maxWidth: '400px', border: '1px solid var(--border-color)', boxShadow: '0 25px 60px rgba(0,0,0,0.4)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: 'var(--accent-blue-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-blue)' }}>
+                  <Dumbbell size={20} />
+                </div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>Log Workout</h3>
+              </div>
+              <button onClick={closeWorkoutModal} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px' }}>
+                <X size={20} />
+              </button>
+            </div>
             <form onSubmit={handleAddWorkout}>
               <div className="input-group" style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Title</label>
@@ -753,10 +772,10 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
 
         return (
         <div className="animate-entrance">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', marginBottom: '24px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', alignItems: 'start' }}>
             
-            {/* Left Column: Graphs */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* Left Column: Graphs (Independent Scroll) */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxHeight: 'calc(100vh - 200px)', overflowY: 'auto', paddingRight: '4px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h3 style={{ fontSize: '1.2rem', fontWeight: 700 }}>Trends</h3>
                 <CustomSelect
@@ -829,8 +848,8 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
               </div>
             </div>
 
-            {/* Right Column: History Table & Protein Target */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* Right Column: History Table & Protein Target (Independent Scroll) */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxHeight: 'calc(100vh - 200px)', overflowY: 'auto', paddingRight: '4px' }}>
               
               {/* Daily Protein Goal & Tracker Card */}
               <div className="glass-card" style={{ padding: '24px', borderRadius: '18px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
@@ -932,8 +951,18 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
       {/* Log Protein Modal */}
       {isLogProteinOpen && (
         <div className="modal-overlay" onClick={closeLogProteinModal}>
-          <div className="animate-entrance" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', padding: '32px', borderRadius: '24px', width: '90%', maxWidth: '400px', border: '1px solid var(--border-color)' }}>
-            <h3 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '20px' }}>Log Protein Intake</h3>
+          <div className="animate-entrance" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', padding: '28px', borderRadius: '24px', width: '90%', maxWidth: '400px', border: '1px solid var(--border-color)', boxShadow: '0 25px 60px rgba(0,0,0,0.4)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: 'var(--accent-blue-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-blue)' }}>
+                  <Flame size={20} />
+                </div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>Log Protein Intake</h3>
+              </div>
+              <button onClick={closeLogProteinModal} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px' }}>
+                <X size={20} />
+              </button>
+            </div>
             <form onSubmit={handleAddProtein}>
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '8px' }}>Protein Consumed Today (grams)</label>
@@ -967,8 +996,18 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
       {/* Edit Body Metrics & Goals Modal */}
       {isEditMetricsOpen && (
         <div className="modal-overlay" onClick={closeEditMetricsModal}>
-          <div className="animate-entrance" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', padding: '32px', borderRadius: '24px', width: '90%', maxWidth: '400px', border: '1px solid var(--border-color)', maxHeight: '90vh', overflowY: 'auto' }}>
-            <h3 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '20px' }}>Edit Body Metrics & Goals</h3>
+          <div className="animate-entrance" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', padding: '28px', borderRadius: '24px', width: '90%', maxWidth: '400px', border: '1px solid var(--border-color)', boxShadow: '0 25px 60px rgba(0,0,0,0.4)', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: 'var(--accent-blue-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-blue)' }}>
+                  <Target size={20} />
+                </div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>Edit Body Metrics & Goals</h3>
+              </div>
+              <button onClick={closeEditMetricsModal} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px' }}>
+                <X size={20} />
+              </button>
+            </div>
             <form onSubmit={handleAddStats}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                 <div className="input-group">
@@ -1007,8 +1046,18 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
       {/* Customize Workout Split Modal */}
       {isEditSplitOpen && (
         <div className="modal-overlay" onClick={() => setIsEditSplitOpen(false)}>
-          <div className="glass-card animate-entrance" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', padding: '32px', borderRadius: '24px', width: '90%', maxWidth: '440px', border: '1px solid var(--border-color)' }}>
-            <h3 style={{ fontSize: '1.3rem', fontWeight: 800, marginBottom: '8px' }}>Customize Workout Split</h3>
+          <div className="glass-card animate-entrance" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', padding: '28px', borderRadius: '24px', width: '90%', maxWidth: '440px', border: '1px solid var(--border-color)', boxShadow: '0 25px 60px rgba(0,0,0,0.4)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: 'var(--accent-blue-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-blue)' }}>
+                  <Dumbbell size={20} />
+                </div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>Customize Workout Split</h3>
+              </div>
+              <button onClick={() => setIsEditSplitOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px' }}>
+                <X size={20} />
+              </button>
+            </div>
             <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', marginBottom: '20px' }}>
               Your workouts will automatically rotate day by day in this order.
             </p>

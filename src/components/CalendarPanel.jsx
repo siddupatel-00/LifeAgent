@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { todayKey } from '../utils/date';
-import { Calendar as CalendarIcon, Plus, Trash2, ChevronDown, Filter, AlertCircle, CheckCircle, Clock } from 'lucide-react';
+import { Calendar as CalendarIcon, Plus, Trash2, ChevronDown, Filter, AlertCircle, CheckCircle, Clock, X } from 'lucide-react';
 import ConfirmModal from './ConfirmModal';
 
 const formatDateStr = (d) => {
@@ -235,17 +235,30 @@ export default function CalendarPanel({
             className="glass-card animate-entrance"
             style={{
               background: 'var(--bg-card)',
-              border: '1px solid var(--accent-blue)',
-              borderRadius: '16px',
-              padding: '24px',
+              border: '1px solid var(--border-color)',
+              borderRadius: '24px',
+              padding: '28px',
+              boxShadow: '0 25px 60px rgba(0,0,0,0.4)',
+              width: '90%',
               minWidth: '300px',
               maxWidth: '440px',
             }}
             onClick={e => e.stopPropagation()}
           >
-            <h4 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Plus size={18} color="var(--accent-blue)" /> New Calendar Event
-            </h4>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: 'var(--accent-blue-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-blue)' }}>
+                  <CalendarIcon size={20} />
+                </div>
+                <h4 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>New Calendar Event</h4>
+              </div>
+              <button
+                onClick={() => setIsAddEventFormOpen(false)}
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px', borderRadius: '8px' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
                 <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Event Title</label>
@@ -278,15 +291,10 @@ export default function CalendarPanel({
                   }}
                 />
               </div>
-              <button
-                className="blue-btn"
-                disabled={!newEventTitle.trim()}
-                onClick={handleAddEvent}
-                style={{ padding: '12px 24px', fontSize: '0.92rem', width: '100%', justifyContent: 'center' }}
-              >
-                Save Event
-              </button>
-              <button className="secondary-btn" onClick={() => setIsAddEventFormOpen(false)} style={{ width: '100%' }}>Cancel</button>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
+              <button className="secondary-btn" onClick={() => setIsAddEventFormOpen(false)}>Cancel</button>
+              <button className="blue-btn" onClick={handleAddEvent}>Save Event</button>
             </div>
           </div>
         </div>
@@ -377,9 +385,9 @@ export default function CalendarPanel({
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '24px', minHeight: '460px' }}>
-        {/* Left: Mini Calendar Grid */}
-        <div style={{ background: 'var(--bg-card)', borderRadius: '18px', border: '1px solid var(--border-color)', padding: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '24px', alignItems: 'start' }}>
+        {/* Left: Mini Calendar Grid (Sticky in view) */}
+        <div style={{ background: 'var(--bg-card)', borderRadius: '18px', border: '1px solid var(--border-color)', padding: '24px', position: 'sticky', top: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <h4 style={{ fontSize: '1.2rem', fontWeight: 800 }}>{new Date(calendarMonth.year, calendarMonth.month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</h4>
             <div style={{ display: 'flex', gap: '8px' }}>

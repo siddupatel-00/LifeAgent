@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, X, Check, BarChart2, List } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Check, BarChart2, BarChart3, TrendingUp, PieChart, List } from 'lucide-react';
 import { todayKey } from '../utils/date';
 import MoneyCharts from './MoneyCharts';
 import CustomSelect from './CustomSelect';
@@ -333,16 +333,43 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
         </div>
       </div>
 
-      <div style={{ background: 'var(--bg-main)', padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)', height: 'fit-content', position: 'sticky', top: '20px' }}>
+      <div style={{ background: 'var(--bg-main)', padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)', maxHeight: 'calc(100vh - 160px)', overflowY: 'auto', position: 'sticky', top: '20px' }}>
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <h4 style={{ fontSize: '1.15rem', fontWeight: 700, margin: 0 }}>Charts</h4>
           </div>
           
           <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
-            {['bar', 'line', 'pie'].map(t => (
-              <button key={t} onClick={() => setChartType(t)} style={{ flex: 1, padding: '7px 0', borderRadius: '8px', border: chartType === t ? 'none' : '1px solid var(--border-color)', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', textTransform: 'capitalize', background: chartType === t ? 'var(--accent-blue)' : 'var(--bg-main)', color: chartType === t ? '#fff' : 'var(--text-muted)', transition: 'all 0.2s' }}>{t}</button>
-            ))}
+            {[
+              { id: 'bar', label: 'Bar Chart', icon: BarChart3 },
+              { id: 'line', label: 'Line Chart', icon: TrendingUp },
+              { id: 'pie', label: 'Pie Chart', icon: PieChart }
+            ].map(t => {
+              const IconComp = t.icon;
+              const isActive = chartType === t.id;
+              return (
+                <button 
+                  key={t.id} 
+                  onClick={() => setChartType(t.id)} 
+                  title={t.label}
+                  style={{ 
+                    flex: 1, 
+                    padding: '10px 0', 
+                    borderRadius: '10px', 
+                    border: isActive ? 'none' : '1px solid var(--border-color)', 
+                    cursor: 'pointer', 
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: isActive ? 'var(--accent-blue)' : 'var(--bg-main)', 
+                    color: isActive ? '#fff' : 'var(--text-muted)', 
+                    transition: 'all 0.2s' 
+                  }}
+                >
+                  <IconComp size={18} />
+                </button>
+              );
+            })}
           </div>
 
           <div style={{ width: '100%', height: chartType === 'pie' ? 'auto' : '400px', minHeight: '400px' }}>
@@ -352,11 +379,16 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
       </div>
       
       {rightPanelView === 'add' && (
-        <div className="blur-overlay" onClick={() => setRightPanelView('charts')}>
-          <div style={{ background: 'var(--bg-main)', padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)', width: '100%', maxWidth: '400px', margin: 'auto' }} onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h4 style={{ fontSize: '1.15rem', fontWeight: 700, margin: 0 }}>Add Transaction</h4>
-              <button onClick={() => setRightPanelView('charts')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={20}/></button>
+        <div className="blur-overlay" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={() => setRightPanelView('charts')}>
+          <div style={{ background: 'var(--bg-card)', padding: '28px', borderRadius: '24px', border: '1px solid var(--border-color)', boxShadow: '0 25px 60px rgba(0,0,0,0.4)', width: '100%', maxWidth: '400px', margin: 'auto', maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: 'var(--accent-blue-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-blue)' }}>
+                  <Plus size={20} />
+                </div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>Add Transaction</h3>
+              </div>
+              <button onClick={() => setRightPanelView('charts')} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px' }}><X size={20}/></button>
             </div>
             <form onSubmit={addTransaction} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>

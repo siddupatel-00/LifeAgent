@@ -686,16 +686,22 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat 
             className="glass-card animate-entrance" 
             onClick={e => e.stopPropagation()}
             style={{
-              padding: '28px', borderRadius: '20px', width: '90%', maxWidth: '440px',
+              padding: '28px', borderRadius: '24px', width: '90%', maxWidth: '440px',
               maxHeight: '90vh', overflowY: 'auto',
-              background: 'var(--bg-card)', border: '1px solid var(--border-color)'
+              background: 'var(--bg-card)', border: '1px solid var(--border-color)',
+              boxShadow: '0 25px 60px rgba(0,0,0,0.4)'
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Moon size={20} color="var(--accent-blue)" /> {editingLogId ? 'Edit Sleep Entry' : 'Log Sleep Entry'}
-              </h3>
-              <button onClick={handleCloseModal} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: 'var(--accent-blue-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-blue)' }}>
+                  <Moon size={20} />
+                </div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>
+                  {editingLogId ? 'Edit Sleep Entry' : 'Log Sleep Entry'}
+                </h3>
+              </div>
+              <button onClick={handleCloseModal} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px' }}>
                 <X size={20} />
               </button>
             </div>
@@ -824,14 +830,22 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat 
             className="glass-card animate-entrance" 
             onClick={e => e.stopPropagation()}
             style={{
-              padding: '24px 28px', borderRadius: '20px', width: '90%', maxWidth: '380px',
-              background: 'var(--bg-card)', border: '1px solid var(--border-color)', textAlign: 'center'
+              padding: '28px', borderRadius: '24px', width: '90%', maxWidth: '380px',
+              background: 'var(--bg-card)', border: '1px solid var(--border-color)',
+              boxShadow: '0 25px 60px rgba(0,0,0,0.4)'
             }}
           >
-            <div style={{ background: 'rgba(239, 68, 68, 0.15)', width: '48px', height: '48px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', color: '#ef4444' }}>
-              <Trash2 size={24} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444' }}>
+                  <Trash2 size={20} />
+                </div>
+                <h4 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>Delete Sleep Log?</h4>
+              </div>
+              <button onClick={() => setDeleteConfirmId(null)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <X size={20} />
+              </button>
             </div>
-            <h4 style={{ fontSize: '1.2rem', fontWeight: 800, margin: '0 0 8px' }}>Delete Sleep Log?</h4>
             <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', margin: '0 0 20px' }}>Are you sure you want to delete this sleep entry?</p>
             
             <div style={{ display: 'flex', gap: '12px' }}>

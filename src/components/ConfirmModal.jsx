@@ -25,19 +25,19 @@ export default function ConfirmModal({
         style={{
           background: 'var(--bg-card)',
           border: '1px solid var(--border-color)',
-          borderRadius: '20px',
+          borderRadius: '24px',
           padding: '28px',
           width: '90%',
           maxWidth: '400px',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+          boxShadow: '0 25px 60px rgba(0,0,0,0.4)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{
-              width: '36px',
-              height: '36px',
-              borderRadius: '10px',
+              width: '38px',
+              height: '38px',
+              borderRadius: '12px',
               background: type === 'danger' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(245, 158, 11, 0.15)',
               display: 'flex',
               alignItems: 'center',
