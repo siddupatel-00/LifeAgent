@@ -709,33 +709,6 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
               )}
             </div>
 
-            {/* Weight Trend Card */}
-            <div className="glass-card" style={{ padding: '24px', borderRadius: '18px', border: '1px solid var(--border-color)', background: 'var(--bg-card)' }}>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '16px' }}>Weight Trend (7 Days)</h3>
-              {last7Days.length > 0 ? (
-                <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', height: '110px', marginTop: '10px' }}>
-                  {last7Days.map((day, idx) => (
-                    <div key={idx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%' }}>
-                      <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', width: '100%' }}>
-                        <div style={{ 
-                          width: '100%', 
-                          background: 'var(--accent-blue)', 
-                          borderRadius: '6px 6px 0 0',
-                          height: `${(day.weight / maxWeight) * 100}%`,
-                          minHeight: '4px',
-                          opacity: idx === last7Days.length - 1 ? 1 : 0.6
-                        }} />
-                      </div>
-                      <span style={{ fontSize: '0.7rem', marginTop: '6px', color: 'var(--text-muted)' }}>
-                        {day.date ? (String(day.date).includes('-') ? String(day.date).split('-')[2] : String(day.date)) : ''}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '20px 0' }}>Not enough data.</p>
-              )}
-            </div>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>

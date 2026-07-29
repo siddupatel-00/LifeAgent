@@ -3325,9 +3325,20 @@ const handleDeleteHabitDb = async (id) => {
                       <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: '4px' }}>Daily tracking and real-time AI streak curves</p>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: '0.9rem', color: 'var(--text-main)', background: 'var(--bg-card)', padding: '10px 18px', borderRadius: '14px', border: '1px solid var(--border-color)', fontWeight: 700, letterSpacing: '0.3px', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
-                        Today : {habits.filter(h => h.checkedToday).length}/{habits.length}
-                      </span>
+                      <div style={{ display: 'flex', background: 'var(--bg-card)', padding: '4px', borderRadius: '12px', border: '1px solid var(--border-color)', gap: '4px' }}>
+                        <button 
+                          onClick={() => setShowHabitHistory(false)}
+                          style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: !showHabitHistory ? 'var(--bg-main)' : 'transparent', color: !showHabitHistory ? 'var(--text-main)' : 'var(--text-muted)', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.2s' }}
+                        >
+                          ⚡ Active ({habits.filter(h => !h.archived).length})
+                        </button>
+                        <button 
+                          onClick={() => setShowHabitHistory(true)}
+                          style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: showHabitHistory ? 'var(--bg-main)' : 'transparent', color: showHabitHistory ? 'var(--text-main)' : 'var(--text-muted)', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.2s' }}
+                        >
+                          📜 History ({habits.filter(h => h.archived).length})
+                        </button>
+                      </div>
                       <button 
                         className="blue-btn" 
                         onClick={() => {
@@ -3558,13 +3569,13 @@ const handleDeleteHabitDb = async (id) => {
                   {/* GRID OF HABIT CARDS WITH ACTIVITY PILL HEATMAPS */}
                   <h4 style={{ fontSize: '1.15rem', fontWeight: 800, marginBottom: '16px' }}>Your Daily Items & 7-Day Activity Matrix</h4>
                   
-                  {habits.length === 0 ? (
+                  {habits.filter(h => showHabitHistory ? h.archived : !h.archived).length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)' }}>
-                      No habits exist yet.
+                      No {showHabitHistory ? 'archived' : 'active'} habits exist yet.
                     </div>
                   ) : (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '18px' }}>
-                      {habits.map(item => (
+                      {habits.filter(h => showHabitHistory ? h.archived : !h.archived).map(item => (
                       <div 
                         key={item.id} 
                         onClick={() => handleToggleHabitItem(item.id)}
@@ -3762,6 +3773,30 @@ const handleDeleteHabitDb = async (id) => {
                             const elapsed = isChallenge && item.startDate ? Math.floor((new Date() - new Date(item.startDate)) / (1000 * 60 * 60 * 24)) : 0;
                             const daysStr = Math.min(Math.max(elapsed + 1, 1), item.challengeDays);
                             const isCompleted = isChallenge && daysStr >= item.challengeDays && item.checkedToday;
+
+                            if (item.archived) {
+                              return (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                  <div style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', padding: '12px', borderRadius: '12px', textAlign: 'center', fontWeight: 800, fontSize: '0.95rem' }}>
+                                    {item.completedAt ? `Completed on ${new Date(item.completedAt).toLocaleDateString()}` : 'Archived'}
+                                  </div>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleUpdateHabitDb(item.id, item.streak, item.checkedToday, item.pausedUntil, false, item.completedAt);
+                                      setHabits(prev => prev.map(h => h.id === item.id ? { ...h, archived: false } : h));
+                                      showToast('Habit restored to Active', 'success');
+                                    }}
+                                    style={{
+                                      width: '100%', padding: '10px', borderRadius: '10px', border: '1px solid var(--border-color)',
+                                      background: 'var(--bg-main)', color: 'var(--text-main)', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer'
+                                    }}
+                                  >
+                                    Restore to Active
+                                  </button>
+                                </div>
+                              );
+                            }
 
                             if (isCompleted) {
                               return (
