@@ -58,7 +58,7 @@ const CustomSelect = ({ value, onChange, options = [], style, className }) => {
             background: 'var(--bg-card)',
             border: '1px solid var(--border-color)',
             borderRadius: '12px',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
             maxHeight: style?.maxHeight || '340px',
             overflowY: 'auto',
             WebkitOverflowScrolling: 'touch',

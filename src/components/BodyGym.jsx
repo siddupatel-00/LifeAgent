@@ -301,48 +301,98 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
     setShowForm?.(false);
   };
 
-  const handleAddProtein = async (e) => {
-    if (e) e.preventDefault();
+  const handleLogProtein = async (amountOrEvent, isAbsolute = false) => {
+    if (amountOrEvent && typeof amountOrEvent === 'object' && typeof amountOrEvent.preventDefault === 'function') {
+      amountOrEvent.preventDefault();
+    }
+
     try {
-      const today = todayKey();
-      const existingTodayStat = Array.isArray(bodyStats) ? bodyStats.find(s => s.date === today) : null;
-      const isUpdating = !!existingTodayStat;
-      
+      const safeBodyStats = Array.isArray(bodyStats) ? bodyStats : (bodyStats ? [bodyStats] : []);
+      const todayStr = todayKey(userProfile?.timezone);
+      const todayStat = safeBodyStats.find(s => s && s.date === todayStr) || null;
+      const latestStat = safeBodyStats.length > 0 ? safeBodyStats[0] : null;
+
+      const currentP = todayStat ? (Number(todayStat.protein) || 0) : 0;
+      const targetW = Number(latestStat?.target_weight) || 0;
+      const targetP = Number(latestStat?.target_protein) || Number(todayStat?.target_protein) || 0;
+      const goal = targetP > 0 ? targetP : (targetW > 0 ? Math.round(targetW * 2) : 0);
+
+      let delta = 0;
+      let newProtein = 0;
+
+      if (typeof amountOrEvent === 'number') {
+        if (isAbsolute) {
+          newProtein = Math.max(0, amountOrEvent);
+          delta = newProtein - currentP;
+        } else {
+          delta = amountOrEvent;
+          newProtein = Math.max(0, currentP + delta);
+        }
+      } else {
+        const val = Number(proteinInput);
+        newProtein = Math.max(0, isNaN(val) ? 0 : val);
+        delta = newProtein - currentP;
+      }
+
       const payload = {
-        ...(isUpdating ? { id: existingTodayStat.id } : {}),
-        weight: isUpdating ? existingTodayStat.weight : (latestStat?.weight || 0),
-        target_weight: isUpdating ? existingTodayStat.target_weight : (latestStat?.target_weight || 0),
-        protein: Number(proteinInput) || 0,
-        target_protein: isUpdating ? existingTodayStat.target_protein : (latestStat?.target_protein || 0),
-        date: today
+        date: todayStr,
+        protein: newProtein,
+        target_protein: goal
       };
-      
-      const res = await fetch('/api/fitness?type=body-stats', {
-        method: isUpdating ? 'PUT' : 'POST',
-        headers: { 
+
+      // Optimistic update of local state
+      const updatedStat = {
+        ...(todayStat || {}),
+        id: todayStat?.id || Date.now(),
+        date: todayStr,
+        protein: newProtein,
+        target_protein: goal,
+        weight: todayStat?.weight || latestStat?.weight || 0,
+        target_weight: todayStat?.target_weight || targetW
+      };
+
+      if (typeof setBodyStats === 'function') {
+        setBodyStats(prev => {
+          const list = Array.isArray(prev) ? prev : (prev ? [prev] : []);
+          const exists = list.some(s => s && s.date === todayStr);
+          if (exists) {
+            return list.map(s => (s && s.date === todayStr) ? { ...s, protein: newProtein, target_protein: goal } : s);
+          }
+          return [updatedStat, ...list];
+        });
+      }
+
+      const res = await fetch('/api/fitness', {
+        method: 'POST',
+        headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify(payload)
       });
-      
-      if (res.ok) {
-        showToast('Protein Logged', 'success');
-        closeLogProteinModal();
-        fetchStats();
+
+      if (res.status === 200 || res.status === 201) {
+        const sign = delta >= 0 ? '+' : '';
+        const toastMsg = `Protein logged: ${sign}${delta}g`;
+        if (typeof showToast === 'function') {
+          showToast(toastMsg, 'success');
+        }
+        if (isLogProteinOpen) {
+          closeLogProteinModal();
+        }
+        if (typeof fetchStats === 'function') {
+          fetchStats();
+        }
+      } else {
+        console.error('Failed to log protein:', res.status, res.statusText);
       }
-    } catch (e) {
-      console.error(e);
-      showToast('Error logging protein', 'error');
+    } catch (err) {
+      console.error('Error in handleLogProtein:', err);
     }
   };
 
-  const handleQuickAddProtein = (amount) => {
-    setProteinInput(prev => {
-      const current = Number(prev) || 0;
-      return (current + amount).toString();
-    });
-  };
+  const handleAddProtein = handleLogProtein;
+  const handleQuickAddProtein = (amount) => handleLogProtein(amount);
 
   const handleResetProtein = async () => {
     try {
@@ -571,6 +621,29 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
               </div>
               <div style={{ width: '100%', height: '8px', background: 'var(--border-color)', borderRadius: '4px', marginTop: '10px', overflow: 'hidden' }}>
                 <div style={{ height: '100%', width: `${proteinPercentComplete}%`, background: 'var(--accent-blue)', borderRadius: '4px' }} />
+              </div>
+              <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
+                <button
+                  type="button"
+                  onClick={() => handleLogProtein(25)}
+                  style={{ flex: 1, padding: '7px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+                >
+                  +25g
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleLogProtein(30)}
+                  style={{ flex: 1, padding: '7px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+                >
+                  +30g
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleLogProtein(-10)}
+                  style={{ padding: '7px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-muted)', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+                >
+                  -10g
+                </button>
               </div>
             </div>
           </div>
@@ -952,6 +1025,29 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
                     <span>{proteinPercentComplete}% complete</span>
                     <span>{latestStat?.date ? `Updated: ${latestStat.date}` : 'No entry today'}</span>
                   </div>
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
+                    <button
+                      type="button"
+                      onClick={() => handleLogProtein(25)}
+                      style={{ flex: 1, padding: '7px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+                    >
+                      +25g
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleLogProtein(30)}
+                      style={{ flex: 1, padding: '7px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+                    >
+                      +30g
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleLogProtein(-10)}
+                      style={{ padding: '7px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-muted)', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+                    >
+                      -10g
+                    </button>
+                  </div>
                 </div>
               </div>
               
@@ -1029,9 +1125,9 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
             />
           </div>
           <div style={{ display: 'flex', gap: '10px', marginBottom: '24px', justifyContent: 'center' }}>
-            <button type="button" className="secondary-btn" onClick={() => handleQuickAddProtein(10)} style={{ padding: '8px 16px', fontSize: '0.9rem' }}>+10g</button>
-            <button type="button" className="secondary-btn" onClick={() => handleQuickAddProtein(20)} style={{ padding: '8px 16px', fontSize: '0.9rem' }}>+20g</button>
-            <button type="button" className="secondary-btn" onClick={() => handleQuickAddProtein(30)} style={{ padding: '8px 16px', fontSize: '0.9rem' }}>+30g</button>
+            <button type="button" className="secondary-btn" onClick={() => handleLogProtein(25)} style={{ padding: '8px 16px', fontSize: '0.9rem' }}>+25g</button>
+            <button type="button" className="secondary-btn" onClick={() => handleLogProtein(30)} style={{ padding: '8px 16px', fontSize: '0.9rem' }}>+30g</button>
+            <button type="button" className="secondary-btn" onClick={() => handleLogProtein(-10)} style={{ padding: '8px 16px', fontSize: '0.9rem' }}>-10g</button>
           </div>
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
             <button type="button" className="secondary-btn" onClick={handleResetProtein} style={{ color: '#ef4444', borderColor: 'rgba(239,68,68,0.3)', padding: '8px 14px', fontSize: '0.85rem' }}>Reset to 0g</button>

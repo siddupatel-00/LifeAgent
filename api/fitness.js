@@ -5,7 +5,7 @@ export default async function handler(req, res) {
   const userId = getUserId(req);
   if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
-  const type = req.query?.type || 'workouts';
+  const type = req.query?.type || (req.body?.protein !== undefined || req.body?.target_protein !== undefined ? 'body-stats' : 'workouts');
 
   try {
     // ─── WORKOUTS ───

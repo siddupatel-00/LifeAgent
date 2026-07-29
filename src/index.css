@@ -1364,6 +1364,25 @@ input[type="checkbox"]:checked::after {
   gap: 6px;
 }
 
+.calendar-main-grid {
+  display: grid;
+  grid-template-columns: minmax(300px, 380px) 1fr;
+  gap: 24px;
+  align-items: start;
+  width: 100%;
+}
+
+.calendar-left-col {
+  position: sticky;
+  top: 20px;
+}
+
+@media (max-width: 900px) {
+  .calendar-main-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 768px) {
   .notes-container,
   .notes-main-grid {
@@ -1382,6 +1401,15 @@ input[type="checkbox"]:checked::after {
   .calendar-main-grid {
     display: flex !important;
     flex-direction: column !important;
+    width: 100% !important;
+    gap: 16px !important;
+  }
+  .calendar-left-col,
+  .calendar-right-col {
+    width: 100% !important;
+    position: static !important;
+    padding: 16px !important;
+    box-sizing: border-box !important;
   }
   .calendar-day-grid {
     gap: 4px !important;

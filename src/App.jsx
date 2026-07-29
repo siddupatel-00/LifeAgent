@@ -3271,51 +3271,52 @@ const handleDeleteHabitDb = async (id) => {
                           const pct = Math.min(100, Math.max(0, Math.round((protein / goal) * 100)));
 
                           const handleAddProtein = async (amount) => {
-                            const todayStr = todayKey(userProfile?.timezone);
-                            const newProtein = Math.max(0, protein + amount);
-                            const hydrationVal = isToday ? (Number(latestStat?.hydration) || 0) : 0;
-                            const payload = {
-                              weight: Number(latestStat?.weight) || 0,
-                              target_weight: targetW || 0,
-                              protein: newProtein,
-                              target_protein: goal,
-                              hydration: hydrationVal,
-                              date: todayStr
-                            };
-                            
-                            const isExistingToday = latestStat?.date === todayStr && latestStat?.id;
-                            if (isExistingToday) {
-                              payload.id = latestStat.id;
-                            }
-                            
-                            const tempId = isExistingToday ? latestStat.id : Date.now();
-                            setBodyStats(prev => {
-                              if (isExistingToday) {
-                                return prev.map(s => s.id === tempId ? { ...s, protein: newProtein } : s);
-                              } else {
-                                return [{ ...payload, id: tempId }, ...(Array.isArray(prev) ? prev : [])];
-                              }
-                            });
-
                             try {
-                              if (token) {
-                                const res = await fetch('/api/fitness?type=body-stats', {
-                                  method: isExistingToday ? 'PUT' : 'POST',
-                                  headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                  body: JSON.stringify(payload)
-                                });
-                                if (res.ok) {
-                                  if (!isExistingToday) {
-                                    const data = await res.json();
-                                    setBodyStats(prev => prev.map(s => s.id === tempId ? data : s));
-                                  }
-                                  showToast('Protein updated!', 'success');
+                              const safeBodyStats = Array.isArray(bodyStats) ? bodyStats : (bodyStats ? [bodyStats] : []);
+                              const todayStr = todayKey(userProfile?.timezone);
+                              const todayStat = safeBodyStats.find(s => s && s.date === todayStr) || null;
+                              const latestStat = safeBodyStats.length > 0 ? safeBodyStats[0] : null;
+
+                              const currentP = todayStat ? (Number(todayStat.protein) || 0) : (latestStat?.date === todayStr ? (Number(latestStat?.protein) || 0) : 0);
+                              const targetW = Number(latestStat?.target_weight) || 0;
+                              const targetP = Number(latestStat?.target_protein) || Number(todayStat?.target_protein) || 0;
+                              const goal = targetP > 0 ? targetP : (targetW > 0 ? Math.round(targetW * 2) : 0);
+
+                              const newProtein = Math.max(0, currentP + amount);
+
+                              const payload = {
+                                date: todayStr,
+                                protein: newProtein,
+                                target_protein: goal
+                              };
+
+                              const tempId = todayStat?.id || Date.now();
+                              setBodyStats(prev => {
+                                const list = Array.isArray(prev) ? prev : (prev ? [prev] : []);
+                                const exists = list.some(s => s && (s.id === tempId || s.date === todayStr));
+                                if (exists) {
+                                  return list.map(s => (s && (s.id === tempId || s.date === todayStr)) ? { ...s, protein: newProtein, target_protein: goal } : s);
                                 }
+                                return [{ ...payload, id: tempId, weight: Number(latestStat?.weight) || 0, target_weight: targetW }, ...list];
+                              });
+
+                              const res = await fetch('/api/fitness', {
+                                method: 'POST',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                  ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                                },
+                                body: JSON.stringify(payload)
+                              });
+
+                              if (res.status === 200 || res.status === 201) {
+                                const sign = amount >= 0 ? '+' : '';
+                                showToast(`Protein logged: ${sign}${amount}g`, 'success');
                               } else {
-                                showToast('Protein updated!', 'success');
+                                console.error('Failed to log protein in App.jsx:', res.status, res.statusText);
                               }
                             } catch (e) {
-                              console.error(e);
+                              console.error('Error logging protein in App.jsx:', e);
                             }
                           };
 
@@ -4992,6 +4993,7 @@ const handleDeleteHabitDb = async (id) => {
                     showToast={showToast}
                     currency={userProfile.currency || '$'}
                     timeRange={timeRange}
+                    setTimeframe={setTimeRange}
                     userProfile={userProfile}
                     timezone={userProfile.timezone}
                     showForm={showFinanceForm}

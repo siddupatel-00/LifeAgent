@@ -8,7 +8,7 @@ import Modal from './Modal';
 const SPEND_CATEGORIES = ['General', 'Food', 'Transport', 'Shopping', 'Bills', 'Entertainment', 'Education', 'Health', 'Other'];
 const EARNING_CATEGORIES = ['Job', 'Business', 'Freelancing', 'Startup', 'Other'];
 
-export default function MoneyTracker({ transactions = [], setTransactions, token, showToast, currency, timeRange = 'today', timeframe, timezone, userProfile, customStartDate, customEndDate, showForm, setShowForm }) {
+export default function MoneyTracker({ transactions = [], setTransactions, token, showToast, currency, timeRange = 'today', timeframe, setTimeframe, timezone, userProfile, customStartDate, customEndDate, showForm, setShowForm }) {
   const [newTitle, setNewTitle] = useState('');
   const [newAmount, setNewAmount] = useState('');
   const [newType, setNewType] = useState('spend');
@@ -265,8 +265,26 @@ export default function MoneyTracker({ transactions = [], setTransactions, token
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', position: 'relative' }}>
           <h3 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0 }}>Transactions</h3>
+          <div style={{ position: 'relative' }}>
+            <CustomSelect
+              className="timeframe-dropdown"
+              value={timeframe || timeRange || 'today'}
+              onChange={(e) => {
+                if (setTimeframe) setTimeframe(e.target.value);
+              }}
+              options={[
+                { value: 'today', label: 'Today' },
+                { value: '7d', label: 'Past 7 Days' },
+                { value: '30d', label: 'Past 30 Days' },
+                { value: 'this_month', label: 'This Month' },
+                { value: 'this_year', label: 'This Year' },
+                { value: 'lifetime', label: 'All Time' }
+              ]}
+              style={{ width: '160px' }}
+            />
+          </div>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
