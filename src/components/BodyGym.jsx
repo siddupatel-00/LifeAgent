@@ -38,7 +38,7 @@ export default function BodyGym(props) {
   );
 }
 
-function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodyStats = [], setBodyStats, userProfile, showForm, setShowForm }) {
+function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodyStats = [], setBodyStats, userProfile, showForm, setShowForm, isEditSplitOpen: externalIsEditSplitOpen, setIsEditSplitOpen: externalSetIsEditSplitOpen }) {
   const [activeSubTab, setActiveSubTab] = useState('today'); // 'today', 'workouts', 'stats'
   const [workouts, setWorkouts] = useState(() => Array.isArray(initialWorkouts) ? initialWorkouts : []);
 
@@ -46,7 +46,9 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
   const [workoutSettings, setWorkoutSettings] = useState({ split_type: 'weekly', templates: null });
   const [hasCustomSplit, setHasCustomSplit] = useState(false);
   const [splitList, setSplitList] = useState([]);
-  const [isEditSplitOpen, setIsEditSplitOpen] = useState(false);
+  const [internalIsEditSplitOpen, setInternalIsEditSplitOpen] = useState(false);
+  const isEditSplitOpen = externalIsEditSplitOpen !== undefined ? externalIsEditSplitOpen : internalIsEditSplitOpen;
+  const setIsEditSplitOpen = externalSetIsEditSplitOpen || setInternalIsEditSplitOpen;
   const [newSplitName, setNewSplitName] = useState('');
 
   const saveSplitList = (newList) => {
@@ -656,14 +658,25 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <h3 style={{ fontSize: '1.2rem', fontWeight: 700 }}>Workout History</h3>
-            {!hasCustomSplit && (
-              <button 
-                onClick={() => setIsEditSplitOpen(true)}
-                style={{ background: 'var(--accent-blue-dim)', color: 'var(--accent-blue)', border: '1px solid var(--accent-blue)', padding: '8px 16px', fontSize: '0.82rem', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-              >
-                ⚙️ Customize Split Routine
-              </button>
-            )}
+            <button 
+              onClick={() => { setIsAddWorkoutOpen(true); setShowForm?.(true); }}
+              style={{ 
+                background: 'linear-gradient(135deg, #10b981, #059669)', 
+                color: '#ffffff', 
+                border: 'none', 
+                padding: '8px 18px', 
+                fontSize: '0.85rem', 
+                borderRadius: '30px', 
+                fontWeight: 700, 
+                cursor: 'pointer', 
+                display: 'inline-flex', 
+                alignItems: 'center', 
+                gap: '6px',
+                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.35)'
+              }}
+            >
+              <Plus size={16} /> Add Workout
+            </button>
           </div>
 
           {workouts.length === 0 ? (

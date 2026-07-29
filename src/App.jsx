@@ -287,6 +287,7 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showFinanceForm, setShowFinanceForm] = useState(false);
   const [showWorkoutForm, setShowWorkoutForm] = useState(false);
+  const [isEditSplitOpen, setIsEditSplitOpen] = useState(false);
   const [showMobileMoreMenu, setShowMobileMoreMenu] = useState(false);
   const [resetNewPassword, setResetNewPassword] = useState('');
   const [resetConfirmPassword, setResetConfirmPassword] = useState('');
@@ -2939,11 +2940,11 @@ const handleDeleteHabitDb = async (id) => {
             {(activeTab === 'body') && (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginBottom: '24px' }}>
                 <button
-                  onClick={() => setShowWorkoutForm(true)}
+                  onClick={() => setIsEditSplitOpen(true)}
                   className="blue-btn"
                   style={{ padding: '10px 18px', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '8px', borderRadius: '30px', fontWeight: 700 }}
                 >
-                  <Plus size={16} /> Add Workout
+                  ⚙️ Customize Split Routine
                 </button>
               </div>
             )}
@@ -4596,6 +4597,8 @@ const handleDeleteHabitDb = async (id) => {
                     setWorkouts={setWorkouts}
                     showForm={showWorkoutForm}
                     setShowForm={setShowWorkoutForm}
+                    isEditSplitOpen={isEditSplitOpen}
+                    setIsEditSplitOpen={setIsEditSplitOpen}
                   />
                 </TabErrorBoundary>
               )}
