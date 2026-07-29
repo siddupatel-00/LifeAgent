@@ -38,9 +38,9 @@ export default function BodyGym(props) {
   );
 }
 
-function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats, userProfile, showForm, setShowForm }) {
+function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodyStats = [], setBodyStats, userProfile, showForm, setShowForm }) {
   const [activeSubTab, setActiveSubTab] = useState('today'); // 'today', 'workouts', 'stats'
-  const [workouts, setWorkouts] = useState([]);
+  const [workouts, setWorkouts] = useState(() => Array.isArray(initialWorkouts) ? initialWorkouts : []);
 
   // Workout Split Rotation State
   const [workoutSettings, setWorkoutSettings] = useState({ split_type: 'weekly', templates: null });
@@ -460,7 +460,7 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats, userProf
 
   const statsArray = Array.isArray(bodyStats) ? bodyStats : (bodyStats ? [bodyStats] : []);
   const last7Days = statsArray.slice(0, 7).reverse();
-  const maxWeight = Math.max(...last7Days.map(s => s.weight || 0), 1);
+  const maxWeight = last7Days.length > 0 ? Math.max(...last7Days.map(s => s.weight || 0), 1) : 1;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -657,8 +657,17 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats, userProf
           </div>
 
           {workouts.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px', background: 'var(--bg-card)', borderRadius: '18px', border: '1px solid var(--border-color)' }}>
-              <p style={{ color: 'var(--text-muted)' }}>No workouts recorded yet.</p>
+            <div className="glass-card" style={{ textAlign: 'center', padding: '36px 20px', background: 'var(--bg-card)', borderRadius: '18px', border: '1px dashed var(--border-color)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+              <Dumbbell size={40} style={{ color: 'var(--accent-blue)', opacity: 0.5 }} />
+              <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>No items logged yet</div>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>No items logged yet. Click + to add your first entry</p>
+              <button 
+                onClick={() => setIsAddWorkoutOpen(true)}
+                className="blue-btn"
+                style={{ marginTop: '8px', padding: '8px 18px', fontSize: '0.85rem', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              >
+                <Plus size={16} /> Log Workout
+              </button>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -926,8 +935,17 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats, userProf
               </div>
 
               {filteredStats.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '40px', background: 'var(--bg-card)', borderRadius: '18px', border: '1px solid var(--border-color)' }}>
-                  <p style={{ color: 'var(--text-muted)' }}>No stats recorded yet.</p>
+                <div className="glass-card" style={{ textAlign: 'center', padding: '36px 20px', background: 'var(--bg-card)', borderRadius: '18px', border: '1px dashed var(--border-color)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                  <Activity size={40} style={{ color: 'var(--accent-blue)', opacity: 0.5 }} />
+                  <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>No items logged yet</div>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>No items logged yet. Click + to add your first entry</p>
+                  <button 
+                    onClick={() => setIsAddStatOpen(true)}
+                    className="blue-btn"
+                    style={{ marginTop: '8px', padding: '8px 18px', fontSize: '0.85rem', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <Plus size={16} /> Log Body Stat
+                  </button>
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>

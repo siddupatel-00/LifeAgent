@@ -490,7 +490,11 @@ export default function App() {
   // Habits state with exact daily tracking items: Gym, Study, Code, Reading
   const [showHabitHistory, setShowHabitHistory] = useState(false);
   const [habits, setHabits] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('cache_habits')) || []; } catch(e) { return []; }
+    try {
+      const cached = JSON.parse(localStorage.getItem('cache_habits'));
+      if (Array.isArray(cached)) return cached;
+    } catch(e) {}
+    return [];
   });
   const [isAddHabitModalOpen, setIsAddHabitModalOpen] = useState(false);
   const [isEditHabitModalOpen, setIsEditHabitModalOpen] = useState(false);
@@ -500,14 +504,22 @@ export default function App() {
   const [newTodayItemData, setNewTodayItemData] = useState({ title: '', category: 'Coding', time: '10:00 AM' });
   const [isAddTodayItemOpen, setIsAddTodayItemOpen] = useState(false);
   const [todayItems, setTodayItems] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('cache_todayItems')) || []; } catch(e) { return []; }
+    try {
+      const cached = JSON.parse(localStorage.getItem('cache_todayItems'));
+      if (Array.isArray(cached)) return cached;
+    } catch(e) {}
+    return [];
   });
   const [habitCardViews, setHabitCardViews] = useState({}); // { habitId: 'progress' | 'heatmap' }
   const [habitMenuOpen, setHabitMenuOpen] = useState(null); // habitId
 
   // 3) Finance state
   const [transactions, setTransactions] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('cache_transactions')) || []; } catch(e) { return []; }
+    try {
+      const cached = JSON.parse(localStorage.getItem('cache_transactions'));
+      if (Array.isArray(cached)) return cached;
+    } catch(e) {}
+    return [];
   });
   const [newTitle, setNewTitle] = useState('');
   const [newAmount, setNewAmount] = useState('');
@@ -515,7 +527,11 @@ export default function App() {
 
   // 4) Body & Gym state
   const [workouts, setWorkouts] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('cache_workouts')) || []; } catch(e) { return []; }
+    try {
+      const cached = JSON.parse(localStorage.getItem('cache_workouts'));
+      if (Array.isArray(cached)) return cached;
+    } catch(e) {}
+    return [];
   });
   const [bodyStats, setBodyStats] = useState(() => {
     try {
@@ -565,7 +581,11 @@ export default function App() {
 
   // 6) Notes & Diary state (with AI sharing permissions)
   const [notesList, setNotesList] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('cache_notesList')) || []; } catch(e) { return []; }
+    try {
+      const cached = JSON.parse(localStorage.getItem('cache_notesList'));
+      if (Array.isArray(cached)) return cached;
+    } catch(e) {}
+    return [];
   });
   const [activeNoteId, setActiveNoteId] = useState(null);
   const [isFloatingDiaryOpen, setIsFloatingDiaryOpen] = useState(false);
@@ -615,7 +635,11 @@ export default function App() {
 
   // 8) Calendar state
   const [calendarEvents, setCalendarEvents] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('cache_calendarEvents')) || []; } catch(e) { return []; }
+    try {
+      const cached = JSON.parse(localStorage.getItem('cache_calendarEvents'));
+      if (Array.isArray(cached)) return cached;
+    } catch(e) {}
+    return [];
   });
   const [calendarSubTab, setCalendarSubTab] = useState('today');
   const [selectedCalendarDate, setSelectedCalendarDate] = useState(null);
@@ -3289,10 +3313,18 @@ const handleDeleteHabitDb = async (id) => {
                   )}
 
                   {/* Clean List of Today Items */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                    {todayItems.length === 0 ? (
-                      <div style={{ textAlign: 'center', padding: '30px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px dashed var(--border-color)' }}>
-                        <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', fontWeight: 600 }}>No routine items scheduled for today.</p>
+                    {(!todayItems || todayItems.length === 0) ? (
+                      <div className="glass-card" style={{ textAlign: 'center', padding: '36px 20px', background: 'var(--bg-main)', borderRadius: '18px', border: '1px dashed var(--border-color)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                        <Clock size={40} style={{ color: 'var(--accent-blue)', opacity: 0.5 }} />
+                        <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>No items logged yet</div>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>No items logged yet. Click + to add your first entry</p>
+                        <button
+                          onClick={() => setActiveTab('habits')}
+                          className="blue-btn"
+                          style={{ marginTop: '8px', padding: '8px 18px', fontSize: '0.85rem', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                        >
+                          <Plus size={16} /> Add Habits / Tasks
+                        </button>
                       </div>
                     ) : (
                       [...todayItems].sort((a,b) => (a.checked === b.checked ? 0 : a.checked ? 1 : -1)).map(item => (
@@ -3359,7 +3391,7 @@ const handleDeleteHabitDb = async (id) => {
                   </div>
 
 
-                </div>
+
                 </TabErrorBoundary>
               )}
 

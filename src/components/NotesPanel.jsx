@@ -3,11 +3,11 @@ import { BookOpen, Plus, Trash2, Search } from 'lucide-react';
 import { getFormattedDateTitle } from '../utils/date';
 
 export default function NotesPanel({
-  notesList,
+  notesList = [],
   setNotesList,
   activeNoteId,
   setActiveNoteId,
-  trashNotes,
+  trashNotes = [],
   setTrashNotes,
   notesViewMode,
   setNotesViewMode,
@@ -19,12 +19,13 @@ export default function NotesPanel({
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    const note = notesList.find(n => n.id === activeNoteId);
+    const safeNotes = Array.isArray(notesList) ? notesList : [];
+    const note = safeNotes.find(n => n.id === activeNoteId);
     if (note) {
       setSavedSnapshot({ title: note.title, content: note.content });
       setNoteUnsaved(false);
     }
-  }, [activeNoteId, notesList.length]); // Added length just in case it's newly created, but activeNoteId change should be enough
+  }, [activeNoteId, (notesList || []).length]); // Added length just in case it's newly created, but activeNoteId change should be enough
 
   const handleUpdateNoteDb = async (note) => {
     if (!token || !note.id) return;
@@ -138,8 +139,17 @@ export default function NotesPanel({
           {notesViewMode === 'active' ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto', flex: 1 }}>
               {notesList.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                  No notes yet. Click + to add one.
+                <div className="glass-card" style={{ textAlign: 'center', padding: '36px 20px', background: 'var(--bg-main)', borderRadius: '18px', border: '1px dashed var(--border-color)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                  <BookOpen size={40} style={{ color: 'var(--accent-blue)', opacity: 0.5 }} />
+                  <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>No items logged yet</div>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>No items logged yet. Click + to add your first entry</p>
+                  <button
+                    onClick={handleCreateNote}
+                    className="blue-btn"
+                    style={{ marginTop: '8px', padding: '8px 18px', fontSize: '0.85rem', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <Plus size={16} /> New Note
+                  </button>
                 </div>
               ) : (
                 [...notesList]

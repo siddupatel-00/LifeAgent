@@ -12,8 +12,9 @@ export default function MoneyCharts({ transactions = [], chartType, currency = '
   
   if (!transactions || transactions.length === 0) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: 'var(--text-muted)' }}>
-        No transaction data available for this timeframe.
+      <div className="glass-card" style={{ textAlign: 'center', padding: '36px 20px', background: 'var(--bg-main)', borderRadius: '18px', border: '1px dashed var(--border-color)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+        <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)' }}>No items logged yet</div>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', margin: 0 }}>No items logged yet. Click + to add your first entry</p>
       </div>
     );
   }

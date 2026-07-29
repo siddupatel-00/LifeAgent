@@ -3,7 +3,7 @@ import { Plus, Flame, CheckCircle2, MoreVertical, Trash2, X } from 'lucide-react
 import Modal from './Modal';
 
 export default function HabitsPanel({
-  habits, setHabits, todayItems, setTodayItems,
+  habits = [], setHabits, todayItems = [], setTodayItems,
   isAddHabitModalOpen, setIsAddHabitModalOpen,
   newHabitData, setNewHabitData,
   token, showToast
@@ -68,10 +68,10 @@ export default function HabitsPanel({
   return (
     <div className="animate-entrance" onClick={() => setMenuOpenId(null)}>
       {habits.length === 0 ? (
-        <div className="glass-card" style={{ padding: '32px', textAlign: 'center' }}>
+        <div className="glass-card" style={{ padding: '36px 24px', textAlign: 'center', background: 'var(--bg-main)', borderRadius: '18px', border: '1px dashed var(--border-color)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <Flame size={48} color="var(--accent-blue)" style={{ margin: '0 auto 16px', opacity: 0.5 }} />
-          <h3 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '8px' }}>Build Daily Pillars</h3>
-          <p style={{ color: 'var(--text-muted)', marginBottom: '24px' }}>Track foundational habits that shape your life</p>
+          <h3 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '6px' }}>No items logged yet</h3>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', marginBottom: '24px' }}>No items logged yet. Click + to add your first entry</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: '400px', margin: '0 auto' }}>
             <input 
               type="text" placeholder="Enter habit name..."

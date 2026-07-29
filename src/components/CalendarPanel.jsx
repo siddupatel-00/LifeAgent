@@ -13,7 +13,7 @@ const formatDateStr = (d) => {
 };
 
 export default function CalendarPanel({
-  calendarEvents, setCalendarEvents,
+  calendarEvents = [], setCalendarEvents,
   selectedCalendarDate, setSelectedCalendarDate,
   calendarSubTab = 'today', setCalendarSubTab,
   token, showToast, userProfile
@@ -100,7 +100,7 @@ export default function CalendarPanel({
     const todayStr = todayKey(userProfile?.timezone);
     const todayParts = todayStr.split('-').map(Number);
     const now = new Date(todayParts[0], todayParts[1] - 1, todayParts[2]);
-    let list = [...calendarEvents];
+    let list = Array.isArray(calendarEvents) ? [...calendarEvents] : [];
 
     // If a specific calendar date is selected by clicking on the grid
     if (selectedCalendarDate) {
@@ -553,10 +553,17 @@ export default function CalendarPanel({
             ))}
 
             {filteredEventsList.length === 0 && (
-              <div style={{ padding: '32px 20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem', background: 'var(--bg-main)', borderRadius: '12px', border: '1px dashed var(--border-color)' }}>
-                <CalendarIcon size={32} style={{ margin: '0 auto 10px', opacity: 0.4 }} />
-                <div style={{ fontWeight: 700 }}>No events found for this filter</div>
-                <div style={{ fontSize: '0.8rem', marginTop: '4px' }}>Click "Add Event" or select another range.</div>
+              <div className="glass-card" style={{ padding: '36px 20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem', background: 'var(--bg-main)', borderRadius: '18px', border: '1px dashed var(--border-color)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                <CalendarIcon size={40} style={{ color: 'var(--accent-blue)', opacity: 0.5 }} />
+                <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>No items logged yet</div>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>No items logged yet. Click + to add your first entry</p>
+                <button
+                  onClick={() => { setIsAddEventFormOpen(true); setNewEventDate(selectedCalendarDate || todayKey(userProfile?.timezone)); setNewEventTitle(''); }}
+                  className="blue-btn"
+                  style={{ marginTop: '8px', padding: '8px 18px', fontSize: '0.85rem', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <Plus size={16} /> Add Event
+                </button>
               </div>
             )}
           </div>

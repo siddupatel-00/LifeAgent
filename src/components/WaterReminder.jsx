@@ -281,6 +281,14 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
         </div>
       </div>
 
+      {hydrationLiters === 0 && (
+        <div className="glass-card" style={{ textAlign: 'center', padding: '24px 20px', background: 'var(--bg-card)', borderRadius: '16px', border: '1px dashed var(--border-color)', marginBottom: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+          <Droplet size={32} style={{ color: 'var(--accent-blue)', opacity: 0.5 }} />
+          <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)' }}>No items logged yet</div>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', margin: 0 }}>No items logged yet. Click + to add your first entry</p>
+        </div>
+      )}
+
       {/* Quick Log Buttons Section */}
       <div style={{ marginBottom: '16px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>

@@ -6,13 +6,16 @@ import ConfirmModal from './ConfirmModal';
 import Modal from './Modal';
 import CustomSelect from './CustomSelect';
 
-export default function SleepTracker({ token, showToast, userProfile, todayStat }) {
+export default function SleepTracker({ token, showToast, userProfile, todayStat, sleepLogs = [] }) {
   const [logs, setLogs] = useState(() => {
     try {
       const cached = localStorage.getItem('cache_sleep_logs');
-      if (cached) return JSON.parse(cached);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed)) return parsed;
+      }
     } catch (e) {}
-    return [];
+    return Array.isArray(sleepLogs) ? sleepLogs : [];
   });
   const [isLoading, setIsLoading] = useState(() => {
     try {
@@ -602,10 +605,17 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat 
 
           if (displayedLogs.length === 0) {
             return (
-              <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)' }}>
-                <Moon size={40} style={{ margin: '0 auto 12px', opacity: 0.4 }} />
-                <div style={{ fontSize: '1rem', fontWeight: 700 }}>No sleep logs added yet</div>
-                <div style={{ fontSize: '0.85rem', marginTop: '4px' }}>Click "Log Sleep Entry" above to enter your slept hours & minutes.</div>
+              <div className="glass-card" style={{ textAlign: 'center', padding: '36px 20px', background: 'var(--bg-main)', borderRadius: '18px', border: '1px dashed var(--border-color)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                <Moon size={40} style={{ color: 'var(--accent-blue)', opacity: 0.5 }} />
+                <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>No items logged yet</div>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>No items logged yet. Click + to add your first entry</p>
+                <button
+                  onClick={() => { setEditingLogId(null); setLogDate(todayKey(userProfile?.timezone)); setBedTime('23:00'); setWakeTime('07:00'); setSleepQuality(4); setSleepNotes(''); setShowModal(true); }}
+                  className="blue-btn"
+                  style={{ marginTop: '8px', padding: '8px 18px', fontSize: '0.85rem', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <Plus size={16} /> Log Sleep Entry
+                </button>
               </div>
             );
           }

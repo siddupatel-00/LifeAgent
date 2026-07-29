@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, X, Check, BarChart2, BarChart3, TrendingUp, PieChart, List } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Check, BarChart2, BarChart3, TrendingUp, PieChart, List, DollarSign } from 'lucide-react';
 import { todayKey } from '../utils/date';
 import MoneyCharts from './MoneyCharts';
 import CustomSelect from './CustomSelect';
@@ -8,7 +8,7 @@ import Modal from './Modal';
 const SPEND_CATEGORIES = ['General', 'Food', 'Transport', 'Shopping', 'Bills', 'Entertainment', 'Education', 'Health', 'Other'];
 const EARNING_CATEGORIES = ['Job', 'Business', 'Freelancing', 'Startup', 'Other'];
 
-export default function MoneyTracker({ transactions, setTransactions, token, showToast, currency, timeRange = 'today', timeframe, timezone, userProfile, customStartDate, customEndDate, showForm, setShowForm }) {
+export default function MoneyTracker({ transactions = [], setTransactions, token, showToast, currency, timeRange = 'today', timeframe, timezone, userProfile, customStartDate, customEndDate, showForm, setShowForm }) {
   const [newTitle, setNewTitle] = useState('');
   const [newAmount, setNewAmount] = useState('');
   const [newType, setNewType] = useState('spend');
@@ -271,8 +271,17 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {filteredTransactions.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '30px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px dashed var(--border-color)' }}>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', fontWeight: 600 }}>No transactions recorded for selected timeframe.</p>
+            <div className="glass-card" style={{ textAlign: 'center', padding: '36px 20px', background: 'var(--bg-main)', borderRadius: '18px', border: '1px dashed var(--border-color)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+              <DollarSign size={40} style={{ color: 'var(--accent-blue)', opacity: 0.5 }} />
+              <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>No items logged yet</div>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>No items logged yet. Click + to add your first entry</p>
+              <button
+                onClick={() => setIsAddOpen(true)}
+                className="blue-btn"
+                style={{ marginTop: '8px', padding: '8px 18px', fontSize: '0.85rem', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              >
+                <Plus size={16} /> Add Transaction
+              </button>
             </div>
           ) : (
             filteredTransactions.map(item => (
