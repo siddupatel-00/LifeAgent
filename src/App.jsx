@@ -314,7 +314,7 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(authForm)
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Authentication failed');
 
       // Purge all user-specific localStorage data while retaining essential theme options
@@ -328,7 +328,7 @@ export default function App() {
       localStorage.setItem('token', data.token);
       setToken(data.token);
       setIsAuthenticated(true);
-      if (data.user.ai_name) setAiName(data.user.ai_name);
+      if (data.user?.ai_name) setAiName(data.user.ai_name);
       setAuthForm({ name: '', handle: '', email: '', password: '', phone: '' });
       navigate('dashboard', '/dashboard');
     } catch (err) {
@@ -349,7 +349,7 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ emailOrHandle: resetEmailOrHandle })
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Account not found');
 
       setResetStep(2);
@@ -377,7 +377,7 @@ export default function App() {
           code: resetCode
         })
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Invalid reset code');
 
       setResetStep(3);
@@ -406,7 +406,7 @@ export default function App() {
           newPassword: resetNewPassword
         })
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Failed to reset password');
 
       setResetSuccessMsg(data.message || 'Password reset successfully!');
