@@ -67,13 +67,28 @@ export default async function handler(req, res) {
       const currentUserReq = await db.execute({ sql: 'SELECT * FROM users WHERE id = ?', args: [userId] });
       const current = currentUserReq.rows[0] || {};
       
+      // Handle uniqueness validation if handle is being changed
+      let finalHandle = current.handle;
+      if (handle !== undefined && typeof handle === 'string' && handle.trim()) {
+        const cleanNewHandle = handle.trim().startsWith('@') ? handle.trim() : `@${handle.trim()}`;
+        const rawHandle = cleanNewHandle.replace(/^@/, '').toLowerCase();
+        const existingHandle = await db.execute({
+          sql: 'SELECT id FROM users WHERE (LOWER(handle) = ? OR LOWER(handle) = ?) AND id != ?',
+          args: [`@${rawHandle}`, rawHandle, userId]
+        });
+        if (existingHandle.rows.length > 0) {
+          return res.status(409).json({ error: `Username ${cleanNewHandle} is already taken by another user. Please choose a different username.` });
+        }
+        finalHandle = cleanNewHandle;
+      }
+
       await db.execute({
         sql: 'UPDATE users SET name = ?, email = ?, phone = ?, handle = ?, theme = ?, ai_name = ?, gemini_api_key = ?, groq_api_key = ?, ai_provider = ?, currency = ?, ai_tone = ?, morning_audit = ?, smart_alerts = ? WHERE id = ?',
         args: [
           name !== undefined ? name : current.name,
           email !== undefined ? email : current.email,
           phone !== undefined ? phone : current.phone,
-          handle !== undefined ? handle : current.handle,
+          finalHandle,
           theme !== undefined ? theme : current.theme,
           ai_name !== undefined ? ai_name : current.ai_name,
           gemini_api_key !== undefined ? gemini_api_key : current.gemini_api_key,

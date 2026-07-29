@@ -22,12 +22,21 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Invalid email address format' });
       }
 
-      const existing = await db.execute({ sql: 'SELECT id FROM users WHERE email = ?', args: [cleanEmail] });
+      const existing = await db.execute({ sql: 'SELECT id FROM users WHERE LOWER(email) = ?', args: [cleanEmail] });
       if (existing.rows.length > 0) return res.status(409).json({ error: 'Email already registered' });
 
       const cleanHandle = (handle && typeof handle === 'string' && handle.trim())
         ? (handle.trim().startsWith('@') ? handle.trim() : `@${handle.trim()}`)
         : `@${cleanEmail.split('@')[0]}`;
+
+      const rawHandle = cleanHandle.replace(/^@/, '').toLowerCase();
+      const existingHandle = await db.execute({
+        sql: 'SELECT id FROM users WHERE LOWER(handle) = ? OR LOWER(handle) = ?',
+        args: [`@${rawHandle}`, rawHandle]
+      });
+      if (existingHandle.rows.length > 0) {
+        return res.status(409).json({ error: `Username ${cleanHandle} is already taken. Please choose a different username.` });
+      }
 
       const password_hash = await bcrypt.hash(password, 10);
       const result = await db.execute({
