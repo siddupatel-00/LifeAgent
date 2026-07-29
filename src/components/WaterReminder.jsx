@@ -197,7 +197,7 @@ export default function WaterReminder({ todayStat, onLogStat, showToast }) {
   const percentComplete = Math.min(100, Math.round((hydrationLiters / targetGoal) * 100));
 
   return (
-    <div className="glass-card" style={{ padding: '24px', borderRadius: '20px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', marginTop: '24px', marginBottom: '24px' }}>
+    <div className="animate-entrance" style={{ marginTop: '24px', marginBottom: '24px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div style={{ background: 'var(--bg-card-hover)', padding: '10px', borderRadius: '14px', color: 'var(--text-main)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
