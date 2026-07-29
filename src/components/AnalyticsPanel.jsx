@@ -34,20 +34,8 @@ export default function AnalyticsPanel(props) {
 }
 
 function AnalyticsPanelInner({ token, showToast, currency = '$', timeRange = '7d', userProfile }) {
-  const [data, setData] = useState(() => {
-    try {
-      const cached = localStorage.getItem('cache_analytics_data');
-      if (cached) return JSON.parse(cached);
-    } catch (e) {}
-    return null;
-  });
-  const [loading, setLoading] = useState(() => {
-    try {
-      return !localStorage.getItem('cache_analytics_data');
-    } catch (e) {
-      return true;
-    }
-  });
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [range, setRange] = useState('7d');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
@@ -97,7 +85,6 @@ function AnalyticsPanelInner({ token, showToast, currency = '$', timeRange = '7d
         const result = await res.json();
         if (mounted) {
           setData(result);
-          try { localStorage.setItem('cache_analytics_data', JSON.stringify(result)); } catch (e) {}
         }
       } catch (err) {
         // background fetch error

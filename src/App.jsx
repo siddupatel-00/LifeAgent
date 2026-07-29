@@ -158,19 +158,13 @@ export default function App() {
     }
   };
   const [previewTab, setPreviewTab] = useState('Money'); // 'Money', 'Sleep', 'Calendar', 'Notes', 'Gym', 'Analytics', 'AI', 'Habits'
-  const [timeRange, setTimeRange] = useState(() => localStorage.getItem('active_timeframe') || '7d'); // 'today', '3d', '7d', '14d', '25d', '30d', '1m', '3m', '6m', '12m', 'lifetime'
+  const [timeRange, setTimeRange] = useState('7d'); // 'today', '3d', '7d', '14d', '25d', '30d', '1m', '3m', '6m', '12m', 'lifetime'
   const [isTimeMenuOpen, setIsTimeMenuOpen] = useState(false);
   const timeDropdownRef = useRef(null);
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
 
-  const [todayWidgetsConfig, setTodayWidgetsConfig] = useState(() => {
-    try {
-      const saved = localStorage.getItem('today_widgets_config');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {}
-    return { showWorkout: true, showProtein: true, showHydration: true };
-  });
+  const [todayWidgetsConfig, setTodayWidgetsConfig] = useState({ showWorkout: true, showProtein: true, showHydration: true });
   const [isTodayConfigMenuOpen, setIsTodayConfigMenuOpen] = useState(false);
   const todayConfigDropdownRef = useRef(null);
   const PREVIEW_TABS = ['Money', 'Sleep', 'Calendar', 'Notes', 'Gym', 'AI', 'Habits', 'Analytics'];
@@ -253,22 +247,16 @@ export default function App() {
   }, [currentPage, previewTab]);
 
   // User Profile & Settings State
-  const [userProfile, setUserProfile] = useState(() => {
-    try {
-      const cached = JSON.parse(localStorage.getItem('cache_userProfile'));
-      if (cached) return cached;
-    } catch(e) {}
-    return {
-      name: '',
-      handle: '',
-      email: '',
-      aiTone: 'Analytical & Direct',
-      morningAudit: false,
-      smartAlerts: false,
-      auto_open_ai_sidechat: localStorage.getItem('auto_open_ai_sidechat') === 'true',
-      currency: '$',
-      timezone: localTimeZone()
-    };
+  const [userProfile, setUserProfile] = useState({
+    name: '',
+    handle: '',
+    email: '',
+    aiTone: 'Analytical & Direct',
+    morningAudit: false,
+    smartAlerts: false,
+    auto_open_ai_sidechat: false,
+    currency: '$',
+    timezone: localTimeZone()
   });
   const [settingsSaved, setSettingsSaved] = useState(false);
 
@@ -279,13 +267,6 @@ export default function App() {
   const [authForm, setAuthForm] = useState({ name: '', handle: '', email: '', password: '', phone: '' });
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState('');
-
-  // One-time legacy cleanup for broken default water goal
-  useEffect(() => {
-    if (localStorage.getItem('water_target_goal') === '5.678') {
-      localStorage.removeItem('water_target_goal');
-    }
-  }, []);
 
   // Validate session on mount if token exists; log out if account was deleted or token expired
   useEffect(() => {
@@ -325,17 +306,12 @@ export default function App() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Authentication failed');
 
-      // Clear all user-specific localStorage keys so a fresh login never
-      // inherits stale settings/cache from a previous user or session.
-      const userSpecificKeys = [
-        'water_target_goal', 'gym_workout_split', 'today_widgets_config',
-        'auto_open_ai_sidechat', 'active_timeframe',
-        'cache_userProfile', 'cache_aiMessages', 'cache_habits',
-        'cache_todayItems', 'cache_transactions', 'cache_workouts',
-        'cache_bodyStats', 'cache_notesList', 'cache_trashNotes',
-        'cache_calendarEvents',
-      ];
-      userSpecificKeys.forEach(key => localStorage.removeItem(key));
+      // Purge all user-specific localStorage data while retaining essential theme options
+      const savedThemeMode = localStorage.getItem('themeMode');
+      const savedThemeColor = localStorage.getItem('themeColor');
+      localStorage.clear();
+      if (savedThemeMode) localStorage.setItem('themeMode', savedThemeMode);
+      if (savedThemeColor) localStorage.setItem('themeColor', savedThemeColor);
 
       localStorage.setItem('token', data.token);
       setToken(data.token);
@@ -439,17 +415,12 @@ export default function App() {
   };
 
   const handleLogout = () => {
-    // Remove all user-specific keys so the next login starts with a clean slate.
-    const userSpecificKeys = [
-      'token',
-      'water_target_goal', 'gym_workout_split', 'today_widgets_config',
-      'auto_open_ai_sidechat', 'active_timeframe',
-      'cache_userProfile', 'cache_aiMessages', 'cache_habits',
-      'cache_todayItems', 'cache_transactions', 'cache_workouts',
-      'cache_bodyStats', 'cache_notesList', 'cache_trashNotes',
-      'cache_calendarEvents',
-    ];
-    userSpecificKeys.forEach(key => localStorage.removeItem(key));
+    // Purge all localStorage data on logout while retaining essential theme options
+    const savedThemeMode = localStorage.getItem('themeMode');
+    const savedThemeColor = localStorage.getItem('themeColor');
+    localStorage.clear();
+    if (savedThemeMode) localStorage.setItem('themeMode', savedThemeMode);
+    if (savedThemeColor) localStorage.setItem('themeColor', savedThemeColor);
     setToken('');
     setIsAuthenticated(false);
     setUserProfile({ name: '', handle: '', email: '', aiTone: 'Analytical & Direct', morningAudit: false, smartAlerts: false, currency: '$', timezone: localTimeZone() });
@@ -466,9 +437,7 @@ export default function App() {
   ];
 
   // 1) AI Chat state with Autonomous Executive Engine
-  const [aiMessages, setAiMessages] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('cache_aiMessages')) || []; } catch(e) { return []; }
-  });
+  const [aiMessages, setAiMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [aiName, setAiName] = useState('AI');
   const mainAiChatScrollRef = useRef(null);
@@ -520,13 +489,7 @@ export default function App() {
   // 2) Habit Tracker state
   // Habits state with exact daily tracking items: Gym, Study, Code, Reading
   const [showHabitHistory, setShowHabitHistory] = useState(false);
-  const [habits, setHabits] = useState(() => {
-    try {
-      const cached = JSON.parse(localStorage.getItem('cache_habits'));
-      if (Array.isArray(cached)) return cached;
-    } catch(e) {}
-    return [];
-  });
+  const [habits, setHabits] = useState([]);
   const [isAddHabitModalOpen, setIsAddHabitModalOpen] = useState(false);
   const [isEditHabitModalOpen, setIsEditHabitModalOpen] = useState(false);
   const [editingHabitData, setEditingHabitData] = useState(null);
@@ -534,43 +497,19 @@ export default function App() {
   const [customPillarInput, setCustomPillarInput] = useState('');
   const [newTodayItemData, setNewTodayItemData] = useState({ title: '', category: 'Coding', time: '10:00 AM' });
   const [isAddTodayItemOpen, setIsAddTodayItemOpen] = useState(false);
-  const [todayItems, setTodayItems] = useState(() => {
-    try {
-      const cached = JSON.parse(localStorage.getItem('cache_todayItems'));
-      if (Array.isArray(cached)) return cached;
-    } catch(e) {}
-    return [];
-  });
+  const [todayItems, setTodayItems] = useState([]);
   const [habitCardViews, setHabitCardViews] = useState({}); // { habitId: 'progress' | 'heatmap' }
   const [habitMenuOpen, setHabitMenuOpen] = useState(null); // habitId
 
   // 3) Finance state
-  const [transactions, setTransactions] = useState(() => {
-    try {
-      const cached = JSON.parse(localStorage.getItem('cache_transactions'));
-      if (Array.isArray(cached)) return cached;
-    } catch(e) {}
-    return [];
-  });
+  const [transactions, setTransactions] = useState([]);
   const [newTitle, setNewTitle] = useState('');
   const [newAmount, setNewAmount] = useState('');
   const [newType, setNewType] = useState('spend');
 
   // 4) Body & Gym state
-  const [workouts, setWorkouts] = useState(() => {
-    try {
-      const cached = JSON.parse(localStorage.getItem('cache_workouts'));
-      if (Array.isArray(cached)) return cached;
-    } catch(e) {}
-    return [];
-  });
-  const [bodyStats, setBodyStats] = useState(() => {
-    try {
-      const cached = JSON.parse(localStorage.getItem('cache_bodyStats'));
-      if (Array.isArray(cached)) return cached;
-    } catch(e) {}
-    return [];
-  });
+  const [workouts, setWorkouts] = useState([]);
+  const [bodyStats, setBodyStats] = useState([]);
 
   const handleSaveBodyStat = async (updated) => {
     const todayStr = todayKey(userProfile?.timezone);
@@ -611,20 +550,12 @@ export default function App() {
   const [sleepLogs, setSleepLogs] = useState([]);
 
   // 6) Notes & Diary state (with AI sharing permissions)
-  const [notesList, setNotesList] = useState(() => {
-    try {
-      const cached = JSON.parse(localStorage.getItem('cache_notesList'));
-      if (Array.isArray(cached)) return cached;
-    } catch(e) {}
-    return [];
-  });
+  const [notesList, setNotesList] = useState([]);
   const [activeNoteId, setActiveNoteId] = useState(null);
   const [isFloatingDiaryOpen, setIsFloatingDiaryOpen] = useState(false);
   const [floatingDiaryContent, setFloatingDiaryContent] = useState("");
   const [floatingDiaryShare, setFloatingDiaryShare] = useState(true);
-  const [trashNotes, setTrashNotes] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('cache_trashNotes')) || []; } catch(e) { return []; }
-  });
+  const [trashNotes, setTrashNotes] = useState([]);
   const [notesViewMode, setNotesViewMode] = useState('active'); // 'active' | 'trash'
 
   // Auto-clean trash: if note deleted from trash -> permanently deleted; else in 49 days automatically purged
@@ -654,7 +585,6 @@ export default function App() {
 
   // Auto-open AI side panel when switching tabs if setting is enabled
   useEffect(() => {
-    localStorage.setItem('auto_open_ai_sidechat', userProfile.auto_open_ai_sidechat);
     if (userProfile.auto_open_ai_sidechat === true) {
       if (activeTab !== 'settings' && activeTab !== 'ai') {
         if (window.innerWidth > 768) {
@@ -665,13 +595,7 @@ export default function App() {
   }, [activeTab, userProfile.auto_open_ai_sidechat]);
 
   // 8) Calendar state
-  const [calendarEvents, setCalendarEvents] = useState(() => {
-    try {
-      const cached = JSON.parse(localStorage.getItem('cache_calendarEvents'));
-      if (Array.isArray(cached)) return cached;
-    } catch(e) {}
-    return [];
-  });
+  const [calendarEvents, setCalendarEvents] = useState([]);
   const [calendarSubTab, setCalendarSubTab] = useState('today');
   const [selectedCalendarDate, setSelectedCalendarDate] = useState(null);
   const [calendarMonth, setCalendarMonth] = useState(() => {
@@ -688,24 +612,49 @@ export default function App() {
   const [aiProvider, setAiProvider] = useState('gemini');
   const [aiLoading, setAiLoading] = useState(false);
 
-  const fetchDashboardData = async () => {
+  // Request Memoization & In-Flight Tracking Refs
+  const isFetchingRef = useRef(false);
+  const lastFetchTimestampRef = useRef(0);
+
+  const fetchDashboardData = async (force = false) => {
     if (!token) return;
+    const now = Date.now();
+    if (!force && isFetchingRef.current) return;
+    if (!force && (now - lastFetchTimestampRef.current < 5000)) return;
+
+    isFetchingRef.current = true;
+    lastFetchTimestampRef.current = now;
+
     try {
       const headers = { 'Authorization': `Bearer ${token}` };
-      const timezone = localTimeZone();
+      const timezone = userProfile?.timezone || localTimeZone();
       const clientDate = todayKey(timezone);
       
-      // Parallel fetch all dashboard endpoints concurrently for 9x speedup
-      const [settingsRes, todayRes, habitsRes, txRes, chatRes, calRes, workoutsRes, statsRes, notesRes] = await Promise.all([
+      // Parallel fetch all user API endpoints concurrently via Promise.all for maximum speedup
+      const [
+        settingsRes, 
+        todayRes, 
+        habitsRes, 
+        txRes, 
+        financeRes, 
+        chatRes, 
+        calRes, 
+        workoutsRes, 
+        statsRes, 
+        notesRes, 
+        sleepRes
+      ] = await Promise.all([
         fetch('/api/settings', { headers }).catch(e => null),
         fetch(`/api/today?client_date=${clientDate}`, { headers }).catch(e => null),
         fetch('/api/habits', { headers }).catch(e => null),
         fetch('/api/transactions', { headers }).catch(e => null),
+        fetch('/api/finance', { headers }).catch(e => null),
         fetch('/api/chat', { headers }).catch(e => null),
         fetch('/api/calendar', { headers }).catch(e => null),
         fetch('/api/fitness?type=workouts', { headers }).catch(e => null),
         fetch('/api/fitness?type=body-stats', { headers }).catch(e => null),
-        fetch('/api/notes', { headers }).catch(e => null)
+        fetch('/api/notes', { headers }).catch(e => null),
+        fetch('/api/sleep', { headers }).catch(e => null)
       ]);
 
       if (settingsRes && settingsRes.ok) {
@@ -745,8 +694,9 @@ export default function App() {
         localStorage.setItem('cache_habits', JSON.stringify(mappedHabits));
       }
 
-      if (txRes && txRes.ok) {
-        const txData = await txRes.json();
+      const validTxRes = (txRes && txRes.ok) ? txRes : (financeRes && financeRes.ok ? financeRes : null);
+      if (validTxRes) {
+        const txData = await validTxRes.json();
         const mappedTx = txData.map(t => ({ id: t.id, title: t.title, amount: t.amount, type: t.type, date: t.date }));
         setTransactions(mappedTx);
         localStorage.setItem('cache_transactions', JSON.stringify(mappedTx));
@@ -788,11 +738,19 @@ export default function App() {
         setNotesList(activeNotes);
         localStorage.setItem('cache_notesList', JSON.stringify(activeNotes));
       }
+
+      if (sleepRes && sleepRes.ok) {
+        const sLogs = await sleepRes.json();
+        setSleepLogs(sLogs);
+        localStorage.setItem('cache_sleepLogs', JSON.stringify(sLogs));
+      }
     } catch (err) {
       console.error('Failed to fetch dashboard data:', err);
       if (err?.status === 401 || err?.message?.includes('401')) {
         handleLogout();
       }
+    } finally {
+      isFetchingRef.current = false;
     }
   };
 
@@ -925,10 +883,10 @@ export default function App() {
 
     // 2. Mark Today's Gym Workout Split Complete
     if (targetState) {
-      const splitList = ['Push Day', 'Leg Day', 'Pull Day', 'Cardio / Running', 'Rest & Recovery'];
+      const splitList = [];
       const daysEpoch = Math.floor(new Date(todayStr).getTime() / (1000 * 60 * 60 * 24));
-      const todaySplitIdx = Math.abs(daysEpoch) % splitList.length;
-      const currentTitle = splitList[todaySplitIdx] || 'Workout';
+      const todaySplitIdx = splitList.length > 0 ? Math.abs(daysEpoch) % splitList.length : 0;
+      const currentTitle = (splitList.length > 0 && splitList[todaySplitIdx]) ? (typeof splitList[todaySplitIdx] === 'string' ? splitList[todaySplitIdx] : splitList[todaySplitIdx]?.name) : 'Workout';
       
       const isAlreadyCompleted = (Array.isArray(workouts) ? workouts : []).some(w => w.date === todayStr);
       if (!isAlreadyCompleted) {
@@ -958,7 +916,7 @@ export default function App() {
       const targetW = Number(latestStat?.target_weight) || 0;
       const targetP = Number(latestStat?.target_protein) || 0;
       const proteinGoal = targetP > 0 ? targetP : (targetW > 0 ? Math.round(targetW * 2) : 0);
-      const hydrationGoal = Number(localStorage.getItem('water_target_goal')) || 3.0;
+      const hydrationGoal = Number(latestStat?.hydration) || 3.0;
 
       const payload = {
         weight: Number(latestStat?.weight) || 0,
@@ -1182,7 +1140,6 @@ const handleDeleteHabitDb = async (id) => {
 
     const updatedProfile = { ...userProfile, ai_name: aiName, gemini_api_key: geminiApiKey, groq_api_key: groqApiKey, ai_provider: aiProvider, theme: themeMode, currency: userProfile.currency };
     setUserProfile(updatedProfile);
-    localStorage.setItem('cache_userProfile', JSON.stringify(updatedProfile));
 
     if (token) {
       fetch('/api/settings', {
@@ -2894,7 +2851,6 @@ const handleDeleteHabitDb = async (id) => {
                           className={`theme-dropdown-item ${timeRange === opt.id ? 'active' : ''}`}
                           onClick={() => { 
                             setTimeRange(opt.id); 
-                            localStorage.setItem('active_timeframe', opt.id);
                             setIsTimeMenuOpen(false); 
                           }}
                           style={{ fontWeight: timeRange === opt.id ? 800 : 500 }}
@@ -3025,9 +2981,7 @@ const handleDeleteHabitDb = async (id) => {
                                 type="checkbox"
                                 checked={todayWidgetsConfig.showWorkout}
                                 onChange={(e) => {
-                                  const updated = { ...todayWidgetsConfig, showWorkout: e.target.checked };
-                                  setTodayWidgetsConfig(updated);
-                                  localStorage.setItem('today_widgets_config', JSON.stringify(updated));
+                                  setTodayWidgetsConfig(prev => ({ ...prev, showWorkout: e.target.checked }));
                                 }}
                                 style={{ cursor: 'pointer', accentColor: 'var(--accent-blue)', width: '16px', height: '16px' }}
                               />
@@ -3039,9 +2993,7 @@ const handleDeleteHabitDb = async (id) => {
                                 type="checkbox"
                                 checked={todayWidgetsConfig.showProtein}
                                 onChange={(e) => {
-                                  const updated = { ...todayWidgetsConfig, showProtein: e.target.checked };
-                                  setTodayWidgetsConfig(updated);
-                                  localStorage.setItem('today_widgets_config', JSON.stringify(updated));
+                                  setTodayWidgetsConfig(prev => ({ ...prev, showProtein: e.target.checked }));
                                 }}
                                 style={{ cursor: 'pointer', accentColor: 'var(--accent-blue)', width: '16px', height: '16px' }}
                               />
@@ -3053,9 +3005,7 @@ const handleDeleteHabitDb = async (id) => {
                                 type="checkbox"
                                 checked={todayWidgetsConfig.showHydration}
                                 onChange={(e) => {
-                                  const updated = { ...todayWidgetsConfig, showHydration: e.target.checked };
-                                  setTodayWidgetsConfig(updated);
-                                  localStorage.setItem('today_widgets_config', JSON.stringify(updated));
+                                  setTodayWidgetsConfig(prev => ({ ...prev, showHydration: e.target.checked }));
                                 }}
                                 style={{ cursor: 'pointer', accentColor: 'var(--accent-blue)', width: '16px', height: '16px' }}
                               />
@@ -3073,7 +3023,7 @@ const handleDeleteHabitDb = async (id) => {
                     (() => {
                       const hasWorkoutData = Array.isArray(workouts) && workouts.length > 0;
                       const hasProteinSetup = Array.isArray(bodyStats) && bodyStats.some(s => Number(s.target_protein) > 0 || Number(s.protein) > 0);
-                      const hasWaterSetup = !!localStorage.getItem('water_target_goal');
+                      const hasWaterSetup = todayWidgetsConfig.showHydration;
                       if (!hasWorkoutData && !hasProteinSetup && !hasWaterSetup) return null;
                       return (
                     <div style={{ background: 'var(--bg-main)', borderRadius: '20px', border: '1px solid var(--border-color)', padding: '24px', marginBottom: '28px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -3087,16 +3037,11 @@ const handleDeleteHabitDb = async (id) => {
                         {/* a) Today's Scheduled Workout Split */}
                         {todayWidgetsConfig.showWorkout && Array.isArray(workouts) && workouts.length > 0 && (() => {
                           const todayKeyStr = todayKey(userProfile?.timezone);
-                          const daysEpoch = Math.floor(new Date(todayKeyStr).getTime() / (1000 * 60 * 60 * 24));
-                          const splitList = (() => {
-                            try {
-                              const saved = localStorage.getItem('gym_workout_split');
-                              if (saved) return JSON.parse(saved);
-                            } catch (e) {}
-                            return ['Push Day', 'Leg Day', 'Pull Day', 'Cardio / Running', 'Rest & Recovery'];
-                          })();
-                          const currentTitle = splitList[Math.abs(daysEpoch) % splitList.length];
                           const isDone = Array.isArray(workouts) && workouts.some(w => w.date === todayKeyStr);
+                          if (!isDone) return null;
+                          const daysEpoch = Math.floor(new Date(todayKeyStr).getTime() / (1000 * 60 * 60 * 24));
+                          const splitList = [];
+                          const currentTitle = (splitList.length > 0) ? (typeof splitList[Math.abs(daysEpoch) % splitList.length] === 'string' ? splitList[Math.abs(daysEpoch) % splitList.length] : splitList[Math.abs(daysEpoch) % splitList.length]?.name) : 'Workout';
 
                           return (
                             <div style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '14px' }}>
@@ -3249,11 +3194,11 @@ const handleDeleteHabitDb = async (id) => {
                         })()}
 
                         {/* c) Daily Hydration Tracker */}
-                        {todayWidgetsConfig.showHydration && !!localStorage.getItem('water_target_goal') && (() => {
+                        {todayWidgetsConfig.showHydration && (() => {
                           const latestStat = Array.isArray(bodyStats) && bodyStats.length > 0 ? bodyStats[0] : null;
                           const isToday = latestStat?.date === todayKey(userProfile?.timezone);
                           const hydration = isToday ? (Number(latestStat?.hydration) || 0) : 0;
-                          const goal = Number(localStorage.getItem('water_target_goal')) || 3.0;
+                          const goal = 3.0;
                           const pct = Math.min(100, Math.max(0, Math.round((hydration / goal) * 100)));
 
                           const handleAddWater = async (liters) => {
@@ -4220,7 +4165,6 @@ const handleDeleteHabitDb = async (id) => {
                         const updatedList = [tempNote, ...notesList];
                         setNotesList(updatedList);
                         setActiveNoteId(tempId);
-                        localStorage.setItem('cache_notesList', JSON.stringify(updatedList));
 
                         // Background DB creation
                         handleCreateNoteDb(defaultTitle, '', true, (serverNote) => {
@@ -4601,6 +4545,8 @@ const handleDeleteHabitDb = async (id) => {
                     userProfile={userProfile}
                     bodyStats={bodyStats}
                     setBodyStats={setBodyStats}
+                    workouts={workouts}
+                    setWorkouts={setWorkouts}
                     showForm={showWorkoutForm}
                     setShowForm={setShowWorkoutForm}
                   />
@@ -4615,6 +4561,8 @@ const handleDeleteHabitDb = async (id) => {
                     showToast={showToast}
                     timeRange={timeRange}
                     userProfile={userProfile}
+                    sleepLogs={sleepLogs}
+                    setSleepLogs={setSleepLogs}
                   />
                 </TabErrorBoundary>
               )}

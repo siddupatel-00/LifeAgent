@@ -11,10 +11,7 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
     ? todayStat.find(s => s?.date === todayDateStr)
     : (todayStat?.date ? (todayStat.date === todayDateStr ? todayStat : null) : todayStat);
   const [hydrationLiters, setHydrationLiters] = useState(Number(statObj?.hydration || 0));
-  const [targetGoal, setTargetGoal] = useState(() => {
-    const stored = localStorage.getItem('water_target_goal');
-    return stored !== null ? Number(stored) : null;
-  });
+  const [targetGoal, setTargetGoal] = useState(null);
 
   // Empty-state goal setup
   const [goalInput, setGoalInput] = useState('');
@@ -23,28 +20,15 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
   const [isEditingTarget, setIsEditingTarget] = useState(false);
   const [targetGoalInput, setTargetGoalInput] = useState(targetGoal != null ? targetGoal.toString() : '');
 
-  // Custom Quick Presets (stored in localStorage for permanent persistence across sessions)
-  const [presets, setPresets] = useState(() => {
-    try {
-      const saved = localStorage.getItem('water_quick_presets_v2');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch (e) {}
-    return DEFAULT_PRESETS;
-  });
+  // Custom Quick Presets
+  const [presets, setPresets] = useState(DEFAULT_PRESETS);
 
   const [customMlInput, setCustomMlInput] = useState('');
   const [isAddPresetOpen, setIsAddPresetOpen] = useState(false);
 
   // Reminder settings
-  const [isReminderEnabled, setIsReminderEnabled] = useState(() => {
-    return localStorage.getItem('water_reminder_enabled') === 'true';
-  });
-  const [reminderIntervalMinutes, setReminderIntervalMinutes] = useState(() => {
-    return Number(localStorage.getItem('water_reminder_interval')) || 60;
-  });
+  const [isReminderEnabled, setIsReminderEnabled] = useState(false);
+  const [reminderIntervalMinutes, setReminderIntervalMinutes] = useState(60);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [modalTargetGoal, setModalTargetGoal] = useState(targetGoal != null ? targetGoal.toString() : '');
@@ -60,7 +44,6 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
     setGoalInputError('');
     setTargetGoal(val);
     setModalTargetGoal(val.toString());
-    localStorage.setItem('water_target_goal', val.toString());
     showToast?.(`🎯 Daily water goal set to ${val} L!`, 'success');
   };
 
@@ -70,9 +53,6 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
     
     setTargetGoal(newTarget);
     setReminderIntervalMinutes(newInterval);
-    
-    localStorage.setItem('water_target_goal', newTarget.toString());
-    localStorage.setItem('water_reminder_interval', newInterval.toString());
     
     try {
       const token = localStorage.getItem('token');
@@ -137,11 +117,9 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
         }
       }
       setIsReminderEnabled(true);
-      localStorage.setItem('water_reminder_enabled', 'true');
       showToast?.(`💧 Water reminder enabled! Every ${reminderIntervalMinutes} minutes.`, 'success');
     } else {
       setIsReminderEnabled(false);
-      localStorage.setItem('water_reminder_enabled', 'false');
       showToast?.('Water reminder disabled', 'info');
     }
 
@@ -160,7 +138,6 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
   const handleIntervalChange = (mins) => {
     setReminderIntervalMinutes(mins);
     setModalReminderInterval(mins.toString());
-    localStorage.setItem('water_reminder_interval', mins.toString());
     if (isReminderEnabled) {
       showToast?.(`Reminder interval updated to ${mins} minutes.`, 'success');
     }
@@ -212,7 +189,6 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
     }
     const updatedPresets = [...presets, ml].sort((a, b) => a - b);
     setPresets(updatedPresets);
-    localStorage.setItem('water_quick_presets', JSON.stringify(updatedPresets));
     setCustomMlInput('');
     setIsAddPresetOpen(false);
     showToast?.(`Added new +${ml} ml quick button!`, 'success');
@@ -222,7 +198,6 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
     e.stopPropagation();
     const updatedPresets = presets.filter(p => p !== mlToDelete);
     setPresets(updatedPresets);
-    localStorage.setItem('water_quick_presets', JSON.stringify(updatedPresets));
     showToast?.(`Removed +${mlToDelete} ml quick button`, 'info');
   };
 

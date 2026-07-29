@@ -6,24 +6,9 @@ import ConfirmModal from './ConfirmModal';
 import Modal from './Modal';
 import CustomSelect from './CustomSelect';
 
-export default function SleepTracker({ token, showToast, userProfile, todayStat, sleepLogs = [] }) {
-  const [logs, setLogs] = useState(() => {
-    try {
-      const cached = localStorage.getItem('cache_sleep_logs');
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed)) return parsed;
-      }
-    } catch (e) {}
-    return Array.isArray(sleepLogs) ? sleepLogs : [];
-  });
-  const [isLoading, setIsLoading] = useState(() => {
-    try {
-      return !localStorage.getItem('cache_sleep_logs');
-    } catch (e) {
-      return true;
-    }
-  });
+export default function SleepTracker({ token, showToast, userProfile, todayStat, sleepLogs = [], setSleepLogs }) {
+  const [logs, setLogs] = useState(() => Array.isArray(sleepLogs) && sleepLogs.length > 0 ? sleepLogs : []);
+  const [isLoading, setIsLoading] = useState(!Array.isArray(sleepLogs) || sleepLogs.length === 0);
   const [showModal, setShowModal] = useState(false);
   const [editingLogId, setEditingLogId] = useState(null);
   const [formData, setFormData] = useState({
@@ -43,6 +28,13 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
   
   // Chart type: 'bar' | 'line'
   const [chartType, setChartType] = useState('bar');
+
+  useEffect(() => {
+    if (Array.isArray(sleepLogs) && sleepLogs.length > 0) {
+      setLogs(sleepLogs);
+      setIsLoading(false);
+    }
+  }, [sleepLogs]);
 
   const handleOpenAddModal = () => {
     setEditingLogId(null);
@@ -114,7 +106,11 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
   };
 
   useEffect(() => {
-    fetchLogs();
+    if ((!sleepLogs || sleepLogs.length === 0) && token) {
+      fetchLogs();
+    } else {
+      setIsLoading(false);
+    }
   }, []);
 
   const fetchLogs = async () => {
@@ -125,7 +121,7 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
       if (res.ok) {
         const data = await res.json();
         setLogs(data);
-        try { localStorage.setItem('cache_sleep_logs', JSON.stringify(data)); } catch (e) {}
+        setSleepLogs?.(data);
       }
     } catch (error) {
       // quiet background error handling
@@ -155,7 +151,11 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
         });
         
         if (res.ok) {
-          setLogs(prev => prev.map(l => l.id === editingLogId ? { ...l, ...payload } : l).sort((a, b) => new Date(b.date) - new Date(a.date)));
+          setLogs(prev => {
+            const next = prev.map(l => l.id === editingLogId ? { ...l, ...payload } : l).sort((a, b) => new Date(b.date) - new Date(a.date));
+            setSleepLogs?.(next);
+            return next;
+          });
           setShowModal(false);
           setEditingLogId(null);
           showToast?.('Sleep Log Updated', 'success');
@@ -183,7 +183,11 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
         
         if (res.ok) {
           const newLog = await res.json();
-          setLogs(prev => [newLog, ...prev.filter(l => l.id !== newLog.id)].sort((a, b) => new Date(b.date) - new Date(a.date)));
+          setLogs(prev => {
+            const next = [newLog, ...prev.filter(l => l.id !== newLog.id)].sort((a, b) => new Date(b.date) - new Date(a.date));
+            setSleepLogs?.(next);
+            return next;
+          });
           setShowModal(false);
           setEditingLogId(null);
           showToast?.('Sleep Log Added', 'success');
@@ -222,7 +226,11 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
       });
       
       if (res.ok) {
-        setLogs(prev => prev.filter(log => log.id !== id));
+        setLogs(prev => {
+          const next = prev.filter(log => log.id !== id);
+          setSleepLogs?.(next);
+          return next;
+        });
         showToast?.('Sleep log deleted', 'info');
       } else {
         showToast?.('Failed to delete log', 'error');
