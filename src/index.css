@@ -817,16 +817,29 @@ input[type="checkbox"]:checked::after {
     padding: 12px 14px !important;
     margin: 0 -12px;
     border-bottom: 1px solid var(--border-color);
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    overflow-x: auto !important;
+    scrollbar-width: none !important;
   }
   
   /* Make title smaller on mobile */
   .dashboard-header h2 {
-    font-size: 1.3rem !important;
+    font-size: 1.15rem !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    flex-shrink: 1 !important;
   }
   
   /* Header buttons row */
   .header-actions {
-    gap: 6px !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    flex-shrink: 0 !important;
+    gap: 4px !important;
   }
 
   /* Remove excessive padding from cards on mobile */
@@ -846,8 +859,20 @@ input[type="checkbox"]:checked::after {
   }
   
   /* Better button sizing for touch */
-  .blue-btn {
+  button, 
+  .blue-btn, 
+  .secondary-btn, 
+  .theme-toggle-btn, 
+  .drawer-btn,
+  [role="button"],
+  .close-btn,
+  .modal-close-icon,
+  .blur-overlay button.close-icon,
+  [title="Toggle Persistent AI Side Panel"] {
     min-height: 44px !important;
+    min-width: 44px;
+  }
+  .blue-btn {
     padding: 10px 18px !important;
     font-size: 0.9rem !important;
     border-radius: 22px !important;
@@ -924,11 +949,15 @@ input[type="checkbox"]:checked::after {
     justify-content: center !important;
   }
 
-  /* Make 2/3 column grids stack cleanly */
-  div[style*="display: grid"],
+  /* Make grids stack cleanly or wrap 2-column nicely */
+  div[style*="grid-template-columns: repeat(auto-fit"] {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) !important;
+    gap: 12px !important;
+  }
+  div[style*="display: grid"]:not([style*="grid-template-columns: repeat(auto-fit"]),
   div[style*="grid-template-columns: 1fr 340px"],
   div[style*="grid-template-columns: 320px 1fr"],
-  div[style*="grid-template-columns: repeat(auto-fit"],
   div[style*="grid-template-columns: 1.5fr 1fr 1fr auto"],
   div[style*="grid-template-columns: 1.2fr 1fr"],
   div[style*="grid-template-columns: 1fr 1fr"],
@@ -948,6 +977,12 @@ input[type="checkbox"]:checked::after {
 
   /* Modals and Cards width to fit mobile screen without scrollbar overflow */
   .blur-overlay > div,
+  .modal-overlay > div {
+    width: 100% !important;
+    max-width: 92vw !important;
+    box-sizing: border-box !important;
+    margin: auto !important;
+  }
   .glass-card {
     width: 100% !important;
     max-width: calc(100vw - 24px) !important;
@@ -979,8 +1014,10 @@ input[type="checkbox"]:checked::after {
   input[type="date"],
   input[type="time"],
   textarea,
-  select {
+  select,
+  .glass-input {
     font-size: 16px !important;
+    min-height: 44px !important;
   }
 
   input:focus,
@@ -1130,7 +1167,9 @@ input[type="checkbox"]:checked::after {
   /* Mobile header bar fixes */
   .mobile-header-bar {
     display: flex !important;
+    flex-wrap: nowrap !important;
     align-items: center !important;
+    justify-content: space-between !important;
     gap: 8px !important;
     padding: 12px 14px !important;
     background: var(--bg-card) !important;
@@ -1138,6 +1177,8 @@ input[type="checkbox"]:checked::after {
     position: sticky !important;
     top: 0 !important;
     z-index: 100 !important;
+    overflow-x: auto !important;
+    scrollbar-width: none !important;
   }
 
   /* Style the AI button in header dynamically matching active theme on mobile */
@@ -1162,6 +1203,17 @@ input[type="checkbox"]:checked::after {
   /* Storefront nav bar subtitle hidden on narrow mobile screens to prevent header bloat */
   .nav-bar p {
     display: none !important;
+  }
+  .nav-bar {
+    flex-wrap: nowrap !important;
+    gap: 8px !important;
+    padding: 12px 14px !important;
+  }
+  .nav-bar > div:first-child {
+    white-space: nowrap !important;
+    flex-shrink: 1 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
   }
 
   /* Reset fixed max-height & sticky positioning on stacked mobile columns for fluid native page scrolling */

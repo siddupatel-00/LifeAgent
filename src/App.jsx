@@ -87,6 +87,11 @@ export default function App() {
     }
     if (path.includes('/waitlist')) return 'waitlist';
     if (path.includes('/contact')) return 'contact';
+    
+    if (isAuth) {
+      window.history.replaceState({}, '', '/dashboard');
+      return 'dashboard';
+    }
     return 'landing';
   });
 
@@ -122,7 +127,12 @@ export default function App() {
       } else if (path.includes('/contact')) {
         setCurrentPage('contact');
       } else {
-        setCurrentPage('landing');
+        if (isAuth) {
+          window.history.replaceState({}, '', '/dashboard');
+          setCurrentPage('dashboard');
+        } else {
+          setCurrentPage('landing');
+        }
       }
     };
     window.addEventListener('popstate', handlePopState);

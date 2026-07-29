@@ -67,7 +67,9 @@ const SettingsPanel = ({
             smartAlerts: userProfile.smartAlerts !== undefined ? !!userProfile.smartAlerts : (userProfile.smart_alerts !== undefined ? userProfile.smart_alerts !== 0 : true),
             auto_open_ai_sidechat: userProfile.auto_open_ai_sidechat !== false ? 1 : 0,
             week_start_day: userProfile.weekStartDay || userProfile.week_start_day || 'Monday',
-            weekStartDay: userProfile.weekStartDay || userProfile.week_start_day || 'Monday'
+            weekStartDay: userProfile.weekStartDay || userProfile.week_start_day || 'Monday',
+            sync_to_cloud: userProfile.syncToCloud !== false ? 1 : 0,
+            syncToCloud: userProfile.syncToCloud !== false
           })
         });
         if (res.ok) {
@@ -522,6 +524,40 @@ const SettingsPanel = ({
               />
             </div>
 
+          </div>
+        </div>
+
+        {/* SECTION 3: Account & Data Preferences */}
+        <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '24px' }}>
+          <h4 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-blue)' }}>
+            <Save size={18} /> Account & Data Preferences
+          </h4>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div className="settings-row">
+              <div>
+                <div style={{ fontWeight: 700, fontSize: '1rem' }}>Sync Data to Cloud Database</div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>If app is uninstalled, your data is safe and can be restored anytime from cloud backup.</div>
+              </div>
+              <div
+                onClick={() => {
+                  const val = !(userProfile.syncToCloud !== false);
+                  setUserProfile({ ...userProfile, syncToCloud: val, sync_to_cloud: val ? 1 : 0 });
+                }}
+                style={{
+                  width: '52px', height: '28px', borderRadius: '14px', cursor: 'pointer', flexShrink: 0,
+                  background: (userProfile.syncToCloud !== false) ? 'var(--accent-blue)' : 'var(--border-color)',
+                  position: 'relative', transition: 'background 0.25s'
+                }}
+              >
+                <div style={{
+                  position: 'absolute', top: '3px',
+                  left: (userProfile.syncToCloud !== false) ? '26px' : '3px',
+                  width: '22px', height: '22px', borderRadius: '50%',
+                  background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+                  transition: 'left 0.25s'
+                }} />
+              </div>
+            </div>
           </div>
         </div>
 

@@ -40,7 +40,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'GET') {
-      const result = await db.execute({ sql: 'SELECT name, email, phone, handle, theme, ai_name, gemini_api_key, groq_api_key, ai_provider, currency, ai_tone, morning_audit, smart_alerts, week_start_day FROM users WHERE id = ?', args: [userId] });
+      const result = await db.execute({ sql: 'SELECT name, email, phone, handle, theme, ai_name, gemini_api_key, groq_api_key, ai_provider, currency, ai_tone, morning_audit, smart_alerts, week_start_day, sync_to_cloud FROM users WHERE id = ?', args: [userId] });
       if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
       
       let userSettings = { timezone: 'UTC', chat_reset_time: '00:00', last_chat_reset: null, workout_split_type: 'weekly', workout_templates: null, week_start_day: 'Monday' };
@@ -74,6 +74,8 @@ export default async function handler(req, res) {
         smartAlerts: (row.smart_alerts !== undefined && row.smart_alerts !== null) ? row.smart_alerts !== 0 : true,
         week_start_day: weekStartDay,
         weekStartDay: weekStartDay,
+        sync_to_cloud: row.sync_to_cloud !== undefined && row.sync_to_cloud !== null ? row.sync_to_cloud : 1,
+        syncToCloud: (row.sync_to_cloud !== undefined && row.sync_to_cloud !== null) ? row.sync_to_cloud !== 0 : true,
         ...userSettings
       });
     }
@@ -96,6 +98,7 @@ export default async function handler(req, res) {
       const timezone = body.timezone;
       const chat_reset_time = body.chat_reset_time || body.chatResetTime;
       const week_start_day = body.week_start_day || body.weekStartDay;
+      const sync_to_cloud = body.syncToCloud !== undefined ? (body.syncToCloud ? 1 : 0) : (body.sync_to_cloud !== undefined ? (body.sync_to_cloud ? 1 : 0) : undefined);
       
       const workout_split_type = body.workout_split_type;
       const workout_templates = body.workout_templates;
@@ -119,7 +122,7 @@ export default async function handler(req, res) {
       }
 
       await db.execute({
-        sql: 'UPDATE users SET name = ?, email = ?, phone = ?, handle = ?, theme = ?, ai_name = ?, gemini_api_key = ?, groq_api_key = ?, ai_provider = ?, currency = ?, ai_tone = ?, morning_audit = ?, smart_alerts = ?, week_start_day = ? WHERE id = ?',
+        sql: 'UPDATE users SET name = ?, email = ?, phone = ?, handle = ?, theme = ?, ai_name = ?, gemini_api_key = ?, groq_api_key = ?, ai_provider = ?, currency = ?, ai_tone = ?, morning_audit = ?, smart_alerts = ?, week_start_day = ?, sync_to_cloud = ? WHERE id = ?',
         args: [
           name !== undefined ? name : current.name,
           email !== undefined ? email : current.email,
@@ -135,6 +138,7 @@ export default async function handler(req, res) {
           morning_audit !== undefined ? morning_audit : (current.morning_audit !== undefined && current.morning_audit !== null ? current.morning_audit : 1),
           smart_alerts !== undefined ? smart_alerts : (current.smart_alerts !== undefined && current.smart_alerts !== null ? current.smart_alerts : 1),
           week_start_day !== undefined ? week_start_day : (current.week_start_day || 'Monday'),
+          sync_to_cloud !== undefined ? sync_to_cloud : (current.sync_to_cloud !== undefined && current.sync_to_cloud !== null ? current.sync_to_cloud : 1),
           userId
         ]
       });
