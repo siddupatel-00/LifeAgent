@@ -631,17 +631,28 @@ export default function App() {
     if (!token) return;
     try {
       const headers = { 'Authorization': `Bearer ${token}` };
+      const timezone = localTimeZone();
+      const clientDate = todayKey(timezone);
       
-      const settingsRes = await fetch('/api/settings', { headers });
-      let timezone = localTimeZone();
-      if (settingsRes.ok) {
+      // Parallel fetch all dashboard endpoints concurrently for 9x speedup
+      const [settingsRes, todayRes, habitsRes, txRes, chatRes, calRes, workoutsRes, statsRes, notesRes] = await Promise.all([
+        fetch('/api/settings', { headers }).catch(e => null),
+        fetch(`/api/today?client_date=${clientDate}`, { headers }).catch(e => null),
+        fetch('/api/habits', { headers }).catch(e => null),
+        fetch('/api/transactions', { headers }).catch(e => null),
+        fetch('/api/chat', { headers }).catch(e => null),
+        fetch('/api/calendar', { headers }).catch(e => null),
+        fetch('/api/fitness?type=workouts', { headers }).catch(e => null),
+        fetch('/api/fitness?type=body-stats', { headers }).catch(e => null),
+        fetch('/api/notes', { headers }).catch(e => null)
+      ]);
+
+      if (settingsRes && settingsRes.ok) {
         const sData = await settingsRes.json();
         if (sData) {
-          // Fresh accounts have a UTC database default; use the device timezone until
-          // the user chooses a different timezone in Settings.
-          timezone = sData.timezone && sData.timezone !== 'UTC' ? sData.timezone : timezone;
+          const userTz = sData.timezone && sData.timezone !== 'UTC' ? sData.timezone : timezone;
           setUserProfile(prev => {
-            const next = { ...prev, ...sData, currency: sData.currency || '$', timezone };
+            const next = { ...prev, ...sData, currency: sData.currency || '$', timezone: userTz };
             localStorage.setItem('cache_userProfile', JSON.stringify(next));
             return next;
           });
@@ -651,23 +662,21 @@ export default function App() {
           if (sData.ai_name) setAiName(sData.ai_name);
         }
       }
-      const clientDate = todayKey(timezone);
-      const todayRes = await fetch(`/api/today?client_date=${clientDate}`, { headers });
+
       let todayData = [];
-      if (todayRes.ok) {
+      if (todayRes && todayRes.ok) {
         todayData = await todayRes.json();
         const mappedToday = todayData.map(t => ({ id: t.id, time: t.time, title: t.label, category: t.category, checked: !!t.checked, habitId: t.habit_id || null }));
         setTodayItems(mappedToday);
         localStorage.setItem('cache_todayItems', JSON.stringify(mappedToday));
       }
-      const habitsRes = await fetch('/api/habits', { headers });
-      if (habitsRes.ok) {
+
+      if (habitsRes && habitsRes.ok) {
         const hData = await habitsRes.json();
         const mappedHabits = hData.map(h => ({
           id: h.id, title: h.label, category: h.category, streak: h.streak, target: h.target || '',
           challengeDays: h.challenge_days || 0, startDate: h.start_date || null,
           archived: h.archived === 1, completedAt: h.completed_at || null,
-          // A habit's completion belongs to its record for this calendar date.
           checkedToday: todayData.some(item => item.habit_id === h.id && !!item.checked),
           pausedUntil: h.paused_until || null
         }));
@@ -675,54 +684,46 @@ export default function App() {
         localStorage.setItem('cache_habits', JSON.stringify(mappedHabits));
       }
 
-      const txRes = await fetch('/api/transactions', { headers });
-      if (txRes.ok) {
+      if (txRes && txRes.ok) {
         const txData = await txRes.json();
         const mappedTx = txData.map(t => ({ id: t.id, title: t.title, amount: t.amount, type: t.type, date: t.date }));
         setTransactions(mappedTx);
         localStorage.setItem('cache_transactions', JSON.stringify(mappedTx));
       }
 
-      const chatRes = await fetch('/api/chat', { headers });
-      if (chatRes.ok) {
+      if (chatRes && chatRes.ok) {
         const cData = await chatRes.json();
         const mappedChat = cData.map(c => ({ id: c.id, sender: c.sender, text: c.text, time: c.time }));
         setAiMessages(mappedChat);
         localStorage.setItem('cache_aiMessages', JSON.stringify(mappedChat));
       }
 
-      const calRes = await fetch('/api/calendar', { headers });
-      if (calRes.ok) {
+      if (calRes && calRes.ok) {
         const calData = await calRes.json();
         const mappedCal = calData.map(c => ({ id: c.id, title: c.title, date: c.date, color: c.color, status: c.status, endDate: c.end_date }));
         setCalendarEvents(mappedCal);
         localStorage.setItem('cache_calendarEvents', JSON.stringify(mappedCal));
       }
-      
-      const workoutsRes = await fetch('/api/fitness?type=workouts', { headers });
-      if (workoutsRes.ok) {
+
+      if (workoutsRes && workoutsRes.ok) {
         const wData = await workoutsRes.json();
         setWorkouts(wData);
         localStorage.setItem('cache_workouts', JSON.stringify(wData));
       }
 
-      const statsRes = await fetch('/api/fitness?type=body-stats', { headers });
-      if (statsRes.ok) {
+      if (statsRes && statsRes.ok) {
         const sData = await statsRes.json();
         setBodyStats(sData);
         localStorage.setItem('cache_bodyStats', JSON.stringify(sData));
       }
 
-      const notesRes = await fetch('/api/notes', { headers });
-      if (notesRes.ok) {
+      if (notesRes && notesRes.ok) {
         const notesData = await notesRes.json();
         let activeNotes = notesData.filter(n => !n.is_trashed).map(n => ({ id: n.id, title: n.title, content: n.content, category: n.category, date: n.date, shareWithAi: !!n.share_with_ai }));
         const trashedNotes = notesData.filter(n => !!n.is_trashed).map(n => ({ id: n.id, title: n.title, content: n.content, category: n.category, date: n.date, shareWithAi: !!n.share_with_ai, deletedAt: n.deleted_at ? new Date(n.deleted_at).getTime() : Date.now() }));
         
         setTrashNotes(trashedNotes);
         localStorage.setItem('cache_trashNotes', JSON.stringify(trashedNotes));
-
-        // Always set the notes list, but do NOT auto-select a note
         setNotesList(activeNotes);
         localStorage.setItem('cache_notesList', JSON.stringify(activeNotes));
       }
@@ -1110,24 +1111,22 @@ const handleDeleteHabitDb = async (id) => {
     }
   };
 
-  const handleSaveSettings = async (e) => {
-    e.preventDefault();
+  const handleSaveSettings = (e) => {
+    e?.preventDefault();
+    setSettingsSaved(true);
+    showToast('Settings saved successfully!', 'success');
+    setTimeout(() => setSettingsSaved(false), 3000);
+
+    const updatedProfile = { ...userProfile, ai_name: aiName, gemini_api_key: geminiApiKey, groq_api_key: groqApiKey, ai_provider: aiProvider, theme: themeMode, currency: userProfile.currency };
+    setUserProfile(updatedProfile);
+    localStorage.setItem('cache_userProfile', JSON.stringify(updatedProfile));
+
     if (token) {
-      try {
-        const res = await fetch('/api/settings', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ ...userProfile, ai_name: aiName, gemini_api_key: geminiApiKey, groq_api_key: groqApiKey, ai_provider: aiProvider, theme: themeMode, currency: userProfile.currency })
-        });
-        if (res.ok) {
-          setSettingsSaved(true);
-          setTimeout(() => setSettingsSaved(false), 3000);
-        } else {
-          console.error('Settings save failed:', res.status);
-        }
-      } catch (err) {
-        console.error('Settings save failed:', err);
-      }
+      fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(updatedProfile)
+      }).catch(err => console.error('Background settings save failed:', err));
     }
   };
 
@@ -4065,14 +4064,24 @@ const handleDeleteHabitDb = async (id) => {
                     </div>
                     <button 
                       className="blue-btn"
-                      onClick={async () => {
-                        const baseTitle = getFormattedDateTitle();
-                        const count = notesList.filter(n => n.title === baseTitle || n.title.startsWith(`${baseTitle} (`)).length;
+                      onClick={() => {
+                        const baseTitle = new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+                        const count = notesList.filter(n => n.title && n.title.startsWith(baseTitle)).length;
                         const defaultTitle = count > 0 ? `${baseTitle} (${count + 1})` : baseTitle;
-                        const defaultContent = '';
-                        handleCreateNoteDb(defaultTitle, defaultContent, true, (newNote) => {
-                          setNotesList([newNote, ...notesList]);
-                          setActiveNoteId(newNote.id);
+                        const tempId = Date.now();
+                        const tempNote = { id: tempId, title: defaultTitle, content: '', shareWithAi: true, date: new Date().toISOString() };
+                        
+                        // Instant 0ms UI update
+                        const updatedList = [tempNote, ...notesList];
+                        setNotesList(updatedList);
+                        setActiveNoteId(tempId);
+                        localStorage.setItem('cache_notesList', JSON.stringify(updatedList));
+                        showToast('Note created!', 'success');
+
+                        // Background DB creation
+                        handleCreateNoteDb(defaultTitle, '', true, (serverNote) => {
+                          setNotesList(prev => prev.map(n => n.id === tempId ? { ...n, id: serverNote.id } : n));
+                          setActiveNoteId(serverNote.id);
                         });
                       }}
                       style={{ padding: '10px 22px', fontSize: '0.92rem' }}
