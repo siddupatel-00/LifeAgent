@@ -281,7 +281,7 @@ export default function App() {
   // Validate session on mount if token exists; log out if account was deleted or token expired
   useEffect(() => {
     if (!token) return;
-    fetch('/api/auth?action=me', {
+    fetch(getApiUrl('/api/auth?action=me'), {
       headers: { 'Authorization': `Bearer ${token}` }
     }).then(res => {
       if (res.status === 401 || res.status === 403 || res.status === 404) {
@@ -309,7 +309,7 @@ export default function App() {
     setAuthError('');
     try {
       const endpoint = authMode === 'login' ? '/api/auth?action=login' : '/api/auth?action=register';
-      const res = await fetch(endpoint, {
+      const res = await fetch(getApiUrl(endpoint), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(authForm)
@@ -344,7 +344,7 @@ export default function App() {
     setAuthError('');
     setResetSuccessMsg('');
     try {
-      const res = await fetch('/api/auth?action=forgot-password', {
+      const res = await fetch(getApiUrl('/api/auth?action=forgot-password'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ emailOrHandle: resetEmailOrHandle })
@@ -369,7 +369,7 @@ export default function App() {
     setAuthError('');
     setResetSuccessMsg('');
     try {
-      const res = await fetch('/api/auth?action=verify-reset-code', {
+      const res = await fetch(getApiUrl('/api/auth?action=verify-reset-code'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -397,7 +397,7 @@ export default function App() {
     setAuthError('');
     setResetSuccessMsg('');
     try {
-      const res = await fetch('/api/auth?action=reset-password', {
+      const res = await fetch(getApiUrl('/api/auth?action=reset-password'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -500,9 +500,13 @@ export default function App() {
 
 
   // 2) Habit Tracker state
-  // Habits state with exact daily tracking items: Gym, Study, Code, Reading
   const [showHabitHistory, setShowHabitHistory] = useState(false);
-  const [habits, setHabits] = useState([]);
+  const [habits, setHabits] = useState(() => {
+    try {
+      const saved = localStorage.getItem('cache_habits');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) { return []; }
+  });
   const [isAddHabitModalOpen, setIsAddHabitModalOpen] = useState(false);
   const [isEditHabitModalOpen, setIsEditHabitModalOpen] = useState(false);
   const [editingHabitData, setEditingHabitData] = useState(null);
@@ -510,19 +514,39 @@ export default function App() {
   const [customPillarInput, setCustomPillarInput] = useState('');
   const [newTodayItemData, setNewTodayItemData] = useState({ title: '', category: 'Coding', time: '10:00 AM' });
   const [isAddTodayItemOpen, setIsAddTodayItemOpen] = useState(false);
-  const [todayItems, setTodayItems] = useState([]);
+  const [todayItems, setTodayItems] = useState(() => {
+    try {
+      const saved = localStorage.getItem('cache_todayItems');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) { return []; }
+  });
   const [habitCardViews, setHabitCardViews] = useState({}); // { habitId: 'progress' | 'heatmap' }
   const [habitMenuOpen, setHabitMenuOpen] = useState(null); // habitId
 
   // 3) Finance state
-  const [transactions, setTransactions] = useState([]);
+  const [transactions, setTransactions] = useState(() => {
+    try {
+      const saved = localStorage.getItem('cache_transactions');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) { return []; }
+  });
   const [newTitle, setNewTitle] = useState('');
   const [newAmount, setNewAmount] = useState('');
   const [newType, setNewType] = useState('spend');
 
   // 4) Body & Gym state
-  const [workouts, setWorkouts] = useState([]);
-  const [bodyStats, setBodyStats] = useState([]);
+  const [workouts, setWorkouts] = useState(() => {
+    try {
+      const saved = localStorage.getItem('cache_workouts');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) { return []; }
+  });
+  const [bodyStats, setBodyStats] = useState(() => {
+    try {
+      const saved = localStorage.getItem('cache_bodyStats');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) { return []; }
+  });
 
   const handleSaveBodyStat = async (updated) => {
     const todayStr = todayKey(userProfile?.timezone);
@@ -539,7 +563,7 @@ export default function App() {
     }
     
     if (token) {
-      fetch('/api/fitness?type=body-stats', {
+      fetch(getApiUrl('/api/fitness?type=body-stats'), {
         method: payload.id ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(payload)
@@ -549,21 +573,33 @@ export default function App() {
     setBodyStats(prev => {
        const arr = Array.isArray(prev) ? prev : (prev ? [prev] : []);
        const existingIdx = arr.findIndex(s => s.date === todayStr);
+       let nextArr = [];
        if (existingIdx >= 0) {
-          const next = [...arr];
-          next[existingIdx] = { ...next[existingIdx], ...payload };
-          return next;
+          nextArr = [...arr];
+          nextArr[existingIdx] = { ...nextArr[existingIdx], ...payload };
        } else {
-          return [{ ...payload, id: payload.id || Date.now() }, ...arr];
+          nextArr = [{ ...payload, id: payload.id || Date.now() }, ...arr];
        }
+       localStorage.setItem('cache_bodyStats', JSON.stringify(nextArr));
+       return nextArr;
     });
   };
 
   // 5) Sleep state
-  const [sleepLogs, setSleepLogs] = useState([]);
+  const [sleepLogs, setSleepLogs] = useState(() => {
+    try {
+      const saved = localStorage.getItem('cache_sleepLogs');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) { return []; }
+  });
 
   // 6) Notes & Diary state (with AI sharing permissions)
-  const [notesList, setNotesList] = useState([]);
+  const [notesList, setNotesList] = useState(() => {
+    try {
+      const saved = localStorage.getItem('cache_notesList');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) { return []; }
+  });
   const [activeNoteId, setActiveNoteId] = useState(null);
   const [isFloatingDiaryOpen, setIsFloatingDiaryOpen] = useState(false);
   const [floatingDiaryContent, setFloatingDiaryContent] = useState("");
@@ -580,7 +616,7 @@ export default function App() {
       if (expired.length > 0) {
         // Permanently delete expired notes from DB
         expired.forEach(note => {
-          fetch('/api/notes', {
+          fetch(getApiUrl('/api/notes'), {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ id: note.id })
@@ -608,7 +644,12 @@ export default function App() {
   }, [activeTab, userProfile.auto_open_ai_sidechat]);
 
   // 8) Calendar state
-  const [calendarEvents, setCalendarEvents] = useState([]);
+  const [calendarEvents, setCalendarEvents] = useState(() => {
+    try {
+      const saved = localStorage.getItem('cache_calendarEvents');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) { return []; }
+  });
   const [calendarSubTab, setCalendarSubTab] = useState('today');
   const [selectedCalendarDate, setSelectedCalendarDate] = useState(null);
   const [calendarMonth, setCalendarMonth] = useState(() => {
@@ -667,9 +708,9 @@ export default function App() {
       const clientDate = todayKey(timezone);
 
       const [settingsRes, todayRes, habitsRes] = await Promise.all([
-        fetch('/api/settings', { headers }).catch(e => null),
-        fetch(`/api/today?client_date=${clientDate}`, { headers }).catch(e => null),
-        fetch('/api/habits', { headers }).catch(e => null)
+        fetch(getApiUrl('/api/settings'), { headers }).catch(e => null),
+        fetch(getApiUrl(`/api/today?client_date=${clientDate}`), { headers }).catch(e => null),
+        fetch(getApiUrl('/api/habits'), { headers }).catch(e => null)
       ]);
 
       if (settingsRes && settingsRes.ok) {
@@ -732,8 +773,8 @@ export default function App() {
     try {
       const headers = { 'Authorization': `Bearer ${token}` };
       const [workoutsRes, statsRes] = await Promise.all([
-        fetch('/api/fitness?type=workouts', { headers }).catch(e => null),
-        fetch('/api/fitness?type=body-stats', { headers }).catch(e => null)
+        fetch(getApiUrl('/api/fitness?type=workouts'), { headers }).catch(e => null),
+        fetch(getApiUrl('/api/fitness?type=body-stats'), { headers }).catch(e => null)
       ]);
 
       if (workoutsRes && workoutsRes.ok) {
@@ -759,8 +800,8 @@ export default function App() {
     try {
       const headers = { 'Authorization': `Bearer ${token}` };
       const [txRes, financeRes] = await Promise.all([
-        fetch('/api/transactions', { headers }).catch(e => null),
-        fetch('/api/finance', { headers }).catch(e => null)
+        fetch(getApiUrl('/api/transactions'), { headers }).catch(e => null),
+        fetch(getApiUrl('/api/finance'), { headers }).catch(e => null)
       ]);
       const validTxRes = (txRes && txRes.ok) ? txRes : (financeRes && financeRes.ok ? financeRes : null);
       if (validTxRes) {
@@ -780,7 +821,7 @@ export default function App() {
     if (!force && loadedTabsRef.current.notes) return;
     try {
       const headers = { 'Authorization': `Bearer ${token}` };
-      const notesRes = await fetch('/api/notes', { headers }).catch(e => null);
+      const notesRes = await fetch(getApiUrl('/api/notes'), { headers }).catch(e => null);
       if (notesRes && notesRes.ok) {
         const notesData = await notesRes.json();
         let activeNotes = notesData.filter(n => !n.is_trashed).map(n => ({ id: n.id, title: n.title, content: n.content, category: n.category, date: n.date, shareWithAi: !!n.share_with_ai }));
@@ -802,7 +843,7 @@ export default function App() {
     if (!force && loadedTabsRef.current.sleep) return;
     try {
       const headers = { 'Authorization': `Bearer ${token}` };
-      const sleepRes = await fetch('/api/sleep', { headers }).catch(e => null);
+      const sleepRes = await fetch(getApiUrl('/api/sleep'), { headers }).catch(e => null);
       if (sleepRes && sleepRes.ok) {
         const sLogs = await sleepRes.json();
         setSleepLogs(sLogs);
@@ -819,7 +860,7 @@ export default function App() {
     if (!force && loadedTabsRef.current.calendar) return;
     try {
       const headers = { 'Authorization': `Bearer ${token}` };
-      const calRes = await fetch('/api/calendar', { headers }).catch(e => null);
+      const calRes = await fetch(getApiUrl('/api/calendar'), { headers }).catch(e => null);
       if (calRes && calRes.ok) {
         const calData = await calRes.json();
         const mappedCal = calData.map(c => ({ id: c.id, title: c.title, date: c.date, color: c.color, status: c.status, endDate: c.end_date }));
@@ -837,7 +878,7 @@ export default function App() {
     if (!force && loadedTabsRef.current.ai) return;
     try {
       const headers = { 'Authorization': `Bearer ${token}` };
-      const chatRes = await fetch('/api/chat', { headers }).catch(e => null);
+      const chatRes = await fetch(getApiUrl('/api/chat'), { headers }).catch(e => null);
       if (chatRes && chatRes.ok) {
         const cData = await chatRes.json();
         const mappedChat = cData.map(c => ({ id: c.id, sender: c.sender, text: c.text, time: c.time }));
@@ -853,7 +894,7 @@ export default function App() {
   const handleResetAllAccountData = async () => {
     if (!token) return;
     try {
-      const res = await fetch('/api/settings?action=reset-all', {
+      const res = await fetch(getApiUrl('/api/settings?action=reset-all'), {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -3550,11 +3591,13 @@ const handleDeleteHabitDb = async (id) => {
                 <div className="ai-chat-view animate-entrance" style={{
                   display: 'flex',
                   flexDirection: 'column',
-                  height: 'calc(100vh - 170px)',
+                  height: 'calc(100dvh - 145px)',
+                  maxHeight: 'calc(100dvh - 145px)',
                   overflow: 'hidden',
                   background: 'var(--bg-main)',
                   borderRadius: '20px',
-                  border: '1px solid var(--border-color)'
+                  border: '1px solid var(--border-color)',
+                  boxSizing: 'border-box'
                 }}>
                   {/* Header */}
                   <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-card)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>

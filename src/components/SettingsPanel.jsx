@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Check, User, Bot, Save, LogOut, AlertTriangle } from 'lucide-react';
 import CustomSelect from './CustomSelect';
 import ConfirmModal from './ConfirmModal';
+import { getApiUrl } from '../utils/apiConfig';
 
 const SettingsPanel = ({
   userProfile,
@@ -45,7 +46,7 @@ const SettingsPanel = ({
     e.preventDefault();
     if (token) {
       try {
-        const res = await fetch('/api/settings', {
+        const res = await fetch(getApiUrl('/api/settings'), {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({ 
@@ -480,7 +481,7 @@ const SettingsPanel = ({
                   const newVal = !(userProfile.share_notes_with_ai || false);
                   setUserProfile({ ...userProfile, share_notes_with_ai: newVal });
                   try {
-                    await fetch('/api/settings', {
+                    await fetch(getApiUrl('/api/settings'), {
                       method: 'PUT',
                       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                       body: JSON.stringify({ share_notes_with_ai: newVal ? 1 : 0 })

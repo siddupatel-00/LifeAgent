@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { todayKey } from '../utils/date';
+import { getApiUrl } from '../utils/apiConfig';
 import { Calendar as CalendarIcon, Plus, Trash2, ChevronDown, Filter, AlertCircle, CheckCircle, Clock, X } from 'lucide-react';
 import ConfirmModal from './ConfirmModal';
 
@@ -33,7 +34,7 @@ export default function CalendarPanel({
   const handleAddEvent = async () => {
     if (!newEventTitle.trim()) return;
     try {
-      const res = await fetch('/api/calendar', {
+      const res = await fetch(getApiUrl('/api/calendar'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ title: newEventTitle.trim(), date: newEventDate, color: 'var(--accent-blue)' })
@@ -57,7 +58,7 @@ export default function CalendarPanel({
   const performDeleteEvent = async (id) => {
     if (!id) return;
     try {
-      const res = await fetch('/api/calendar', {
+      const res = await fetch(getApiUrl('/api/calendar'), {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ id })
@@ -77,7 +78,7 @@ export default function CalendarPanel({
   const handleUpdateStatus = async (id, status) => {
     try {
       const safeId = Number(id); // Convert BigInt/string to number for JSON serialization
-      const res = await fetch('/api/calendar', {
+      const res = await fetch(getApiUrl('/api/calendar'), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ id: safeId, status })

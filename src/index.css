@@ -935,21 +935,11 @@ input[type="checkbox"]:checked::after {
     transform: translateY(-2px) !important;
   }
 
-  .mobile-nav-btn.ai-center-btn,
-  .ai-center-btn {
-    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
-    color: #ffffff !important;
-    width: 50px !important;
-    height: 50px !important;
-    border-radius: 50% !important;
-    border: 2px solid rgba(255, 255, 255, 0.2) !important;
-    margin-top: -24px !important;
-    box-shadow: 0 8px 24px rgba(59, 130, 246, 0.5) !important;
-    flex: none !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    cursor: pointer !important;
+  .ai-chat-view {
+    height: calc(100dvh - 145px) !important;
+    max-height: calc(100dvh - 145px) !important;
+    margin-bottom: 76px !important;
+    overflow: hidden !important;
   }
 
   /* Make grids stack cleanly or wrap 2-column nicely */

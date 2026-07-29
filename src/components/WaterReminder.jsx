@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Droplet, Bell, BellOff, Plus, RotateCcw, Clock, X, Edit2, Check, MoreVertical } from 'lucide-react';
 import Modal from './Modal';
 import { todayKey } from '../utils/date';
+import { getApiUrl } from '../utils/apiConfig';
 
 const DEFAULT_PRESETS = [50, 150, 200];
 
@@ -62,7 +63,7 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
     try {
       const token = localStorage.getItem('token');
       if (token) {
-        await fetch('/api/settings', {
+        await fetch(getApiUrl('/api/settings'), {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({ 
@@ -138,7 +139,7 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
     try {
       const token = localStorage.getItem('token');
       if (token) {
-        fetch('/api/settings', {
+        fetch(getApiUrl('/api/settings'), {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({ water_reminder_enabled: newState })
@@ -157,7 +158,7 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
     try {
       const token = localStorage.getItem('token');
       if (token) {
-        fetch('/api/settings', {
+        fetch(getApiUrl('/api/settings'), {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({ water_reminder_interval: mins })

@@ -3,6 +3,7 @@ import {
   CheckCircle2, DollarSign, Activity, Check, Moon as SleepIcon, RefreshCw 
 } from 'lucide-react';
 import { todayKey } from '../utils/date';
+import { getApiUrl } from '../utils/apiConfig';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -68,7 +69,7 @@ function AnalyticsPanelInner({ token, showToast, currency = '$', timeRange = '7d
         if (!data) {
           setLoading(true);
         }
-        let query = `/api/analytics?range=${range}&client_date=${todayKey(userProfile?.timezone)}`;
+        let query = getApiUrl(`/api/analytics?range=${range}&client_date=${todayKey(userProfile?.timezone)}`);
         if (range === 'custom' && customStart && customEnd) {
           query += `&start_date=${customStart}&end_date=${customEnd}`;
         }
@@ -109,7 +110,7 @@ function AnalyticsPanelInner({ token, showToast, currency = '$', timeRange = '7d
   useEffect(() => {
     if (activeTab === 'logs' && token) {
       setLoadingMetrics(true);
-      fetch('/api/analytics?type=logs', {
+      fetch(getApiUrl('/api/analytics?type=logs'), {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       .then(res => res.json())
