@@ -671,7 +671,7 @@ export default function App() {
       const calRes = await fetch('/api/calendar', { headers });
       if (calRes.ok) {
         const calData = await calRes.json();
-        const mappedCal = calData.map(c => ({ id: c.id, title: c.title, date: c.date, color: c.color }));
+        const mappedCal = calData.map(c => ({ id: c.id, title: c.title, date: c.date, color: c.color, status: c.status, endDate: c.end_date }));
         setCalendarEvents(mappedCal);
         localStorage.setItem('cache_calendarEvents', JSON.stringify(mappedCal));
       }
