@@ -754,6 +754,52 @@ export default function App() {
     }
   };
 
+  const handleResetAllAccountData = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch('/api/settings?action=reset-all', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        // Clear React state in App.jsx
+        setHabits([]);
+        setWorkouts([]);
+        setBodyStats([]);
+        setTransactions([]);
+        setNotesList([]);
+        setTrashNotes([]);
+        setSleepLogs([]);
+        setCalendarEvents([]);
+        setTodayItems([]);
+        setAiMessages([]);
+
+        // Clear localStorage except token and theme
+        const savedToken = localStorage.getItem('token');
+        const savedThemeMode = localStorage.getItem('themeMode');
+        const savedThemeColor = localStorage.getItem('themeColor');
+        localStorage.clear();
+        if (savedToken) localStorage.setItem('token', savedToken);
+        if (savedThemeMode) localStorage.setItem('themeMode', savedThemeMode);
+        if (savedThemeColor) localStorage.setItem('themeColor', savedThemeColor);
+
+        // Call showToast('Account reset to fresh start!', 'info')
+        showToast('Account reset to fresh start!', 'info');
+
+        // Reload/re-fetch dashboard so the UI updates to 100% clean empty states immediately
+        await fetchDashboardData(true);
+      } else {
+        showToast(data.error || 'Failed to reset account data', 'error');
+      }
+    } catch (err) {
+      console.error('Reset account data error:', err);
+      showToast('Failed to reset account data', 'error');
+    }
+  };
+
   const handleUpdateNoteDb = async (note) => {
     if (!token || !note || !note.id) return;
     try {
@@ -4603,6 +4649,7 @@ const handleDeleteHabitDb = async (id) => {
                     setSettingsSaved={setSettingsSaved}
                     chatResetTime={userProfile.chat_reset_time || '00:00'}
                     setChatResetTime={(val) => setUserProfile({ ...userProfile, chat_reset_time: val })}
+                    onResetAllAccountData={handleResetAllAccountData}
                   />
                 </TabErrorBoundary>
               )}

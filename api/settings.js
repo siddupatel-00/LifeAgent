@@ -1,12 +1,44 @@
 import db, { ensureDbSchema } from '../lib/db.js';
 import { getUserId } from '../lib/auth.js';
 
+export async function resetUserData(userId) {
+  const currentUserReq = await db.execute({ sql: 'SELECT email FROM users WHERE id = ?', args: [userId] });
+  const userEmail = currentUserReq.rows[0]?.email;
+
+  const queries = [
+    { sql: 'DELETE FROM habits WHERE user_id = ?', args: [userId] },
+    { sql: 'DELETE FROM today_items WHERE user_id = ?', args: [userId] },
+    { sql: 'DELETE FROM transactions WHERE user_id = ?', args: [userId] },
+    { sql: 'DELETE FROM workouts WHERE user_id = ?', args: [userId] },
+    { sql: 'DELETE FROM body_stats WHERE user_id = ?', args: [userId] },
+    { sql: 'DELETE FROM notes WHERE user_id = ?', args: [userId] },
+    { sql: 'DELETE FROM sleep_logs WHERE user_id = ?', args: [userId] },
+    { sql: 'DELETE FROM calendar_events WHERE user_id = ?', args: [userId] },
+    { sql: 'DELETE FROM chat_history WHERE user_id = ?', args: [userId] },
+    { sql: 'DELETE FROM daily_metrics WHERE user_id = ? OR (user_email IS NOT NULL AND user_email = ?)', args: [userId, userEmail || ''] },
+    { sql: 'DELETE FROM user_settings WHERE user_id = ?', args: [userId] }
+  ];
+
+  for (const q of queries) {
+    try {
+      await db.execute(q);
+    } catch (e) {
+      console.warn(`Reset table deletion warning (${q.sql}):`, e.message);
+    }
+  }
+}
+
 export default async function handler(req, res) {
   await ensureDbSchema();
   const userId = getUserId(req);
   if (!userId) return res.status(401).json({ error: 'Unauthorized' });
   
   try {
+    if (req.method === 'DELETE' || (req.method === 'POST' && (req.query?.action === 'reset-all' || req.body?.action === 'reset-all'))) {
+      await resetUserData(userId);
+      return res.status(200).json({ success: true, message: 'All account data reset successfully' });
+    }
+
     if (req.method === 'GET') {
       const result = await db.execute({ sql: 'SELECT name, email, phone, handle, theme, ai_name, gemini_api_key, groq_api_key, ai_provider, currency, ai_tone, morning_audit, smart_alerts FROM users WHERE id = ?', args: [userId] });
       if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });

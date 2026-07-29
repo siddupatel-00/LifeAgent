@@ -1,6 +1,7 @@
-import React from 'react';
-import { Check, User, Bot, Save, LogOut } from 'lucide-react';
+import React, { useState } from 'react';
+import { Check, User, Bot, Save, LogOut, AlertTriangle } from 'lucide-react';
 import CustomSelect from './CustomSelect';
+import ConfirmModal from './ConfirmModal';
 
 const SettingsPanel = ({
   userProfile,
@@ -21,8 +22,25 @@ const SettingsPanel = ({
   settingsSaved,
   setSettingsSaved,
   chatResetTime,
-  setChatResetTime
+  setChatResetTime,
+  onResetAllAccountData
 }) => {
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+
+  const handleConfirmReset = async () => {
+    setIsResetting(true);
+    try {
+      if (onResetAllAccountData) {
+        await onResetAllAccountData();
+      }
+    } catch (e) {
+      console.error('Error during reset:', e);
+    } finally {
+      setIsResetting(false);
+      setShowResetModal(false);
+    }
+  };
   const handleSaveSettings = async (e) => {
     e.preventDefault();
     if (token) {
@@ -513,6 +531,43 @@ const SettingsPanel = ({
           <LogOut size={18} /> Log Out of LifeAgent
         </button>
       </div>
+
+      {/* DANGER ZONE SECTION */}
+      <div style={{ marginTop: '48px', borderTop: '2px solid rgba(239, 68, 68, 0.3)', paddingTop: '32px' }}>
+        <h4 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#ef4444', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <AlertTriangle size={20} /> Danger Zone
+        </h4>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginBottom: '20px', lineHeight: '1.5' }}>
+          Permanently delete all your logged workouts, habits, transactions, notes, sleep logs, and history to reset your account to a completely fresh state.
+        </p>
+        <button 
+          type="button"
+          onClick={() => setShowResetModal(true)}
+          disabled={isResetting}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '10px',
+            padding: '14px 24px', borderRadius: '14px',
+            border: 'none', background: '#ef4444',
+            color: '#ffffff', fontWeight: 700, fontSize: '0.95rem', cursor: isResetting ? 'not-allowed' : 'pointer',
+            boxShadow: '0 4px 14px rgba(239, 68, 68, 0.35)',
+            opacity: isResetting ? 0.7 : 1,
+            transition: 'all 0.2s'
+          }}
+        >
+          ⚠️ Reset All Account Data
+        </button>
+      </div>
+
+      <ConfirmModal
+        isOpen={showResetModal}
+        title="Reset All Account Data?"
+        message="Permanently delete all your logged workouts, habits, transactions, notes, sleep logs, and history to reset your account to a completely fresh state. This action cannot be undone."
+        confirmText={isResetting ? "Resetting..." : "Yes, Reset Everything"}
+        cancelText="Cancel"
+        type="danger"
+        onConfirm={handleConfirmReset}
+        onCancel={() => !isResetting && setShowResetModal(false)}
+      />
 
       {/* LIFEAGENT V2.4 FOOTER INSIDE SETTINGS */}
       <div style={{ marginTop: '48px', paddingTop: '24px', borderTop: '1px solid var(--border-color)', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600, opacity: 0.8 }}>
