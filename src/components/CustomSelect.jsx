@@ -59,7 +59,7 @@ const CustomSelect = ({ value, onChange, options = [], style, className }) => {
             border: '1px solid var(--border-color)',
             borderRadius: '12px',
             boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-            maxHeight: '220px',
+            maxHeight: style?.maxHeight || '340px',
             overflowY: 'auto',
             WebkitOverflowScrolling: 'touch',
             padding: '4px'
@@ -74,7 +74,7 @@ const CustomSelect = ({ value, onChange, options = [], style, className }) => {
                 setIsOpen(false);
               }}
               style={{
-                padding: '10px 14px',
+                padding: '8px 14px',
                 borderRadius: '8px',
                 cursor: 'pointer',
                 color: value === option.value ? 'var(--accent-blue)' : 'var(--text-main)',
