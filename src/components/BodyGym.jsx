@@ -687,7 +687,7 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
       <Modal
         isOpen={isAddWorkoutOpen}
         onClose={closeWorkoutModal}
-        title={editingWorkoutId ? 'Edit Workout' : 'Log Workout'}
+        title="Log Workout"
         icon={Dumbbell}
         maxWidth="400px"
       >
