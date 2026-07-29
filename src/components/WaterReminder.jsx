@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Droplet, Bell, BellOff, Plus, RotateCcw, Clock, X, Edit2, Check, MoreVertical } from 'lucide-react';
+import Modal from './Modal';
 
 const DEFAULT_PRESETS = [50, 150, 200];
 
@@ -356,105 +357,87 @@ export default function WaterReminder({ todayStat, onLogStat, showToast }) {
       </div>
 
       {/* Settings Modal */}
-      {isSettingsOpen && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0, 0, 0, 0.6)', display: 'flex',
-          alignItems: 'center', justifyContent: 'center', zIndex: 1000,
-          padding: '20px'
-        }}>
-          <div className="glass-card animate-entrance" style={{
-            background: 'var(--bg-card)', padding: '28px', borderRadius: '24px',
-            border: '1px solid var(--border-color)', boxShadow: '0 25px 60px rgba(0,0,0,0.4)', width: '100%', maxWidth: '440px'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: 'var(--accent-blue-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-blue)' }}>
-                  <Droplet size={20} />
-                </div>
-                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)' }}>Hydration Settings</h3>
-              </div>
-              <button onClick={() => setIsSettingsOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '6px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <X size={20} />
-              </button>
-            </div>
-            
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px' }}>
-                Daily Target (Liters)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={modalTargetGoal}
-                onChange={e => setModalTargetGoal(e.target.value)}
+      <Modal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        title="Hydration Settings"
+        icon={Droplet}
+        maxWidth="440px"
+      >
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px' }}>
+            Daily Target (Liters)
+          </label>
+          <input
+            type="number"
+            step="0.1"
+            value={modalTargetGoal}
+            onChange={e => setModalTargetGoal(e.target.value)}
+            style={{
+              width: '100%', padding: '10px 14px', borderRadius: '12px',
+              border: '1px solid var(--border-color)', background: 'var(--bg-card)',
+              color: 'var(--text-main)', fontSize: '1rem', outline: 'none'
+            }}
+          />
+        </div>
+        
+        <div style={{ marginBottom: '24px' }}>
+          <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px' }}>
+            Reminder Interval
+          </label>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '12px' }}>
+            {[15, 30, 45, 60, 90, 120].map(mins => (
+              <button
+                key={mins}
+                onClick={() => setModalReminderInterval(mins.toString())}
                 style={{
-                  width: '100%', padding: '10px 14px', borderRadius: '12px',
-                  border: '1px solid var(--border-color)', background: 'var(--bg-card)',
-                  color: 'var(--text-main)', fontSize: '1rem', outline: 'none'
+                  padding: '8px 12px', borderRadius: '12px', border: '1px solid',
+                  borderColor: modalReminderInterval === mins.toString() ? 'rgba(255, 255, 255, 0.3)' : 'var(--border-color)',
+                  background: modalReminderInterval === mins.toString() ? 'rgba(255, 255, 255, 0.08)' : 'var(--bg-card-hover)',
+                  color: 'var(--text-main)', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer'
                 }}
-              />
-            </div>
-            
-            <div style={{ marginBottom: '24px' }}>
-              <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px' }}>
-                Reminder Interval
-              </label>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '12px' }}>
-                {[15, 30, 45, 60, 90, 120].map(mins => (
-                  <button
-                    key={mins}
-                    onClick={() => setModalReminderInterval(mins.toString())}
-                    style={{
-                      padding: '8px 12px', borderRadius: '12px', border: '1px solid',
-                      borderColor: modalReminderInterval === mins.toString() ? 'rgba(255, 255, 255, 0.3)' : 'var(--border-color)',
-                      background: modalReminderInterval === mins.toString() ? 'rgba(255, 255, 255, 0.08)' : 'var(--bg-card-hover)',
-                      color: 'var(--text-main)', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer'
-                    }}
-                  >
-                    {mins < 60 ? `${mins}m` : `${mins / 60}h`}
-                  </button>
-                ))}
-              </div>
-              
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <input
-                  type="number"
-                  placeholder="Custom minutes"
-                  value={modalCustomInterval}
-                  onChange={e => setModalCustomInterval(e.target.value)}
-                  style={{
-                    flex: 1, padding: '10px 14px', borderRadius: '12px',
-                    border: '1px solid var(--border-color)', background: 'var(--bg-card)',
-                    color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none'
-                  }}
-                />
-                <button
-                  onClick={() => {
-                    const mins = parseInt(modalCustomInterval, 10);
-                    if (mins > 0) {
-                      setModalReminderInterval(mins.toString());
-                      setModalCustomInterval('');
-                    }
-                  }}
-                  className="blue-btn"
-                  style={{ padding: '10px 16px', borderRadius: '12px' }}
-                >
-                  Set
-                </button>
-              </div>
-            </div>
-            
+              >
+                {mins < 60 ? `${mins}m` : `${mins / 60}h`}
+              </button>
+            ))}
+          </div>
+          
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <input
+              type="number"
+              placeholder="Custom minutes"
+              value={modalCustomInterval}
+              onChange={e => setModalCustomInterval(e.target.value)}
+              style={{
+                flex: 1, padding: '10px 14px', borderRadius: '12px',
+                border: '1px solid var(--border-color)', background: 'var(--bg-card)',
+                color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none'
+              }}
+            />
             <button
-              onClick={handleSaveAllSettings}
+              onClick={() => {
+                const mins = parseInt(modalCustomInterval, 10);
+                if (mins > 0) {
+                  setModalReminderInterval(mins.toString());
+                  setModalCustomInterval('');
+                }
+              }}
               className="blue-btn"
-              style={{ width: '100%', padding: '12px', fontSize: '1rem', borderRadius: '14px', display: 'flex', justifyContent: 'center', gap: '8px' }}
+              style={{ padding: '10px 16px', borderRadius: '12px' }}
             >
-              <Check size={18} /> Save Settings
+              Set
             </button>
           </div>
         </div>
-      )}
+        
+        <button
+          onClick={handleSaveAllSettings}
+          className="blue-btn"
+          style={{ width: '100%', padding: '12px', fontSize: '1rem', borderRadius: '14px', display: 'flex', justifyContent: 'center', gap: '8px' }}
+        >
+          <Check size={18} /> Save Settings
+        </button>
+      </Modal>
     </div>
   );
 }

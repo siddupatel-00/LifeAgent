@@ -3897,167 +3897,160 @@ const handleDeleteHabitDb = async (id) => {
                   )}
 
                   {/* EDIT HABIT MODAL */}
-                  {isEditHabitModalOpen && editingHabitData && (
-                    <div className="blur-overlay" onClick={() => setIsEditHabitModalOpen(false)}>
-                      <div className="glass-card animate-entrance" onClick={e => e.stopPropagation()}
-                        style={{ background: 'var(--bg-card)', padding: '28px', borderRadius: '24px', border: '1px solid var(--border-color)', boxShadow: '0 25px 60px rgba(0,0,0,0.4)', width: '90%', maxWidth: '400px', maxHeight: '90vh', overflowY: 'auto' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: 'var(--accent-blue-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-blue)' }}>
-                              <Edit2 size={20} />
+                  <Modal
+                    isOpen={isEditHabitModalOpen && Boolean(editingHabitData)}
+                    onClose={() => setIsEditHabitModalOpen(false)}
+                    title="Edit Habit"
+                    icon={Edit2}
+                    maxWidth="400px"
+                  >
+                    {editingHabitData && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <input 
+                          type="text" placeholder="Enter habit name..."
+                          value={editingHabitData.title}
+                          onChange={e => setEditingHabitData({...editingHabitData, title: e.target.value})}
+                          className="glass-input" 
+                          autoFocus
+                        />
+                        <CustomSelect 
+                          className="glass-input"
+                          value={editingHabitData.category}
+                          onChange={e => setEditingHabitData({...editingHabitData, category: e.target.value})}
+                          options={[
+                            { value: "Coding", label: "Coding Habit" },
+                            { value: "Study", label: "Study Habit" },
+                            { value: "Reading", label: "Reading" },
+                            { value: "Body & Gym", label: "Fitness & Health" },
+                            { value: "Diet & Nutrition", label: "Diet & Nutrition" },
+                            { value: "Money", label: "Money Habit" },
+                            { value: "Deep Focus", label: "Deep Focus" },
+                            { value: "Other", label: "Custom Category" }
+                          ]}
+                        />
+                        {editingHabitData.category === 'Other' && (
+                          <input 
+                            type="text" placeholder="Enter custom category name..."
+                            value={customPillarInput}
+                            onChange={e => setCustomPillarInput(e.target.value)}
+                            className="glass-input" 
+                          />
+                        )}
+                        <input 
+                          type="text" placeholder="Daily Goal (e.g. 30 mins, 5 pages)"
+                          value={editingHabitData.target}
+                          onChange={e => setEditingHabitData({...editingHabitData, target: e.target.value})}
+                          className="glass-input" 
+                        />
+                        
+                        <div style={{ padding: '16px', background: 'var(--bg-main)', borderRadius: '12px', border: '1px solid var(--border-color)', marginTop: '8px' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer', marginBottom: editingHabitData.challengeMode ? '16px' : '0' }}>
+                            <input 
+                              type="checkbox"
+                              checked={editingHabitData.challengeMode}
+                              onChange={(e) => setEditingHabitData({ ...editingHabitData, challengeMode: e.target.checked })}
+                              style={{ width: '18px', height: '18px', accentColor: 'var(--accent-blue)' }}
+                            />
+                            Make this a time-limited challenge
+                          </label>
+
+                          {editingHabitData.challengeMode && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>Duration:</span>
+                              <CustomSelect
+                                value={editingHabitData.durationMode === 'custom' ? 'custom' : editingHabitData.challengeDays}
+                                onChange={(e) => {
+                                  if (e.target.value === 'custom') {
+                                    setEditingHabitData({ ...editingHabitData, durationMode: 'custom', challengeDays: '' });
+                                  } else {
+                                    setEditingHabitData({ ...editingHabitData, durationMode: 'preset', challengeDays: Number(e.target.value) });
+                                  }
+                                }}
+                                style={{ padding: '6px 12px', borderRadius: '8px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.85rem', fontWeight: 700, width: '130px' }}
+                                options={[
+                                  { value: 7, label: "7 Days" },
+                                  { value: 14, label: "14 Days" },
+                                  { value: 21, label: "21 Days" },
+                                  { value: 30, label: "30 Days" },
+                                  { value: 60, label: "60 Days" },
+                                  { value: 90, label: "90 Days" },
+                                  { value: "custom", label: "Custom..." }
+                                ]}
+                              />
+
+                              {editingHabitData.durationMode === 'custom' && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    placeholder="e.g. 100"
+                                    value={editingHabitData.challengeDays}
+                                    onChange={(e) => setEditingHabitData({ ...editingHabitData, challengeDays: e.target.value ? Number(e.target.value) : '' })}
+                                    style={{ width: '80px', padding: '6px 10px', borderRadius: '8px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.85rem', fontWeight: 700, outline: 'none' }}
+                                  />
+                                  <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>Days</span>
+                                </div>
+                              )}
                             </div>
-                            <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>Edit Habit</h3>
-                          </div>
-                          <button onClick={() => setIsEditHabitModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px' }}>
-                            <X size={20} />
+                          )}
+                        </div>
+                        
+                        <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
+                          <button className="glass-button" style={{ flex: 1 }} onClick={() => setIsEditHabitModalOpen(false)}>Cancel</button>
+                          <button 
+                            className="blue-btn" style={{ flex: 1 }}
+                            onClick={async () => {
+                              if (!editingHabitData.title.trim()) return showToast('Title required', 'error');
+                              const finalCategory = editingHabitData.category === 'Other' ? (customPillarInput.trim() || 'Custom') : editingHabitData.category;
+                              const challengeDays = editingHabitData.challengeMode ? Number(editingHabitData.challengeDays || 30) : 0;
+
+                              try {
+                                if (token) {
+                                  const res = await fetch('/api/habits', {
+                                    method: 'PUT',
+                                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                    body: JSON.stringify({
+                                      id: editingHabitData.id,
+                                      label: editingHabitData.title,
+                                      category: finalCategory,
+                                      target: editingHabitData.target,
+                                      challenge_days: challengeDays
+                                    })
+                                  });
+                                  if (!res.ok) {
+                                    const errData = await res.json().catch(() => ({}));
+                                    throw new Error(errData.error || 'Failed to update habit');
+                                  }
+                                }
+
+                                // Optimistically update local React state
+                                setHabits(prev => prev.map(h => h.id === editingHabitData.id ? {
+                                  ...h,
+                                  title: editingHabitData.title,
+                                  label: editingHabitData.title,
+                                  category: finalCategory,
+                                  target: editingHabitData.target,
+                                  challengeDays: challengeDays,
+                                  challenge_days: challengeDays,
+                                  startDate: challengeDays > 0 ? (h.startDate || todayKey()) : null,
+                                  start_date: challengeDays > 0 ? (h.start_date || todayKey()) : null
+                                } : h));
+
+                                setIsEditHabitModalOpen(false);
+                                showToast('Habit updated!', 'success');
+                                if (token) fetchDashboardData(); // reload backend
+                              } catch (e) {
+                                console.error(e);
+                                showToast(e.message || 'Failed to update habit', 'error');
+                              }
+                            }}
+                          >
+                            Save
                           </button>
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                          <input 
-                            type="text" placeholder="Enter habit name..."
-                            value={editingHabitData.title}
-                            onChange={e => setEditingHabitData({...editingHabitData, title: e.target.value})}
-                            className="glass-input" 
-                          />
-                          <CustomSelect 
-                            className="glass-input"
-                            value={editingHabitData.category}
-                            onChange={e => setEditingHabitData({...editingHabitData, category: e.target.value})}
-                            options={[
-                              { value: "Coding", label: "Coding Habit" },
-                              { value: "Study", label: "Study Habit" },
-                              { value: "Reading", label: "Reading" },
-                              { value: "Body & Gym", label: "Fitness & Health" },
-                              { value: "Diet & Nutrition", label: "Diet & Nutrition" },
-                              { value: "Money", label: "Money Habit" },
-                              { value: "Deep Focus", label: "Deep Focus" },
-                              { value: "Other", label: "Custom Category" }
-                            ]}
-                          />
-                          {editingHabitData.category === 'Other' && (
-                            <input 
-                              type="text" placeholder="Enter custom category name..."
-                              value={customPillarInput}
-                              onChange={e => setCustomPillarInput(e.target.value)}
-                              className="glass-input" 
-                            />
-                          )}
-                          <input 
-                            type="text" placeholder="Daily Goal (e.g. 30 mins, 5 pages)"
-                            value={editingHabitData.target}
-                            onChange={e => setEditingHabitData({...editingHabitData, target: e.target.value})}
-                            className="glass-input" 
-                          />
-                          
-                          <div style={{ padding: '16px', background: 'var(--bg-main)', borderRadius: '12px', border: '1px solid var(--border-color)', marginTop: '8px' }}>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer', marginBottom: editingHabitData.challengeMode ? '16px' : '0' }}>
-                              <input 
-                                type="checkbox"
-                                checked={editingHabitData.challengeMode}
-                                onChange={(e) => setEditingHabitData({ ...editingHabitData, challengeMode: e.target.checked })}
-                                style={{ width: '18px', height: '18px', accentColor: 'var(--accent-blue)' }}
-                              />
-                              Make this a time-limited challenge
-                            </label>
-
-                            {editingHabitData.challengeMode && (
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>Duration:</span>
-                                <CustomSelect
-                                  value={editingHabitData.durationMode === 'custom' ? 'custom' : editingHabitData.challengeDays}
-                                  onChange={(e) => {
-                                    if (e.target.value === 'custom') {
-                                      setEditingHabitData({ ...editingHabitData, durationMode: 'custom', challengeDays: '' });
-                                    } else {
-                                      setEditingHabitData({ ...editingHabitData, durationMode: 'preset', challengeDays: Number(e.target.value) });
-                                    }
-                                  }}
-                                  style={{ padding: '6px 12px', borderRadius: '8px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.85rem', fontWeight: 700, width: '130px' }}
-                                  options={[
-                                    { value: 7, label: "7 Days" },
-                                    { value: 14, label: "14 Days" },
-                                    { value: 21, label: "21 Days" },
-                                    { value: 30, label: "30 Days" },
-                                    { value: 60, label: "60 Days" },
-                                    { value: 90, label: "90 Days" },
-                                    { value: "custom", label: "Custom..." }
-                                  ]}
-                                />
-
-                                {editingHabitData.durationMode === 'custom' && (
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <input
-                                      type="number"
-                                      min="1"
-                                      placeholder="e.g. 100"
-                                      value={editingHabitData.challengeDays}
-                                      onChange={(e) => setEditingHabitData({ ...editingHabitData, challengeDays: e.target.value ? Number(e.target.value) : '' })}
-                                      style={{ width: '80px', padding: '6px 10px', borderRadius: '8px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.85rem', fontWeight: 700, outline: 'none' }}
-                                    />
-                                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>Days</span>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                          
-                          <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
-                            <button className="glass-button" style={{ flex: 1 }} onClick={() => setIsEditHabitModalOpen(false)}>Cancel</button>
-                            <button 
-                              className="blue-btn" style={{ flex: 1 }}
-                              onClick={async () => {
-                                if (!editingHabitData.title.trim()) return showToast('Title required', 'error');
-                                const finalCategory = editingHabitData.category === 'Other' ? (customPillarInput.trim() || 'Custom') : editingHabitData.category;
-                                const challengeDays = editingHabitData.challengeMode ? Number(editingHabitData.challengeDays || 30) : 0;
-
-                                try {
-                                  if (token) {
-                                    const res = await fetch('/api/habits', {
-                                      method: 'PUT',
-                                      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                      body: JSON.stringify({
-                                        id: editingHabitData.id,
-                                        label: editingHabitData.title,
-                                        category: finalCategory,
-                                        target: editingHabitData.target,
-                                        challenge_days: challengeDays
-                                      })
-                                    });
-                                    if (!res.ok) {
-                                      const errData = await res.json().catch(() => ({}));
-                                      throw new Error(errData.error || 'Failed to update habit');
-                                    }
-                                  }
-
-                                  // Optimistically update local React state
-                                  setHabits(prev => prev.map(h => h.id === editingHabitData.id ? {
-                                    ...h,
-                                    title: editingHabitData.title,
-                                    label: editingHabitData.title,
-                                    category: finalCategory,
-                                    target: editingHabitData.target,
-                                    challengeDays: challengeDays,
-                                    challenge_days: challengeDays,
-                                    startDate: challengeDays > 0 ? (h.startDate || todayKey()) : null,
-                                    start_date: challengeDays > 0 ? (h.start_date || todayKey()) : null
-                                  } : h));
-
-                                  setIsEditHabitModalOpen(false);
-                                  showToast('Habit updated!', 'success');
-                                  if (token) fetchDashboardData(); // reload backend
-                                } catch (e) {
-                                  console.error(e);
-                                  showToast(e.message || 'Failed to update habit', 'error');
-                                }
-                              }}
-                            >
-                              Save
-                            </button>
-                          </div>
-                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </Modal>
                 </div>
               )}
 

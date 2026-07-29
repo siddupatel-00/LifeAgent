@@ -3,6 +3,7 @@ import { Dumbbell, Target, Plus, Trash2, Activity, Flame, Clock, Check, Edit2, X
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { todayKey } from '../utils/date';
 import CustomSelect from './CustomSelect';
+import Modal from './Modal';
 
 class BodyGymErrorBoundary extends React.Component {
   constructor(props) {
@@ -683,67 +684,58 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
       )}
 
       {/* Add Workout Modal */}
-      {isAddWorkoutOpen && (
-        <div className="modal-overlay" onClick={closeWorkoutModal}>
-          <div className="animate-entrance" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', padding: '28px', borderRadius: '24px', width: '90%', maxWidth: '400px', border: '1px solid var(--border-color)', boxShadow: '0 25px 60px rgba(0,0,0,0.4)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: 'var(--accent-blue-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-blue)' }}>
-                  <Dumbbell size={20} />
-                </div>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>Log Workout</h3>
-              </div>
-              <button onClick={closeWorkoutModal} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px' }}>
-                <X size={20} />
-              </button>
-            </div>
-            <form onSubmit={handleAddWorkout}>
-              <div className="input-group" style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Title</label>
-                <input type="text" required className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="Enter workout name..." value={workoutForm.title} onChange={e => setWorkoutForm({...workoutForm, title: e.target.value})} />
-              </div>
-              
-              <div className="input-group" style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Category</label>
-                <CustomSelect 
-                  className="glass-input" 
-                  style={{ width: '100%', padding: '10px 14px' }} 
-                  value={workoutForm.category} 
-                  onChange={e => setWorkoutForm({...workoutForm, category: e.target.value})}
-                  options={[
-                    { value: "General", label: "General" },
-                    { value: "Cardio", label: "Cardio" },
-                    { value: "Strength", label: "Strength" },
-                    { value: "Flexibility", label: "Flexibility" },
-                    { value: "Sports", label: "Sports" }
-                  ]}
-                />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-                <div className="input-group">
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Duration (mins)</label>
-                  <input type="number" required className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="45" value={workoutForm.duration_mins} onChange={e => setWorkoutForm({...workoutForm, duration_mins: e.target.value})} />
-                </div>
-                <div className="input-group">
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Calories (Optional)</label>
-                  <input type="number" className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="Optional (e.g. 300)" value={workoutForm.calories} onChange={e => setWorkoutForm({...workoutForm, calories: e.target.value})} />
-                </div>
-              </div>
-
-              <div className="input-group" style={{ marginBottom: '24px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Notes</label>
-                <input type="text" className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="Enter notes..." value={workoutForm.notes} onChange={e => setWorkoutForm({...workoutForm, notes: e.target.value})} />
-              </div>
-
-              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-                <button type="button" className="secondary-btn" onClick={closeWorkoutModal}>Cancel</button>
-                <button type="submit" className="blue-btn">Save Workout</button>
-              </div>
-            </form>
+      <Modal
+        isOpen={isAddWorkoutOpen}
+        onClose={closeWorkoutModal}
+        title={editingWorkoutId ? 'Edit Workout' : 'Log Workout'}
+        icon={Dumbbell}
+        maxWidth="400px"
+      >
+        <form onSubmit={handleAddWorkout}>
+          <div className="input-group" style={{ marginBottom: '16px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Title</label>
+            <input type="text" required className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="Enter workout name..." value={workoutForm.title} onChange={e => setWorkoutForm({...workoutForm, title: e.target.value})} autoFocus />
           </div>
-        </div>
-      )}
+          
+          <div className="input-group" style={{ marginBottom: '16px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Category</label>
+            <CustomSelect 
+              className="glass-input" 
+              style={{ width: '100%', padding: '10px 14px' }} 
+              value={workoutForm.category} 
+              onChange={e => setWorkoutForm({...workoutForm, category: e.target.value})}
+              options={[
+                { value: "General", label: "General" },
+                { value: "Cardio", label: "Cardio" },
+                { value: "Strength", label: "Strength" },
+                { value: "Flexibility", label: "Flexibility" },
+                { value: "Sports", label: "Sports" }
+              ]}
+            />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+            <div className="input-group">
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Duration (mins)</label>
+              <input type="number" required className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="45" value={workoutForm.duration_mins} onChange={e => setWorkoutForm({...workoutForm, duration_mins: e.target.value})} />
+            </div>
+            <div className="input-group">
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Calories (Optional)</label>
+              <input type="number" className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="Optional (e.g. 300)" value={workoutForm.calories} onChange={e => setWorkoutForm({...workoutForm, calories: e.target.value})} />
+            </div>
+          </div>
+
+          <div className="input-group" style={{ marginBottom: '24px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Notes</label>
+            <input type="text" className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="Enter notes..." value={workoutForm.notes} onChange={e => setWorkoutForm({...workoutForm, notes: e.target.value})} />
+          </div>
+
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+            <button type="button" className="secondary-btn" onClick={closeWorkoutModal}>Cancel</button>
+            <button type="submit" className="blue-btn">Save Workout</button>
+          </div>
+        </form>
+      </Modal>
 
       {activeSubTab === 'stats' && (() => {
         const getFilteredStats = () => {
@@ -949,163 +941,138 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
       })()}
 
       {/* Log Protein Modal */}
-      {isLogProteinOpen && (
-        <div className="modal-overlay" onClick={closeLogProteinModal}>
-          <div className="animate-entrance" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', padding: '28px', borderRadius: '24px', width: '90%', maxWidth: '400px', border: '1px solid var(--border-color)', boxShadow: '0 25px 60px rgba(0,0,0,0.4)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: 'var(--accent-blue-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-blue)' }}>
-                  <Flame size={20} />
-                </div>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>Log Protein Intake</h3>
-              </div>
-              <button onClick={closeLogProteinModal} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px' }}>
-                <X size={20} />
-              </button>
-            </div>
-            <form onSubmit={handleAddProtein}>
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '8px' }}>Protein Consumed Today (grams)</label>
-                <input 
-                  type="number" 
-                  value={proteinInput} 
-                  onChange={(e) => setProteinInput(e.target.value)} 
-                  className="glass-input" 
-                  style={{ width: '100%', padding: '12px 16px', fontSize: '1.2rem', textAlign: 'center', fontWeight: 700 }} 
-                  placeholder="e.g. 25"
-                  autoFocus
-                />
-              </div>
-              <div style={{ display: 'flex', gap: '10px', marginBottom: '24px', justifyContent: 'center' }}>
-                <button type="button" className="secondary-btn" onClick={() => handleQuickAddProtein(10)} style={{ padding: '8px 16px', fontSize: '0.9rem' }}>+10g</button>
-                <button type="button" className="secondary-btn" onClick={() => handleQuickAddProtein(20)} style={{ padding: '8px 16px', fontSize: '0.9rem' }}>+20g</button>
-                <button type="button" className="secondary-btn" onClick={() => handleQuickAddProtein(30)} style={{ padding: '8px 16px', fontSize: '0.9rem' }}>+30g</button>
-              </div>
-              <div style={{ display: 'flex', gap: '12px', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
-                <button type="button" className="secondary-btn" onClick={handleResetProtein} style={{ color: '#ef4444', borderColor: 'rgba(239,68,68,0.3)', padding: '8px 14px', fontSize: '0.85rem' }}>Reset to 0g</button>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <button type="button" className="secondary-btn" onClick={closeLogProteinModal}>Cancel</button>
-                  <button type="submit" className="blue-btn">Save Protein</button>
-                </div>
-              </div>
-            </form>
+      <Modal
+        isOpen={isLogProteinOpen}
+        onClose={closeLogProteinModal}
+        title="Log Protein Intake"
+        icon={Flame}
+        maxWidth="400px"
+      >
+        <form onSubmit={handleAddProtein}>
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '8px' }}>Protein Consumed Today (grams)</label>
+            <input 
+              type="number" 
+              value={proteinInput} 
+              onChange={(e) => setProteinInput(e.target.value)} 
+              className="glass-input" 
+              style={{ width: '100%', padding: '12px 16px', fontSize: '1.2rem', textAlign: 'center', fontWeight: 700 }} 
+              placeholder="e.g. 25"
+              autoFocus
+            />
           </div>
-        </div>
-      )}
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '24px', justifyContent: 'center' }}>
+            <button type="button" className="secondary-btn" onClick={() => handleQuickAddProtein(10)} style={{ padding: '8px 16px', fontSize: '0.9rem' }}>+10g</button>
+            <button type="button" className="secondary-btn" onClick={() => handleQuickAddProtein(20)} style={{ padding: '8px 16px', fontSize: '0.9rem' }}>+20g</button>
+            <button type="button" className="secondary-btn" onClick={() => handleQuickAddProtein(30)} style={{ padding: '8px 16px', fontSize: '0.9rem' }}>+30g</button>
+          </div>
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
+            <button type="button" className="secondary-btn" onClick={handleResetProtein} style={{ color: '#ef4444', borderColor: 'rgba(239,68,68,0.3)', padding: '8px 14px', fontSize: '0.85rem' }}>Reset to 0g</button>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button type="button" className="secondary-btn" onClick={closeLogProteinModal}>Cancel</button>
+              <button type="submit" className="blue-btn">Save Protein</button>
+            </div>
+          </div>
+        </form>
+      </Modal>
 
       {/* Edit Body Metrics & Goals Modal */}
-      {isEditMetricsOpen && (
-        <div className="modal-overlay" onClick={closeEditMetricsModal}>
-          <div className="animate-entrance" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', padding: '28px', borderRadius: '24px', width: '90%', maxWidth: '400px', border: '1px solid var(--border-color)', boxShadow: '0 25px 60px rgba(0,0,0,0.4)', maxHeight: '90vh', overflowY: 'auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: 'var(--accent-blue-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-blue)' }}>
-                  <Target size={20} />
-                </div>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>Edit Body Metrics & Goals</h3>
-              </div>
-              <button onClick={closeEditMetricsModal} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px' }}>
-                <X size={20} />
-              </button>
+      <Modal
+        isOpen={isEditMetricsOpen}
+        onClose={closeEditMetricsModal}
+        title="Edit Body Metrics & Goals"
+        icon={Target}
+        maxWidth="400px"
+      >
+        <form onSubmit={handleAddStats}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+            <div className="input-group">
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Current Weight (kg)</label>
+              <input type="number" step="0.1" required className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="75.5" value={statsForm.weight} onChange={e => setStatsForm({...statsForm, weight: e.target.value})} />
             </div>
-            <form onSubmit={handleAddStats}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-                <div className="input-group">
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Current Weight (kg)</label>
-                  <input type="number" step="0.1" required className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="75.5" value={statsForm.weight} onChange={e => setStatsForm({...statsForm, weight: e.target.value})} />
-                </div>
-                <div className="input-group">
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Target Weight (kg)</label>
-                  <input type="number" step="0.1" className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="70" value={statsForm.target_weight} onChange={e => setStatsForm({...statsForm, target_weight: e.target.value})} />
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px', marginBottom: '24px' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Daily Protein Goal (g)</label>
-                  <input 
-                    type="number" 
-                    value={statsForm.target_protein} 
-                    onChange={(e) => setStatsForm({...statsForm, target_protein: e.target.value})} 
-                    className="glass-input" 
-                    style={{ width: '100%', padding: '10px 14px', fontSize: '0.95rem' }} 
-                    placeholder="e.g. 150"
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-                <button type="button" className="secondary-btn" onClick={closeEditMetricsModal}>Cancel</button>
-                <button type="submit" className="blue-btn">Save</button>
-              </div>
-            </form>
+            <div className="input-group">
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Target Weight (kg)</label>
+              <input type="number" step="0.1" className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="70" value={statsForm.target_weight} onChange={e => setStatsForm({...statsForm, target_weight: e.target.value})} />
+            </div>
           </div>
-        </div>
-      )}
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px', marginBottom: '24px' }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Daily Protein Goal (g)</label>
+              <input 
+                type="number" 
+                value={statsForm.target_protein} 
+                onChange={(e) => setStatsForm({...statsForm, target_protein: e.target.value})} 
+                className="glass-input" 
+                style={{ width: '100%', padding: '10px 14px', fontSize: '0.95rem' }} 
+                placeholder="e.g. 150"
+              />
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+            <button type="button" className="secondary-btn" onClick={closeEditMetricsModal}>Cancel</button>
+            <button type="submit" className="blue-btn">Save</button>
+          </div>
+        </form>
+      </Modal>
 
       {/* Customize Workout Split Modal */}
-      {isEditSplitOpen && (
-        <div className="modal-overlay" onClick={() => setIsEditSplitOpen(false)}>
-          <div className="glass-card animate-entrance" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', padding: '28px', borderRadius: '24px', width: '90%', maxWidth: '440px', border: '1px solid var(--border-color)', boxShadow: '0 25px 60px rgba(0,0,0,0.4)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: 'var(--accent-blue-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-blue)' }}>
-                  <Dumbbell size={20} />
-                </div>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>Customize Workout Split</h3>
-              </div>
-              <button onClick={() => setIsEditSplitOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px' }}>
-                <X size={20} />
-              </button>
-            </div>
-            <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', marginBottom: '20px' }}>
-              Your workouts will automatically rotate day by day in this order.
-            </p>
+      <Modal
+        isOpen={isEditSplitOpen}
+        onClose={() => setIsEditSplitOpen(false)}
+        title="Customize Workout Split"
+        icon={Dumbbell}
+        maxWidth="440px"
+      >
+        <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', marginBottom: '20px' }}>
+          Your workouts will automatically rotate day by day in this order.
+        </p>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px', maxHeight: '400px', overflowY: 'auto' }}>
-              {splitList.map((itemObj, idx) => {
-                const item = typeof itemObj === 'string' ? { name: itemObj, exercises: [] } : itemObj;
-                return (
-                <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px 14px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>Day {idx + 1}: {item.name}</span>
-                    {splitList.length > 1 && (
-                      <button 
-                        onClick={() => saveSplitList(splitList.filter((_, i) => i !== idx))}
-                        style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
-                        title="Remove Day"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    )}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px', maxHeight: '400px', overflowY: 'auto' }}>
+          {splitList.map((itemObj, idx) => {
+            const item = typeof itemObj === 'string' ? { name: itemObj, exercises: [] } : itemObj;
+            return (
+            <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px 14px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>Day {idx + 1}: {item.name}</span>
+                {splitList.length > 1 && (
+                  <button 
+                    onClick={() => saveSplitList(splitList.filter((_, i) => i !== idx))}
+                    style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
+                    title="Remove Day"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                )}
+              </div>
+              <div style={{ paddingLeft: '8px', borderLeft: '2px solid var(--border-color)' }}>
+                {item.exercises && item.exercises.length > 0 ? item.exercises.map((ex, eIdx) => (
+                  <div key={eIdx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', marginBottom: '4px' }}>
+                    <span>{ex.name}</span>
+                    <span style={{ color: 'var(--text-muted)' }}>{ex.sets}</span>
                   </div>
-                  <div style={{ paddingLeft: '8px', borderLeft: '2px solid var(--border-color)' }}>
-                    {item.exercises && item.exercises.length > 0 ? item.exercises.map((ex, eIdx) => (
-                      <div key={eIdx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', marginBottom: '4px' }}>
-                        <span>{ex.name}</span>
-                        <span style={{ color: 'var(--text-muted)' }}>{ex.sets}</span>
-                      </div>
-                    )) : (
-                      <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>No exercises added.</div>
-                    )}
-                    <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
-                      <input 
-                        type="text" 
-                        placeholder="Exercise (e.g. Dips)" 
-                        id={`ex-name-${idx}`}
-                        className="glass-input" 
-                        style={{ flex: 1, padding: '4px 8px', fontSize: '0.75rem' }}
-                      />
-                      <input 
-                        type="text" 
-                        placeholder="Sets (e.g. 5x2)" 
-                        id={`ex-sets-${idx}`}
-                        className="glass-input" 
-                        style={{ width: '110px', padding: '4px 8px', fontSize: '0.75rem' }}
-                      />
-                      <button 
-                        type="button" 
-                        className="secondary-btn" 
+                )) : (
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>No exercises added.</div>
+                )}
+                <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
+                  <input 
+                    type="text" 
+                    placeholder="Exercise (e.g. Dips)" 
+                    id={`ex-name-${idx}`}
+                    className="glass-input" 
+                    style={{ flex: 1, padding: '4px 8px', fontSize: '0.75rem' }}
+                  />
+                  <input 
+                    type="text" 
+                    placeholder="Sets (e.g. 5x2)" 
+                    id={`ex-sets-${idx}`}
+                    className="glass-input" 
+                    style={{ width: '110px', padding: '4px 8px', fontSize: '0.75rem' }}
+                  />
+                  <button 
+                    type="button" 
+                    className="secondary-btn" 
                         style={{ padding: '4px 8px', fontSize: '0.75rem' }}
                         onClick={() => {
                           const name = document.getElementById(`ex-name-${idx}`).value;
@@ -1191,9 +1158,7 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
                 });
               }}>Done</button>
             </div>
-          </div>
-        </div>
-      )}
+      </Modal>
     </div>
   );
 }

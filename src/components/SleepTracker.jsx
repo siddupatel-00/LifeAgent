@@ -3,6 +3,7 @@ import { Plus, X, Trash2, Edit2, Moon, Clock, Calendar, Activity, Filter } from 
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { todayKey } from '../utils/date';
 import ConfirmModal from './ConfirmModal';
+import Modal from './Modal';
 import CustomSelect from './CustomSelect';
 
 export default function SleepTracker({ token, showToast, userProfile, todayStat }) {
@@ -643,7 +644,7 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat 
                     </div>
                     {log.notes && (
                       <div style={{ marginTop: '6px', fontSize: '0.83rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                        "{log.notes}"
+                        &quot;{log.notes}&quot;
                       </div>
                     )}
                   </div>
@@ -679,189 +680,140 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat 
         })()}
       </div>
 
-      {/* ADD LOG MODAL */}
-      {showModal && (
-        <div className="blur-overlay" onClick={handleCloseModal}>
-          <div 
-            className="glass-card animate-entrance" 
-            onClick={e => e.stopPropagation()}
-            style={{
-              padding: '28px', borderRadius: '24px', width: '90%', maxWidth: '440px',
-              maxHeight: '90vh', overflowY: 'auto',
-              background: 'var(--bg-card)', border: '1px solid var(--border-color)',
-              boxShadow: '0 25px 60px rgba(0,0,0,0.4)'
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: 'var(--accent-blue-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-blue)' }}>
-                  <Moon size={20} />
-                </div>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>
-                  {editingLogId ? 'Edit Sleep Entry' : 'Log Sleep Entry'}
-                </h3>
+      <Modal
+        isOpen={showModal}
+        onClose={handleCloseModal}
+        title={editingLogId ? 'Edit Sleep Entry' : 'Log Sleep Entry'}
+        icon={Moon}
+        maxWidth="440px"
+      >
+        <form onSubmit={handleAddLog} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: '6px', color: 'var(--text-muted)' }}>Date</label>
+            <input 
+              type="date" 
+              required 
+              value={formData.date}
+              onChange={(e) => setFormData({...formData, date: e.target.value})}
+              style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.92rem', outline: 'none' }}
+            />
+          </div>
+
+          {/* BED TIME & WAKE TIME */}
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: '6px', color: 'var(--accent-blue)' }}>Bed Time</label>
+              <input 
+                type="time" 
+                required
+                value={formData.sleep_time}
+                onChange={(e) => handleTimeChange('sleep_time', e.target.value)}
+                style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--accent-blue)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '1rem', fontWeight: 700, outline: 'none' }}
+              />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: '6px', color: 'var(--accent-blue)' }}>Wake Time</label>
+              <input 
+                type="time" 
+                required
+                value={formData.wake_time}
+                onChange={(e) => handleTimeChange('wake_time', e.target.value)}
+                style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--accent-blue)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '1rem', fontWeight: 700, outline: 'none' }}
+              />
+            </div>
+          </div>
+
+          {/* LIVE AUTO-CALCULATED DURATION & QUALITY CARD */}
+          <div style={{ padding: '14px 18px', borderRadius: '14px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+            <div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '4px' }}>Duration (Hrs & Mins)</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <input
+                  type="number"
+                  min="0"
+                  max="24"
+                  value={formData.hours}
+                  onChange={(e) => setFormData(prev => ({ ...prev, hours: Math.max(0, parseInt(e.target.value) || 0) }))}
+                  style={{ width: '56px', padding: '4px 6px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', color: 'var(--text-main)', fontSize: '0.95rem', fontWeight: 700, textAlign: 'center', outline: 'none' }}
+                />
+                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>hrs</span>
+                <input
+                  type="number"
+                  min="0"
+                  max="59"
+                  value={formData.minutes}
+                  onChange={(e) => setFormData(prev => ({ ...prev, minutes: Math.min(59, Math.max(0, parseInt(e.target.value) || 0)) }))}
+                  style={{ width: '56px', padding: '4px 6px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', color: 'var(--text-main)', fontSize: '0.95rem', fontWeight: 700, textAlign: 'center', outline: 'none' }}
+                />
+                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>mins</span>
               </div>
-              <button onClick={handleCloseModal} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px' }}>
-                <X size={20} />
-              </button>
             </div>
 
-            <form onSubmit={handleAddLog} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: '6px', color: 'var(--text-muted)' }}>Date</label>
-                <input 
-                  type="date" 
-                  required 
-                  value={formData.date}
-                  onChange={(e) => setFormData({...formData, date: e.target.value})}
-                  style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.92rem', outline: 'none' }}
-                />
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '4px' }}>Sleep Score</div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--accent-blue)' }}>
+                {Math.round(((formData.hours * 60 + formData.minutes) / 480) * 100)}%
               </div>
-
-              {/* BED TIME & WAKE TIME */}
-              <div style={{ display: 'flex', gap: '12px' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: '6px', color: 'var(--accent-blue)' }}>Bed Time</label>
-                  <input 
-                    type="time" 
-                    required
-                    value={formData.sleep_time}
-                    onChange={(e) => handleTimeChange('sleep_time', e.target.value)}
-                    style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--accent-blue)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '1rem', fontWeight: 700, outline: 'none' }}
-                  />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: '6px', color: 'var(--accent-blue)' }}>Wake Time</label>
-                  <input 
-                    type="time" 
-                    required
-                    value={formData.wake_time}
-                    onChange={(e) => handleTimeChange('wake_time', e.target.value)}
-                    style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--accent-blue)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '1rem', fontWeight: 700, outline: 'none' }}
-                  />
-                </div>
-              </div>
-
-              {/* LIVE AUTO-CALCULATED DURATION & QUALITY CARD */}
-              <div style={{ padding: '14px 18px', borderRadius: '14px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
-                <div>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '4px' }}>Duration (Hrs & Mins)</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <input
-                      type="number"
-                      min="0"
-                      max="24"
-                      value={formData.hours}
-                      onChange={(e) => setFormData(prev => ({ ...prev, hours: Math.max(0, parseInt(e.target.value) || 0) }))}
-                      style={{ width: '56px', padding: '4px 6px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', color: 'var(--text-main)', fontSize: '0.95rem', fontWeight: 700, textAlign: 'center', outline: 'none' }}
-                    />
-                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>hrs</span>
-                    <input
-                      type="number"
-                      min="0"
-                      max="59"
-                      value={formData.minutes}
-                      onChange={(e) => setFormData(prev => ({ ...prev, minutes: Math.max(0, Math.min(59, parseInt(e.target.value) || 0)) }))}
-                      style={{ width: '56px', padding: '4px 6px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', color: 'var(--text-main)', fontSize: '0.95rem', fontWeight: 700, textAlign: 'center', outline: 'none' }}
-                    />
-                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>mins</span>
-                  </div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>Rating</div>
-                  <span 
-                    style={{ 
-                      display: 'inline-block', marginTop: '4px', padding: '4px 10px', borderRadius: '12px', 
-                      fontSize: '0.82rem', fontWeight: 700,
-                      background: formData.quality === 'Excellent' ? 'rgba(16, 185, 129, 0.15)' : formData.quality === 'Good' ? 'var(--accent-blue-dim)' : formData.quality === 'Fair' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                      color: formData.quality === 'Excellent' ? '#10b981' : formData.quality === 'Good' ? 'var(--accent-blue)' : formData.quality === 'Fair' ? '#f59e0b' : '#ef4444'
-                    }}
-                  >
-                    {formData.quality === 'Excellent' && '🌟 Excellent'}
-                    {formData.quality === 'Good' && '😊 Good'}
-                    {formData.quality === 'Fair' && '😐 Moderate'}
-                    {formData.quality === 'Poor' && '🥱 Poor'}
-                  </span>
-                </div>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: '6px', color: 'var(--text-muted)' }}>Sleep Quality (Override if needed)</label>
-                <CustomSelect 
-                  value={formData.quality} 
-                  onChange={(e) => setFormData({...formData, quality: e.target.value})}
-                  style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.9rem' }}
-                  options={[
-                    { value: "Excellent", label: "🌟 Excellent (8+ hours)" },
-                    { value: "Good", label: "😊 Good (7-8 hours)" },
-                    { value: "Fair", label: "😐 Moderate (5.5-7 hours)" },
-                    { value: "Poor", label: "🥱 Poor (< 5.5 hours)" }
-                  ]}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: '6px', color: 'var(--text-muted)' }}>Notes / Recovery Thoughts (Optional)</label>
-                <textarea 
-                  value={formData.notes} 
-                  onChange={(e) => setFormData({...formData, notes: e.target.value})} 
-                  placeholder="Enter notes..."
-                  rows="2"
-                  style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.9rem', outline: 'none', resize: 'vertical' }}
-                />
-              </div>
-
-              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '8px' }}>
-                <button type="button" className="secondary-btn" onClick={handleCloseModal} style={{ padding: '10px 20px', borderRadius: '50px', fontSize: '0.9rem' }}>Cancel</button>
-                <button type="submit" className="blue-btn" style={{ padding: '10px 20px', borderRadius: '50px', fontSize: '0.9rem', justifyContent: 'center' }}>Save Sleep Entry</button>
-              </div>
-            </form>
+            </div>
           </div>
-        </div>
-      )}
+
+          <div>
+            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: '6px', color: 'var(--text-muted)' }}>Sleep Quality</label>
+            <CustomSelect 
+              value={formData.quality} 
+              onChange={(e) => setFormData({...formData, quality: e.target.value})} 
+              style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.92rem' }}
+              options={[
+                { value: "Excellent", label: "🌟 Excellent" },
+                { value: "Good", label: "😊 Good" },
+                { value: "Fair", label: "😐 Fair" },
+                { value: "Poor", label: "🥱 Poor" }
+              ]}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: '6px', color: 'var(--text-muted)' }}>Notes / Reflections</label>
+            <input 
+              type="text" 
+              placeholder="e.g. Felt well rested, woke up once" 
+              value={formData.notes}
+              onChange={(e) => setFormData({...formData, notes: e.target.value})}
+              style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.92rem', outline: 'none' }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+            <button 
+              type="button" 
+              className="secondary-btn" 
+              onClick={handleCloseModal}
+              style={{ flex: 1, padding: '12px' }}
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit" 
+              className="blue-btn"
+              style={{ flex: 1, padding: '12px', justifyContent: 'center' }}
+            >
+              {editingLogId ? 'Update Entry' : 'Save Sleep Entry'}
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       {/* CUSTOM IN-APP DELETE CONFIRMATION MODAL */}
-      {deleteConfirmId && (
-        <div className="blur-overlay" onClick={() => setDeleteConfirmId(null)}>
-          <div 
-            className="glass-card animate-entrance" 
-            onClick={e => e.stopPropagation()}
-            style={{
-              padding: '28px', borderRadius: '24px', width: '90%', maxWidth: '380px',
-              background: 'var(--bg-card)', border: '1px solid var(--border-color)',
-              boxShadow: '0 25px 60px rgba(0,0,0,0.4)'
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444' }}>
-                  <Trash2 size={20} />
-                </div>
-                <h4 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>Delete Sleep Log?</h4>
-              </div>
-              <button onClick={() => setDeleteConfirmId(null)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <X size={20} />
-              </button>
-            </div>
-            <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', margin: '0 0 20px' }}>Are you sure you want to delete this sleep entry?</p>
-            
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <button 
-                onClick={() => setDeleteConfirmId(null)}
-                style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontWeight: 700, cursor: 'pointer' }}
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={confirmDeleteLog}
-                style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', background: '#ef4444', color: '#fff', fontWeight: 700, cursor: 'pointer' }}
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal
+        isOpen={!!deleteConfirmId}
+        title="Delete Sleep Log?"
+        message="Are you sure you want to delete this sleep entry?"
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={confirmDeleteLog}
+        onCancel={() => setDeleteConfirmId(null)}
+        type="danger"
+      />
 
     </div>
   );

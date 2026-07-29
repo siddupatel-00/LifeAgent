@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Plus, Flame, CheckCircle2, MoreVertical, Trash2, X } from 'lucide-react';
+import Modal from './Modal';
 
 export default function HabitsPanel({
   habits, setHabits, todayItems, setTodayItems,
@@ -198,93 +199,84 @@ export default function HabitsPanel({
         </button>
       )}
 
-      {isAddHabitModalOpen && habits.length > 0 && (
-        <div className="blur-overlay" onClick={() => setIsAddHabitModalOpen(false)}>
-          <div className="glass-card animate-entrance" onClick={e => e.stopPropagation()}
-            style={{ background: 'var(--bg-card)', padding: '28px', borderRadius: '24px', border: '1px solid var(--border-color)', boxShadow: '0 25px 60px rgba(0,0,0,0.4)', width: '90%', maxWidth: '420px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: 'var(--accent-blue-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-blue)' }}>
-                  <Plus size={20} />
-                </div>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>Add New Habit</h3>
-              </div>
-              <button onClick={() => setIsAddHabitModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px' }}>
-                <X size={20} />
-              </button>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Habit Name</label>
-                <input 
-                  type="text" placeholder="Enter habit name..."
-                  value={newHabitData.title}
-                  onChange={e => setNewHabitData({...newHabitData, title: e.target.value})}
-                  className="glass-input" 
-                  style={{ width: '100%', boxSizing: 'border-box' }}
-                />
-              </div>
-              <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Category</label>
-                <input 
-                  type="text" placeholder="Enter category..."
-                  value={newHabitData.category}
-                  onChange={e => setNewHabitData({...newHabitData, category: e.target.value})}
-                  className="glass-input" 
-                  style={{ width: '100%', boxSizing: 'border-box' }}
-                />
-              </div>
-              <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Daily Goal</label>
-                <input 
-                  type="text" placeholder="Enter daily goal..."
-                  value={newHabitData.target}
-                  onChange={e => setNewHabitData({...newHabitData, target: e.target.value})}
-                  className="glass-input" 
-                  style={{ width: '100%', boxSizing: 'border-box' }}
-                />
-              </div>
-              <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-                <button 
-                  className="secondary-btn"
-                  onClick={() => setIsAddHabitModalOpen(false)}
-                  style={{ flex: 1, padding: '12px 18px', borderRadius: '12px', fontSize: '0.92rem', fontWeight: 700 }}
-                >
-                  Cancel
-                </button>
-                <button 
-                  className="primary-btn"
-                  onClick={async () => {
-                    if (!newHabitData.title || !token) return;
-                    try {
-                      const res = await fetch('/api/habits', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                        body: JSON.stringify({ label: newHabitData.title, category: newHabitData.category, target: newHabitData.target })
-                      });
-                      if (res.ok) {
-                        const saved = await res.json();
-                        const newItem = {
-                          id: saved.id, title: saved.label, category: saved.category,
-                          target: saved.target, checkedToday: false, streak: 0,
-                          completionRate: 0, history: [0,0,0,0,0,0,0]
-                        };
-                        setHabits([newItem, ...habits]);
-                        setNewHabitData({ title: '', category: '', target: '' });
-                        setIsAddHabitModalOpen(false);
-                        showToast('Habit Added', 'success');
-                      }
-                    } catch (e) {}
-                  }}
-                  style={{ flex: 1, padding: '12px 18px', borderRadius: '12px', fontSize: '0.92rem', fontWeight: 700 }}
-                >
-                  Save Habit
-                </button>
-              </div>
-            </div>
+      <Modal
+        isOpen={isAddHabitModalOpen && habits.length > 0}
+        onClose={() => setIsAddHabitModalOpen(false)}
+        title="Add New Habit"
+        icon={Plus}
+        maxWidth="420px"
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div>
+            <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Habit Name</label>
+            <input 
+              type="text" placeholder="Enter habit name..."
+              value={newHabitData.title}
+              onChange={e => setNewHabitData({...newHabitData, title: e.target.value})}
+              className="glass-input" 
+              style={{ width: '100%', boxSizing: 'border-box' }}
+              autoFocus
+            />
+          </div>
+          <div>
+            <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Category</label>
+            <input 
+              type="text" placeholder="Enter category..."
+              value={newHabitData.category}
+              onChange={e => setNewHabitData({...newHabitData, category: e.target.value})}
+              className="glass-input" 
+              style={{ width: '100%', boxSizing: 'border-box' }}
+            />
+          </div>
+          <div>
+            <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Daily Goal</label>
+            <input 
+              type="text" placeholder="Enter daily goal..."
+              value={newHabitData.target}
+              onChange={e => setNewHabitData({...newHabitData, target: e.target.value})}
+              className="glass-input" 
+              style={{ width: '100%', boxSizing: 'border-box' }}
+            />
+          </div>
+          <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+            <button 
+              className="secondary-btn"
+              onClick={() => setIsAddHabitModalOpen(false)}
+              style={{ flex: 1, padding: '12px 18px', borderRadius: '12px', fontSize: '0.92rem', fontWeight: 700 }}
+            >
+              Cancel
+            </button>
+            <button 
+              className="primary-btn"
+              onClick={async () => {
+                if (!newHabitData.title || !token) return;
+                try {
+                  const res = await fetch('/api/habits', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ label: newHabitData.title, category: newHabitData.category, target: newHabitData.target })
+                  });
+                  if (res.ok) {
+                    const saved = await res.json();
+                    const newItem = {
+                      id: saved.id, title: saved.label, category: saved.category,
+                      target: saved.target, checkedToday: false, streak: 0,
+                      completionRate: 0, history: [0,0,0,0,0,0,0]
+                    };
+                    setHabits([newItem, ...habits]);
+                    setNewHabitData({ title: '', category: '', target: '' });
+                    setIsAddHabitModalOpen(false);
+                    showToast('Habit Added', 'success');
+                  }
+                } catch (e) {}
+              }}
+              style={{ flex: 1, padding: '12px 18px', borderRadius: '12px', fontSize: '0.92rem', fontWeight: 700 }}
+            >
+              Save Habit
+            </button>
           </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }
