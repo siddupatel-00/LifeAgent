@@ -2605,7 +2605,7 @@ const handleDeleteHabitDb = async (id) => {
           </aside>
 
           {/* MAIN RIGHT AREA (MeraBaazar layout without Verified Pro, Live, or top Log Out) */}
-          <section style={{ flex: 1, height: '100vh', padding: '32px 48px', overflowY: 'auto' }}>
+          <section style={{ flex: 1, height: '100vh', padding: '24px 16px', overflowY: 'auto' }}>
             
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
               <div>
@@ -2630,7 +2630,7 @@ const handleDeleteHabitDb = async (id) => {
               </div>
 
               {!isAiSidePanelOpen && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                   {activeTab !== 'ai' && (
                     <button
                       onClick={() => setIsAiSidePanelOpen(!isAiSidePanelOpen)}
