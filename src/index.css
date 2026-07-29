@@ -809,9 +809,9 @@ input[type="checkbox"]:checked::after {
   }
 
   /* Main container space for bottom nav */
-  main, .main-content, .app-main, .content-area {
+  main, .main-content, .app-main, .content-area, .tab-content, .page-content {
     padding-top: 16px !important;
-    padding-bottom: 160px !important;
+    padding-bottom: 200px !important;
     padding-left: 10px !important;
     padding-right: 10px !important;
     overflow-y: auto !important;
@@ -851,7 +851,7 @@ input[type="checkbox"]:checked::after {
     width: 100vw !important;
     height: 100dvh !important;
     max-width: 100% !important;
-    z-index: 10000 !important;
+    z-index: 9900 !important; /* Kept below mobile bottom nav */
     border-radius: 0 !important;
     display: flex !important;
     flex-direction: column !important;
@@ -1009,4 +1009,17 @@ input[type="checkbox"]:checked::after {
   .money-summary-cards {
     flex-direction: column;
   }
+}
+
+.timeframe-dropdown {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 30px;
+  padding: 8px 16px;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }

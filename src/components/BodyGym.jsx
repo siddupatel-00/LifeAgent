@@ -93,7 +93,7 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
   const [statsForm, setStatsForm] = useState({
     weight: '', target_weight: '', protein: '', target_protein: '', hydration: ''
   });
-  const [statsHistoryFilter, setStatsHistoryFilter] = useState('today');
+  const [statsHistoryFilter, setStatsHistoryFilter] = useState('7days');
 
   const fetchWorkouts = useCallback(async () => {
     if (!token) return;
@@ -741,10 +741,26 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
             <h3 style={{ fontSize: '1.2rem', fontWeight: 700 }}>History</h3>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <button onClick={() => setStatsHistoryFilter('today')} style={statsHistoryFilter === 'today' ? { background: 'var(--accent-blue)', color: 'var(--accent-text)', borderRadius: '30px', padding: '8px 16px', fontWeight: 700, border: 'none', cursor: 'pointer' } : { background: 'var(--bg-card)', color: 'var(--text-muted)', borderRadius: '30px', padding: '8px 16px', fontWeight: 600, border: '1px solid var(--border-color)', cursor: 'pointer' }}>Today / Prev</button>
-              <button onClick={() => setStatsHistoryFilter('7days')} style={statsHistoryFilter === '7days' ? { background: 'var(--accent-blue)', color: 'var(--accent-text)', borderRadius: '30px', padding: '8px 16px', fontWeight: 700, border: 'none', cursor: 'pointer' } : { background: 'var(--bg-card)', color: 'var(--text-muted)', borderRadius: '30px', padding: '8px 16px', fontWeight: 600, border: '1px solid var(--border-color)', cursor: 'pointer' }}>Past 7 Days</button>
-              <button onClick={() => setStatsHistoryFilter('30days')} style={statsHistoryFilter === '30days' ? { background: 'var(--accent-blue)', color: 'var(--accent-text)', borderRadius: '30px', padding: '8px 16px', fontWeight: 700, border: 'none', cursor: 'pointer' } : { background: 'var(--bg-card)', color: 'var(--text-muted)', borderRadius: '30px', padding: '8px 16px', fontWeight: 600, border: '1px solid var(--border-color)', cursor: 'pointer' }}>Past 30 Days</button>
-              <button onClick={() => setStatsHistoryFilter('all')} style={statsHistoryFilter === 'all' ? { background: 'var(--accent-blue)', color: 'var(--accent-text)', borderRadius: '30px', padding: '8px 16px', fontWeight: 700, border: 'none', cursor: 'pointer' } : { background: 'var(--bg-card)', color: 'var(--text-muted)', borderRadius: '30px', padding: '8px 16px', fontWeight: 600, border: '1px solid var(--border-color)', cursor: 'pointer' }}>All</button>
+              <CustomSelect
+                className="timeframe-dropdown"
+                value={statsHistoryFilter}
+                onChange={(e) => setStatsHistoryFilter(e.target.value)}
+                options={[
+                  { value: 'today', label: 'Today / Prev' },
+                  { value: '7days', label: 'Past 7 Days' },
+                  { value: '30days', label: 'Past 30 Days' },
+                  { value: 'all', label: 'All' }
+                ]}
+                style={{ 
+                  width: '160px', 
+                  background: 'var(--bg-card)', 
+                  border: '1px solid var(--border-color)', 
+                  borderRadius: '30px', 
+                  padding: '6px 14px', 
+                  color: 'var(--text-primary)', 
+                  fontSize: '0.85rem' 
+                }}
+              />
             </div>
           </div>
 

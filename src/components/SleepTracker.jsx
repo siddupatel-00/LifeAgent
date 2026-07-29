@@ -370,70 +370,27 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat 
             <Filter size={14} /> Time Range:
           </span>
 
-          <button
-            onClick={() => setRangeMode('today')}
-            style={{
-              padding: '8px 18px', borderRadius: '30px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer',
-              border: rangeMode === 'today' ? 'none' : '1px solid var(--border-color)',
-              background: rangeMode === 'today' ? 'var(--accent-blue)' : 'var(--bg-card)',
-              color: rangeMode === 'today' ? 'white' : 'var(--text-main)',
-              transition: 'all 0.2s'
+          <CustomSelect
+            className="timeframe-dropdown"
+            value={rangeMode}
+            onChange={(e) => setRangeMode(e.target.value)}
+            options={[
+              { value: 'today', label: 'Today' },
+              { value: '7d', label: 'Past 7 Days' },
+              { value: 'this_month', label: 'This Month' },
+              { value: 'past_month', label: 'Past Month' },
+              { value: 'custom', label: 'Custom Range' }
+            ]}
+            style={{ 
+              width: '160px', 
+              background: 'var(--bg-card)', 
+              border: '1px solid var(--border-color)', 
+              borderRadius: '30px', 
+              padding: '6px 14px', 
+              color: 'var(--text-primary)', 
+              fontSize: '0.85rem' 
             }}
-          >
-            Today
-          </button>
-
-          <button
-            onClick={() => setRangeMode('7d')}
-            style={{
-              padding: '8px 18px', borderRadius: '30px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer',
-              border: rangeMode === '7d' ? 'none' : '1px solid var(--border-color)',
-              background: rangeMode === '7d' ? 'var(--accent-blue)' : 'var(--bg-card)',
-              color: rangeMode === '7d' ? 'white' : 'var(--text-main)',
-              transition: 'all 0.2s'
-            }}
-          >
-            Past 7 Days
-          </button>
-
-          <button
-            onClick={() => setRangeMode('this_month')}
-            style={{
-              padding: '8px 18px', borderRadius: '30px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer',
-              border: rangeMode === 'this_month' ? 'none' : '1px solid var(--border-color)',
-              background: rangeMode === 'this_month' ? 'var(--accent-blue)' : 'var(--bg-card)',
-              color: rangeMode === 'this_month' ? 'white' : 'var(--text-main)',
-              transition: 'all 0.2s'
-            }}
-          >
-            This Month
-          </button>
-
-          <button
-            onClick={() => setRangeMode('past_month')}
-            style={{
-              padding: '8px 18px', borderRadius: '30px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer',
-              border: rangeMode === 'past_month' ? 'none' : '1px solid var(--border-color)',
-              background: rangeMode === 'past_month' ? 'var(--accent-blue)' : 'var(--bg-card)',
-              color: rangeMode === 'past_month' ? 'white' : 'var(--text-main)',
-              transition: 'all 0.2s'
-            }}
-          >
-            Past Month
-          </button>
-
-          <button
-            onClick={() => setRangeMode('custom')}
-            style={{
-              padding: '8px 18px', borderRadius: '30px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer',
-              border: rangeMode === 'custom' ? 'none' : '1px solid var(--border-color)',
-              background: rangeMode === 'custom' ? 'var(--accent-blue)' : 'var(--bg-card)',
-              color: rangeMode === 'custom' ? 'white' : 'var(--text-main)',
-              transition: 'all 0.2s'
-            }}
-          >
-            Custom Range
-          </button>
+          />
         </div>
 
         {/* Custom Range Picker */}
