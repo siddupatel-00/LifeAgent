@@ -347,6 +347,7 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
         target_weight: Number(statsForm.target_weight) || 0,
         protein: isUpdating ? existingTodayStat.protein : (latestStat?.protein || 0),
         target_protein: Number(statsForm.target_protein) || 0,
+        hydration: isUpdating ? existingTodayStat.hydration : (latestStat?.hydration || 0),
         date: today
       };
       
@@ -360,7 +361,7 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
       });
       
       if (res.ok) {
-        showToast('Stats Updated', 'success');
+        showToast('Saved successfully!', 'success');
         closeEditMetricsModal();
         fetchStats();
       }
@@ -768,7 +769,7 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
 
               {/* Body Weight Trend Graph */}
               <div className="glass-card" style={{ padding: '24px', borderRadius: '18px', border: '1px solid var(--border-color)', background: 'var(--bg-card)' }}>
-                <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '16px', color: 'var(--text-main)' }}>Body Weight Trend (kg)</h4>
+                <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '16px', color: 'var(--text-main)' }}>Weight (kg)</h4>
                 <div style={{ height: '220px', width: '100%' }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -953,7 +954,7 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
 
               <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
                 <button type="button" className="secondary-btn" onClick={closeEditMetricsModal}>Cancel</button>
-                <button type="submit" className="blue-btn">Save Goals</button>
+                <button type="submit" className="blue-btn">Save</button>
               </div>
             </form>
           </div>
