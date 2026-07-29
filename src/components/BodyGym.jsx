@@ -38,7 +38,7 @@ export default function BodyGym(props) {
   );
 }
 
-function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
+function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats, userProfile, showForm, setShowForm }) {
   const [activeSubTab, setActiveSubTab] = useState('today'); // 'today', 'workouts', 'stats'
   const [workouts, setWorkouts] = useState([]);
 
@@ -68,7 +68,7 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
   };
 
   // Auto-rotation based on calendar day index or completed workouts
-  const todayStr = todayKey();
+  const todayStr = todayKey(userProfile?.timezone);
   const totalWorkoutsCount = workouts.length;
   
   let todaySplitIdx = 0;
@@ -89,6 +89,14 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
   const [workoutForm, setWorkoutForm] = useState({
     title: '', category: 'General', duration_mins: '', calories: '', notes: ''
   });
+
+  useEffect(() => {
+    if (showForm) {
+      setIsAddWorkoutOpen(true);
+    }
+  }, [showForm]);
+
+
 
   // Body stats form state
   const [isLogProteinOpen, setIsLogProteinOpen] = useState(false);
@@ -158,7 +166,7 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
   const exactTodayStat = statsList.find(s => s.date === todayStr);
   const todayStat = exactTodayStat !== undefined ? exactTodayStat : null;
   
-  const currentProtein = Number(todayStat?.protein) || 0;
+  const currentProtein = exactTodayStat ? (Number(exactTodayStat.protein) || 0) : 0;
   const targetWeight = Number(latestStat?.target_weight) || 0;
   const targetProteinGoal = Number(latestStat?.target_protein) || (targetWeight > 0 ? Math.round(targetWeight * 2) : 150);
   const proteinPercentComplete = Math.min(100, Math.max(0, Math.round((currentProtein / targetProteinGoal) * 100)));
@@ -291,6 +299,7 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
   const closeWorkoutModal = () => {
     setIsAddWorkoutOpen(false);
     setWorkoutForm({ title: '', category: 'General', duration_mins: '', calories: '', notes: '' });
+    setShowForm?.(false);
   };
 
   const handleAddProtein = async (e) => {
@@ -645,13 +654,6 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <h3 style={{ fontSize: '1.2rem', fontWeight: 700 }}>Workout History</h3>
-            <button 
-              className="blue-btn" 
-              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px' }}
-              onClick={() => setIsAddWorkoutOpen(true)}
-            >
-              <Plus size={16} /> Add Workout
-            </button>
           </div>
 
           {workouts.length === 0 ? (

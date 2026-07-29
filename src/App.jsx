@@ -2867,6 +2867,18 @@ const handleDeleteHabitDb = async (id) => {
               </div>
             )}
 
+            {(activeTab === 'body') && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginBottom: '24px' }}>
+                <button
+                  onClick={() => setShowWorkoutForm(true)}
+                  className="blue-btn"
+                  style={{ padding: '10px 18px', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '8px', borderRadius: '30px', fontWeight: 700 }}
+                >
+                  <Plus size={16} /> Add Workout
+                </button>
+              </div>
+            )}
+
             {/* TAB CONTENT HOUSING BOX */}
             <div className="glass-card" style={{ padding: '32px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
               
@@ -4489,6 +4501,8 @@ const handleDeleteHabitDb = async (id) => {
                   userProfile={userProfile}
                   bodyStats={bodyStats}
                   setBodyStats={setBodyStats}
+                  showForm={showWorkoutForm}
+                  setShowForm={setShowWorkoutForm}
                 />
               )}
 
