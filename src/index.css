@@ -1126,3 +1126,16 @@ input[type="checkbox"]:checked::after {
   align-items: center;
   gap: 6px;
 }
+
+@media (max-width: 768px) {
+  .notes-container {
+    flex-direction: column !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .notes-left-col, .notes-right-col {
+    flex: auto !important;
+    height: auto !important;
+    overflow-y: visible !important;
+  }
+}

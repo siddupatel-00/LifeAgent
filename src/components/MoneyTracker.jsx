@@ -241,8 +241,8 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
   };
 
   return (
-    <div className="money-tracker-grid">
-      <div>
+    <div className="money-tracker-grid" style={{ alignItems: 'flex-start' }}>
+      <div style={{ maxHeight: 'calc(100vh - 220px)', overflowY: 'auto', paddingRight: '8px' }} className="hide-scrollbar">
         <div className="money-summary-cards">
           <div style={{ flex: 1, padding: '20px', background: 'var(--bg-main)', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
             <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '8px' }}>Total Earned</div>
@@ -333,7 +333,7 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
         </div>
       </div>
 
-      <div style={{ background: 'var(--bg-main)', padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)', height: 'fit-content' }}>
+      <div style={{ background: 'var(--bg-main)', padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)', height: 'fit-content', position: 'sticky', top: '20px' }}>
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <h4 style={{ fontSize: '1.15rem', fontWeight: 700, margin: 0 }}>Charts</h4>

@@ -50,6 +50,21 @@ const getFormattedDateTitle = (dateStr) => {
   return `📝 ${day} ${month} ${year}`;
 };
 
+const TAB_SLUGS = {
+  today: '/today',
+  ai: '/ai',
+  habits: '/habits',
+  water: '/water',
+  notes: '/notes',
+  calendar: '/calendar',
+  finance: '/money',
+  body: '/body',
+  sleep: '/sleep',
+  analytics: '/analytics',
+  settings: '/settings'
+};
+const SLUG_TO_TAB = Object.fromEntries(Object.entries(TAB_SLUGS).map(([k, v]) => [v, k]));
+
 export default function App() {
   const [themeMode, setThemeMode] = useState(() => localStorage.getItem('themeMode') || 'pc'); // 'dark', 'light', 'pc'
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
@@ -60,11 +75,11 @@ export default function App() {
     const path = window.location.pathname;
     const isAuth = !!localStorage.getItem('token');
     
-    if (path.includes('/dashboard')) {
+    if (path.includes('/dashboard') || SLUG_TO_TAB[path]) {
       if (!isAuth) window.history.replaceState({}, '', '/auth');
       return isAuth ? 'dashboard' : 'auth';
     }
-    if (path.includes('/auth')) {
+    if (path.includes('/auth') || path === '/login') {
       if (isAuth) window.history.replaceState({}, '', '/dashboard');
       return isAuth ? 'dashboard' : 'auth';
     }
@@ -91,10 +106,13 @@ export default function App() {
       const path = window.location.pathname;
       const isAuth = !!localStorage.getItem('token');
       
-      if (path.includes('/dashboard')) {
+      if (path.includes('/dashboard') || SLUG_TO_TAB[path]) {
         if (!isAuth) window.history.replaceState({}, '', '/auth');
         setCurrentPage(isAuth ? 'dashboard' : 'auth');
-      } else if (path.includes('/auth')) {
+        if (SLUG_TO_TAB[path] && isAuth) {
+          setActiveTabRaw(SLUG_TO_TAB[path]);
+        }
+      } else if (path.includes('/auth') || path === '/login') {
         if (isAuth) window.history.replaceState({}, '', '/dashboard');
         setCurrentPage(isAuth ? 'dashboard' : 'auth');
       } else if (path.includes('/waitlist')) {
@@ -126,7 +144,17 @@ export default function App() {
   const [waitlistSuccess, setWaitlistSuccess] = useState(false);
 
   // Dashboard state & Global Timeframe Filter
-  const [activeTab, setActiveTab] = useState('today'); // 'ai', 'habits', 'finance', 'body', 'sleep', 'analytics', 'settings'
+  const [activeTabRaw, setActiveTabRaw] = useState(() => {
+    const path = window.location.pathname;
+    return SLUG_TO_TAB[path] || 'today';
+  });
+  const activeTab = activeTabRaw;
+  const setActiveTab = (tab) => {
+    setActiveTabRaw(tab);
+    if (TAB_SLUGS[tab]) {
+      window.history.pushState({}, '', TAB_SLUGS[tab]);
+    }
+  };
   const [previewTab, setPreviewTab] = useState('Money'); // 'Money', 'Sleep', 'Calendar', 'Notes', 'Gym', 'Analytics', 'AI', 'Habits'
   const [timeRange, setTimeRange] = useState(() => localStorage.getItem('active_timeframe') || '7d'); // 'today', '3d', '7d', '14d', '25d', '30d', '1m', '3m', '6m', '12m', 'lifetime'
   const [isTimeMenuOpen, setIsTimeMenuOpen] = useState(false);
@@ -2653,7 +2681,7 @@ const handleDeleteHabitDb = async (id) => {
           </aside>
 
           {/* MAIN RIGHT AREA (MeraBaazar layout without Verified Pro, Live, or top Log Out) */}
-          <section style={{ flex: 1, height: '100vh', padding: '24px 16px', overflowY: 'auto' }}>
+          <section style={{ flex: 1, height: '100vh', padding: '24px 16px', overflowY: activeTab === 'ai' ? 'hidden' : 'auto' }}>
             
             <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
               <div>
@@ -3285,7 +3313,7 @@ const handleDeleteHabitDb = async (id) => {
                 <div className="ai-chat-view animate-entrance" style={{
                   display: 'flex',
                   flexDirection: 'column',
-                  height: 'calc(100dvh - 130px)',
+                  height: 'calc(100vh - 170px)',
                   overflow: 'hidden',
                   background: 'var(--bg-main)',
                   borderRadius: '20px',
@@ -4052,9 +4080,9 @@ const handleDeleteHabitDb = async (id) => {
                     </button>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '24px', minHeight: '460px' }}>
+                  <div className="notes-container" style={{ display: 'flex', gap: '24px', height: 'calc(100vh - 220px)', overflow: 'hidden' }}>
                     {/* LEFT NOTEBOOK LIST / TRASH VIEW SWITCHER */}
-                    <div style={{ background: 'var(--bg-main)', borderRadius: '18px', border: '1px solid var(--border-color)', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div className="notes-left-col" style={{ flex: '0 0 320px', background: 'var(--bg-main)', borderRadius: '18px', border: '1px solid var(--border-color)', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px', height: '100%', overflowY: 'auto', paddingRight: '8px' }}>
                       <div style={{ display: 'flex', gap: '6px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
                         <button
                           onClick={() => {
@@ -4243,7 +4271,7 @@ const handleDeleteHabitDb = async (id) => {
                       const currentNote = currentList.find(n => n.id === activeNoteId);
                       if (!currentNote) {
                         return (
-                          <div style={{ background: 'var(--bg-main)', borderRadius: '18px', border: '1px solid var(--border-color)', padding: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', gap: '12px' }}>
+                          <div className="notes-right-col" style={{ flex: 1, background: 'var(--bg-main)', borderRadius: '18px', border: '1px solid var(--border-color)', padding: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', gap: '12px', height: '100%', overflowY: 'auto' }}>
                             <BookOpen size={40} opacity={0.4} />
                             <h4 style={{ fontSize: '1.1rem', fontWeight: 700 }}>No Note Selected</h4>
                             <p style={{ fontSize: '0.85rem' }}>Select a note from the left panel or click "+ New Diary Page / Note".</p>
@@ -4251,7 +4279,7 @@ const handleDeleteHabitDb = async (id) => {
                         );
                       }
                       return (
-                        <div style={{ background: 'var(--bg-main)', borderRadius: '18px', border: '1px solid var(--border-color)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                        <div className="notes-right-col" style={{ flex: 1, background: 'var(--bg-main)', borderRadius: '18px', border: '1px solid var(--border-color)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px', height: '100%', overflowY: 'auto' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
                             <div style={{ flex: 1, minWidth: '240px' }}>
                               <input
