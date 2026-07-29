@@ -280,6 +280,25 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState('');
 
+  // One-time legacy cleanup for broken default water goal
+  useEffect(() => {
+    if (localStorage.getItem('water_target_goal') === '5.678') {
+      localStorage.removeItem('water_target_goal');
+    }
+  }, []);
+
+  // Validate session on mount if token exists; log out if account was deleted or token expired
+  useEffect(() => {
+    if (!token) return;
+    fetch('/api/auth?action=me', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    }).then(res => {
+      if (res.status === 401 || res.status === 403 || res.status === 404) {
+        handleLogout();
+      }
+    }).catch(() => {});
+  }, [token]);
+
   // Password Reset State
   const [resetStep, setResetStep] = useState(1); // 1: request code, 2: verify code, 3: set new password twice
   const [resetEmailOrHandle, setResetEmailOrHandle] = useState('');
@@ -305,7 +324,19 @@ export default function App() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Authentication failed');
-      
+
+      // Clear all user-specific localStorage keys so a fresh login never
+      // inherits stale settings/cache from a previous user or session.
+      const userSpecificKeys = [
+        'water_target_goal', 'gym_workout_split', 'today_widgets_config',
+        'auto_open_ai_sidechat', 'active_timeframe',
+        'cache_userProfile', 'cache_aiMessages', 'cache_habits',
+        'cache_todayItems', 'cache_transactions', 'cache_workouts',
+        'cache_bodyStats', 'cache_notesList', 'cache_trashNotes',
+        'cache_calendarEvents',
+      ];
+      userSpecificKeys.forEach(key => localStorage.removeItem(key));
+
       localStorage.setItem('token', data.token);
       setToken(data.token);
       setIsAuthenticated(true);
@@ -408,17 +439,17 @@ export default function App() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('cache_userProfile');
-    localStorage.removeItem('cache_aiMessages');
-    localStorage.removeItem('cache_habits');
-    localStorage.removeItem('cache_todayItems');
-    localStorage.removeItem('cache_transactions');
-    localStorage.removeItem('cache_workouts');
-    localStorage.removeItem('cache_bodyStats');
-    localStorage.removeItem('cache_notesList');
-    localStorage.removeItem('cache_trashNotes');
-    localStorage.removeItem('cache_calendarEvents');
+    // Remove all user-specific keys so the next login starts with a clean slate.
+    const userSpecificKeys = [
+      'token',
+      'water_target_goal', 'gym_workout_split', 'today_widgets_config',
+      'auto_open_ai_sidechat', 'active_timeframe',
+      'cache_userProfile', 'cache_aiMessages', 'cache_habits',
+      'cache_todayItems', 'cache_transactions', 'cache_workouts',
+      'cache_bodyStats', 'cache_notesList', 'cache_trashNotes',
+      'cache_calendarEvents',
+    ];
+    userSpecificKeys.forEach(key => localStorage.removeItem(key));
     setToken('');
     setIsAuthenticated(false);
     setUserProfile({ name: '', handle: '', email: '', aiTone: 'Analytical & Direct', morningAudit: false, smartAlerts: false, currency: '$', timezone: localTimeZone() });
@@ -924,13 +955,13 @@ export default function App() {
     // 3. Mark Protein & Hydration Trackers to 100% Goal Target
     if (targetState) {
       const latestStat = Array.isArray(bodyStats) && bodyStats.length > 0 ? bodyStats[0] : (bodyStats || {});
-      const targetW = Number(latestStat?.target_weight) || 70;
+      const targetW = Number(latestStat?.target_weight) || 0;
       const targetP = Number(latestStat?.target_protein) || 0;
-      const proteinGoal = targetP > 0 ? targetP : (targetW > 0 ? Math.round(targetW * 2) : 150);
+      const proteinGoal = targetP > 0 ? targetP : (targetW > 0 ? Math.round(targetW * 2) : 0);
       const hydrationGoal = Number(localStorage.getItem('water_target_goal')) || 3.0;
 
       const payload = {
-        weight: Number(latestStat?.weight) || 70,
+        weight: Number(latestStat?.weight) || 0,
         target_weight: targetW,
         protein: proteinGoal,
         target_protein: proteinGoal,
@@ -3122,7 +3153,7 @@ const handleDeleteHabitDb = async (id) => {
                           const protein = isToday ? (Number(latestStat?.protein) || 0) : 0;
                           const targetW = Number(latestStat?.target_weight) || 0;
                           const targetP = Number(latestStat?.target_protein) || 0;
-                          const goal = targetP > 0 ? targetP : (targetW > 0 ? Math.round(targetW * 2) : 150);
+                          const goal = targetP > 0 ? targetP : (targetW > 0 ? Math.round(targetW * 2) : 0);
                           const pct = Math.min(100, Math.max(0, Math.round((protein / goal) * 100)));
 
                           const handleAddProtein = async (amount) => {
@@ -3130,8 +3161,8 @@ const handleDeleteHabitDb = async (id) => {
                             const newProtein = Math.max(0, protein + amount);
                             const hydrationVal = isToday ? (Number(latestStat?.hydration) || 0) : 0;
                             const payload = {
-                              weight: Number(latestStat?.weight) || 70,
-                              target_weight: targetW || 70,
+                              weight: Number(latestStat?.weight) || 0,
+                              target_weight: targetW || 0,
                               protein: newProtein,
                               target_protein: goal,
                               hydration: hydrationVal,
@@ -3186,7 +3217,7 @@ const handleDeleteHabitDb = async (id) => {
                                   </span>
                                 </div>
                                 <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--accent-blue)', marginBottom: '8px' }}>
-                                  {protein}g <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>/ {goal}g goal</span>
+                                  {protein}g {goal > 0 && <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>/ {goal}g goal</span>}
                                 </div>
                                 <div style={{ width: '100%', height: '10px', background: 'var(--bg-main)', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
                                   <div style={{ width: `${pct}%`, height: '100%', background: 'var(--accent-blue)', borderRadius: '10px', transition: 'width 0.3s ease', boxShadow: '0 0 8px rgba(59,130,246,0.3)' }} />

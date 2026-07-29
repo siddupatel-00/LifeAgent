@@ -173,7 +173,7 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
   
   const currentProtein = exactTodayStat ? (Number(exactTodayStat.protein) || 0) : 0;
   const targetWeight = Number(latestStat?.target_weight) || 0;
-  const targetProteinGoal = Number(latestStat?.target_protein) || (targetWeight > 0 ? Math.round(targetWeight * 2) : 150);
+  const targetProteinGoal = Number(latestStat?.target_protein) || (targetWeight > 0 ? Math.round(targetWeight * 2) : 0);
   const proteinPercentComplete = Math.min(100, Math.max(0, Math.round((currentProtein / targetProteinGoal) * 100)));
 
   // Check if today's scheduled workout has been logged
@@ -617,7 +617,8 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
             </div>
           </div>
 
-          {/* Active Workout Split Routine & Customizer */}
+          {/* Active Workout Split Routine & Customizer — only shown once the user has a saved split or logged workouts */}
+          {(hasCustomSplit || workouts.length > 0) && (
           <div className="glass-card" style={{ padding: '24px', borderRadius: '18px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', marginBottom: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
               <div>
@@ -660,6 +661,7 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
               })}
             </div>
           </div>
+          )}
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <h3 style={{ fontSize: '1.2rem', fontWeight: 700 }}>Workout History</h3>
@@ -789,7 +791,7 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
           protein: Number(item.protein) || 0,
           weight: Number(item.weight) || 0,
           target_protein: Number(item.target_protein) > 0 ? Number(item.target_protein) : targetProteinGoal,
-          target_weight: Number(item.target_weight) > 0 ? Number(item.target_weight) : (targetWeight > 0 ? targetWeight : 70)
+          target_weight: Number(item.target_weight) > 0 ? Number(item.target_weight) : (targetWeight > 0 ? targetWeight : 0)
         }));
 
         return (
@@ -860,7 +862,7 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
                   <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, color: 'var(--text-main)' }}>Weight (kg)</h4>
                   <div style={{ display: 'flex', gap: '14px', fontSize: '0.78rem', fontWeight: 700 }}>
                     <span style={{ color: 'var(--accent-blue)', display: 'flex', alignItems: 'center', gap: '4px' }}>● Actual</span>
-                    <span style={{ color: '#ef4444', display: 'flex', alignItems: 'center', gap: '4px' }}>--- Target ({targetWeight || 70}kg)</span>
+                    <span style={{ color: '#ef4444', display: 'flex', alignItems: 'center', gap: '4px' }}>--- Target ({targetWeight > 0 ? `${targetWeight}kg` : 'not set'})</span>
                   </div>
                 </div>
                 <div style={{ height: '220px', width: '100%' }}>
@@ -915,9 +917,11 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
                     <span style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--accent-blue)' }}>
                       {currentProtein}g
                     </span>
-                    <span style={{ fontSize: '0.95rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-                      / {targetProteinGoal}g daily target
-                    </span>
+                    {targetProteinGoal > 0 && (
+                      <span style={{ fontSize: '0.95rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                        / {targetProteinGoal}g daily target
+                      </span>
+                    )}
                   </div>
 
                   {/* Progress Bar */}
