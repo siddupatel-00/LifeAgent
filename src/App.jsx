@@ -4076,7 +4076,6 @@ const handleDeleteHabitDb = async (id) => {
                         setNotesList(updatedList);
                         setActiveNoteId(tempId);
                         localStorage.setItem('cache_notesList', JSON.stringify(updatedList));
-                        showToast('Note created!', 'success');
 
                         // Background DB creation
                         handleCreateNoteDb(defaultTitle, '', true, (serverNote) => {

@@ -22,6 +22,19 @@
   --radius-xl: 28px;
 }
 
+/* Global Scrollbar Hiding (Scrolling works 100%, but scrollbars are invisible) */
+*, *::before, *::after {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
 [data-theme="light"] {
   --bg-main: #ffffff;
   --bg-card: #f8fafc;
@@ -536,10 +549,10 @@ body {
 }
 
 .toast-success {
-  background: #10b981;
-  border: 1px solid #059669;
-  color: #ffffff;
-  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.35);
+  background: var(--accent-blue);
+  border: 1px solid var(--accent-blue-light);
+  color: var(--accent-text);
+  box-shadow: 0 8px 24px var(--accent-blue-dim);
 }
 
 .toast-error {
@@ -550,10 +563,10 @@ body {
 }
 
 .toast-info {
-  background: #3b82f6;
-  border: 1px solid #2563eb;
-  color: #ffffff;
-  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.35);
+  background: var(--accent-blue);
+  border: 1px solid var(--accent-blue-light);
+  color: var(--accent-text);
+  box-shadow: 0 8px 24px var(--accent-blue-dim);
 }
 
 .toast-icon {
