@@ -65,7 +65,9 @@ const SettingsPanel = ({
             morningAudit: userProfile.morningAudit !== undefined ? !!userProfile.morningAudit : (userProfile.morning_audit !== undefined ? userProfile.morning_audit !== 0 : true),
             smart_alerts: userProfile.smartAlerts !== undefined ? (userProfile.smartAlerts ? 1 : 0) : (userProfile.smart_alerts !== undefined ? (userProfile.smart_alerts ? 1 : 0) : 1),
             smartAlerts: userProfile.smartAlerts !== undefined ? !!userProfile.smartAlerts : (userProfile.smart_alerts !== undefined ? userProfile.smart_alerts !== 0 : true),
-            auto_open_ai_sidechat: userProfile.auto_open_ai_sidechat !== false ? 1 : 0
+            auto_open_ai_sidechat: userProfile.auto_open_ai_sidechat !== false ? 1 : 0,
+            week_start_day: userProfile.weekStartDay || userProfile.week_start_day || 'Monday',
+            weekStartDay: userProfile.weekStartDay || userProfile.week_start_day || 'Monday'
           })
         });
         if (res.ok) {
@@ -202,6 +204,27 @@ const SettingsPanel = ({
                 placeholder="+1 234 567 8900"
                 onChange={(e) => setUserProfile({ ...userProfile, phone: e.target.value })} 
                 className="settings-input"
+              />
+            </div>
+
+            <div className="settings-row">
+              <div>
+                <div style={{ fontWeight: 700, fontSize: '1rem' }}>First Day of the Week</div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Sets the start day for your 7-day habit matrix and weekly calendars.</div>
+              </div>
+              <CustomSelect 
+                value={userProfile.weekStartDay || userProfile.week_start_day || 'Monday'} 
+                onChange={(e) => setUserProfile({ ...userProfile, weekStartDay: e.target.value, week_start_day: e.target.value })} 
+                className="settings-input"
+                options={[
+                  { value: "Monday", label: "Monday" },
+                  { value: "Tuesday", label: "Tuesday" },
+                  { value: "Wednesday", label: "Wednesday" },
+                  { value: "Thursday", label: "Thursday" },
+                  { value: "Friday", label: "Friday" },
+                  { value: "Saturday", label: "Saturday" },
+                  { value: "Sunday", label: "Sunday" }
+                ]}
               />
             </div>
 

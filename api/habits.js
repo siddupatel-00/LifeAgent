@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     }
     
     if (req.method === 'PUT') {
-      const { id, streak, checked_today, target, paused_until, label, category, challenge_days, archived, completed_at } = req.body;
+      const { id, streak, checked_today, target, paused_until, label, category, challenge_days, archived, completed_at, frequency, custom_days } = req.body;
       if (!id) return res.status(400).json({ error: 'Habit ID required' });
       
       let updateSql = 'UPDATE habits SET ';
@@ -39,6 +39,12 @@ export default async function handler(req, res) {
       }
       if (archived !== undefined) { updateSql += 'archived = ?, '; args.push(archived ? 1 : 0); }
       if (completed_at !== undefined) { updateSql += 'completed_at = ?, '; args.push(completed_at || null); }
+      if (frequency !== undefined) { updateSql += 'frequency = ?, '; args.push(frequency || 'daily'); }
+      if (custom_days !== undefined) { 
+        const cdVal = Array.isArray(custom_days) ? custom_days.join(',') : (custom_days || '');
+        updateSql += 'custom_days = ?, '; 
+        args.push(cdVal); 
+      }
       
       if (args.length === 0 && challenge_days === undefined) return res.status(400).json({ error: 'No fields to update' });
       
@@ -51,13 +57,15 @@ export default async function handler(req, res) {
     }
     
     if (req.method === 'POST') {
-      const { label, category, target, challenge_days } = req.body;
+      const { label, category, target, challenge_days, frequency, custom_days } = req.body;
+      const freqVal = frequency || 'daily';
+      const cdVal = Array.isArray(custom_days) ? custom_days.join(',') : (custom_days || '');
       const start_date = challenge_days > 0 ? new Date().toISOString().split('T')[0] : null;
       const result = await db.execute({
-        sql: 'INSERT INTO habits (user_id, label, category, target, challenge_days, start_date, archived, completed_at) VALUES (?, ?, ?, ?, ?, ?, 0, NULL)',
-        args: [userId, label, category || '', target || '', challenge_days || 0, start_date]
+        sql: 'INSERT INTO habits (user_id, label, category, target, challenge_days, start_date, archived, completed_at, frequency, custom_days) VALUES (?, ?, ?, ?, ?, ?, 0, NULL, ?, ?)',
+        args: [userId, label, category || '', target || '', challenge_days || 0, start_date, freqVal, cdVal]
       });
-      return res.status(201).json({ id: Number(result.lastInsertRowid), label, category, target, challenge_days, start_date, archived: 0, completed_at: null });
+      return res.status(201).json({ id: Number(result.lastInsertRowid), label, category, target, challenge_days, start_date, archived: 0, completed_at: null, frequency: freqVal, custom_days: cdVal });
     }
     
     if (req.method === 'DELETE') {

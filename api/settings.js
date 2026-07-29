@@ -40,20 +40,21 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'GET') {
-      const result = await db.execute({ sql: 'SELECT name, email, phone, handle, theme, ai_name, gemini_api_key, groq_api_key, ai_provider, currency, ai_tone, morning_audit, smart_alerts FROM users WHERE id = ?', args: [userId] });
+      const result = await db.execute({ sql: 'SELECT name, email, phone, handle, theme, ai_name, gemini_api_key, groq_api_key, ai_provider, currency, ai_tone, morning_audit, smart_alerts, week_start_day FROM users WHERE id = ?', args: [userId] });
       if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
       
-      let userSettings = { timezone: 'UTC', chat_reset_time: '00:00', last_chat_reset: null, workout_split_type: 'weekly', workout_templates: null };
+      let userSettings = { timezone: 'UTC', chat_reset_time: '00:00', last_chat_reset: null, workout_split_type: 'weekly', workout_templates: null, week_start_day: 'Monday' };
       try {
-        const settingsResult = await db.execute({ sql: 'SELECT timezone, chat_reset_time, last_chat_reset, workout_split_type, workout_templates FROM user_settings WHERE user_id = ?', args: [userId] });
+        const settingsResult = await db.execute({ sql: 'SELECT timezone, chat_reset_time, last_chat_reset, workout_split_type, workout_templates, week_start_day FROM user_settings WHERE user_id = ?', args: [userId] });
         if (settingsResult.rows.length > 0) {
-          userSettings = settingsResult.rows[0];
+          userSettings = { ...userSettings, ...settingsResult.rows[0] };
         }
       } catch (e) {
         console.warn('user_settings fetch fallback:', e.message);
       }
 
       const row = result.rows[0];
+      const weekStartDay = row.week_start_day || userSettings.week_start_day || 'Monday';
       return res.status(200).json({
         name: row.name || '',
         email: row.email || '',
@@ -71,6 +72,8 @@ export default async function handler(req, res) {
         morningAudit: (row.morning_audit !== undefined && row.morning_audit !== null) ? row.morning_audit !== 0 : true,
         smart_alerts: row.smart_alerts !== undefined && row.smart_alerts !== null ? row.smart_alerts : 1,
         smartAlerts: (row.smart_alerts !== undefined && row.smart_alerts !== null) ? row.smart_alerts !== 0 : true,
+        week_start_day: weekStartDay,
+        weekStartDay: weekStartDay,
         ...userSettings
       });
     }
@@ -92,6 +95,7 @@ export default async function handler(req, res) {
       const smart_alerts = body.smartAlerts !== undefined ? (body.smartAlerts ? 1 : 0) : (body.smart_alerts !== undefined ? (body.smart_alerts ? 1 : 0) : undefined);
       const timezone = body.timezone;
       const chat_reset_time = body.chat_reset_time || body.chatResetTime;
+      const week_start_day = body.week_start_day || body.weekStartDay;
       
       const workout_split_type = body.workout_split_type;
       const workout_templates = body.workout_templates;
@@ -115,7 +119,7 @@ export default async function handler(req, res) {
       }
 
       await db.execute({
-        sql: 'UPDATE users SET name = ?, email = ?, phone = ?, handle = ?, theme = ?, ai_name = ?, gemini_api_key = ?, groq_api_key = ?, ai_provider = ?, currency = ?, ai_tone = ?, morning_audit = ?, smart_alerts = ? WHERE id = ?',
+        sql: 'UPDATE users SET name = ?, email = ?, phone = ?, handle = ?, theme = ?, ai_name = ?, gemini_api_key = ?, groq_api_key = ?, ai_provider = ?, currency = ?, ai_tone = ?, morning_audit = ?, smart_alerts = ?, week_start_day = ? WHERE id = ?',
         args: [
           name !== undefined ? name : current.name,
           email !== undefined ? email : current.email,
@@ -130,21 +134,23 @@ export default async function handler(req, res) {
           ai_tone !== undefined ? ai_tone : (current.ai_tone || 'Analytical & Direct'),
           morning_audit !== undefined ? morning_audit : (current.morning_audit !== undefined && current.morning_audit !== null ? current.morning_audit : 1),
           smart_alerts !== undefined ? smart_alerts : (current.smart_alerts !== undefined && current.smart_alerts !== null ? current.smart_alerts : 1),
+          week_start_day !== undefined ? week_start_day : (current.week_start_day || 'Monday'),
           userId
         ]
       });
 
-      const currentSetReq = await db.execute({ sql: 'SELECT timezone, chat_reset_time, workout_split_type, workout_templates FROM user_settings WHERE user_id = ?', args: [userId] });
-      const currentSet = currentSetReq.rows.length > 0 ? currentSetReq.rows[0] : { timezone: 'UTC', chat_reset_time: '00:00', workout_split_type: 'weekly', workout_templates: null };
+      const currentSetReq = await db.execute({ sql: 'SELECT timezone, chat_reset_time, workout_split_type, workout_templates, week_start_day FROM user_settings WHERE user_id = ?', args: [userId] });
+      const currentSet = currentSetReq.rows.length > 0 ? currentSetReq.rows[0] : { timezone: 'UTC', chat_reset_time: '00:00', workout_split_type: 'weekly', workout_templates: null, week_start_day: 'Monday' };
 
       await db.execute({
-        sql: 'INSERT INTO user_settings (user_id, timezone, chat_reset_time, workout_split_type, workout_templates) VALUES (?, ?, ?, ?, ?) ON CONFLICT (user_id) DO UPDATE SET timezone = excluded.timezone, chat_reset_time = excluded.chat_reset_time, workout_split_type = excluded.workout_split_type, workout_templates = excluded.workout_templates',
+        sql: 'INSERT INTO user_settings (user_id, timezone, chat_reset_time, workout_split_type, workout_templates, week_start_day) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (user_id) DO UPDATE SET timezone = excluded.timezone, chat_reset_time = excluded.chat_reset_time, workout_split_type = excluded.workout_split_type, workout_templates = excluded.workout_templates, week_start_day = excluded.week_start_day',
         args: [
           userId, 
           timezone !== undefined ? timezone : currentSet.timezone, 
           chat_reset_time !== undefined ? chat_reset_time : currentSet.chat_reset_time,
           workout_split_type !== undefined ? workout_split_type : currentSet.workout_split_type,
-          workout_templates !== undefined ? workout_templates : currentSet.workout_templates
+          workout_templates !== undefined ? workout_templates : currentSet.workout_templates,
+          week_start_day !== undefined ? week_start_day : (currentSet.week_start_day || 'Monday')
         ]
       });
       return res.status(200).json({ success: true });

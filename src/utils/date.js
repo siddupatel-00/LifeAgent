@@ -10,6 +10,49 @@ export const todayKey = (timeZone) => {
 
 export const localTimeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 
+export const ALL_WEEK_DAYS = [
+  { name: 'Sunday', code: 'Sun', letter: 'S', dayIdx: 0 },
+  { name: 'Monday', code: 'Mon', letter: 'M', dayIdx: 1 },
+  { name: 'Tuesday', code: 'Tue', letter: 'T', dayIdx: 2 },
+  { name: 'Wednesday', code: 'Wed', letter: 'W', dayIdx: 3 },
+  { name: 'Thursday', code: 'Thu', letter: 'T', dayIdx: 4 },
+  { name: 'Friday', code: 'Fri', letter: 'F', dayIdx: 5 },
+  { name: 'Saturday', code: 'Sat', letter: 'S', dayIdx: 6 }
+];
+
+export const getWeekDays = (startDayName = 'Monday') => {
+  const startIdx = ALL_WEEK_DAYS.findIndex(
+    d => d.name.toLowerCase() === (startDayName || 'Monday').toLowerCase()
+  );
+  const validStartIdx = startIdx >= 0 ? startIdx : 1;
+  const result = [];
+  for (let i = 0; i < 7; i++) {
+    result.push(ALL_WEEK_DAYS[(validStartIdx + i) % 7]);
+  }
+  return result;
+};
+
+export const isHabitScheduledOnDay = (habit, dayCode) => {
+  if (!habit) return true;
+  if (!habit.frequency || habit.frequency === 'daily') return true;
+  if (habit.frequency === 'custom') {
+    const rawDays = habit.customDays || habit.custom_days || '';
+    let dayList = [];
+    if (Array.isArray(rawDays)) {
+      dayList = rawDays;
+    } else if (typeof rawDays === 'string') {
+      if (rawDays.trim().startsWith('[')) {
+        try { dayList = JSON.parse(rawDays); } catch (e) { dayList = rawDays.split(','); }
+      } else {
+        dayList = rawDays.split(',');
+      }
+    }
+    const cleanDays = dayList.map(d => String(d).trim().slice(0, 3));
+    return cleanDays.includes(dayCode);
+  }
+  return true;
+};
+
 export const formatDateStr = (d) => {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');

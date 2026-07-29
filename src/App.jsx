@@ -19,7 +19,7 @@ import SettingsPanel from './components/SettingsPanel';
 import CalendarPanel from './components/CalendarPanel';
 import ConfirmModal from './components/ConfirmModal';
 import Modal from './components/Modal';
-import { todayKey, localTimeZone } from './utils/date';
+import { todayKey, localTimeZone, getWeekDays, isHabitScheduledOnDay, ALL_WEEK_DAYS } from './utils/date';
 import WaterReminder from './components/WaterReminder';
 import TabErrorBoundary from './components/TabErrorBoundary';
 
@@ -496,7 +496,7 @@ export default function App() {
   const [isAddHabitModalOpen, setIsAddHabitModalOpen] = useState(false);
   const [isEditHabitModalOpen, setIsEditHabitModalOpen] = useState(false);
   const [editingHabitData, setEditingHabitData] = useState(null);
-  const [newHabitData, setNewHabitData] = useState({ title: '', category: '', target: '', challengeMode: false, challengeDays: 30, durationMode: 'preset' });
+  const [newHabitData, setNewHabitData] = useState({ title: '', category: '', target: '', challengeMode: false, challengeDays: 30, durationMode: 'preset', frequency: 'daily', customDays: ['Mon', 'Wed', 'Fri'] });
   const [customPillarInput, setCustomPillarInput] = useState('');
   const [newTodayItemData, setNewTodayItemData] = useState({ title: '', category: 'Coding', time: '10:00 AM' });
   const [isAddTodayItemOpen, setIsAddTodayItemOpen] = useState(false);
@@ -693,7 +693,10 @@ export default function App() {
           challengeDays: h.challenge_days || 0, startDate: h.start_date || null,
           archived: h.archived === 1, completedAt: h.completed_at || null,
           checkedToday: todayData.some(item => item.habit_id === h.id && !!item.checked),
-          pausedUntil: h.paused_until || null
+          pausedUntil: h.paused_until || null,
+          frequency: h.frequency || 'daily',
+          customDays: h.custom_days || '',
+          custom_days: h.custom_days || ''
         }));
         setHabits(mappedHabits);
         localStorage.setItem('cache_habits', JSON.stringify(mappedHabits));
@@ -3708,6 +3711,70 @@ const handleDeleteHabitDb = async (id) => {
                         />
                       </div>
 
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Frequency</label>
+                        <div style={{ display: 'flex', gap: '10px', marginBottom: '8px' }}>
+                          <button
+                            type="button"
+                            onClick={() => setNewHabitData({ ...newHabitData, frequency: 'daily' })}
+                            style={{
+                              flex: 1, padding: '10px', borderRadius: '10px',
+                              border: `1px solid ${newHabitData.frequency !== 'custom' ? 'var(--accent-blue)' : 'var(--border-color)'}`,
+                              background: newHabitData.frequency !== 'custom' ? 'var(--accent-blue)' : 'var(--bg-card)',
+                              color: newHabitData.frequency !== 'custom' ? '#fff' : 'var(--text-main)',
+                              fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer', transition: 'all 0.2s'
+                            }}
+                          >
+                            Daily
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setNewHabitData({ ...newHabitData, frequency: 'custom' })}
+                            style={{
+                              flex: 1, padding: '10px', borderRadius: '10px',
+                              border: `1px solid ${newHabitData.frequency === 'custom' ? 'var(--accent-blue)' : 'var(--border-color)'}`,
+                              background: newHabitData.frequency === 'custom' ? 'var(--accent-blue)' : 'var(--bg-card)',
+                              color: newHabitData.frequency === 'custom' ? '#fff' : 'var(--text-main)',
+                              fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer', transition: 'all 0.2s'
+                            }}
+                          >
+                            Custom Days
+                          </button>
+                        </div>
+
+                        {newHabitData.frequency === 'custom' && (
+                          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '4px', marginTop: '6px' }}>
+                            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => {
+                              const selectedDays = Array.isArray(newHabitData.customDays)
+                                ? newHabitData.customDays
+                                : (typeof newHabitData.customDays === 'string' ? newHabitData.customDays.split(',').map(s=>s.trim()).filter(Boolean) : ['Mon', 'Wed', 'Fri']);
+                              const isSelected = selectedDays.includes(day);
+                              return (
+                                <button
+                                  key={day}
+                                  type="button"
+                                  onClick={() => {
+                                    const nextDays = isSelected
+                                      ? selectedDays.filter(d => d !== day)
+                                      : [...selectedDays, day];
+                                    setNewHabitData({ ...newHabitData, customDays: nextDays });
+                                  }}
+                                  style={{
+                                    flex: 1, padding: '8px 0', borderRadius: '8px',
+                                    border: `1px solid ${isSelected ? 'var(--accent-blue)' : 'var(--border-color)'}`,
+                                    background: isSelected ? 'var(--accent-blue-dim)' : 'var(--bg-main)',
+                                    color: isSelected ? 'var(--accent-blue)' : 'var(--text-muted)',
+                                    fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer', transition: 'all 0.15s'
+                                  }}
+                                >
+                                  {day}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+
                       {/* CHALLENGE MODE OPTIONS */}
                       <div style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '16px', background: 'var(--bg-main)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
                         <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-main)' }}>
@@ -3779,6 +3846,9 @@ const handleDeleteHabitDb = async (id) => {
                               ? (customPillarInput.trim() || 'General') 
                               : (newHabitData.category || 'General');
 
+                            const freq = newHabitData.frequency || 'daily';
+                            const cDays = Array.isArray(newHabitData.customDays) ? newHabitData.customDays.join(',') : (newHabitData.customDays || '');
+
                             try {
                               const res = await fetch('/api/habits', {
                                 method: 'POST',
@@ -3786,7 +3856,9 @@ const handleDeleteHabitDb = async (id) => {
                                 body: JSON.stringify({ 
                                   label: newHabitData.title.trim(), 
                                   category: finalCategory, 
-                                  target: newHabitData.target.trim() || 'Daily'
+                                  target: newHabitData.target.trim() || 'Daily',
+                                  frequency: freq,
+                                  custom_days: cDays
                                 })
                               });
 
@@ -3798,7 +3870,10 @@ const handleDeleteHabitDb = async (id) => {
                                   category: saved.category,
                                   streak: saved.streak || 0,
                                   target: saved.target || 'Daily',
-                                  checkedToday: false
+                                  checkedToday: false,
+                                  frequency: saved.frequency || freq,
+                                  customDays: saved.custom_days || cDays,
+                                  custom_days: saved.custom_days || cDays
                                 }]);
 
                                 try {
@@ -3821,7 +3896,7 @@ const handleDeleteHabitDb = async (id) => {
                                   console.error('Failed to create linked today item:', linkErr);
                                 }
 
-                                setNewHabitData({ title: '', category: '', target: '', challengeMode: false, challengeDays: 30, durationMode: 'preset' });
+                                setNewHabitData({ title: '', category: '', target: '', challengeMode: false, challengeDays: 30, durationMode: 'preset', frequency: 'daily', customDays: ['Mon', 'Wed', 'Fri'] });
                                 setCustomPillarInput('');
                                 setIsAddHabitModalOpen(false);
                               }
@@ -3934,7 +4009,13 @@ const handleDeleteHabitDb = async (id) => {
                                     target: item.target,
                                     challengeMode: item.challengeDays > 0,
                                     challengeDays: item.challengeDays || 30,
-                                    durationMode: [7, 14, 21, 30, 60, 90].includes(item.challengeDays) ? 'preset' : 'custom'
+                                    durationMode: [7, 14, 21, 30, 60, 90].includes(item.challengeDays) ? 'preset' : 'custom',
+                                    frequency: item.frequency || 'daily',
+                                    customDays: Array.isArray(item.customDays || item.custom_days)
+                                      ? (item.customDays || item.custom_days)
+                                      : (typeof (item.customDays || item.custom_days) === 'string' && (item.customDays || item.custom_days)
+                                          ? (item.customDays || item.custom_days).split(',').map(s=>s.trim()).filter(Boolean)
+                                          : ['Mon', 'Wed', 'Fri'])
                                   });
                                   if (isCustom) setCustomPillarInput(item.category);
                                   setIsEditHabitModalOpen(true);
@@ -4007,32 +4088,48 @@ const handleDeleteHabitDb = async (id) => {
                               );
                             }
 
+                            const weekDays = getWeekDays(userProfile?.weekStartDay || userProfile?.week_start_day || 'Monday');
+
                             return (
                               <>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', fontWeight: 700, marginBottom: '8px' }}>
-                                  <span style={{ color: 'var(--text-muted)' }}>&nbsp;</span>
+                                  <span style={{ color: 'var(--text-muted)' }}>
+                                    {item.frequency === 'custom' ? `Custom (${Array.isArray(item.customDays) ? item.customDays.join(',') : (item.customDays || item.custom_days || '')})` : 'Daily'}
+                                  </span>
                                   <span style={{ color: 'var(--accent-blue)' }}>{item.completionRate}% Consistency</span>
                                 </div>
 
-                                {/* 7-Day Activity Pill Heatmap */}
+                                {/* 7-Day Activity Pill Heatmap with Dynamic Week Start */}
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px', marginBottom: '16px' }}>
-                                  {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((dayLetter, dIdx) => {
-                                    const todayIdx = (new Date().getDay() + 6) % 7;
-                                    const isCompleted = dIdx === todayIdx ? item.checkedToday : false;
+                                  {weekDays.map((day, dIdx) => {
+                                    const todayJsDayIdx = new Date().getDay();
+                                    const isToday = day.dayIdx === todayJsDayIdx;
+                                    const isScheduled = isHabitScheduledOnDay(item, day.code);
+
+                                    // Auto-treat non-scheduled days as completed/non-required so they don't block progress or streak
+                                    const isCompleted = isScheduled
+                                      ? (isToday ? item.checkedToday : false)
+                                      : true;
+
                                     return (
                                       <div key={dIdx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
                                         <div style={{
                                           width: '100%',
                                           height: '24px',
                                           borderRadius: '6px',
-                                          background: isCompleted ? 'var(--accent-blue)' : 'var(--bg-card)',
-                                          border: `1px solid ${isCompleted ? 'var(--accent-blue)' : 'var(--border-color)'}`,
+                                          background: isCompleted ? (isScheduled ? 'var(--accent-blue)' : 'rgba(59, 130, 246, 0.2)') : 'var(--bg-card)',
+                                          border: `1px solid ${isCompleted ? (isScheduled ? 'var(--accent-blue)' : 'var(--border-color)') : 'var(--border-color)'}`,
                                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                          transition: 'all 0.2s'
+                                          transition: 'all 0.2s',
+                                          opacity: isScheduled ? 1 : 0.6
                                         }}>
-                                          {isCompleted && <Check size={12} color="var(--accent-text)" />}
+                                          {isCompleted && (
+                                            <Check size={12} color={isScheduled ? "var(--accent-text)" : "var(--accent-blue)"} />
+                                          )}
                                         </div>
-                                        <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 600 }}>{dayLetter}</span>
+                                        <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: isScheduled ? 700 : 400, opacity: isScheduled ? 1 : 0.5 }}>
+                                          {day.letter}
+                                        </span>
                                       </div>
                                     );
                                   })}
@@ -4149,6 +4246,70 @@ const handleDeleteHabitDb = async (id) => {
                           onChange={e => setEditingHabitData({...editingHabitData, target: e.target.value})}
                           className="glass-input" 
                         />
+
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Frequency</label>
+                          <div style={{ display: 'flex', gap: '10px', marginBottom: '8px' }}>
+                            <button
+                              type="button"
+                              onClick={() => setEditingHabitData({ ...editingHabitData, frequency: 'daily' })}
+                              style={{
+                                flex: 1, padding: '8px', borderRadius: '8px',
+                                border: `1px solid ${editingHabitData.frequency !== 'custom' ? 'var(--accent-blue)' : 'var(--border-color)'}`,
+                                background: editingHabitData.frequency !== 'custom' ? 'var(--accent-blue)' : 'var(--bg-card)',
+                                color: editingHabitData.frequency !== 'custom' ? '#fff' : 'var(--text-main)',
+                                fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer'
+                              }}
+                            >
+                              Daily
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingHabitData({ ...editingHabitData, frequency: 'custom' })}
+                              style={{
+                                flex: 1, padding: '8px', borderRadius: '8px',
+                                border: `1px solid ${editingHabitData.frequency === 'custom' ? 'var(--accent-blue)' : 'var(--border-color)'}`,
+                                background: editingHabitData.frequency === 'custom' ? 'var(--accent-blue)' : 'var(--bg-card)',
+                                color: editingHabitData.frequency === 'custom' ? '#fff' : 'var(--text-main)',
+                                fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer'
+                              }}
+                            >
+                              Custom Days
+                            </button>
+                          </div>
+
+                          {editingHabitData.frequency === 'custom' && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '4px', marginTop: '6px' }}>
+                              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => {
+                                const selectedDays = Array.isArray(editingHabitData.customDays)
+                                  ? editingHabitData.customDays
+                                  : (typeof editingHabitData.customDays === 'string' ? editingHabitData.customDays.split(',').map(s=>s.trim()).filter(Boolean) : ['Mon', 'Wed', 'Fri']);
+                                const isSelected = selectedDays.includes(day);
+                                return (
+                                  <button
+                                    key={day}
+                                    type="button"
+                                    onClick={() => {
+                                      const nextDays = isSelected
+                                        ? selectedDays.filter(d => d !== day)
+                                        : [...selectedDays, day];
+                                      setEditingHabitData({ ...editingHabitData, customDays: nextDays });
+                                    }}
+                                    style={{
+                                      flex: 1, padding: '6px 0', borderRadius: '6px',
+                                      border: `1px solid ${isSelected ? 'var(--accent-blue)' : 'var(--border-color)'}`,
+                                      background: isSelected ? 'var(--accent-blue-dim)' : 'var(--bg-main)',
+                                      color: isSelected ? 'var(--accent-blue)' : 'var(--text-muted)',
+                                      fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer'
+                                    }}
+                                  >
+                                    {day}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
                         
                         <div style={{ padding: '16px', background: 'var(--bg-main)', borderRadius: '12px', border: '1px solid var(--border-color)', marginTop: '8px' }}>
                           <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer', marginBottom: editingHabitData.challengeMode ? '16px' : '0' }}>
@@ -4210,6 +4371,8 @@ const handleDeleteHabitDb = async (id) => {
                               if (!editingHabitData.title.trim()) return showToast('Title required', 'error');
                               const finalCategory = editingHabitData.category === 'Other' ? (customPillarInput.trim() || 'Custom') : editingHabitData.category;
                               const challengeDays = editingHabitData.challengeMode ? Number(editingHabitData.challengeDays || 30) : 0;
+                              const freq = editingHabitData.frequency || 'daily';
+                              const cDays = Array.isArray(editingHabitData.customDays) ? editingHabitData.customDays.join(',') : (editingHabitData.customDays || '');
 
                               try {
                                 if (token) {
@@ -4221,7 +4384,9 @@ const handleDeleteHabitDb = async (id) => {
                                       label: editingHabitData.title,
                                       category: finalCategory,
                                       target: editingHabitData.target,
-                                      challenge_days: challengeDays
+                                      challenge_days: challengeDays,
+                                      frequency: freq,
+                                      custom_days: cDays
                                     })
                                   });
                                   if (!res.ok) {
@@ -4240,19 +4405,22 @@ const handleDeleteHabitDb = async (id) => {
                                   challengeDays: challengeDays,
                                   challenge_days: challengeDays,
                                   startDate: challengeDays > 0 ? (h.startDate || todayKey()) : null,
-                                  start_date: challengeDays > 0 ? (h.start_date || todayKey()) : null
+                                  start_date: challengeDays > 0 ? (h.start_date || todayKey()) : null,
+                                  frequency: freq,
+                                  customDays: cDays,
+                                  custom_days: cDays
                                 } : h));
 
                                 setIsEditHabitModalOpen(false);
                                 showToast('Habit updated!', 'success');
-                                if (token) fetchDashboardData(); // reload backend
+                                if (token) fetchStartupData(); // reload backend
                               } catch (e) {
                                 console.error(e);
                                 showToast(e.message || 'Failed to update habit', 'error');
                               }
                             }}
                           >
-                            Save
+                            Save Changes
                           </button>
                         </div>
                       </div>
