@@ -790,15 +790,22 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
           {(() => {
             const getFilteredStats = () => {
               if (statsHistoryFilter === 'all') return statsList;
-              const now = new Date(todayKey());
+              const todayStr = todayKey(userProfile?.timezone);
+              const [y, m, d] = todayStr.split('-').map(Number);
+              
+              let limitStr = todayStr;
+              if (statsHistoryFilter === '7days' || statsHistoryFilter === '30days') {
+                const limitObj = new Date(y, m - 1, d);
+                limitObj.setDate(limitObj.getDate() - (statsHistoryFilter === '7days' ? 6 : 29));
+                const limitY = limitObj.getFullYear();
+                const limitM = String(limitObj.getMonth() + 1).padStart(2, '0');
+                const limitD = String(limitObj.getDate()).padStart(2, '0');
+                limitStr = `${limitY}-${limitM}-${limitD}`;
+              }
+
               return statsList.filter(stat => {
-                const statDate = new Date(stat.date);
-                const diffTime = Math.abs(now - statDate);
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                if (statsHistoryFilter === 'today') return diffDays <= 1;
-                if (statsHistoryFilter === '7days') return diffDays <= 7;
-                if (statsHistoryFilter === '30days') return diffDays <= 30;
-                return true;
+                if (statsHistoryFilter === 'today') return stat.date === todayStr;
+                return stat.date >= limitStr && stat.date <= todayStr;
               });
             };
             const filteredStats = getFilteredStats();

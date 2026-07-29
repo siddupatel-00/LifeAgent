@@ -508,9 +508,32 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat 
         <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '16px' }}>Sleep History Logs</h3>
         {(() => {
           const todayDateKey = todayKey(userProfile?.timezone);
-          const displayedLogs = rangeMode === 'today'
-            ? logs.filter(log => log.date === todayDateKey)
-            : logs;
+          let displayedLogs = logs;
+          if (rangeMode === 'today') {
+            displayedLogs = logs.filter(log => log.date === todayDateKey);
+          } else {
+            const today = new Date();
+            let startDate, endDate;
+            if (rangeMode === '7d') {
+              endDate = new Date(today);
+              startDate = new Date(today);
+              startDate.setDate(today.getDate() - 6);
+            } else if (rangeMode === 'this_month') {
+              startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+              endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            } else if (rangeMode === 'past_month') {
+              startDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+              endDate = new Date(today.getFullYear(), today.getMonth(), 0);
+            } else if (rangeMode === 'custom' && customStartDate && customEndDate) {
+              startDate = new Date(customStartDate);
+              endDate = new Date(customEndDate);
+            }
+            if (startDate && endDate) {
+              const startStr = `${startDate.getFullYear()}-${String(startDate.getMonth()+1).padStart(2,'0')}-${String(startDate.getDate()).padStart(2,'0')}`;
+              const endStr = `${endDate.getFullYear()}-${String(endDate.getMonth()+1).padStart(2,'0')}-${String(endDate.getDate()).padStart(2,'0')}`;
+              displayedLogs = logs.filter(log => log.date >= startStr && log.date <= endStr);
+            }
+          }
 
           if (displayedLogs.length === 0) {
             return (
