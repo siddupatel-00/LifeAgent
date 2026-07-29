@@ -175,7 +175,7 @@ export default function HabitsPanel({
                             setNewHabitData({ ...newHabitData, intervalDays: 1, interval_days: 1 });
                           }
                         }}
-                        style={{ width: '70px', padding: '6px 10px', borderRadius: '8px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.88rem', fontWeight: 700, outline: 'none' }}
+                        style={{ minWidth: '75px', width: 'auto', maxWidth: '120px', padding: '6px 10px', borderRadius: '8px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.88rem', fontWeight: 700, outline: 'none' }}
                       />
                       <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>days</span>
                     </div>
@@ -452,7 +452,7 @@ export default function HabitsPanel({
                           setNewHabitData({ ...newHabitData, intervalDays: 1, interval_days: 1 });
                         }
                       }}
-                      style={{ width: '70px', padding: '6px 10px', borderRadius: '8px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.88rem', fontWeight: 700, outline: 'none' }}
+                      style={{ minWidth: '75px', width: 'auto', maxWidth: '120px', padding: '6px 10px', borderRadius: '8px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.88rem', fontWeight: 700, outline: 'none' }}
                     />
                     <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>days</span>
                   </div>

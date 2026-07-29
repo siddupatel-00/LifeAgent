@@ -3677,30 +3677,26 @@ const handleDeleteHabitDb = async (id) => {
                             </button>
                           </div>
                         ) : (
-                          <select 
+                          <CustomSelect 
                             value={newHabitData.category}
                             onChange={(e) => {
                               const val = e.target.value;
                               setNewHabitData({ ...newHabitData, category: val });
                               if (val === 'Body & Gym') setActiveTab('body');
                             }}
-                            style={{ 
-                              width: '100%', padding: '12px 16px', borderRadius: '12px', 
-                              background: 'var(--bg-card)', 
-                              color: newHabitData.category ? 'var(--text-main)' : 'var(--text-muted)', 
-                              border: '1px solid var(--border-color)', fontSize: '0.92rem', fontWeight: 600, outline: 'none', cursor: 'pointer' 
-                            }}
-                          >
-                            <option value="" disabled hidden style={{ background: 'var(--bg-card)', color: 'var(--text-muted)' }}>Select Category...</option>
-                            <option value="Coding" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>Coding Habit</option>
-                            <option value="Study" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>Study Habit</option>
-                            <option value="Reading" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>Reading</option>
-                            <option value="Body & Gym" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>Fitness & Health</option>
-                            <option value="Diet & Nutrition" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>Diet & Nutrition</option>
-                            <option value="Money" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>Money Habit</option>
-                            <option value="Deep Focus" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>Deep Focus</option>
-                            <option value="Other" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>+ Enter Custom Category...</option>
-                          </select>
+                            options={[
+                              { value: '', label: 'Select Category...' },
+                              { value: 'Coding', label: 'Coding Habit' },
+                              { value: 'Study', label: 'Study Habit' },
+                              { value: 'Reading', label: 'Reading' },
+                              { value: 'Body & Gym', label: 'Fitness & Health' },
+                              { value: 'Diet & Nutrition', label: 'Diet & Nutrition' },
+                              { value: 'Money', label: 'Money Habit' },
+                              { value: 'Deep Focus', label: 'Deep Focus' },
+                              { value: 'Other', label: '+ Enter Custom Category...' }
+                            ]}
+                            style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', fontSize: '0.92rem', fontWeight: 600 }}
+                          />
                         )}
                       </div>
 
@@ -3798,7 +3794,7 @@ const handleDeleteHabitDb = async (id) => {
                                       setNewHabitData({ ...newHabitData, intervalDays: 1, interval_days: 1 });
                                     }
                                   }}
-                                  style={{ width: '70px', padding: '6px 10px', borderRadius: '8px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.88rem', fontWeight: 700, outline: 'none' }}
+                                  style={{ minWidth: '75px', width: 'auto', maxWidth: '120px', padding: '6px 10px', borderRadius: '8px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.88rem', fontWeight: 700, outline: 'none' }}
                                 />
                                 <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>days</span>
                               </div>
@@ -4409,7 +4405,7 @@ const handleDeleteHabitDb = async (id) => {
                                         setEditingHabitData({ ...editingHabitData, intervalDays: 1, interval_days: 1 });
                                       }
                                     }}
-                                    style={{ width: '70px', padding: '6px 10px', borderRadius: '8px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.88rem', fontWeight: 700, outline: 'none' }}
+                                    style={{ minWidth: '75px', width: 'auto', maxWidth: '120px', padding: '6px 10px', borderRadius: '8px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.88rem', fontWeight: 700, outline: 'none' }}
                                   />
                                   <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>days</span>
                                 </div>
