@@ -41,7 +41,7 @@ export default function CalendarPanel({
         setCalendarEvents(prev => [...prev.filter(e => e.id !== ev.id), ev]);
         setNewEventTitle('');
         setIsAddEventFormOpen(false);
-        showToast?.('Event saved to database', 'success');
+        showToast?.('Event saved successfully!', 'success');
       } else {
         const err = await res.json();
         showToast?.(err.error || 'Failed to save event', 'error');
@@ -209,7 +209,7 @@ export default function CalendarPanel({
             <CalendarIcon size={24} color="var(--accent-blue)" /> Universal Calendar
           </h3>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: '4px' }}>
-            Manage your events, meetings, and deadlines. Connected live to database.
+            Manage your events, meetings, and deadlines. Live Sync.
           </p>
         </div>
         <button 
@@ -284,7 +284,7 @@ export default function CalendarPanel({
                 onClick={handleAddEvent}
                 style={{ padding: '12px 24px', fontSize: '0.92rem', width: '100%', justifyContent: 'center' }}
               >
-                Save Event to Database
+                Save Event
               </button>
               <button className="secondary-btn" onClick={() => setIsAddEventFormOpen(false)} style={{ width: '100%' }}>Cancel</button>
             </div>

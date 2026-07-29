@@ -2204,7 +2204,7 @@ const handleDeleteHabitDb = async (id) => {
                   You're on the VIP List!
                 </h4>
                 <p style={{ color: 'var(--text-muted)', marginBottom: '28px', lineHeight: 1.6 }}>
-                  We have saved <strong>{waitlistEmail}</strong> directly into our waitlist database. We will notify you the moment early access invites open up!
+                  We have saved <strong>{waitlistEmail}</strong> directly to our waitlist. We will notify you the moment early access invites open up!
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   <button className="secondary-btn" style={{ width: '100%', justifyContent: 'center', padding: '14px' }} onClick={() => navigate('landing', '/')}>
