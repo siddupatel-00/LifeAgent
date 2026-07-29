@@ -20,29 +20,30 @@ const CustomSelect = ({ value, onChange, options, style, className }) => {
   return (
     <div 
       ref={containerRef} 
-      className={`custom-select-container ${className || ''}`}
-      style={{ position: 'relative', width: style?.width || '100%', ...style }}
+      className="custom-select-container"
+      style={{ position: 'relative', width: style?.width || (className ? 'auto' : '100%') }}
     >
       <div 
-        className="custom-select-trigger"
+        className={`custom-select-trigger ${className || ''}`}
         onClick={() => setIsOpen(!isOpen)}
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: style?.padding || '12px 14px',
-          borderRadius: style?.borderRadius || '12px',
-          background: style?.background || 'var(--bg-main)',
-          border: style?.border || '1px solid var(--border-color)',
-          color: style?.color || 'var(--text-main)',
-          fontSize: style?.fontSize || '0.9rem',
+          gap: '8px',
+          padding: style?.padding || (className ? '' : '12px 14px'),
+          borderRadius: style?.borderRadius || (className ? '' : '12px'),
+          background: style?.background || (className ? '' : 'var(--bg-main)'),
+          border: style?.border || (className ? '' : '1px solid var(--border-color)'),
+          color: style?.color || (className ? '' : 'var(--text-main)'),
+          fontSize: style?.fontSize || (className ? '' : '0.9rem'),
           cursor: 'pointer',
           userSelect: 'none',
-          ...(style || {}) // allow overriding with passed style
+          ...(style || {})
         }}
       >
         <span>{selectedOption?.label}</span>
-        <ChevronDown size={16} style={{ color: 'var(--text-muted)', transform: isOpen ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s' }} />
+        <ChevronDown size={16} style={{ color: 'inherit', opacity: 0.7, transform: isOpen ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s' }} />
       </div>
 
       {isOpen && (
