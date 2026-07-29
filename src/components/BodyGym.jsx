@@ -94,7 +94,7 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
   
   const [isEditMetricsOpen, setIsEditMetricsOpen] = useState(false);
   const [statsForm, setStatsForm] = useState({
-    weight: '', target_weight: '', protein: '', target_protein: '', hydration: ''
+    weight: '', target_weight: '', protein: '', target_protein: ''
   });
   const [statsHistoryFilter, setStatsHistoryFilter] = useState('7days');
 
@@ -275,15 +275,14 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
       weight: todayStat?.weight ?? latestStat?.weight ?? '',
       target_weight: todayStat?.target_weight ?? latestStat?.target_weight ?? '',
       protein: todayStat?.protein ?? '',
-      target_protein: todayStat?.target_protein ?? latestStat?.target_protein ?? '',
-      hydration: todayStat?.hydration ?? ''
+      target_protein: todayStat?.target_protein ?? latestStat?.target_protein ?? ''
     });
     setIsEditMetricsOpen(true);
   };
 
   const closeEditMetricsModal = () => {
     setIsEditMetricsOpen(false);
-    setStatsForm({ weight: '', target_weight: '', protein: '', target_protein: '', hydration: '' });
+    setStatsForm({ weight: '', target_weight: '', protein: '', target_protein: '' });
   };
 
   const closeWorkoutModal = () => {
@@ -304,7 +303,6 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
         target_weight: isUpdating ? existingTodayStat.target_weight : (latestStat?.target_weight || 0),
         protein: Number(proteinInput) || 0,
         target_protein: isUpdating ? existingTodayStat.target_protein : (latestStat?.target_protein || 0),
-        hydration: isUpdating ? existingTodayStat.hydration : (latestStat?.hydration || 0),
         date: today
       };
       
@@ -348,7 +346,6 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
         target_weight: Number(statsForm.target_weight) || 0,
         protein: isUpdating ? existingTodayStat.protein : (latestStat?.protein || 0),
         target_protein: Number(statsForm.target_protein) || 0,
-        hydration: Number(statsForm.hydration) || 0,
         date: today
       };
       
@@ -743,7 +740,7 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
               </div>
 
               {latestStat ? (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
                   <div style={{ background: 'var(--bg-main)', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
                     <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Current Weight</span>
                     <span style={{ fontWeight: 800, fontSize: '1.1rem' }}>{latestStat.weight} kg</span>
@@ -755,10 +752,6 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
                   <div style={{ background: 'var(--bg-main)', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
                     <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Daily Protein</span>
                     <span style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--accent-blue)' }}>{latestStat.protein} g</span>
-                  </div>
-                  <div style={{ background: 'var(--bg-main)', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Daily Hydration</span>
-                    <span style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--accent-blue)' }}>{latestStat.hydration} L</span>
                   </div>
                 </div>
               ) : (
@@ -833,10 +826,6 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Protein</div>
                         <div style={{ fontWeight: 600 }}>{stat.protein} g</div>
                       </div>
-                      <div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Hydration</div>
-                        <div style={{ fontWeight: 600 }}>{stat.hydration} L</div>
-                      </div>
                     </div>
                     <button 
                       onClick={() => handleDeleteStat(stat.id)}
@@ -903,7 +892,7 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px', marginBottom: '24px' }}>
                 <div style={{ flex: 1 }}>
                   <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Daily Protein Goal (g)</label>
                   <input 
@@ -914,10 +903,6 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
                     style={{ width: '100%', padding: '10px 14px', fontSize: '0.95rem' }} 
                     placeholder="e.g. 150"
                   />
-                </div>
-                <div className="input-group">
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Daily Hydration Goal (L)</label>
-                  <input type="number" step="0.1" className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="2.5" value={statsForm.hydration} onChange={e => setStatsForm({...statsForm, hydration: e.target.value})} />
                 </div>
               </div>
 
