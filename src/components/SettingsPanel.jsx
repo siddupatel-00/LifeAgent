@@ -66,6 +66,38 @@ const SettingsPanel = ({
   };
 
   return (
+    <>
+      <style>{`
+        .settings-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 14px;
+          background: var(--bg-main);
+          border-radius: 14px;
+          border: 1px solid var(--border-color);
+          gap: 16px;
+          flex-wrap: wrap;
+          width: 100%;
+        }
+        .settings-input {
+          width: 100%;
+          max-width: 320px;
+          padding: 14px;
+          border-radius: 12px;
+          background: var(--bg-card);
+          color: var(--text-main);
+          border: 1px solid var(--border-color);
+          font-size: 0.95rem;
+          font-weight: 600;
+          outline: none;
+        }
+        @media (max-width: 768px) {
+          .settings-input {
+            max-width: 100%;
+          }
+        }
+      `}</style>
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
         <div>
@@ -88,7 +120,7 @@ const SettingsPanel = ({
           </h4>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
+            <div className="settings-row">
               <div>
                 <div style={{ fontWeight: 700, fontSize: '1rem' }}>Full Name</div>
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Your primary display name inside the dashboard.</div>
@@ -97,11 +129,11 @@ const SettingsPanel = ({
                 type="text" 
                 value={userProfile.name || ''} 
                 onChange={(e) => setUserProfile({ ...userProfile, name: e.target.value })} 
-                style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600, outline: 'none' }}
+                className="settings-input"
               />
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
+            <div className="settings-row">
               <div>
                 <div style={{ fontWeight: 700, fontSize: '1rem' }}>Handle / Username</div>
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Your unique public handle shown in the header.</div>
@@ -110,11 +142,11 @@ const SettingsPanel = ({
                 type="text" 
                 value={userProfile.handle || ''} 
                 onChange={(e) => setUserProfile({ ...userProfile, handle: e.target.value })} 
-                style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600, outline: 'none' }}
+                className="settings-input"
               />
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
+            <div className="settings-row">
               <div>
                 <div style={{ fontWeight: 700, fontSize: '1rem' }}>Email Address</div>
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Used for account notifications and VIP early access alerts.</div>
@@ -123,11 +155,11 @@ const SettingsPanel = ({
                 type="email" 
                 value={userProfile.email || ''} 
                 onChange={(e) => setUserProfile({ ...userProfile, email: e.target.value })} 
-                style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600, outline: 'none' }}
+                className="settings-input"
               />
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
+            <div className="settings-row">
               <div>
                 <div style={{ fontWeight: 700, fontSize: '1rem' }}>Phone Number</div>
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Your contact phone number for SMS notifications and security alerts.</div>
@@ -137,11 +169,11 @@ const SettingsPanel = ({
                 value={userProfile.phone || ''} 
                 placeholder="+1 234 567 8900"
                 onChange={(e) => setUserProfile({ ...userProfile, phone: e.target.value })} 
-                style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600, outline: 'none' }}
+                className="settings-input"
               />
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
+            <div className="settings-row">
               <div>
                 <div style={{ fontWeight: 700, fontSize: '1rem' }}>Timezone</div>
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Select your primary timezone for automated audits and reminders.</div>
@@ -149,7 +181,7 @@ const SettingsPanel = ({
               <CustomSelect 
                 value={userProfile.timezone || 'UTC'} 
                 onChange={(e) => setUserProfile({ ...userProfile, timezone: e.target.value })} 
-                style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600 }}
+                className="settings-input"
                 options={[
                   { value: "UTC", label: "UTC (Coordinated Universal Time)" },
                   { value: "Asia/Kolkata", label: "Asia/Kolkata (IST +5:30)" },
@@ -163,7 +195,7 @@ const SettingsPanel = ({
               />
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
+            <div className="settings-row">
               <div>
                 <div style={{ fontWeight: 700, fontSize: '1rem' }}>Currency Preference</div>
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Choose your default currency for the Money Tracker.</div>
@@ -171,7 +203,7 @@ const SettingsPanel = ({
               <CustomSelect 
                 value={userProfile.currency || '$'} 
                 onChange={(e) => setUserProfile({ ...userProfile, currency: e.target.value })} 
-                style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600 }}
+                className="settings-input"
                 options={[
                   { value: "$", label: "Dollar ($)" },
                   { value: "₹", label: "Rupee (₹)" },
@@ -181,7 +213,7 @@ const SettingsPanel = ({
               />
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
+            <div className="settings-row">
               <div>
                 <div style={{ fontWeight: 700, fontSize: '1rem' }}>Display Theme Mode</div>
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Choose your overall workspace theme appearance mode.</div>
@@ -189,7 +221,7 @@ const SettingsPanel = ({
               <CustomSelect 
                 value={themeMode || 'pc'}
                 onChange={(e) => setThemeMode(e.target.value)} 
-                style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600 }}
+                className="settings-input"
                 options={[
                   { value: "dark", label: "Dark Mode" },
                   { value: "night", label: "🌙 Night Mode" },
@@ -199,7 +231,7 @@ const SettingsPanel = ({
               />
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
+            <div className="settings-row">
               <div>
                 <div style={{ fontWeight: 700, fontSize: '1rem' }}>Accent Color Theme</div>
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Personalize your dashboard's accent colors.</div>
@@ -211,7 +243,7 @@ const SettingsPanel = ({
                   document.documentElement.setAttribute('data-color-theme', e.target.value);
                   window.dispatchEvent(new Event('storage'));
                 }} 
-                style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600 }}
+                className="settings-input"
                 options={[
                   { value: "blue", label: "Classic Blue" },
                   { value: "professional", label: "Black & White" },
@@ -232,7 +264,7 @@ const SettingsPanel = ({
           </h4>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
+            <div className="settings-row">
               <div>
                 <div style={{ fontWeight: 700, fontSize: '1rem' }}>AI Assistant Name</div>
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Customize what your AI friend is called across your entire dashboard (default: AI).</div>
@@ -243,11 +275,11 @@ const SettingsPanel = ({
                 placeholder="Enter assistant name..."
                 onChange={(e) => setAiName(e.target.value)} 
                 onBlur={() => { if (!aiName?.trim()) setAiName('AI'); }}
-                style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600, outline: 'none' }}
+                className="settings-input"
               />
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
+            <div className="settings-row">
               <div>
                 <div style={{ fontWeight: 700, fontSize: '1rem' }}>Preferred AI Provider</div>
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Choose which AI brain powers your dashboard assistant.</div>
@@ -255,7 +287,7 @@ const SettingsPanel = ({
               <CustomSelect 
                 value={aiProvider} 
                 onChange={(e) => setAiProvider(e.target.value)} 
-                style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600 }}
+                className="settings-input"
                 options={[
                   { value: "gemini", label: "Google Gemini" },
                   { value: "groq", label: "Groq (Llama 3)" }
@@ -263,7 +295,7 @@ const SettingsPanel = ({
               />
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
+            <div className="settings-row">
               <div>
                 <div style={{ fontWeight: 700, fontSize: '1rem' }}>AI Chat Reset Time</div>
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Choose when your daily AI chat history resets.</div>
@@ -271,7 +303,7 @@ const SettingsPanel = ({
               <CustomSelect 
                 value={chatResetTime} 
                 onChange={(e) => setChatResetTime(e.target.value)} 
-                style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600 }}
+                className="settings-input"
                 options={[...Array(24)].map((_, i) => {
                   const hour = i.toString().padStart(2, '0');
                   return {
@@ -283,7 +315,7 @@ const SettingsPanel = ({
             </div>
 
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
+            <div className="settings-row">
               <div>
                 <div style={{ fontWeight: 700, fontSize: '1rem' }}>Gemini API Key</div>
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Enter your free Google Gemini API key to enable real AI responses. Get one at aistudio.google.com</div>
@@ -294,13 +326,13 @@ const SettingsPanel = ({
                   value={geminiApiKey} 
                   placeholder="AIzaSy..."
                   onChange={(e) => setGeminiApiKey(e.target.value)} 
-                  style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600, outline: 'none' }}
+                  className="settings-input"
                 />
                 {geminiApiKey && <span style={{ color: '#22c55e', fontWeight: 700, fontSize: '0.85rem' }}>● Connected</span>}
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
+            <div className="settings-row">
               <div>
                 <div style={{ fontWeight: 700, fontSize: '1rem' }}>Groq API Key</div>
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Enter your free Groq API key for ultra-fast Llama 3 responses. Get one at console.groq.com</div>
@@ -311,13 +343,13 @@ const SettingsPanel = ({
                   value={groqApiKey} 
                   placeholder="gsk_..."
                   onChange={(e) => setGroqApiKey(e.target.value)} 
-                  style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 600, outline: 'none' }}
+                  className="settings-input"
                 />
                 {groqApiKey && <span style={{ color: '#22c55e', fontWeight: 700, fontSize: '0.85rem' }}>● Connected</span>}
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
+            <div className="settings-row">
               <div>
                 <div style={{ fontWeight: 700, fontSize: '1rem' }}>Daily Morning Audit Summary</div>
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>AI automatically generates a schedule & spendings audit every morning at 7:00 AM.</div>
@@ -343,7 +375,7 @@ const SettingsPanel = ({
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
+            <div className="settings-row">
               <div>
                 <div style={{ fontWeight: 700, fontSize: '1rem' }}>Real-Time Smart Streak Alerts</div>
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Notify instantly when a study pomodoro or gym habit streak is about to expire.</div>
@@ -369,7 +401,7 @@ const SettingsPanel = ({
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
+            <div className="settings-row">
               <div>
                 <div style={{ fontWeight: 700, fontSize: '1rem' }}>Auto-Open AI Side Chat</div>
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Automatically open the AI assistant panel when navigating to different tabs.</div>
@@ -395,7 +427,7 @@ const SettingsPanel = ({
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
+            <div className="settings-row">
               <div>
                 <div style={{ fontWeight: 700, fontSize: '1rem' }}>Share Notes with AI Assistant</div>
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>When enabled, notes marked for sharing can be queried by your AI assistant. Off by default.</div>
@@ -429,7 +461,7 @@ const SettingsPanel = ({
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', gap: '20px', flexWrap: 'wrap' }}>
+            <div className="settings-row">
               <div>
                 <div style={{ fontWeight: 700, fontSize: '1rem' }}>Personal AI Assistant Tone & Personality</div>
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Choose how strict, encouraging, or concise the AI audits your metrics.</div>
@@ -440,7 +472,7 @@ const SettingsPanel = ({
                   const val = e.target.value;
                   setUserProfile({ ...userProfile, aiTone: val, ai_tone: val });
                 }}
-                style={{ width: '320px', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.92rem', fontWeight: 600 }}
+                className="settings-input" style={{ fontSize: "0.92rem" }}
                 options={[
                   { value: "Analytical & Direct", label: "Analytical & Direct" },
                   { value: "Encouraging & Supportive", label: "Encouraging & Supportive" },
@@ -488,6 +520,7 @@ const SettingsPanel = ({
       </div>
 
     </div>
+    </>
   );
 };
 

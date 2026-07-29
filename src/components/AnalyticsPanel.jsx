@@ -154,18 +154,7 @@ function AnalyticsPanelInner({ token, showToast, currency = '$', timeRange = '7d
             <button
               key={r.value}
               onClick={() => handleRangeChange(r.value)}
-              style={{
-                padding: '8px 16px',
-                borderRadius: '20px',
-                border: '1px solid',
-                borderColor: range === r.value ? 'var(--accent-blue)' : 'var(--border-color)',
-                background: range === r.value ? 'var(--accent-blue-dim)' : 'var(--bg-card)',
-                color: range === r.value ? 'var(--accent-blue)' : 'var(--text-muted)',
-                fontSize: '0.85rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                transition: 'all 0.2s ease'
-              }}
+              style={range === r.value ? { background: 'var(--accent-blue)', color: 'var(--accent-text)', borderRadius: '30px', padding: '8px 16px', fontWeight: 700, border: 'none', cursor: 'pointer', fontSize: '0.85rem' } : { background: 'var(--bg-card)', color: 'var(--text-muted)', borderRadius: '30px', padding: '8px 16px', fontWeight: 600, border: '1px solid var(--border-color)', cursor: 'pointer', fontSize: '0.85rem' }}
             >
               {r.label}
             </button>
