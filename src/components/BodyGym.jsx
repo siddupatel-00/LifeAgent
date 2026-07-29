@@ -156,7 +156,7 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats, userProf
               }
             } catch (e) {}
           }
-        });
+        }).catch(err => console.error('Failed to fetch workout settings:', err));
     }
   }, [fetchWorkouts, fetchStats, token]);
 
@@ -1150,7 +1150,7 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats, userProf
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({ workout_split_type: newType })
-                  });
+                  }).catch(err => console.error('Failed to update split type:', err));
                 }}
                 options={[
                   { value: "weekly", label: "Weekly Rotation" },
@@ -1179,7 +1179,7 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats, userProf
                   method: 'PUT',
                   headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                   body: JSON.stringify({ workout_templates: JSON.stringify(splitList) })
-                });
+                }).catch(err => console.error('Failed to update templates:', err));
               }}>Done</button>
             </div>
       </Modal>

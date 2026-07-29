@@ -4,7 +4,7 @@ import { CheckCircle2, XCircle } from 'lucide-react';
 export default function Toast({ toasts, removeToast }) {
   return (
     <div className="toast-container">
-      {toasts.map(toast => (
+      {(toasts || []).map(toast => (
         <ToastItem key={toast.id} toast={toast} onDismiss={() => removeToast(toast.id)} />
       ))}
     </div>

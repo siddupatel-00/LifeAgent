@@ -1150,12 +1150,29 @@ input[type="checkbox"]:checked::after {
     font-size: 0.8rem !important;
   }
 
-  /* Reset fixed max-height on stacked mobile columns for fluid native page scrolling */
-  div[style*="max-height: calc(100vh"],
-  div[style*="maxHeight: calc(100vh"],
+  /* Floating Action Buttons on mobile (e.g. Habits FAB) stay cleanly above mobile bottom nav */
+  .habits-fab, 
+  [class*="fab"], 
+  button.fab-btn {
+    bottom: calc(82px + env(safe-area-inset-bottom)) !important;
+    right: 18px !important;
+    z-index: 9995 !important;
+  }
+
+  /* Storefront nav bar subtitle hidden on narrow mobile screens to prevent header bloat */
+  .nav-bar p {
+    display: none !important;
+  }
+
+  /* Reset fixed max-height & sticky positioning on stacked mobile columns for fluid native page scrolling */
+  div[style*="max-height"],
+  div[style*="maxHeight"],
+  div[style*="position: sticky"],
+  div[style*="position: 'sticky'"],
   .money-tracker-grid > div {
     max-height: none !important;
     overflow-y: visible !important;
+    position: static !important;
   }
 
   /* Theme toggle and user button on mobile */
@@ -1175,8 +1192,9 @@ input[type="checkbox"]:checked::after {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   z-index: 9999;
   display: flex;
   align-items: flex-end;
@@ -1186,25 +1204,28 @@ input[type="checkbox"]:checked::after {
 .mobile-more-drawer {
   background: var(--bg-main);
   width: 100%;
-  border-top-left-radius: 20px;
-  border-top-right-radius: 20px;
-  padding: 24px;
-  box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
-  animation: slideUp 0.3s ease;
+  max-height: 85vh;
+  overflow-y: auto;
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  padding: 20px 16px max(24px, env(safe-area-inset-bottom)) 16px;
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.35);
+  box-sizing: border-box;
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .drawer-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
   border-bottom: 1px solid var(--border-color);
   padding-bottom: 12px;
 }
 
 .drawer-header h3 {
   margin: 0;
-  font-size: 1.2rem;
+  font-size: 1.15rem;
   font-weight: 800;
 }
 
@@ -1218,22 +1239,24 @@ input[type="checkbox"]:checked::after {
 .drawer-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  gap: 10px;
 }
 
 .drawer-btn {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  padding: 16px;
-  border-radius: 12px;
+  padding: 14px 10px;
+  border-radius: 14px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   color: var(--text-main);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .drawer-btn.active {
@@ -1287,14 +1310,30 @@ input[type="checkbox"]:checked::after {
 }
 
 @media (max-width: 768px) {
-  .notes-container {
+  .notes-container,
+  .notes-main-grid {
+    display: flex !important;
     flex-direction: column !important;
     height: auto !important;
+    min-height: auto !important;
     overflow: visible !important;
   }
   .notes-left-col, .notes-right-col {
     flex: auto !important;
     height: auto !important;
+    max-height: none !important;
     overflow-y: visible !important;
   }
+  .calendar-main-grid {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  .calendar-day-grid {
+    gap: 4px !important;
+  }
+  .calendar-day-grid > div {
+    padding: 8px 0 !important;
+    font-size: 0.82rem !important;
+  }
 }
+

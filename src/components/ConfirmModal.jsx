@@ -1,6 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { AlertTriangle, X } from 'lucide-react';
+import { registerModal, unregisterModal, updateModalCallback } from './modalManager';
 
 export default function ConfirmModal({ 
   isOpen, 
@@ -10,34 +11,43 @@ export default function ConfirmModal({
   cancelText = 'Cancel', 
   onConfirm, 
   onCancel, 
-  type = 'danger' 
+  type = 'danger',
+  zIndex = 1000000
 }) {
+  const modalIdRef = useRef(null);
+  if (!modalIdRef.current) {
+    modalIdRef.current = 'confirm_modal_' + Math.random().toString(36).substr(2, 9);
+  }
+
   useEffect(() => {
     if (!isOpen) return;
 
-    const originalStyle = window.getComputedStyle(document.body).overflow;
-    document.body.style.overflow = 'hidden';
-
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        onCancel?.();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
+    const id = modalIdRef.current;
+    registerModal(id, onCancel);
 
     return () => {
-      document.body.style.overflow = originalStyle;
-      window.removeEventListener('keydown', handleKeyDown);
+      unregisterModal(id);
     };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen) {
+      updateModalCallback(modalIdRef.current, onCancel);
+    }
   }, [isOpen, onCancel]);
 
   if (!isOpen) return null;
 
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget) {
+      onCancel?.();
+    }
+  };
+
   const content = (
     <div 
       className="blur-overlay" 
-      onClick={onCancel}
+      onClick={handleBackdropClick}
       style={{
         position: 'fixed',
         top: 0,
@@ -49,7 +59,7 @@ export default function ConfirmModal({
         background: 'rgba(0, 0, 0, 0.65)',
         backdropFilter: 'blur(14px)',
         WebkitBackdropFilter: 'blur(14px)',
-        zIndex: 999999,
+        zIndex: zIndex,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',

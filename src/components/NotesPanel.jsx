@@ -94,9 +94,9 @@ export default function NotesPanel({
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '24px', height: 'calc(100vh - 260px)', minHeight: '480px' }}>
+      <div className="notes-main-grid" style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '24px', height: 'calc(100vh - 260px)', minHeight: '480px' }}>
         {/* LEFT NOTEBOOK LIST / TRASH VIEW SWITCHER */}
-        <div style={{ background: 'var(--bg-main)', borderRadius: '18px', border: '1px solid var(--border-color)', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: 'calc(100vh - 220px)', overflowY: 'auto' }}>
+        <div className="notes-left-col" style={{ background: 'var(--bg-main)', borderRadius: '18px', border: '1px solid var(--border-color)', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: 'calc(100vh - 220px)', overflowY: 'auto' }}>
           <div style={{ display: 'flex', gap: '6px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
             <button
               onClick={() => setNotesViewMode('active')}
@@ -274,7 +274,7 @@ export default function NotesPanel({
             );
           }
           return (
-            <div style={{ background: 'var(--bg-main)', borderRadius: '18px', border: '1px solid var(--border-color)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px', maxHeight: 'calc(100vh - 220px)', overflowY: 'auto' }}>
+            <div className="notes-right-col" style={{ background: 'var(--bg-main)', borderRadius: '18px', border: '1px solid var(--border-color)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px', maxHeight: 'calc(100vh - 220px)', overflowY: 'auto' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
                 <div style={{ flex: 1, minWidth: '240px' }}>
                   <input

@@ -1,6 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { X } from 'lucide-react';
+import { registerModal, unregisterModal, updateModalCallback } from './modalManager';
 
 export default function Modal({
   isOpen,
@@ -8,36 +9,43 @@ export default function Modal({
   title,
   icon: Icon,
   children,
-  maxWidth = '440px'
+  maxWidth = '440px',
+  zIndex = 999999
 }) {
+  const modalIdRef = useRef(null);
+  if (!modalIdRef.current) {
+    modalIdRef.current = 'modal_' + Math.random().toString(36).substr(2, 9);
+  }
+
   useEffect(() => {
     if (!isOpen) return;
 
-    // Lock body scroll when modal is open
-    const originalStyle = window.getComputedStyle(document.body).overflow;
-    document.body.style.overflow = 'hidden';
-
-    // Handle Escape key to close
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        onClose?.();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
+    const id = modalIdRef.current;
+    registerModal(id, onClose);
 
     return () => {
-      document.body.style.overflow = originalStyle;
-      window.removeEventListener('keydown', handleKeyDown);
+      unregisterModal(id);
     };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen) {
+      updateModalCallback(modalIdRef.current, onClose);
+    }
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget) {
+      onClose?.();
+    }
+  };
+
   const modalContent = (
     <div
       className="blur-overlay"
-      onClick={onClose}
+      onClick={handleBackdropClick}
       style={{
         position: 'fixed',
         top: 0,
@@ -49,7 +57,7 @@ export default function Modal({
         background: 'rgba(0, 0, 0, 0.65)',
         backdropFilter: 'blur(14px)',
         WebkitBackdropFilter: 'blur(14px)',
-        zIndex: 999999,
+        zIndex: zIndex,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -76,7 +84,7 @@ export default function Modal({
         <div
           style={{
             display: 'flex',
-            justify: 'space-between',
+            justifyContent: 'space-between',
             alignItems: 'center',
             marginBottom: '20px'
           }}

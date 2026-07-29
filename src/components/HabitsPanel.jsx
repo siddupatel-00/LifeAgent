@@ -184,6 +184,7 @@ export default function HabitsPanel({
 
       {habits.length > 0 && (
         <button
+          className="habits-fab"
           onClick={() => setIsAddHabitModalOpen(true)}
           style={{
             position: 'fixed', bottom: '32px', right: '32px',

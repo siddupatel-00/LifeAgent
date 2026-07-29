@@ -134,7 +134,7 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({ water_reminder_enabled: newState })
-        });
+        }).catch(err => console.error('Failed to update water reminder state:', err));
       }
     } catch (e) {}
   };
@@ -154,7 +154,7 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({ water_reminder_interval: mins })
-        });
+        }).catch(err => console.error('Failed to update water reminder interval:', err));
       }
     } catch (e) {}
   };

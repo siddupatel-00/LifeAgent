@@ -57,7 +57,7 @@ export default function MoneyCharts({ transactions = [], chartType, currency = '
           <p style={{ margin: '0 0 8px 0', fontWeight: 'bold' }}>{label}</p>
           {payload.map((entry, index) => (
             <p key={index} style={{ color: entry.color, margin: '4px 0', fontSize: '0.9rem' }}>
-              {entry.name}: {currency}{entry.value.toFixed(2)}
+              {entry.name}: {currency}{(Number(entry.value) || 0).toFixed(2)}
             </p>
           ))}
         </div>

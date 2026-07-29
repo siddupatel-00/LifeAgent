@@ -21,6 +21,7 @@ import ConfirmModal from './components/ConfirmModal';
 import Modal from './components/Modal';
 import { todayKey, localTimeZone } from './utils/date';
 import WaterReminder from './components/WaterReminder';
+import TabErrorBoundary from './components/TabErrorBoundary';
 
 const getFormattedDateTitle = (dateStr) => {
   let targetDate = new Date();
@@ -285,6 +286,7 @@ export default function App() {
   const [resetCode, setResetCode] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showFinanceForm, setShowFinanceForm] = useState(false);
+  const [showWorkoutForm, setShowWorkoutForm] = useState(false);
   const [showMobileMoreMenu, setShowMobileMoreMenu] = useState(false);
   const [resetNewPassword, setResetNewPassword] = useState('');
   const [resetConfirmPassword, setResetConfirmPassword] = useState('');
@@ -394,7 +396,6 @@ export default function App() {
         setResetStep(1);
         setAuthError('');
         setResetSuccessMsg('');
-        setDevCodeNotice('');
         setResetCode('');
         setResetNewPassword('');
         setResetConfirmPassword('');
@@ -517,7 +518,11 @@ export default function App() {
     try { return JSON.parse(localStorage.getItem('cache_workouts')) || []; } catch(e) { return []; }
   });
   const [bodyStats, setBodyStats] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('cache_bodyStats')) || { currentWeight: '', targetWeight: '', dailyProtein: '', hydration: '' }; } catch(e) { return { currentWeight: '', targetWeight: '', dailyProtein: '', hydration: '' }; }
+    try {
+      const cached = JSON.parse(localStorage.getItem('cache_bodyStats'));
+      if (Array.isArray(cached)) return cached;
+    } catch(e) {}
+    return [];
   });
 
   const handleSaveBodyStat = async (updated) => {
@@ -1184,7 +1189,7 @@ const handleDeleteHabitDb = async (id) => {
         ALWAYS calculate dates relative to today's date ${todayStr} and year ${currentYear}.
 
         User's complete live dashboard data context across ALL pages:
-        - User Profile & Settings: ${JSON.stringify(userProfile)} (Currency: ${currency})
+        - User Profile & Settings: ${JSON.stringify(userProfile)} (Currency: ${userProfile.currency || '$'})
         - Calendar Events: ${JSON.stringify(calendarEvents)}
         - Daily Routine & Today Checklist: ${JSON.stringify(todayItems)}
         - Habits Tracker List: ${JSON.stringify(habits)}
@@ -2715,12 +2720,15 @@ const handleDeleteHabitDb = async (id) => {
                   </>
                 ) : (
                   <h2 style={{ fontSize: '1.9rem', fontWeight: 900, letterSpacing: '-0.5px', color: 'var(--text-main)' }}>
-                    {activeTab === 'gym' ? 'Body & Gym' : 
+                    {activeTab === 'today' ? "Today's Routine" :
+                     activeTab === 'habits' ? 'Daily Works & Habits' :
+                     (activeTab === 'gym' || activeTab === 'body') ? 'Body & Gym' : 
                      activeTab === 'sleep' ? 'Sleep & Recovery' : 
-                     activeTab === 'water' ? 'Water' :
+                     activeTab === 'water' ? 'Water Hydration' :
                      activeTab === 'finance' ? 'Finance & Money' : 
                      activeTab === 'notes' ? 'Notes & Diary' : 
                      activeTab === 'calendar' ? 'Calendar' :
+                     activeTab === 'analytics' ? 'Master Analytics' :
                      activeTab === 'settings' ? 'Settings' : 
                      activeTab === 'ai' ? aiName : 'Dashboard'}
                   </h2>
@@ -2790,7 +2798,8 @@ const handleDeleteHabitDb = async (id) => {
                       fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-main)', 
                       background: 'var(--bg-card)', border: '1px solid var(--border-color)',
                       padding: '8px 16px', borderRadius: '30px', cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s'
+                      display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s',
+                      maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
                     }}
                   >
                     <User size={16} color="var(--accent-blue)" /> {userProfile.handle}
@@ -2884,6 +2893,7 @@ const handleDeleteHabitDb = async (id) => {
               
               {/* 0) TODAY DAILY ROUTINE & HABITS CHECKLIST (Ultra-neat & clean UI) */}
               {activeTab === 'today' && (
+                <TabErrorBoundary tabName="Today's Routine">
                 <div className="animate-entrance">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px', gap: '16px', flexWrap: 'wrap' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -3345,10 +3355,12 @@ const handleDeleteHabitDb = async (id) => {
 
 
                 </div>
+                </TabErrorBoundary>
               )}
 
               {/* 1) AI CHAT MODE */}
               {activeTab === 'ai' && (
+                <TabErrorBoundary tabName="AI Assistant">
                 <div className="ai-chat-view animate-entrance" style={{
                   display: 'flex',
                   flexDirection: 'column',
@@ -3374,14 +3386,14 @@ const handleDeleteHabitDb = async (id) => {
                   </div>
                   {/* Messages - ONLY THIS SCROLLS */}
                   <div ref={mainAiChatScrollRef} style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px', WebkitOverflowScrolling: 'touch' }}>
-                    {aiMessages.length === 0 && (
+                    {(!Array.isArray(aiMessages) || aiMessages.length === 0) && (
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)', margin: 'auto' }}>
                         <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🤖</div>
                         <p style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--text-main)' }}>Ask me anything about your life data</p>
                         <p style={{ fontSize: '0.88rem', marginTop: '8px', color: 'var(--text-muted)' }}>I can analyze your habits, money, sleep and more</p>
                       </div>
                     )}
-                    {aiMessages.map(msg => (
+                    {(Array.isArray(aiMessages) ? aiMessages : []).map(msg => (
                       <div key={msg.id} style={{ alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start', maxWidth: '85%', background: msg.sender === 'user' ? 'var(--accent-blue)' : 'var(--bg-card)', color: msg.sender === 'user' ? '#fff' : 'var(--text-main)', padding: '12px 16px', borderRadius: msg.sender === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px', fontSize: '0.88rem', lineHeight: '1.5', whiteSpace: 'pre-line', border: msg.sender === 'ai' ? '1px solid var(--border-color)' : 'none' }}>
                         {msg.text}
                       </div>
@@ -3401,10 +3413,12 @@ const handleDeleteHabitDb = async (id) => {
                     </button>
                   </form>
                 </div>
+                </TabErrorBoundary>
               )}
 
               {/* 2) HABITS & PROGRESS TRACKER (Redesigned with Graphs & AI Suggestions) */}
               {activeTab === 'habits' && (
+                <TabErrorBoundary tabName="Daily Works & Habits">
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px', flexWrap: 'wrap', gap: '16px' }}>
                     <div>
@@ -3417,13 +3431,13 @@ const handleDeleteHabitDb = async (id) => {
                           onClick={() => setShowHabitHistory(false)}
                           style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: !showHabitHistory ? 'var(--bg-main)' : 'transparent', color: !showHabitHistory ? 'var(--text-main)' : 'var(--text-muted)', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.2s' }}
                         >
-                          ⚡ Active ({habits.filter(h => !h.archived).length})
+                          ⚡ Active ({(Array.isArray(habits) ? habits : []).filter(h => !h.archived).length})
                         </button>
                         <button 
                           onClick={() => setShowHabitHistory(true)}
                           style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: showHabitHistory ? 'var(--bg-main)' : 'transparent', color: showHabitHistory ? 'var(--text-main)' : 'var(--text-muted)', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.2s' }}
                         >
-                          📜 History ({habits.filter(h => h.archived).length})
+                          📜 History ({(Array.isArray(habits) ? habits : []).filter(h => h.archived).length})
                         </button>
                       </div>
                       <button 
@@ -3902,8 +3916,7 @@ const handleDeleteHabitDb = async (id) => {
                                   padding: '12px', borderRadius: '12px', border: item.checkedToday ? 'none' : '1px solid var(--border-color)',
                                   background: item.checkedToday ? 'var(--accent-blue)' : 'var(--bg-card)',
                                   color: item.checkedToday ? 'var(--accent-text)' : 'var(--text-main)',
-                                  fontWeight: 800, fontSize: '0.95rem', cursor: 'pointer', transition: 'all 0.2s',
-                                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+                                  fontWeight: 800, fontSize: '0.95rem', cursor: 'pointer', transition: 'all 0.2s'
                                 }}
                               >
                                 {item.checkedToday ? <><Check size={16} /> Done</> : 'Quick Check-In Today'}
@@ -4072,35 +4085,41 @@ const handleDeleteHabitDb = async (id) => {
                     )}
                   </Modal>
                 </div>
+                </TabErrorBoundary>
               )}
 
               {/* 2.2) DRINK WATER & HYDRATION TAB */}
               {activeTab === 'water' && (
-                <WaterReminder 
-                  todayStat={bodyStats}
-                  onLogStat={handleSaveBodyStat}
-                  showToast={showToast}
-                  userProfile={userProfile}
-                />
+                <TabErrorBoundary tabName="Water Hydration">
+                  <WaterReminder 
+                    todayStat={bodyStats}
+                    onLogStat={handleSaveBodyStat}
+                    showToast={showToast}
+                    userProfile={userProfile}
+                  />
+                </TabErrorBoundary>
               )}
 
               {/* 2.5) CALENDAR TAB */}
               {activeTab === 'calendar' && (
-                <CalendarPanel
-                  calendarEvents={calendarEvents}
-                  setCalendarEvents={setCalendarEvents}
-                  selectedCalendarDate={selectedCalendarDate}
-                  setSelectedCalendarDate={setSelectedCalendarDate}
-                  calendarSubTab={calendarSubTab}
-                  setCalendarSubTab={setCalendarSubTab}
-                  token={token}
-                  showToast={showToast}
-                  userProfile={userProfile}
-                />
+                <TabErrorBoundary tabName="Calendar">
+                  <CalendarPanel
+                    calendarEvents={calendarEvents}
+                    setCalendarEvents={setCalendarEvents}
+                    selectedCalendarDate={selectedCalendarDate}
+                    setSelectedCalendarDate={setSelectedCalendarDate}
+                    calendarSubTab={calendarSubTab}
+                    setCalendarSubTab={setCalendarSubTab}
+                    token={token}
+                    showToast={showToast}
+                    userProfile={userProfile}
+                  />
+                </TabErrorBoundary>
               )}
 
               {/* 2.5) NOTES & DIARY TAB (With Personal AI Assistant Permission Sharing) */}
               {activeTab === 'notes' && (
+                <TabErrorBoundary tabName="Notes & Diary">
                 <div className="animate-entrance">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px', flexWrap: 'wrap', gap: '16px' }}>
                     <div>
@@ -4472,84 +4491,95 @@ const handleDeleteHabitDb = async (id) => {
                     })()}
                   </div>
                 </div>
+                </TabErrorBoundary>
               )}
 
               {/* 3) MONEY TRACKING */}
               {activeTab === 'finance' && (
-                <MoneyTracker
-                  transactions={transactions}
-                  setTransactions={setTransactions}
-                  token={token}
-                  showToast={showToast}
-                  currency={userProfile.currency || '$'}
-                  timeRange={timeRange}
-                  userProfile={userProfile}
-                  timezone={userProfile.timezone}
-                  showForm={showFinanceForm}
-                  setShowForm={setShowFinanceForm}
-                  customStartDate={customStartDate}
-                  customEndDate={customEndDate}
-                />
+                <TabErrorBoundary tabName="Finance & Money">
+                  <MoneyTracker
+                    transactions={transactions}
+                    setTransactions={setTransactions}
+                    token={token}
+                    showToast={showToast}
+                    currency={userProfile.currency || '$'}
+                    timeRange={timeRange}
+                    userProfile={userProfile}
+                    timezone={userProfile.timezone}
+                    showForm={showFinanceForm}
+                    setShowForm={setShowFinanceForm}
+                    customStartDate={customStartDate}
+                    customEndDate={customEndDate}
+                  />
+                </TabErrorBoundary>
               )}
 
               {/* 4) BODY & GYM */}
-              {activeTab === 'body' && (
-                <BodyGym
-                  token={token}
-                  showToast={showToast}
-                  timeRange={timeRange}
-                  userProfile={userProfile}
-                  bodyStats={bodyStats}
-                  setBodyStats={setBodyStats}
-                  showForm={showWorkoutForm}
-                  setShowForm={setShowWorkoutForm}
-                />
+              {(activeTab === 'body' || activeTab === 'gym') && (
+                <TabErrorBoundary tabName="Body & Gym">
+                  <BodyGym
+                    token={token}
+                    showToast={showToast}
+                    timeRange={timeRange}
+                    userProfile={userProfile}
+                    bodyStats={bodyStats}
+                    setBodyStats={setBodyStats}
+                    showForm={showWorkoutForm}
+                    setShowForm={setShowWorkoutForm}
+                  />
+                </TabErrorBoundary>
               )}
 
               {/* 5) SLEEP & RECOVERY */}
               {activeTab === 'sleep' && (
-                <SleepTracker
-                  token={token}
-                  showToast={showToast}
-                  timeRange={timeRange}
-                  userProfile={userProfile}
-                />
+                <TabErrorBoundary tabName="Sleep & Recovery">
+                  <SleepTracker
+                    token={token}
+                    showToast={showToast}
+                    timeRange={timeRange}
+                    userProfile={userProfile}
+                  />
+                </TabErrorBoundary>
               )}
 
               {/* 6) MASTER ANALYTICS HUB */}
               {activeTab === 'analytics' && (
-                <AnalyticsPanel
-                  token={token}
-                  showToast={showToast}
-                  currency={userProfile.currency || '$'}
-                  timeRange={timeRange}
-                  userProfile={userProfile}
-                />
+                <TabErrorBoundary tabName="Master Analytics">
+                  <AnalyticsPanel
+                    token={token}
+                    showToast={showToast}
+                    currency={userProfile.currency || '$'}
+                    timeRange={timeRange}
+                    userProfile={userProfile}
+                  />
+                </TabErrorBoundary>
               )}
 
               {/* 7) SETTINGS & PROFILE */}
               {activeTab === 'settings' && (
-                <SettingsPanel
-                  userProfile={userProfile}
-                  setUserProfile={setUserProfile}
-                  aiName={aiName}
-                  setAiName={setAiName}
-                  aiProvider={aiProvider}
-                  setAiProvider={setAiProvider}
-                  geminiApiKey={geminiApiKey}
-                  setGeminiApiKey={setGeminiApiKey}
-                  groqApiKey={groqApiKey}
-                  setGroqApiKey={setGroqApiKey}
-                  themeMode={themeMode}
-                  setThemeMode={setThemeMode}
-                  token={token}
-                  showToast={showToast}
-                  handleLogout={handleLogout}
-                  settingsSaved={settingsSaved}
-                  setSettingsSaved={setSettingsSaved}
-                  chatResetTime={userProfile.chat_reset_time || '00:00'}
-                  setChatResetTime={(val) => setUserProfile({ ...userProfile, chat_reset_time: val })}
-                />
+                <TabErrorBoundary tabName="Settings">
+                  <SettingsPanel
+                    userProfile={userProfile}
+                    setUserProfile={setUserProfile}
+                    aiName={aiName}
+                    setAiName={setAiName}
+                    aiProvider={aiProvider}
+                    setAiProvider={setAiProvider}
+                    geminiApiKey={geminiApiKey}
+                    setGeminiApiKey={setGeminiApiKey}
+                    groqApiKey={groqApiKey}
+                    setGroqApiKey={setGroqApiKey}
+                    themeMode={themeMode}
+                    setThemeMode={setThemeMode}
+                    token={token}
+                    showToast={showToast}
+                    handleLogout={handleLogout}
+                    settingsSaved={settingsSaved}
+                    setSettingsSaved={setSettingsSaved}
+                    chatResetTime={userProfile.chat_reset_time || '00:00'}
+                    setChatResetTime={(val) => setUserProfile({ ...userProfile, chat_reset_time: val })}
+                  />
+                </TabErrorBoundary>
               )}
 
             </div>

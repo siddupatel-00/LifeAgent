@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
 
-const CustomSelect = ({ value, onChange, options, style, className }) => {
+const CustomSelect = ({ value, onChange, options = [], style, className }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
 
