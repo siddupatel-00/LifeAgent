@@ -811,13 +811,10 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat 
                 />
               </div>
 
-              <button 
-                type="submit" 
-                className="blue-btn"
-                style={{ padding: '14px', fontSize: '1rem', fontWeight: 800, marginTop: '8px', width: '100%' }}
-              >
-                Save Sleep Entry
-              </button>
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '8px' }}>
+                <button type="button" className="secondary-btn" onClick={handleCloseModal} style={{ padding: '10px 20px', borderRadius: '50px', fontSize: '0.9rem' }}>Cancel</button>
+                <button type="submit" className="blue-btn" style={{ padding: '10px 20px', borderRadius: '50px', fontSize: '0.9rem', justifyContent: 'center' }}>Save Sleep Entry</button>
+              </div>
             </form>
           </div>
         </div>

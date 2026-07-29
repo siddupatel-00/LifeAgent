@@ -17,7 +17,6 @@ export default function ConfirmModal({
     <div 
       className="blur-overlay" 
       onClick={onCancel}
-      style={{ zIndex: 10000 }}
     >
       <div 
         className="glass-card animate-entrance" 
