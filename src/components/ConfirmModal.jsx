@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { AlertTriangle, X } from 'lucide-react';
 
 export default function ConfirmModal({ 
@@ -11,12 +12,50 @@ export default function ConfirmModal({
   onCancel, 
   type = 'danger' 
 }) {
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const originalStyle = window.getComputedStyle(document.body).overflow;
+    document.body.style.overflow = 'hidden';
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onCancel?.();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = originalStyle;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onCancel]);
+
   if (!isOpen) return null;
 
-  return (
+  const content = (
     <div 
       className="blur-overlay" 
       onClick={onCancel}
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100vw',
+        height: '100vh',
+        background: 'rgba(0, 0, 0, 0.65)',
+        backdropFilter: 'blur(14px)',
+        WebkitBackdropFilter: 'blur(14px)',
+        zIndex: 999999,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '16px',
+        boxSizing: 'border-box'
+      }}
     >
       <div 
         className="glass-card animate-entrance" 
@@ -29,6 +68,7 @@ export default function ConfirmModal({
           width: '90%',
           maxWidth: '400px',
           boxShadow: '0 25px 60px rgba(0,0,0,0.4)',
+          margin: 'auto'
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
@@ -41,7 +81,8 @@ export default function ConfirmModal({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: type === 'danger' ? '#ef4444' : '#f59e0b'
+              color: type === 'danger' ? '#ef4444' : '#f59e0b',
+              flexShrink: 0
             }}>
               <AlertTriangle size={20} />
             </div>
@@ -95,4 +136,6 @@ export default function ConfirmModal({
       </div>
     </div>
   );
+
+  return ReactDOM.createPortal(content, document.body);
 }

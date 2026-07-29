@@ -3,6 +3,7 @@ import { Plus, Edit2, Trash2, X, Check, BarChart2, BarChart3, TrendingUp, PieCha
 import { todayKey } from '../utils/date';
 import MoneyCharts from './MoneyCharts';
 import CustomSelect from './CustomSelect';
+import Modal from './Modal';
 
 const SPEND_CATEGORIES = ['Choose Category', 'General', 'Food', 'Transport', 'Shopping', 'Bills', 'Entertainment', 'Education', 'Health', 'Other'];
 const EARNING_CATEGORIES = ['Choose Category', 'Job', 'Business', 'Freelancing', 'Startup', 'Other'];
@@ -344,130 +345,116 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
         </div>
       </div>
       
-      {rightPanelView === 'add' && (
-        <div className="blur-overlay" onClick={() => setRightPanelView('charts')}>
-          <div className="glass-card animate-entrance" style={{ background: 'var(--bg-card)', padding: '28px', borderRadius: '24px', border: '1px solid var(--border-color)', boxShadow: '0 25px 60px rgba(0,0,0,0.4)', width: '100%', maxWidth: '440px', margin: 'auto', maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: 'var(--accent-blue-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-blue)' }}>
-                  <Plus size={20} />
-                </div>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>Add Transaction</h3>
-              </div>
-              <button onClick={() => setRightPanelView('charts')} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px' }}><X size={20}/></button>
-            </div>
-            <form onSubmit={addTransaction} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div>
-                <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Type</label>
-                <CustomSelect 
-                  value={newType} 
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setNewType(val);
-                    setNewCategory('Choose Category');
-                  }} 
-                  style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}
-                  options={[
-                    { value: "spend", label: "Spending (-)" },
-                    { value: "earn", label: "Earning (+)" }
-                  ]}
-                />
-              </div>
-              <div>
-                <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Description</label>
-                <input type="text" placeholder="Enter description..." value={newTitle} onChange={(e) => setNewTitle(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
-              </div>
-              <div>
-                <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Amount ({currency})</label>
-                <input type="text" placeholder="e.g., 950+300 or 1250" value={newAmount} onChange={(e) => setNewAmount(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
-              </div>
-              <div>
-                <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Category</label>
-                <CustomSelect 
-                  value={newCategory} 
-                  onChange={(e) => setNewCategory(e.target.value)} 
-                  style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}
-                  options={(newType === 'earn' ? EARNING_CATEGORIES : SPEND_CATEGORIES).map(c => ({ value: c, label: c }))}
-                />
-              </div>
-              <div>
-                <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Date</label>
-                <input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
-              </div>
-              <div>
-                <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Notes (Optional)</label>
-                <input type="text" placeholder="Enter notes..." value={newNotes} onChange={(e) => setNewNotes(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
-              </div>
-              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px' }}>
-                <button type="button" onClick={() => setRightPanelView('charts')} className="secondary-btn" style={{ padding: '10px 20px', borderRadius: '50px', fontSize: '0.9rem' }}>Cancel</button>
-                <button type="submit" className="blue-btn" style={{ padding: '10px 20px', borderRadius: '50px', fontSize: '0.9rem', justifyContent: 'center' }}><Plus size={18} /> Record Entry</button>
-              </div>
-            </form>
+      <Modal
+        isOpen={rightPanelView === 'add'}
+        onClose={() => setRightPanelView('charts')}
+        title="Add Transaction"
+        icon={Plus}
+        maxWidth="440px"
+      >
+        <form onSubmit={addTransaction} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div>
+            <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Type</label>
+            <CustomSelect 
+              value={newType} 
+              onChange={(e) => {
+                const val = e.target.value;
+                setNewType(val);
+                setNewCategory('Choose Category');
+              }} 
+              style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}
+              options={[
+                { value: "spend", label: "Spending (-)" },
+                { value: "earn", label: "Earning (+)" }
+              ]}
+            />
           </div>
-        </div>
-      )}
+          <div>
+            <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Description</label>
+            <input type="text" placeholder="Enter description..." value={newTitle} onChange={(e) => setNewTitle(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
+          </div>
+          <div>
+            <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Amount ({currency})</label>
+            <input type="text" placeholder="e.g., 950+300 or 1250" value={newAmount} onChange={(e) => setNewAmount(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
+          </div>
+          <div>
+            <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Category</label>
+            <CustomSelect 
+              value={newCategory} 
+              onChange={(e) => setNewCategory(e.target.value)} 
+              style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}
+              options={(newType === 'earn' ? EARNING_CATEGORIES : SPEND_CATEGORIES).map(c => ({ value: c, label: c }))}
+            />
+          </div>
+          <div>
+            <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Date</label>
+            <input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
+          </div>
+          <div>
+            <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Notes (Optional)</label>
+            <input type="text" placeholder="Enter notes..." value={newNotes} onChange={(e) => setNewNotes(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
+          </div>
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px' }}>
+            <button type="button" onClick={() => setRightPanelView('charts')} className="secondary-btn" style={{ padding: '10px 20px', borderRadius: '50px', fontSize: '0.9rem' }}>Cancel</button>
+            <button type="submit" className="blue-btn" style={{ padding: '10px 20px', borderRadius: '50px', fontSize: '0.9rem', justifyContent: 'center' }}><Plus size={18} /> Record Entry</button>
+          </div>
+        </form>
+      </Modal>
 
-      {editingId !== null && (
-        <div className="blur-overlay" onClick={cancelEdit}>
-          <div className="glass-card animate-entrance" style={{ background: 'var(--bg-card)', padding: '28px', borderRadius: '24px', border: '1px solid var(--border-color)', boxShadow: '0 25px 60px rgba(0,0,0,0.4)', width: '100%', maxWidth: '440px', margin: 'auto', maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: 'var(--accent-blue-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-blue)' }}>
-                  <Edit2 size={20} />
-                </div>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>Edit Transaction</h3>
-              </div>
-              <button onClick={cancelEdit} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px' }}><X size={20}/></button>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div>
-                <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Type</label>
-                <CustomSelect 
-                  value={editForm.type || 'spend'} 
-                  onChange={e => {
-                    const val = e.target.value;
-                    setEditForm({ ...editForm, type: val, category: val === 'earn' ? 'Job' : 'General' });
-                  }} 
-                  style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}
-                  options={[
-                    { value: "spend", label: "Spending (-)" },
-                    { value: "earn", label: "Earning (+)" }
-                  ]}
-                />
-              </div>
-              <div>
-                <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Description</label>
-                <input type="text" placeholder="Enter description..." value={editForm.title || ''} onChange={e => setEditForm({...editForm, title: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
-              </div>
-              <div>
-                <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Amount ({currency})</label>
-                <input type="text" placeholder="e.g., 950+300 or 1250" value={editForm.amount || ''} onChange={e => setEditForm({...editForm, amount: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
-              </div>
-              <div>
-                <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Category</label>
-                <CustomSelect 
-                  value={editForm.category || 'General'} 
-                  onChange={e => setEditForm({...editForm, category: e.target.value})} 
-                  style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}
-                  options={(editForm.type === 'earn' ? EARNING_CATEGORIES : SPEND_CATEGORIES).map(c => ({ value: c, label: c }))}
-                />
-              </div>
-              <div>
-                <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Date</label>
-                <input type="date" value={editForm.date || ''} onChange={e => setEditForm({...editForm, date: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
-              </div>
-              <div>
-                <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Notes (Optional)</label>
-                <input type="text" placeholder="Enter notes..." value={editForm.notes || ''} onChange={e => setEditForm({...editForm, notes: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
-              </div>
-              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px' }}>
-                <button type="button" onClick={cancelEdit} className="secondary-btn" style={{ padding: '10px 20px', borderRadius: '50px', fontSize: '0.9rem' }}>Cancel</button>
-                <button type="button" onClick={saveEdit} className="blue-btn" style={{ padding: '10px 20px', borderRadius: '50px', fontSize: '0.9rem', justifyContent: 'center' }}><Check size={18} /> Save Changes</button>
-              </div>
-            </div>
+      <Modal
+        isOpen={editingId !== null}
+        onClose={cancelEdit}
+        title="Edit Transaction"
+        icon={Edit2}
+        maxWidth="440px"
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div>
+            <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Type</label>
+            <CustomSelect 
+              value={editForm.type || 'spend'} 
+              onChange={e => {
+                const val = e.target.value;
+                setEditForm({ ...editForm, type: val, category: val === 'earn' ? 'Job' : 'General' });
+              }} 
+              style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}
+              options={[
+                { value: "spend", label: "Spending (-)" },
+                { value: "earn", label: "Earning (+)" }
+              ]}
+            />
+          </div>
+          <div>
+            <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Description</label>
+            <input type="text" placeholder="Enter description..." value={editForm.title || ''} onChange={e => setEditForm({...editForm, title: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
+          </div>
+          <div>
+            <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Amount ({currency})</label>
+            <input type="text" placeholder="e.g., 950+300 or 1250" value={editForm.amount || ''} onChange={e => setEditForm({...editForm, amount: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
+          </div>
+          <div>
+            <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Category</label>
+            <CustomSelect 
+              value={editForm.category || 'General'} 
+              onChange={e => setEditForm({...editForm, category: e.target.value})} 
+              style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}
+              options={((editForm.type || 'spend') === 'earn' ? EARNING_CATEGORIES : SPEND_CATEGORIES).map(c => ({ value: c, label: c }))}
+            />
+          </div>
+          <div>
+            <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Date</label>
+            <input type="date" value={editForm.date || ''} onChange={e => setEditForm({...editForm, date: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
+          </div>
+          <div>
+            <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Notes (Optional)</label>
+            <input type="text" placeholder="Enter notes..." value={editForm.notes || ''} onChange={e => setEditForm({...editForm, notes: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
+          </div>
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px' }}>
+            <button onClick={cancelEdit} className="secondary-btn" style={{ padding: '10px 20px', borderRadius: '50px', fontSize: '0.9rem' }}>Cancel</button>
+            <button onClick={() => saveEdit(editingId)} className="blue-btn" style={{ padding: '10px 20px', borderRadius: '50px', fontSize: '0.9rem', justifyContent: 'center' }}><Check size={18} /> Save Changes</button>
           </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

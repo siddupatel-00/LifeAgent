@@ -18,6 +18,7 @@ import MoneyTracker from './components/MoneyTracker';
 import SettingsPanel from './components/SettingsPanel';
 import CalendarPanel from './components/CalendarPanel';
 import ConfirmModal from './components/ConfirmModal';
+import Modal from './components/Modal';
 import { todayKey, localTimeZone } from './utils/date';
 import WaterReminder from './components/WaterReminder';
 
@@ -3417,237 +3418,216 @@ const handleDeleteHabitDb = async (id) => {
                     </div>
                   </div>
 
-                  {/* INLINE ADD NEW PILLAR / DAILY ITEM FORM */}
-                  {isAddHabitModalOpen && (
-                    <div className="blur-overlay" onClick={() => setIsAddHabitModalOpen(false)} style={{ zIndex: 99999 }}>
-                      <div className="glass-card animate-entrance" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', padding: '28px', borderRadius: '24px', border: '1px solid var(--border-color)', boxShadow: '0 25px 60px rgba(0,0,0,0.4)', width: '90%', maxWidth: '440px', maxHeight: '90vh', overflowY: 'auto' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: 'var(--accent-blue-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-blue)' }}>
-                              <Plus size={20} />
-                            </div>
-                            <h4 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
-                              Create New Daily Progress Item
-                            </h4>
-                          </div>
-                          <button 
-                            onClick={() => setIsAddHabitModalOpen(false)}
-                            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '6px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                            title="Close modal"
-                          >
-                            <X size={20} />
-                          </button>
-                        </div>
-                        
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                          <div>
-                            <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Item Title / Habit Name</label>
+                  <Modal
+                    isOpen={isAddHabitModalOpen}
+                    onClose={() => setIsAddHabitModalOpen(false)}
+                    title="Create New Daily Progress Item"
+                    icon={Plus}
+                    maxWidth="440px"
+                  >
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Item Title / Habit Name</label>
+                        <input 
+                          type="text" 
+                          placeholder="Enter habit name..."
+                          value={newHabitData.title}
+                          onChange={(e) => setNewHabitData({ ...newHabitData, title: e.target.value })}
+                          style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.92rem', fontWeight: 600, outline: 'none' }}
+                          autoFocus
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Pillar / Category</label>
+                        {newHabitData.category === 'Other' ? (
+                          <div style={{ position: 'relative', width: '100%' }}>
                             <input 
                               type="text" 
-                              placeholder="Enter habit name..."
-                              value={newHabitData.title}
-                              onChange={(e) => setNewHabitData({ ...newHabitData, title: e.target.value })}
-                              style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.92rem', fontWeight: 600, outline: 'none' }}
-                              autoFocus
+                              placeholder="Enter custom category name..."
+                              value={customPillarInput}
+                              onChange={(e) => setCustomPillarInput(e.target.value)}
+                              style={{ width: '100%', padding: '12px 40px 12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.92rem', fontWeight: 600, outline: 'none', boxSizing: 'border-box' }}
                             />
+                            <button 
+                              type="button"
+                              onClick={() => {
+                                setNewHabitData({ ...newHabitData, category: '' });
+                                setCustomPillarInput('');
+                              }}
+                              title="Re-select category"
+                              style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                            >
+                              <X size={16} />
+                            </button>
                           </div>
+                        ) : (
+                          <select 
+                            value={newHabitData.category}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setNewHabitData({ ...newHabitData, category: val });
+                              if (val === 'Body & Gym') setActiveTab('body');
+                            }}
+                            style={{ 
+                              width: '100%', padding: '12px 16px', borderRadius: '12px', 
+                              background: 'var(--bg-card)', 
+                              color: newHabitData.category ? 'var(--text-main)' : 'var(--text-muted)', 
+                              border: '1px solid var(--border-color)', fontSize: '0.92rem', fontWeight: 600, outline: 'none', cursor: 'pointer' 
+                            }}
+                          >
+                            <option value="" disabled hidden>Select Category...</option>
+                            <option value="Coding">Coding Habit</option>
+                            <option value="Study">Study Habit</option>
+                            <option value="Reading">Reading</option>
+                            <option value="Body & Gym">Fitness & Health</option>
+                            <option value="Diet & Nutrition">Diet & Nutrition</option>
+                            <option value="Money">Money Habit</option>
+                            <option value="Deep Focus">Deep Focus</option>
+                            <option value="Other">+ Enter Custom Category...</option>
+                          </select>
+                        )}
+                      </div>
 
-                          <div>
-                            <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Pillar / Category</label>
-                            {newHabitData.category === 'Other' ? (
-                              <div style={{ position: 'relative', width: '100%' }}>
-                                <input 
-                                  type="text" 
-                                  placeholder="Enter custom category name..."
-                                  value={customPillarInput}
-                                  onChange={(e) => setCustomPillarInput(e.target.value)}
-                                  style={{ width: '100%', padding: '12px 40px 12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.92rem', fontWeight: 600, outline: 'none', boxSizing: 'border-box' }}
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Daily Goal / Target</label>
+                        <input 
+                          type="text" 
+                          placeholder="e.g. 30 mins, 5 pages"
+                          value={newHabitData.target}
+                          onChange={(e) => setNewHabitData({ ...newHabitData, target: e.target.value })}
+                          style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.92rem', fontWeight: 600, outline: 'none' }}
+                        />
+                      </div>
+
+                      {/* CHALLENGE MODE OPTIONS */}
+                      <div style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '16px', background: 'var(--bg-main)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                          <input 
+                            type="checkbox" 
+                            checked={newHabitData.challengeMode}
+                            onChange={(e) => setNewHabitData({ ...newHabitData, challengeMode: e.target.checked })}
+                            style={{ width: '18px', height: '18px', accentColor: 'var(--accent-blue)' }}
+                          />
+                          Make this a time-limited challenge
+                        </label>
+
+                        {newHabitData.challengeMode && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>Duration:</span>
+                            <select
+                              value={newHabitData.durationMode === 'custom' ? 'custom' : newHabitData.challengeDays}
+                              onChange={(e) => {
+                                if (e.target.value === 'custom') {
+                                  setNewHabitData({ ...newHabitData, durationMode: 'custom', challengeDays: '' });
+                                } else {
+                                  setNewHabitData({ ...newHabitData, durationMode: 'preset', challengeDays: Number(e.target.value) });
+                                }
+                              }}
+                              style={{ padding: '6px 12px', borderRadius: '8px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.85rem', fontWeight: 700, outline: 'none', cursor: 'pointer' }}
+                            >
+                              <option value={7}>7 Days</option>
+                              <option value={14}>14 Days</option>
+                              <option value={21}>21 Days</option>
+                              <option value={30}>30 Days</option>
+                              <option value={60}>60 Days</option>
+                              <option value={90}>90 Days</option>
+                              <option value="custom">Custom...</option>
+                            </select>
+
+                            {newHabitData.durationMode === 'custom' && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  placeholder="e.g. 100"
+                                  value={newHabitData.challengeDays}
+                                  onChange={(e) => setNewHabitData({ ...newHabitData, challengeDays: e.target.value ? Number(e.target.value) : '' })}
+                                  style={{ width: '80px', padding: '6px 10px', borderRadius: '8px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.85rem', fontWeight: 700, outline: 'none' }}
                                 />
-                                <button 
-                                  type="button"
-                                  onClick={() => {
-                                    setNewHabitData({ ...newHabitData, category: '' });
-                                    setCustomPillarInput('');
-                                  }}
-                                  title="Re-select category"
-                                  style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                >
-                                  <X size={16} />
-                                </button>
                               </div>
-                            ) : (
-                              <select 
-                                value={newHabitData.category}
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  setNewHabitData({ ...newHabitData, category: val });
-                                  if (val === 'Body & Gym') setActiveTab('body');
-                                }}
-                                style={{ 
-                                  width: '100%', padding: '12px 16px', borderRadius: '12px', 
-                                  background: 'var(--bg-card)', 
-                                  color: newHabitData.category ? 'var(--text-main)' : 'var(--text-muted)', 
-                                  border: '1px solid var(--border-color)', fontSize: '0.92rem', fontWeight: 600, outline: 'none', cursor: 'pointer' 
-                                }}
-                              >
-                                <option value="" disabled hidden>Select Category...</option>
-                                <option value="Coding">Coding Habit</option>
-                                <option value="Study">Study Habit</option>
-                                <option value="Reading">Reading</option>
-                                <option value="Body & Gym">Fitness & Health</option>
-                                <option value="Diet & Nutrition">Diet & Nutrition</option>
-                                <option value="Money">Money Habit</option>
-                                <option value="Deep Focus">Deep Focus</option>
-                                <option value="Other">+ Enter Custom Category...</option>
-                              </select>
                             )}
                           </div>
+                        )}
+                      </div>
 
-                          <div>
-                            <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Daily Goal / Target</label>
-                            <input 
-                              type="text" 
-                              placeholder="e.g. 30 mins, 5 pages"
-                              value={newHabitData.target}
-                              onChange={(e) => setNewHabitData({ ...newHabitData, target: e.target.value })}
-                              style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.92rem', fontWeight: 600, outline: 'none' }}
-                            />
-                          </div>
-                        </div>
+                      <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                        <button 
+                          className="secondary-btn"
+                          onClick={() => setIsAddHabitModalOpen(false)}
+                          style={{ flex: 1, padding: '12px', fontSize: '0.92rem', fontWeight: 700 }}
+                        >
+                          Cancel
+                        </button>
+                        <button 
+                          className="blue-btn"
+                          onClick={async () => {
+                            if (!newHabitData.title.trim()) {
+                              showToast('Please enter a title for your daily item.', 'error');
+                              return;
+                            }
 
-                        {/* CHALLENGE MODE OPTIONS */}
-                        <div style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '16px', background: 'var(--bg-main)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-main)' }}>
-                            <input 
-                              type="checkbox" 
-                              checked={newHabitData.challengeMode}
-                              onChange={(e) => setNewHabitData({ ...newHabitData, challengeMode: e.target.checked })}
-                              style={{ width: '18px', height: '18px', accentColor: 'var(--accent-blue)' }}
-                            />
-                            Make this a time-limited challenge
-                          </label>
+                            const finalCategory = newHabitData.category === 'Other' 
+                              ? (customPillarInput.trim() || 'General') 
+                              : (newHabitData.category || 'General');
 
-                          {newHabitData.challengeMode && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>Duration:</span>
-                              <select
-                                value={newHabitData.durationMode === 'custom' ? 'custom' : newHabitData.challengeDays}
-                                onChange={(e) => {
-                                  if (e.target.value === 'custom') {
-                                    setNewHabitData({ ...newHabitData, durationMode: 'custom', challengeDays: '' });
-                                  } else {
-                                    setNewHabitData({ ...newHabitData, durationMode: 'preset', challengeDays: Number(e.target.value) });
+                            try {
+                              const res = await fetch('/api/habits', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                body: JSON.stringify({ 
+                                  label: newHabitData.title.trim(), 
+                                  category: finalCategory, 
+                                  target: newHabitData.target.trim() || 'Daily'
+                                })
+                              });
+
+                              if (res.ok) {
+                                const saved = await res.json();
+                                setHabits(prev => [...prev, {
+                                  id: saved.id,
+                                  title: saved.label,
+                                  category: saved.category,
+                                  streak: saved.streak || 0,
+                                  target: saved.target || 'Daily',
+                                  checkedToday: false
+                                }]);
+
+                                try {
+                                  const todayRes = await fetch('/api/today', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                    body: JSON.stringify({
+                                      label: newHabitData.title.trim(),
+                                      category: finalCategory,
+                                      time: '',
+                                      habit_id: saved.id,
+                                      date: todayKey(userProfile.timezone)
+                                    })
+                                  });
+                                  if (todayRes.ok) {
+                                    const todayData = await todayRes.json();
+                                    setTodayItems(prev => [...prev, { id: todayData.id, title: todayData.label, category: todayData.category, time: todayData.time, checked: false, habitId: saved.id }]);
                                   }
-                                }}
-                                style={{ padding: '6px 12px', borderRadius: '8px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.85rem', fontWeight: 700, outline: 'none', cursor: 'pointer' }}
-                              >
-                                <option value={7}>7 Days</option>
-                                <option value={14}>14 Days</option>
-                                <option value={21}>21 Days</option>
-                                <option value={30}>30 Days</option>
-                                <option value={60}>60 Days</option>
-                                <option value={90}>90 Days</option>
-                                <option value="custom">Custom...</option>
-                              </select>
-
-                              {newHabitData.durationMode === 'custom' && (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                  <input
-                                    type="number"
-                                    min="1"
-                                    placeholder="e.g. 100"
-                                    value={newHabitData.challengeDays}
-                                    onChange={(e) => setNewHabitData({ ...newHabitData, challengeDays: e.target.value ? Number(e.target.value) : '' })}
-                                    style={{ width: '80px', padding: '6px 10px', borderRadius: '8px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.85rem', fontWeight: 700, outline: 'none' }}
-                                  />
-                                  <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>Days</span>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-
-                        <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-                          <button 
-                            className="secondary-btn"
-                            onClick={() => setIsAddHabitModalOpen(false)}
-                            style={{ flex: 1, padding: '12px', fontSize: '0.92rem', fontWeight: 700 }}
-                          >
-                            Cancel
-                          </button>
-                          <button 
-                            className="blue-btn"
-                            onClick={async () => {
-                              if (!newHabitData.title.trim()) {
-                                showToast('Please enter a title for your daily item.', 'error');
-                                return;
-                              }
-
-                              const finalCategory = newHabitData.category === 'Other' 
-                                ? (customPillarInput.trim() || 'General') 
-                                : (newHabitData.category || 'General');
-
-                              try {
-                                const res = await fetch('/api/habits', {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                  body: JSON.stringify({ 
-                                    label: newHabitData.title.trim(), 
-                                    category: finalCategory, 
-                                    target: newHabitData.target.trim() || 'Daily'
-                                  })
-                                });
-
-                                if (res.ok) {
-                                  const saved = await res.json();
-                                  setHabits(prev => [...prev, {
-                                    id: saved.id,
-                                    title: saved.label,
-                                    category: saved.category,
-                                    streak: saved.streak || 0,
-                                    target: saved.target || 'Daily',
-                                    checkedToday: false
-                                  }]);
-
-                                  // Also create a linked today item
-                                  try {
-                                    const todayRes = await fetch('/api/today', {
-                                      method: 'POST',
-                                      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                      body: JSON.stringify({
-                                        label: newHabitData.title.trim(),
-                                        category: finalCategory,
-                                        time: '',
-                                        habit_id: saved.id,
-                                        date: todayKey(userProfile.timezone)
-                                      })
-                                    });
-                                    if (todayRes.ok) {
-                                      const todayData = await todayRes.json();
-                                      setTodayItems(prev => [...prev, { id: todayData.id, title: todayData.label, category: todayData.category, time: todayData.time, checked: false, habitId: saved.id }]);
-                                    }
-                                  } catch (linkErr) {
-                                    console.error('Failed to create linked today item:', linkErr);
-                                  }
-
-                                  setNewHabitData({ title: '', category: '', target: '', challengeMode: false, challengeDays: 30, durationMode: 'preset' });
-                                  setCustomPillarInput('');
-                                  setIsAddHabitModalOpen(false);
-                                } else {
-                                  console.error('Failed to create habit');
+                                } catch (linkErr) {
+                                  console.error('Failed to create linked today item:', linkErr);
                                 }
-                              } catch (err) {
-                                console.error(err);
+
+                                setNewHabitData({ title: '', category: '', target: '', challengeMode: false, challengeDays: 30, durationMode: 'preset' });
+                                setCustomPillarInput('');
+                                setIsAddHabitModalOpen(false);
                               }
-                            }}
-                            style={{ padding: '13px 24px', height: '46px' }}
-                          >
-                            <Plus size={18} /> Add to Progress
-                          </button>
-                        </div>
+                            } catch (err) {
+                              console.error(err);
+                            }
+                          }}
+                          style={{ flex: 1, padding: '12px', fontSize: '0.92rem', fontWeight: 800, justifyContent: 'center' }}
+                        >
+                          + Add to Progress
+                        </button>
                       </div>
                     </div>
-                  )}
+                  </Modal>
 
 
 

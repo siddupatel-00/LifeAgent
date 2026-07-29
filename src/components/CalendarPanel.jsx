@@ -3,6 +3,8 @@ import { todayKey } from '../utils/date';
 import { Calendar as CalendarIcon, Plus, Trash2, ChevronDown, Filter, AlertCircle, CheckCircle, Clock, X } from 'lucide-react';
 import ConfirmModal from './ConfirmModal';
 
+import Modal from './Modal';
+
 const formatDateStr = (d) => {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -225,80 +227,51 @@ export default function CalendarPanel({
         </button>
       </div>
 
-      {/* Modal Add Event Form */}
-      {isAddEventFormOpen && (
-        <div
-          className="blur-overlay"
-          onClick={() => setIsAddEventFormOpen(false)}
-        >
-          <div
-            className="glass-card animate-entrance"
-            style={{
-              background: 'var(--bg-card)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '24px',
-              padding: '28px',
-              boxShadow: '0 25px 60px rgba(0,0,0,0.4)',
-              width: '90%',
-              minWidth: '300px',
-              maxWidth: '440px',
-            }}
-            onClick={e => e.stopPropagation()}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: 'var(--accent-blue-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-blue)' }}>
-                  <CalendarIcon size={20} />
-                </div>
-                <h4 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>New Calendar Event</h4>
-              </div>
-              <button
-                onClick={() => setIsAddEventFormOpen(false)}
-                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px', borderRadius: '8px' }}
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div>
-                <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Event Title</label>
-                <input
-                  type="text"
-                  value={newEventTitle}
-                  onChange={(e) => setNewEventTitle(e.target.value)}
-                  placeholder="Enter event title..."
-                  autoFocus
-                  style={{
-                    width: '100%', padding: '12px 16px', borderRadius: '12px',
-                    border: '1px solid var(--border-color)', background: 'var(--bg-main)',
-                    color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none'
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleAddEvent();
-                  }}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Date</label>
-                <input
-                  type="date"
-                  value={newEventDate}
-                  onChange={(e) => setNewEventDate(e.target.value)}
-                  style={{
-                    width: '100%', padding: '12px 16px', borderRadius: '12px',
-                    border: '1px solid var(--border-color)', background: 'var(--bg-main)',
-                    color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none'
-                  }}
-                />
-              </div>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
-              <button className="secondary-btn" onClick={() => setIsAddEventFormOpen(false)}>Cancel</button>
-              <button className="blue-btn" onClick={handleAddEvent}>Save Event</button>
-            </div>
+      <Modal
+        isOpen={isAddEventFormOpen}
+        onClose={() => setIsAddEventFormOpen(false)}
+        title="New Calendar Event"
+        icon={CalendarIcon}
+        maxWidth="440px"
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div>
+            <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Event Title</label>
+            <input
+              type="text"
+              value={newEventTitle}
+              onChange={(e) => setNewEventTitle(e.target.value)}
+              placeholder="Enter event title..."
+              autoFocus
+              style={{
+                width: '100%', padding: '12px 16px', borderRadius: '12px',
+                border: '1px solid var(--border-color)', background: 'var(--bg-main)',
+                color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none'
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleAddEvent();
+              }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Date</label>
+            <input
+              type="date"
+              value={newEventDate}
+              onChange={(e) => setNewEventDate(e.target.value)}
+              style={{
+                width: '100%', padding: '12px 16px', borderRadius: '12px',
+                border: '1px solid var(--border-color)', background: 'var(--bg-main)',
+                color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none'
+              }}
+            />
           </div>
         </div>
-      )}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
+          <button className="secondary-btn" onClick={() => setIsAddEventFormOpen(false)}>Cancel</button>
+          <button className="blue-btn" onClick={handleAddEvent}>Save Event</button>
+        </div>
+      </Modal>
 
       {/* Sub-tabs & Range Selection */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '20px' }}>
