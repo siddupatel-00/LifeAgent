@@ -333,24 +333,29 @@ body {
 
 /* Blur overlay for modals and side panel */
 .blur-overlay, .modal-overlay {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10000;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 10000 !important;
   padding: 16px;
   overscroll-behavior: contain;
-  overflow-y: auto;
   background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(12px) !important;
   animation: fadeInOverlay 0.2s ease;
 }
 
 .blur-overlay > div, .modal-overlay > div {
-  max-height: 85vh;
-  overflow-y: auto;
-  margin: auto;
+  margin: auto !important;
+  max-height: 85vh !important;
+  overflow-y: auto !important;
+  width: calc(100vw - 32px) !important;
 }
 
 @keyframes fadeInOverlay {
@@ -805,9 +810,12 @@ input[type="checkbox"]:checked::after {
 
   /* Main container space for bottom nav */
   main {
-    padding-bottom: 95px !important;
+    padding-top: 16px !important;
+    padding-bottom: 140px !important;
     padding-left: 10px !important;
     padding-right: 10px !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
   }
 
   /* 1. Prevent horizontal overflow on mobile */
