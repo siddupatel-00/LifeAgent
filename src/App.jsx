@@ -1833,18 +1833,18 @@ const handleDeleteHabitDb = async (id) => {
       {currentPage === 'landing' && (
         <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 16px' }}>
           {/* HERO SECTION */}
-          <section className="animate-entrance" style={{ textAlign: 'center', padding: '60px 0 36px' }}>
+          <section className="animate-entrance" style={{ textAlign: 'center', padding: '48px 0 28px' }}>
 
-            <h1 style={{ fontSize: '3.8rem', fontWeight: 900, lineHeight: 1.08, letterSpacing: '-2px', marginBottom: '22px', color: 'var(--text-main)' }}>
+            <h1 style={{ fontSize: 'clamp(2.2rem, 5vw, 3.6rem)', fontWeight: 900, lineHeight: 1.15, letterSpacing: '-1.5px', marginBottom: '20px', color: 'var(--text-main)', padding: '0 10px' }}>
               Your Life Connected with Your Personal AI Agent
             </h1>
 
-            <p style={{ maxWidth: '780px', margin: '0 auto 36px', fontSize: '1.25rem', color: 'var(--text-muted)', lineHeight: 1.6, fontWeight: 400 }}>
+            <p style={{ maxWidth: '780px', margin: '0 auto 32px', fontSize: 'clamp(1rem, 2.5vw, 1.25rem)', color: 'var(--text-muted)', lineHeight: 1.6, fontWeight: 400, padding: '0 16px' }}>
               Track your habits, money, sleep, workouts, calendar, notes and daily progress — while your AI understands everything in one place.
             </p>
 
             {/* CTAs */}
-            <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '32px' }}>
+            <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '28px' }}>
               <button 
                 className="blue-btn" 
                 style={{ fontSize: '1.05rem', padding: '14px 36px', borderRadius: '14px', boxShadow: '0 8px 24px rgba(59, 130, 246, 0.35)' }} 
@@ -1856,8 +1856,8 @@ const handleDeleteHabitDb = async (id) => {
 
           </section>
 
-          {/* INTERACTIVE 80% PRODUCT PREVIEW SECTION */}
-          <section className="scroll-swipe-up scroll-delay-1" style={{ margin: '30px auto 80px', width: '85%', minWidth: '320px', maxWidth: '1100px' }}>
+          {/* INTERACTIVE PRODUCT PREVIEW SECTION */}
+          <section className="scroll-swipe-up scroll-delay-1" style={{ margin: '20px auto 60px', width: '100%', maxWidth: '1100px' }}>
             <div 
               onMouseEnter={() => setIsHoveringMockup(true)}
               onMouseLeave={() => setIsHoveringMockup(false)}
@@ -1885,7 +1885,7 @@ const handleDeleteHabitDb = async (id) => {
                 flexWrap: 'wrap',
                 gap: '12px'
               }}>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
                   <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ff5f56' }} />
                   <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ffbd2e' }} />
                   <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#27c93f' }} />
@@ -1894,26 +1894,21 @@ const handleDeleteHabitDb = async (id) => {
                   </span>
                 </div>
 
-                {/* Interactive Tabs Row with Physical Sliding Blue Pill */}
-                <div style={{ display: 'flex', gap: '4px', overflowX: 'auto', padding: '2px', scrollbarWidth: 'none', position: 'relative' }}>
-                  {/* Sliding Blue Pill Indicator (Reverse-U Motion) */}
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: '2px',
-                      left: `${pillStyle.left}px`,
-                      width: `${pillStyle.width}px`,
-                      height: '35px',
-                      borderRadius: '10px',
-                      background: 'var(--accent-blue)',
-                      boxShadow: '0 4px 18px rgba(59, 130, 246, 0.45)',
-                      transition: 'all 0.65s cubic-bezier(0.85, 0.05, 0.15, 0.95)',
-                      pointerEvents: 'none',
-                      zIndex: 1,
-                      opacity: pillStyle.opacity
-                    }}
-                  />
-
+                {/* Interactive Tabs Row */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  overflowX: 'auto',
+                  padding: '4px',
+                  scrollbarWidth: 'none',
+                  msOverflowStyle: 'none',
+                  WebkitOverflowScrolling: 'touch',
+                  scrollBehavior: 'smooth',
+                  position: 'relative',
+                  width: '100%',
+                  maxWidth: '100%'
+                }}>
                   {[
                     { id: 'Money', label: 'Money', icon: DollarSign },
                     { id: 'Sleep', label: 'Sleep', icon: SleepIcon },
@@ -1929,29 +1924,28 @@ const handleDeleteHabitDb = async (id) => {
                     return (
                       <button
                         key={tab.id}
-                        ref={el => (tabRefs.current[tab.id] = el)}
+                        ref={(el) => (tabRefs.current[tab.id] = el)}
                         onClick={() => handlePreviewTabClick(tab.id)}
                         style={{
-                          display: 'flex',
+                          display: 'inline-flex',
                           alignItems: 'center',
                           gap: '6px',
-                          padding: '7px 14px',
-                          borderRadius: '10px',
+                          padding: '8px 16px',
+                          borderRadius: '20px',
                           fontSize: '0.85rem',
                           fontWeight: isActive ? 700 : 500,
-                          color: isActive ? 'var(--accent-text)' : 'var(--text-muted)',
-                          background: 'transparent',
-                          border: 'none',
+                          color: isActive ? '#ffffff' : 'var(--text-muted)',
+                          background: isActive ? '#3b82f6' : 'rgba(255, 255, 255, 0.05)',
+                          border: `1px solid ${isActive ? '#3b82f6' : 'var(--border-color)'}`,
                           cursor: 'pointer',
-                          position: 'relative',
-                          zIndex: 2,
-                          transition: 'color 0.4s ease, transform 0.4s ease',
                           whiteSpace: 'nowrap',
-                          transform: isActive ? 'scale(1.03)' : 'scale(1)'
+                          flexShrink: 0,
+                          boxShadow: isActive ? '0 2px 10px rgba(59, 130, 246, 0.35)' : 'none',
+                          transition: 'all 0.2s ease'
                         }}
                       >
-                        <Icon size={14} />
-                        <span>{tab.label}</span>
+                        <Icon size={15} style={{ flexShrink: 0 }} />
+                        <span style={{ whiteSpace: 'nowrap' }}>{tab.label}</span>
                       </button>
                     );
                   })}
@@ -5159,11 +5153,10 @@ const handleDeleteHabitDb = async (id) => {
               <CheckCircle2 size={22} />
               <span>Daily</span>
             </button>
-            <div className="mobile-nav-btn ai-nav-item">
-              <button className="ai-center-btn" onClick={() => setActiveTab('ai')}>
-                <Bot size={24} />
-              </button>
-            </div>
+            <button className={`mobile-nav-btn ${activeTab === 'ai' ? 'active' : ''}`} onClick={() => setActiveTab('ai')}>
+              <Bot size={22} />
+              <span>AI Agent</span>
+            </button>
             <button className={`mobile-nav-btn ${activeTab === 'finance' ? 'active' : ''}`} onClick={() => setActiveTab('finance')}>
               <DollarSign size={22} />
               <span>Money</span>

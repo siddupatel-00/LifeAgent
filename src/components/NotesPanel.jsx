@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BookOpen, Plus, Trash2, Search } from 'lucide-react';
 import { getFormattedDateTitle } from '../utils/date';
+import { getApiUrl } from '../utils/apiConfig';
 
 export default function NotesPanel({
   notesList = [],
@@ -30,7 +31,7 @@ export default function NotesPanel({
   const handleUpdateNoteDb = async (note) => {
     if (!token || !note.id) return;
     try {
-      await fetch('/api/notes', {
+      await fetch(getApiUrl('/api/notes'), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ id: note.id, title: note.title, content: note.content, share_with_ai: note.shareWithAi, is_trashed: note.is_trashed, deleted_at: note.deletedAt })
@@ -43,7 +44,7 @@ export default function NotesPanel({
   const handleCreateNoteDb = async (title, content, shareWithAi, callback) => {
     if (!token) return;
     try {
-      const res = await fetch('/api/notes', {
+      const res = await fetch(getApiUrl('/api/notes'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ title, content, share_with_ai: shareWithAi })
@@ -446,7 +447,7 @@ export default function NotesPanel({
                         onClick={async () => {
                           setTrashNotes(trashNotes.filter(n => n.id !== currentNote.id));
                           try {
-                            await fetch('/api/notes', {
+                            await fetch(getApiUrl('/api/notes'), {
                               method: 'DELETE',
                               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                               body: JSON.stringify({ id: currentNote.id })

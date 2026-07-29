@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Flame, CheckCircle2, MoreVertical, Trash2, X } from 'lucide-react';
 import Modal from './Modal';
+import { getApiUrl } from '../utils/apiConfig';
 
 export default function HabitsPanel({
   habits = [], setHabits, todayItems = [], setTodayItems,
@@ -13,7 +14,7 @@ export default function HabitsPanel({
   const handleUpdateHabitDb = async (id, streak, checked_today, paused_until) => {
     if (!token || !id) return;
     try {
-      await fetch('/api/habits', {
+      await fetch(getApiUrl('/api/habits'), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ id, streak, checked_today, paused_until })
@@ -30,7 +31,7 @@ export default function HabitsPanel({
       // Sync the linked today item
       setTodayItems(prevToday => prevToday.map(ti => {
         if (ti.habitId !== targetHabitId) return ti;
-        fetch('/api/today', {
+        fetch(getApiUrl('/api/today'), {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({ id: ti.id, checked: nextChecked })
@@ -46,7 +47,7 @@ export default function HabitsPanel({
   const handleDeleteHabitDb = async (id) => {
     if (!token) return;
     try {
-      await fetch('/api/habits', {
+      await fetch(getApiUrl('/api/habits'), {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ id })
@@ -222,7 +223,7 @@ export default function HabitsPanel({
                   const freq = newHabitData.frequency || 'daily';
                   const cDays = Array.isArray(newHabitData.customDays) ? newHabitData.customDays.join(',') : (newHabitData.customDays || '');
                   const iDays = freq === 'custom' ? Number(newHabitData.intervalDays || newHabitData.interval_days || 0) : 0;
-                  const res = await fetch('/api/habits', {
+                  const res = await fetch(getApiUrl('/api/habits'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({ label: newHabitData.title, category: newHabitData.category, target: newHabitData.target, frequency: freq, custom_days: cDays, interval_days: iDays })
@@ -507,7 +508,7 @@ export default function HabitsPanel({
                   const freq = newHabitData.frequency || 'daily';
                   const cDays = Array.isArray(newHabitData.customDays) ? newHabitData.customDays.join(',') : (newHabitData.customDays || '');
                   const iDays = freq === 'custom' ? Number(newHabitData.intervalDays || newHabitData.interval_days || 0) : 0;
-                  const res = await fetch('/api/habits', {
+                  const res = await fetch(getApiUrl('/api/habits'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({ label: newHabitData.title, category: newHabitData.category, target: newHabitData.target, frequency: freq, custom_days: cDays, interval_days: iDays })

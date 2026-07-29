@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, X, Check, BarChart2, BarChart3, TrendingUp, PieChart, List, DollarSign } from 'lucide-react';
 import { todayKey } from '../utils/date';
+import { getApiUrl } from '../utils/apiConfig';
 import MoneyCharts from './MoneyCharts';
 import CustomSelect from './CustomSelect';
 import Modal from './Modal';
@@ -29,7 +30,7 @@ export default function MoneyTracker({ transactions = [], setTransactions, token
       if (!token) return;
       setLoading(true);
       try {
-        const res = await fetch('/api/transactions', {
+        const res = await fetch(getApiUrl('/api/transactions'), {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (res.ok) {
@@ -161,7 +162,7 @@ export default function MoneyTracker({ transactions = [], setTransactions, token
     }
     
     try {
-      const res = await fetch('/api/transactions', {
+      const res = await fetch(getApiUrl('/api/transactions'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ 
@@ -190,7 +191,7 @@ export default function MoneyTracker({ transactions = [], setTransactions, token
 
   const deleteTransaction = async (id) => {
     try {
-      const res = await fetch('/api/transactions', {
+      const res = await fetch(getApiUrl('/api/transactions'), {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ id })
@@ -231,7 +232,7 @@ export default function MoneyTracker({ transactions = [], setTransactions, token
     const finalForm = { ...editForm, amount: parseFloat(evaluatedAmount) };
     
     try {
-      const res = await fetch('/api/transactions', {
+      const res = await fetch(getApiUrl('/api/transactions'), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(finalForm)

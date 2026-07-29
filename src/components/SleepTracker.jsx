@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, X, Trash2, Edit2, Moon, Clock, Calendar, Activity, Filter } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { todayKey } from '../utils/date';
+import { getApiUrl } from '../utils/apiConfig';
 import ConfirmModal from './ConfirmModal';
 import Modal from './Modal';
 import CustomSelect from './CustomSelect';
@@ -115,7 +116,7 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
 
   const fetchLogs = async () => {
     try {
-      const res = await fetch('/api/sleep', {
+      const res = await fetch(getApiUrl('/api/sleep'), {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -141,7 +142,7 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
 
       if (editingLogId) {
         payload.id = editingLogId;
-        const res = await fetch('/api/sleep', {
+        const res = await fetch(getApiUrl('/api/sleep'), {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -172,7 +173,7 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
           showToast?.('Failed to update log', 'error');
         }
       } else {
-        const res = await fetch('/api/sleep', {
+        const res = await fetch(getApiUrl('/api/sleep'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -216,7 +217,7 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
     const id = deleteConfirmId;
     setDeleteConfirmId(null);
     try {
-      const res = await fetch('/api/sleep', {
+      const res = await fetch(getApiUrl('/api/sleep'), {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

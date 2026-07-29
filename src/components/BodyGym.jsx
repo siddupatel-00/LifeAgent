@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Dumbbell, Target, Plus, Trash2, Activity, Flame, Clock, Check, Edit2, X } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { todayKey } from '../utils/date';
+import { getApiUrl } from '../utils/apiConfig';
 import CustomSelect from './CustomSelect';
 import Modal from './Modal';
 
@@ -102,7 +103,7 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
   const fetchWorkouts = useCallback(async () => {
     if (!token) return;
     try {
-      const res = await fetch('/api/fitness?type=workouts', {
+      const res = await fetch(getApiUrl('/api/fitness?type=workouts'), {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -117,7 +118,7 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
   const fetchStats = useCallback(async () => {
     if (!token) return;
     try {
-      const res = await fetch('/api/fitness?type=body-stats', {
+      const res = await fetch(getApiUrl('/api/fitness?type=body-stats'), {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -142,7 +143,7 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
     
     // Fetch settings for workout templates
     if (token) {
-      fetch('/api/settings', { headers: { 'Authorization': `Bearer ${token}` } })
+      fetch(getApiUrl('/api/settings'), { headers: { 'Authorization': `Bearer ${token}` } })
         .then(r => r.json())
         .then(data => {
           setWorkoutSettings({ split_type: data.workout_split_type || 'weekly', templates: data.workout_templates });
@@ -186,7 +187,7 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
         date: todayStr
       };
       
-      const res = await fetch('/api/fitness?type=workouts', {
+      const res = await fetch(getApiUrl('/api/fitness?type=workouts'), {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -203,7 +204,7 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
         const currentSplit = splitList[todaySplitIdx];
         if (currentSplit && currentSplit.exercises && currentSplit.exercises.length > 0) {
           for (const ex of currentSplit.exercises) {
-            await fetch('/api/analytics?type=metrics', {
+            await fetch(getApiUrl('/api/analytics?type=metrics'), {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
               body: JSON.stringify({
@@ -231,7 +232,7 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
         date: todayKey()
       };
       
-      const res = await fetch('/api/fitness?type=workouts', {
+      const res = await fetch(getApiUrl('/api/fitness?type=workouts'), {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -253,7 +254,7 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
 
   const handleDeleteWorkout = async (id) => {
     try {
-      const res = await fetch('/api/fitness?type=workouts', {
+      const res = await fetch(getApiUrl('/api/fitness?type=workouts'), {
         method: 'DELETE',
         headers: { 
           'Content-Type': 'application/json',
@@ -362,7 +363,7 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
         });
       }
 
-      const res = await fetch('/api/fitness', {
+      const res = await fetch(getApiUrl('/api/fitness'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -425,7 +426,7 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
       closeLogProteinModal();
       
       // 2. Background DB sync
-      const res = await fetch('/api/fitness?type=body-stats', {
+      const res = await fetch(getApiUrl('/api/fitness?type=body-stats'), {
         method: isUpdating ? 'PUT' : 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -459,7 +460,7 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
         date: today
       };
       
-      const res = await fetch('/api/fitness?type=body-stats', {
+      const res = await fetch(getApiUrl('/api/fitness?type=body-stats'), {
         method: isUpdating ? 'PUT' : 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -481,7 +482,7 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
 
   const handleDeleteStat = async (id) => {
     try {
-      const res = await fetch('/api/fitness?type=body-stats', {
+      const res = await fetch(getApiUrl('/api/fitness?type=body-stats'), {
         method: 'DELETE',
         headers: { 
           'Content-Type': 'application/json',
@@ -1290,7 +1291,7 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
                 onChange={(e) => {
                   const newType = e.target.value;
                   setWorkoutSettings({...workoutSettings, split_type: newType});
-                  fetch('/api/settings', {
+                  fetch(getApiUrl('/api/settings'), {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({ workout_split_type: newType })
@@ -1314,7 +1315,7 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
               <button type="button" className="blue-btn" onClick={() => {
                 setIsEditSplitOpen(false);
                 setHasCustomSplit(true);
-                fetch('/api/settings', {
+                fetch(getApiUrl('/api/settings'), {
                   method: 'PUT',
                   headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                   body: JSON.stringify({ workout_templates: JSON.stringify(splitList) })
