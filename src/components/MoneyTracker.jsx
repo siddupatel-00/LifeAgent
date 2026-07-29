@@ -330,7 +330,9 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
             ))}
           </div>
 
-          <MoneyCharts transactions={filteredTransactions} chartType={chartType} currency={currency} />
+          <div style={{ width: '100%', height: chartType === 'pie' ? 'auto' : '400px', minHeight: '400px' }}>
+            <MoneyCharts transactions={filteredTransactions} chartType={chartType} currency={currency} />
+          </div>
         </div>
       </div>
       
