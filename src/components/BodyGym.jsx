@@ -89,7 +89,10 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
   });
 
   // Body stats form state
-  const [isAddStatsOpen, setIsAddStatsOpen] = useState(false);
+  const [isLogProteinOpen, setIsLogProteinOpen] = useState(false);
+  const [proteinInput, setProteinInput] = useState('');
+  
+  const [isEditMetricsOpen, setIsEditMetricsOpen] = useState(false);
   const [statsForm, setStatsForm] = useState({
     weight: '', target_weight: '', protein: '', target_protein: '', hydration: ''
   });
@@ -257,7 +260,17 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
     }
   };
 
-  const openStatsModal = () => {
+  const openLogProteinModal = () => {
+    setProteinInput(todayStat?.protein ?? '');
+    setIsLogProteinOpen(true);
+  };
+
+  const closeLogProteinModal = () => {
+    setIsLogProteinOpen(false);
+    setProteinInput('');
+  };
+
+  const openEditMetricsModal = () => {
     setStatsForm({
       weight: todayStat?.weight ?? latestStat?.weight ?? '',
       target_weight: todayStat?.target_weight ?? latestStat?.target_weight ?? '',
@@ -265,17 +278,61 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
       target_protein: todayStat?.target_protein ?? latestStat?.target_protein ?? '',
       hydration: todayStat?.hydration ?? ''
     });
-    setIsAddStatsOpen(true);
+    setIsEditMetricsOpen(true);
   };
 
-  const closeStatsModal = () => {
-    setIsAddStatsOpen(false);
+  const closeEditMetricsModal = () => {
+    setIsEditMetricsOpen(false);
     setStatsForm({ weight: '', target_weight: '', protein: '', target_protein: '', hydration: '' });
   };
 
   const closeWorkoutModal = () => {
     setIsAddWorkoutOpen(false);
     setWorkoutForm({ title: '', category: 'General', duration_mins: '', calories: '', notes: '' });
+  };
+
+  const handleAddProtein = async (e) => {
+    if (e) e.preventDefault();
+    try {
+      const today = todayKey();
+      const existingTodayStat = Array.isArray(bodyStats) ? bodyStats.find(s => s.date === today) : null;
+      const isUpdating = !!existingTodayStat;
+      
+      const payload = {
+        ...(isUpdating ? { id: existingTodayStat.id } : {}),
+        weight: isUpdating ? existingTodayStat.weight : (latestStat?.weight || 0),
+        target_weight: isUpdating ? existingTodayStat.target_weight : (latestStat?.target_weight || 0),
+        protein: Number(proteinInput) || 0,
+        target_protein: isUpdating ? existingTodayStat.target_protein : (latestStat?.target_protein || 0),
+        hydration: isUpdating ? existingTodayStat.hydration : (latestStat?.hydration || 0),
+        date: today
+      };
+      
+      const res = await fetch('/api/fitness?type=body-stats', {
+        method: isUpdating ? 'PUT' : 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+      
+      if (res.ok) {
+        showToast('Protein Logged', 'success');
+        closeLogProteinModal();
+        fetchStats();
+      }
+    } catch (e) {
+      console.error(e);
+      showToast('Error logging protein', 'error');
+    }
+  };
+
+  const handleQuickAddProtein = (amount) => {
+    setProteinInput(prev => {
+      const current = Number(prev) || 0;
+      return (current + amount).toString();
+    });
   };
 
   const handleAddStats = async (e) => {
@@ -289,7 +346,7 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
         ...(isUpdating ? { id: existingTodayStat.id } : {}),
         weight: Number(statsForm.weight) || 0,
         target_weight: Number(statsForm.target_weight) || 0,
-        protein: Number(statsForm.protein) || 0,
+        protein: isUpdating ? existingTodayStat.protein : (latestStat?.protein || 0),
         target_protein: Number(statsForm.target_protein) || 0,
         hydration: Number(statsForm.hydration) || 0,
         date: today
@@ -306,7 +363,7 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
       
       if (res.ok) {
         showToast('Stats Updated', 'success');
-        closeStatsModal();
+        closeEditMetricsModal();
         fetchStats();
       }
     } catch (e) {
@@ -644,7 +701,7 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
                   <button 
                     className="blue-btn" 
                     style={{ padding: '6px 14px', fontSize: '0.82rem', fontWeight: 700 }}
-                    onClick={openStatsModal}
+                    onClick={openLogProteinModal}
                   >
                     + Log Protein
                   </button>
@@ -682,7 +739,7 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
             <div className="glass-card" style={{ padding: '24px', borderRadius: '18px', border: '1px solid var(--border-color)', background: 'var(--bg-card)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                 <h3 style={{ fontSize: '1.15rem', fontWeight: 700 }}>Current Body Metrics</h3>
-                <button className="blue-btn" style={{ padding: '6px 14px', fontSize: '0.82rem', borderRadius: '10px' }} onClick={openStatsModal}><Edit2 size={14} /> Edit</button>
+                <button className="blue-btn" style={{ padding: '6px 14px', fontSize: '0.82rem', borderRadius: '10px' }} onClick={openEditMetricsModal}><Edit2 size={14} /> Edit</button>
               </div>
 
               {latestStat ? (
@@ -797,37 +854,58 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
         </div>
       )}
 
-      {/* Add Stats Modal */}
-      {isAddStatsOpen && (
-        <div className="modal-overlay" onClick={closeStatsModal}>
+      {/* Log Protein Modal */}
+      {isLogProteinOpen && (
+        <div className="modal-overlay" onClick={closeLogProteinModal}>
+          <div className="animate-entrance" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', padding: '32px', borderRadius: '24px', width: '90%', maxWidth: '400px', border: '1px solid var(--border-color)' }}>
+            <h3 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '20px' }}>Log Protein Intake</h3>
+            <form onSubmit={handleAddProtein}>
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '8px' }}>Protein Consumed Today (grams)</label>
+                <input 
+                  type="number" 
+                  value={proteinInput} 
+                  onChange={(e) => setProteinInput(e.target.value)} 
+                  className="glass-input" 
+                  style={{ width: '100%', padding: '12px 16px', fontSize: '1.2rem', textAlign: 'center', fontWeight: 700 }} 
+                  placeholder="e.g. 25"
+                  autoFocus
+                />
+              </div>
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '24px', justifyContent: 'center' }}>
+                <button type="button" className="secondary-btn" onClick={() => handleQuickAddProtein(10)} style={{ padding: '8px 16px', fontSize: '0.9rem' }}>+10g</button>
+                <button type="button" className="secondary-btn" onClick={() => handleQuickAddProtein(20)} style={{ padding: '8px 16px', fontSize: '0.9rem' }}>+20g</button>
+                <button type="button" className="secondary-btn" onClick={() => handleQuickAddProtein(30)} style={{ padding: '8px 16px', fontSize: '0.9rem' }}>+30g</button>
+              </div>
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                <button type="button" className="secondary-btn" onClick={closeLogProteinModal}>Cancel</button>
+                <button type="submit" className="blue-btn">Save Protein</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Body Metrics & Goals Modal */}
+      {isEditMetricsOpen && (
+        <div className="modal-overlay" onClick={closeEditMetricsModal}>
           <div className="animate-entrance" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', padding: '32px', borderRadius: '24px', width: '90%', maxWidth: '400px', border: '1px solid var(--border-color)', maxHeight: '90vh', overflowY: 'auto' }}>
-            <h3 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '20px' }}>Log Body Stats</h3>
+            <h3 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '20px' }}>Edit Body Metrics & Goals</h3>
             <form onSubmit={handleAddStats}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                 <div className="input-group">
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Weight (kg)</label>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Current Weight (kg)</label>
                   <input type="number" step="0.1" required className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="75.5" value={statsForm.weight} onChange={e => setStatsForm({...statsForm, weight: e.target.value})} />
                 </div>
                 <div className="input-group">
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Target (kg)</label>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Target Weight (kg)</label>
                   <input type="number" step="0.1" className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="70" value={statsForm.target_weight} onChange={e => setStatsForm({...statsForm, target_weight: e.target.value})} />
                 </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
                 <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Daily Protein (g)</label>
-                  <input 
-                    type="number" 
-                    value={statsForm.protein} 
-                    onChange={(e) => setStatsForm({...statsForm, protein: e.target.value})} 
-                    className="glass-input" 
-                    style={{ width: '100%', padding: '10px 14px', fontSize: '0.95rem' }} 
-                    placeholder="e.g. 120"
-                  />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Target Protein Goal (g)</label>
+                  <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Daily Protein Goal (g)</label>
                   <input 
                     type="number" 
                     value={statsForm.target_protein} 
@@ -838,14 +916,14 @@ function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
                   />
                 </div>
                 <div className="input-group">
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Hydration (L)</label>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Daily Hydration Goal (L)</label>
                   <input type="number" step="0.1" className="glass-input" style={{ width: '100%', padding: '10px 14px' }} placeholder="2.5" value={statsForm.hydration} onChange={e => setStatsForm({...statsForm, hydration: e.target.value})} />
                 </div>
               </div>
 
               <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-                <button type="button" className="secondary-btn" onClick={closeStatsModal}>Cancel</button>
-                <button type="submit" className="blue-btn">Save Stats</button>
+                <button type="button" className="secondary-btn" onClick={closeEditMetricsModal}>Cancel</button>
+                <button type="submit" className="blue-btn">Save Goals</button>
               </div>
             </form>
           </div>
