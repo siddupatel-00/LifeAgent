@@ -1,6 +1,6 @@
 import db, { ensureDbSchema } from '../lib/db.js';
 import { getUserId } from '../lib/auth.js';
-import { resetUserData } from './settings.js';
+import { resetUserData } from '../lib/resetData.js';
 
 export default async function handler(req, res) {
   await ensureDbSchema();
