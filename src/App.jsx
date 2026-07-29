@@ -2743,14 +2743,6 @@ const handleDeleteHabitDb = async (id) => {
                     </div>
                   )}
                 </div>
-                
-                <button 
-                  className="blue-btn"
-                  onClick={() => setShowFinanceForm(!showFinanceForm)}
-                  style={{ fontSize: '0.9rem', padding: '10px 22px' }}
-                >
-                  {showFinanceForm ? 'View Charts' : '+ Record Entry'}
-                </button>
               </div>
             )}
 
@@ -3225,49 +3217,47 @@ const handleDeleteHabitDb = async (id) => {
 
               {/* 1) AI CHAT MODE */}
               {activeTab === 'ai' && (
-                <div className="ai-chat-view animate-entrance" style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--bg-main)', borderRadius: '20px', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
-                  <div style={{ padding: '20px 24px', background: 'var(--bg-card)', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 8px #22c55e' }}></div>
-                      <h4 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--accent-blue)', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Bot size={18} /> {aiName}
-                      </h4>
-                    </div>
+                <div className="ai-chat-view animate-entrance" style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  height: 'calc(100dvh - 130px)',
+                  overflow: 'hidden',
+                  background: 'var(--bg-main)',
+                  borderRadius: '20px',
+                  border: '1px solid var(--border-color)'
+                }}>
+                  {/* Header */}
+                  <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-card)', flexShrink: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 8px #22c55e' }} />
+                    <span style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--accent-blue)' }}>AI Life Agent</span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginLeft: 'auto' }}>Chat with your personal AI</span>
                   </div>
-
-                  <div ref={mainAiChatScrollRef} style={{ flex: 1, padding: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '14px', paddingBottom: '120px' }}>
+                  {/* Messages - ONLY THIS SCROLLS */}
+                  <div ref={mainAiChatScrollRef} style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px', WebkitOverflowScrolling: 'touch' }}>
+                    {aiMessages.length === 0 && (
+                      <div style={{ textAlign: 'center', color: 'var(--text-muted)', paddingTop: '60px' }}>
+                        <div style={{ fontSize: '2.5rem', marginBottom: '16px' }}>🤖</div>
+                        <p style={{ fontWeight: 700 }}>Ask me anything about your life data</p>
+                        <p style={{ fontSize: '0.85rem', marginTop: '8px' }}>I can analyze your habits, money, sleep and more</p>
+                      </div>
+                    )}
                     {aiMessages.map(msg => (
-                      <div 
-                        key={msg.id} 
-                        style={{ 
-                          alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start',
-                          maxWidth: '90%',
-                          background: msg.sender === 'user' ? 'var(--accent-blue)' : 'var(--bg-card)',
-                          color: msg.sender === 'user' ? 'var(--accent-text)' : 'var(--text-main)',
-                          padding: '14px 16px',
-                          borderRadius: '16px',
-                          border: msg.sender === 'ai' ? '1px solid var(--border-color)' : 'none',
-                          fontSize: '0.88rem',
-                          lineHeight: '1.5',
-                          whiteSpace: 'pre-line',
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-                        }}
-                      >
+                      <div key={msg.id} style={{ alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start', maxWidth: '85%', background: msg.sender === 'user' ? 'var(--accent-blue)' : 'var(--bg-card)', color: msg.sender === 'user' ? '#fff' : 'var(--text-main)', padding: '12px 16px', borderRadius: msg.sender === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px', fontSize: '0.88rem', lineHeight: '1.5', whiteSpace: 'pre-line', border: msg.sender === 'ai' ? '1px solid var(--border-color)' : 'none' }}>
                         {msg.text}
                       </div>
                     ))}
                   </div>
-
-                  <form className="ai-chat-input-container" onSubmit={handleSendAi} style={{ padding: '16px', background: 'var(--bg-card)', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '8px', flexShrink: 0 }}>
-                    <input 
-                      type="text" 
-                      placeholder="Chat anywhere, ask about diary..."
+                  {/* Input - FIXED AT BOTTOM, never scrolls */}
+                  <form onSubmit={handleSendAi} style={{ display: 'flex', gap: '8px', padding: '12px 16px', background: 'var(--bg-card)', borderTop: '1px solid var(--border-color)', flexShrink: 0 }}>
+                    <input
+                      type="text"
+                      placeholder="Ask anything... (habits, money, sleep)"
                       value={inputMessage}
-                      onChange={(e) => setInputMessage(e.target.value)}
-                      style={{ flex: 1, padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', outline: 'none', fontSize: '0.88rem' }}
+                      onChange={e => setInputMessage(e.target.value)}
+                      style={{ flex: 1, padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '16px', outline: 'none' }}
                     />
-                    <button type="submit" className="blue-btn" style={{ padding: '0 16px' }}>
-                      <Send size={16} />
+                    <button type="submit" className="blue-btn" style={{ padding: '0 18px', flexShrink: 0 }}>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M15.854.146a.5.5 0 0 1 .11.54l-5.819 14.547a.75.75 0 0 1-1.329.124l-3.178-4.995L.643 7.184a.75.75 0 0 1 .124-1.33L15.314.037a.5.5 0 0 1 .54.11ZM6.636 10.07l2.761 4.338L14.13 2.576zm6.787-8.201L1.591 6.602l4.339 2.76z"/></svg>
                     </button>
                   </form>
                 </div>

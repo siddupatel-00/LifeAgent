@@ -806,9 +806,10 @@ input[type="checkbox"]:checked::after {
 
   /* Full screen mobile AI Chat styling */
   .ai-chat-view {
-    height: calc(100dvh - 145px) !important;
-    display: flex !important;
-    flex-direction: column !important;
+    height: calc(100dvh - 130px) !important;
+    overflow: hidden !important;
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
   }
 
   .ai-chat-input-container {
@@ -900,7 +901,7 @@ input[type="checkbox"]:checked::after {
   }
 
   /* 4. AI Chat view full screen with sticky glass input */
-  .ai-chat-view, .ai-sidebar {
+  .ai-sidebar {
     position: fixed !important;
     inset: 0 !important;
     width: 100vw !important;
