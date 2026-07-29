@@ -7,7 +7,7 @@ import {
   Sun, Moon, Monitor, ChevronDown, Lock, Phone, AtSign, Activity, Zap, Check, X,
   Dumbbell, Moon as SleepIcon, BarChart3, PieChart, Flame, Heart, Target, Filter, Droplet,
   Home, LayoutDashboard, LogOut, Sliders, Settings, Save, Bell, Shield, PenTool, MessageSquare, Sidebar as SidebarIcon, FileText, Unlock, Smile,
-  MoreVertical, List, Menu
+  MoreVertical, List, Menu, History
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import CustomSelect from './components/CustomSelect';
@@ -463,6 +463,7 @@ export default function App() {
 
   // 2) Habit Tracker state
   // Habits state with exact daily tracking items: Gym, Study, Code, Reading
+  const [showHabitHistory, setShowHabitHistory] = useState(false);
   const [habits, setHabits] = useState(() => {
     try { return JSON.parse(localStorage.getItem('cache_habits')) || []; } catch(e) { return []; }
   });
@@ -642,6 +643,7 @@ export default function App() {
         const mappedHabits = hData.map(h => ({
           id: h.id, title: h.label, category: h.category, streak: h.streak, target: h.target || '',
           challengeDays: h.challenge_days || 0, startDate: h.start_date || null,
+          archived: h.archived === 1, completedAt: h.completed_at || null,
           // A habit's completion belongs to its record for this calendar date.
           checkedToday: todayData.some(item => item.habit_id === h.id && !!item.checked),
           pausedUntil: h.paused_until || null
@@ -760,13 +762,16 @@ export default function App() {
     } catch(e) {}
   };
 
-  const handleUpdateHabitDb = async (id, streak, checked_today, paused_until) => {
+  const handleUpdateHabitDb = async (id, streak, checked_today, paused_until, archived, completed_at) => {
       if (!token || !id) return;
       try {
+        const payload = { id, streak, checked_today, paused_until };
+        if (archived !== undefined) payload.archived = archived;
+        if (completed_at !== undefined) payload.completed_at = completed_at;
         await fetch('/api/habits', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ id, streak, checked_today, paused_until })
+          body: JSON.stringify(payload)
         });
       } catch(e) {}
     };
@@ -934,7 +939,19 @@ export default function App() {
         return prevToday;
       });
 
-      handleUpdateHabitDb(h.id, newStreak, nextChecked, h.pausedUntil);
+      let isArchived = h.archived;
+      let compAt = h.completedAt;
+      
+      if (nextChecked && h.challengeDays > 0 && h.startDate) {
+        const elapsed = Math.floor((new Date() - new Date(h.startDate)) / (1000 * 60 * 60 * 24));
+        const daysStr = Math.min(Math.max(elapsed + 1, 1), h.challengeDays);
+        if (daysStr >= h.challengeDays) {
+          isArchived = true;
+          compAt = new Date().toISOString();
+        }
+      }
+
+      handleUpdateHabitDb(h.id, newStreak, nextChecked, h.pausedUntil, isArchived, compAt);
 
       if (nextChecked) {
         // Try to parse numeric value from habit target
@@ -953,11 +970,14 @@ export default function App() {
         }).catch(err => console.error('Failed to log habit metric:', err));
 
         showToast?.(`🎉 Checked off "${h.title}"! Streak: ${newStreak} days`, 'success');
+        if (isArchived && !h.archived) {
+          showToast?.(`🏆 Challenge Completed! "${h.title}" moved to History.`, 'success');
+        }
       } else {
         showToast?.(`Unchecked "${h.title}"`, 'info');
       }
 
-      return { ...h, checkedToday: nextChecked, streak: newStreak };
+      return { ...h, checkedToday: nextChecked, streak: newStreak, archived: isArchived, completedAt: compAt };
     }));
   };
 
@@ -3639,6 +3659,19 @@ const handleDeleteHabitDb = async (id) => {
                                 style={{ padding: '10px 16px', background: 'transparent', border: 'none', borderBottom: '1px solid var(--border-color)', textAlign: 'left', cursor: 'pointer', color: 'var(--text-main)', fontSize: '0.85rem', fontWeight: 600 }}
                               >
                                 Edit Habit
+                              </button>
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const newArchivedState = !item.archived;
+                                  handleUpdateHabitDb(item.id, item.streak, item.checkedToday, item.pausedUntil, newArchivedState, item.completedAt);
+                                  setHabits(prev => prev.map(h => h.id === item.id ? { ...h, archived: newArchivedState } : h));
+                                  showToast(newArchivedState ? 'Habit archived' : 'Habit restored', 'info');
+                                  setHabitMenuOpen(null);
+                                }}
+                                style={{ padding: '10px 16px', background: 'transparent', border: 'none', borderBottom: '1px solid var(--border-color)', textAlign: 'left', cursor: 'pointer', color: 'var(--text-main)', fontSize: '0.85rem', fontWeight: 600 }}
+                              >
+                                {item.archived ? 'Restore Habit' : 'Archive Habit'}
                               </button>
                               <button 
                                 onClick={(e) => {
