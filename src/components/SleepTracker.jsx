@@ -373,10 +373,10 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat 
           <button
             onClick={() => setRangeMode('today')}
             style={{
-              padding: '6px 14px', borderRadius: '20px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer',
-              border: rangeMode === 'today' ? '1px solid var(--accent-blue)' : '1px solid var(--border-color)',
-              background: rangeMode === 'today' ? 'var(--accent-blue-dim)' : 'var(--bg-card)',
-              color: rangeMode === 'today' ? 'var(--accent-blue)' : 'var(--text-muted)',
+              padding: '8px 18px', borderRadius: '30px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer',
+              border: rangeMode === 'today' ? 'none' : '1px solid var(--border-color)',
+              background: rangeMode === 'today' ? 'var(--accent-blue)' : 'var(--bg-card)',
+              color: rangeMode === 'today' ? 'white' : 'var(--text-main)',
               transition: 'all 0.2s'
             }}
           >
@@ -386,10 +386,10 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat 
           <button
             onClick={() => setRangeMode('7d')}
             style={{
-              padding: '6px 14px', borderRadius: '20px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer',
-              border: rangeMode === '7d' ? '1px solid var(--accent-blue)' : '1px solid var(--border-color)',
-              background: rangeMode === '7d' ? 'var(--accent-blue-dim)' : 'var(--bg-card)',
-              color: rangeMode === '7d' ? 'var(--accent-blue)' : 'var(--text-muted)',
+              padding: '8px 18px', borderRadius: '30px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer',
+              border: rangeMode === '7d' ? 'none' : '1px solid var(--border-color)',
+              background: rangeMode === '7d' ? 'var(--accent-blue)' : 'var(--bg-card)',
+              color: rangeMode === '7d' ? 'white' : 'var(--text-main)',
               transition: 'all 0.2s'
             }}
           >
@@ -399,10 +399,10 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat 
           <button
             onClick={() => setRangeMode('this_month')}
             style={{
-              padding: '6px 14px', borderRadius: '20px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer',
-              border: rangeMode === 'this_month' ? '1px solid var(--accent-blue)' : '1px solid var(--border-color)',
-              background: rangeMode === 'this_month' ? 'var(--accent-blue-dim)' : 'var(--bg-card)',
-              color: rangeMode === 'this_month' ? 'var(--accent-blue)' : 'var(--text-muted)',
+              padding: '8px 18px', borderRadius: '30px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer',
+              border: rangeMode === 'this_month' ? 'none' : '1px solid var(--border-color)',
+              background: rangeMode === 'this_month' ? 'var(--accent-blue)' : 'var(--bg-card)',
+              color: rangeMode === 'this_month' ? 'white' : 'var(--text-main)',
               transition: 'all 0.2s'
             }}
           >
@@ -412,10 +412,10 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat 
           <button
             onClick={() => setRangeMode('past_month')}
             style={{
-              padding: '6px 14px', borderRadius: '20px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer',
-              border: rangeMode === 'past_month' ? '1px solid var(--accent-blue)' : '1px solid var(--border-color)',
-              background: rangeMode === 'past_month' ? 'var(--accent-blue-dim)' : 'var(--bg-card)',
-              color: rangeMode === 'past_month' ? 'var(--accent-blue)' : 'var(--text-muted)',
+              padding: '8px 18px', borderRadius: '30px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer',
+              border: rangeMode === 'past_month' ? 'none' : '1px solid var(--border-color)',
+              background: rangeMode === 'past_month' ? 'var(--accent-blue)' : 'var(--bg-card)',
+              color: rangeMode === 'past_month' ? 'white' : 'var(--text-main)',
               transition: 'all 0.2s'
             }}
           >
@@ -425,10 +425,10 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat 
           <button
             onClick={() => setRangeMode('custom')}
             style={{
-              padding: '6px 14px', borderRadius: '20px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer',
-              border: rangeMode === 'custom' ? '1px solid var(--accent-blue)' : '1px solid var(--border-color)',
-              background: rangeMode === 'custom' ? 'var(--accent-blue-dim)' : 'var(--bg-card)',
-              color: rangeMode === 'custom' ? 'var(--accent-blue)' : 'var(--text-muted)',
+              padding: '8px 18px', borderRadius: '30px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer',
+              border: rangeMode === 'custom' ? 'none' : '1px solid var(--border-color)',
+              background: rangeMode === 'custom' ? 'var(--accent-blue)' : 'var(--bg-card)',
+              color: rangeMode === 'custom' ? 'white' : 'var(--text-main)',
               transition: 'all 0.2s'
             }}
           >

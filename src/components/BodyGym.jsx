@@ -36,10 +36,9 @@ export default function BodyGym(props) {
   );
 }
 
-function BodyGymInner({ token, showToast }) {
+function BodyGymInner({ token, showToast, bodyStats = [], setBodyStats }) {
   const [activeSubTab, setActiveSubTab] = useState('today'); // 'today', 'workouts', 'stats'
   const [workouts, setWorkouts] = useState([]);
-  const [bodyStats, setBodyStats] = useState([]);
 
   // Workout Split Rotation State
   const [workoutSettings, setWorkoutSettings] = useState({ split_type: 'weekly', templates: null });
@@ -124,7 +123,7 @@ function BodyGymInner({ token, showToast }) {
     } catch (e) {
       console.error(e);
     }
-  }, [token]);
+  }, [token, setBodyStats]);
 
   useEffect(() => {
     fetchWorkouts();

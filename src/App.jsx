@@ -126,7 +126,7 @@ export default function App() {
   const [waitlistSuccess, setWaitlistSuccess] = useState(false);
 
   // Dashboard state & Global Timeframe Filter
-  const [activeTab, setActiveTab] = useState('ai'); // 'ai', 'habits', 'finance', 'body', 'sleep', 'analytics', 'settings'
+  const [activeTab, setActiveTab] = useState('today'); // 'ai', 'habits', 'finance', 'body', 'sleep', 'analytics', 'settings'
   const [previewTab, setPreviewTab] = useState('Money'); // 'Money', 'Sleep', 'Calendar', 'Notes', 'Gym', 'Analytics', 'AI', 'Habits'
   const [timeRange, setTimeRange] = useState(() => localStorage.getItem('active_timeframe') || '1m'); // 'today', '3d', '7d', '14d', '25d', '30d', '1m', '3m', '6m', '12m', 'lifetime'
   const [isTimeMenuOpen, setIsTimeMenuOpen] = useState(false);
@@ -545,7 +545,9 @@ export default function App() {
     localStorage.setItem('auto_open_ai_sidechat', userProfile.auto_open_ai_sidechat);
     if (userProfile.auto_open_ai_sidechat === true) {
       if (activeTab !== 'settings' && activeTab !== 'ai') {
-        setIsAiSidePanelOpen(true);
+        if (window.innerWidth > 768) {
+          setIsAiSidePanelOpen(true);
+        }
       }
     }
   }, [activeTab, userProfile.auto_open_ai_sidechat]);
@@ -2969,6 +2971,15 @@ const handleDeleteHabitDb = async (id) => {
                               payload.id = latestStat.id;
                             }
                             
+                            const tempId = isExistingToday ? latestStat.id : Date.now();
+                            setBodyStats(prev => {
+                              if (isExistingToday) {
+                                return prev.map(s => s.id === tempId ? { ...s, protein: newProtein } : s);
+                              } else {
+                                return [{ ...payload, id: tempId }, ...(Array.isArray(prev) ? prev : [])];
+                              }
+                            });
+
                             try {
                               if (token) {
                                 const res = await fetch('/api/fitness?type=body-stats', {
@@ -2977,16 +2988,13 @@ const handleDeleteHabitDb = async (id) => {
                                   body: JSON.stringify(payload)
                                 });
                                 if (res.ok) {
-                                  if (isExistingToday) {
-                                    setBodyStats(prev => prev.map(s => s.id === payload.id ? { ...s, protein: payload.protein } : s));
-                                  } else {
+                                  if (!isExistingToday) {
                                     const data = await res.json();
-                                    setBodyStats(prev => [data, ...(Array.isArray(prev) ? prev : [])]);
+                                    setBodyStats(prev => prev.map(s => s.id === tempId ? data : s));
                                   }
                                   showToast('Protein updated!', 'success');
                                 }
                               } else {
-                                setBodyStats(prev => [{ ...payload, id: Date.now() }, ...(Array.isArray(prev) ? prev : [])]);
                                 showToast('Protein updated!', 'success');
                               }
                             } catch (e) {
@@ -3056,20 +3064,36 @@ const handleDeleteHabitDb = async (id) => {
                               hydration: newHydration,
                               date: todayStr
                             };
+                            
+                            const isExistingToday = latestStat?.date === todayStr && latestStat?.id;
+                            if (isExistingToday) {
+                              payload.id = latestStat.id;
+                            }
+
+                            const tempId = isExistingToday ? latestStat.id : Date.now();
+                            setBodyStats(prev => {
+                              if (isExistingToday) {
+                                return prev.map(s => s.id === tempId ? { ...s, hydration: newHydration } : s);
+                              } else {
+                                return [{ ...payload, id: tempId }, ...(Array.isArray(prev) ? prev : [])];
+                              }
+                            });
+
                             try {
                               if (token) {
                                 const res = await fetch('/api/fitness?type=body-stats', {
-                                  method: 'POST',
+                                  method: isExistingToday ? 'PUT' : 'POST',
                                   headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                                   body: JSON.stringify(payload)
                                 });
                                 if (res.ok) {
-                                  const data = await res.json();
-                                  setBodyStats(prev => [data, ...(Array.isArray(prev) ? prev : [])]);
+                                  if (!isExistingToday) {
+                                    const data = await res.json();
+                                    setBodyStats(prev => prev.map(s => s.id === tempId ? data : s));
+                                  }
                                   showToast('Hydration updated!', 'success');
                                 }
                               } else {
-                                setBodyStats(prev => [{ ...payload, id: Date.now() }, ...(Array.isArray(prev) ? prev : [])]);
                                 showToast('Hydration updated!', 'success');
                               }
                             } catch (e) {
@@ -4290,6 +4314,8 @@ const handleDeleteHabitDb = async (id) => {
                   showToast={showToast}
                   timeRange={timeRange}
                   userProfile={userProfile}
+                  bodyStats={bodyStats}
+                  setBodyStats={setBodyStats}
                 />
               )}
 

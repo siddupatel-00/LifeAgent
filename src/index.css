@@ -809,13 +809,15 @@ input[type="checkbox"]:checked::after {
   }
 
   /* Main container space for bottom nav */
-  main {
+  main, .main-content, .app-main, .content-area {
     padding-top: 16px !important;
-    padding-bottom: 140px !important;
+    padding-bottom: 160px !important;
     padding-left: 10px !important;
     padding-right: 10px !important;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch !important;
+    min-height: 0 !important;
+    height: auto !important;
   }
 
   /* 1. Prevent horizontal overflow on mobile */

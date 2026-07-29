@@ -245,6 +245,9 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
           <h3 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0 }}>Transactions</h3>
+          <button onClick={() => setRightPanelView('add')} className="blue-btn" style={{ padding: '8px 12px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Plus size={16} /> Record Entry
+          </button>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -319,9 +322,6 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <h4 style={{ fontSize: '1.15rem', fontWeight: 700, margin: 0 }}>Charts</h4>
-            <button onClick={() => setRightPanelView('add')} className="blue-btn" style={{ padding: '8px 12px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Plus size={16} /> Record Entry
-            </button>
           </div>
           
           <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
@@ -335,8 +335,8 @@ export default function MoneyTracker({ transactions, setTransactions, token, sho
       </div>
       
       {rightPanelView === 'add' && (
-        <div className="modal-overlay" onClick={() => setRightPanelView('charts')}>
-          <div style={{ background: 'var(--bg-main)', padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)', width: '100%', maxWidth: '400px' }} onClick={e => e.stopPropagation()}>
+        <div className="blur-overlay" onClick={() => setRightPanelView('charts')}>
+          <div style={{ background: 'var(--bg-main)', padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)', width: '100%', maxWidth: '400px', margin: 'auto' }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <h4 style={{ fontSize: '1.15rem', fontWeight: 700, margin: 0 }}>Add Transaction</h4>
               <button onClick={() => setRightPanelView('charts')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={20}/></button>

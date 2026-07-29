@@ -58,8 +58,9 @@ const CustomSelect = ({ value, onChange, options, style, className }) => {
             border: '1px solid var(--border-color)',
             borderRadius: '12px',
             boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-            maxHeight: '240px',
+            maxHeight: '280px',
             overflowY: 'auto',
+            WebkitOverflowScrolling: 'touch',
             padding: '4px'
           }}
         >
