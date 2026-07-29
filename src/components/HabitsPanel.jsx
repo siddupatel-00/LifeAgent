@@ -201,7 +201,7 @@ export default function HabitsPanel({
       {isAddHabitModalOpen && habits.length > 0 && (
         <div className="blur-overlay" onClick={() => setIsAddHabitModalOpen(false)}>
           <div className="glass-card animate-entrance" onClick={e => e.stopPropagation()}
-            style={{ background: 'var(--bg-card)', padding: '28px', borderRadius: '24px', border: '1px solid var(--border-color)', boxShadow: '0 25px 60px rgba(0,0,0,0.4)', width: '90%', maxWidth: '400px' }}>
+            style={{ background: 'var(--bg-card)', padding: '28px', borderRadius: '24px', border: '1px solid var(--border-color)', boxShadow: '0 25px 60px rgba(0,0,0,0.4)', width: '90%', maxWidth: '420px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: 'var(--accent-blue-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-blue)' }}>
@@ -213,30 +213,42 @@ export default function HabitsPanel({
                 <X size={20} />
               </button>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <input 
-                type="text" placeholder="Enter habit name..."
-                value={newHabitData.title}
-                onChange={e => setNewHabitData({...newHabitData, title: e.target.value})}
-                className="glass-input" 
-              />
-              <input 
-                type="text" placeholder="Enter category..."
-                value={newHabitData.category}
-                onChange={e => setNewHabitData({...newHabitData, category: e.target.value})}
-                className="glass-input" 
-              />
-              <input 
-                type="text" placeholder="Enter daily goal..."
-                value={newHabitData.target}
-                onChange={e => setNewHabitData({...newHabitData, target: e.target.value})}
-                className="glass-input" 
-              />
-              <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Habit Name</label>
+                <input 
+                  type="text" placeholder="Enter habit name..."
+                  value={newHabitData.title}
+                  onChange={e => setNewHabitData({...newHabitData, title: e.target.value})}
+                  className="glass-input" 
+                  style={{ width: '100%', boxSizing: 'border-box' }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Category</label>
+                <input 
+                  type="text" placeholder="Enter category..."
+                  value={newHabitData.category}
+                  onChange={e => setNewHabitData({...newHabitData, category: e.target.value})}
+                  className="glass-input" 
+                  style={{ width: '100%', boxSizing: 'border-box' }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Daily Goal</label>
+                <input 
+                  type="text" placeholder="Enter daily goal..."
+                  value={newHabitData.target}
+                  onChange={e => setNewHabitData({...newHabitData, target: e.target.value})}
+                  className="glass-input" 
+                  style={{ width: '100%', boxSizing: 'border-box' }}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
                 <button 
                   className="secondary-btn"
                   onClick={() => setIsAddHabitModalOpen(false)}
-                  style={{ flex: 1, padding: '16px', fontSize: '1.05rem', fontWeight: 800 }}
+                  style={{ flex: 1, padding: '12px 18px', borderRadius: '12px', fontSize: '0.92rem', fontWeight: 700 }}
                 >
                   Cancel
                 </button>
@@ -264,7 +276,7 @@ export default function HabitsPanel({
                       }
                     } catch (e) {}
                   }}
-                  style={{ flex: 1, padding: '16px', fontSize: '1.05rem', fontWeight: 800 }}
+                  style={{ flex: 1, padding: '12px 18px', borderRadius: '12px', fontSize: '0.92rem', fontWeight: 700 }}
                 >
                   Save Habit
                 </button>

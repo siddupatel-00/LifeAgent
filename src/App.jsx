@@ -3419,8 +3419,8 @@ const handleDeleteHabitDb = async (id) => {
 
                   {/* INLINE ADD NEW PILLAR / DAILY ITEM FORM */}
                   {isAddHabitModalOpen && (
-                    <div className="modal-overlay" onClick={() => setIsAddHabitModalOpen(false)}>
-                      <div className="animate-entrance" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', padding: '28px', borderRadius: '24px', border: '1px solid var(--border-color)', boxShadow: '0 25px 60px rgba(0,0,0,0.4)', width: '100%', maxWidth: '780px' }}>
+                    <div className="blur-overlay" onClick={() => setIsAddHabitModalOpen(false)} style={{ zIndex: 99999 }}>
+                      <div className="glass-card animate-entrance" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', padding: '28px', borderRadius: '24px', border: '1px solid var(--border-color)', boxShadow: '0 25px 60px rgba(0,0,0,0.4)', width: '90%', maxWidth: '440px', maxHeight: '90vh', overflowY: 'auto' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                             <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: 'var(--accent-blue-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-blue)' }}>
@@ -3439,7 +3439,7 @@ const handleDeleteHabitDb = async (id) => {
                           </button>
                         </div>
                         
-                        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr auto', gap: '14px', alignItems: 'flex-end' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                           <div>
                             <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Item Title / Habit Name</label>
                             <input 
@@ -3448,6 +3448,7 @@ const handleDeleteHabitDb = async (id) => {
                               value={newHabitData.title}
                               onChange={(e) => setNewHabitData({ ...newHabitData, title: e.target.value })}
                               style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.92rem', fontWeight: 600, outline: 'none' }}
+                              autoFocus
                             />
                           </div>
 
@@ -3461,7 +3462,6 @@ const handleDeleteHabitDb = async (id) => {
                                   value={customPillarInput}
                                   onChange={(e) => setCustomPillarInput(e.target.value)}
                                   style={{ width: '100%', padding: '12px 40px 12px 16px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.92rem', fontWeight: 600, outline: 'none', boxSizing: 'border-box' }}
-                                  autoFocus
                                 />
                                 <button 
                                   type="button"
@@ -3516,8 +3516,8 @@ const handleDeleteHabitDb = async (id) => {
                         </div>
 
                         {/* CHALLENGE MODE OPTIONS */}
-                        <div style={{ marginTop: '16px', display: 'flex', alignItems: 'center', gap: '16px', background: 'var(--bg-card)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                        <div style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '16px', background: 'var(--bg-main)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-main)' }}>
                             <input 
                               type="checkbox" 
                               checked={newHabitData.challengeMode}
@@ -3539,7 +3539,7 @@ const handleDeleteHabitDb = async (id) => {
                                     setNewHabitData({ ...newHabitData, durationMode: 'preset', challengeDays: Number(e.target.value) });
                                   }
                                 }}
-                                style={{ padding: '6px 12px', borderRadius: '8px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.85rem', fontWeight: 700, outline: 'none', cursor: 'pointer' }}
+                                style={{ padding: '6px 12px', borderRadius: '8px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.85rem', fontWeight: 700, outline: 'none', cursor: 'pointer' }}
                               >
                                 <option value={7}>7 Days</option>
                                 <option value={14}>14 Days</option>
@@ -3558,7 +3558,7 @@ const handleDeleteHabitDb = async (id) => {
                                     placeholder="e.g. 100"
                                     value={newHabitData.challengeDays}
                                     onChange={(e) => setNewHabitData({ ...newHabitData, challengeDays: e.target.value ? Number(e.target.value) : '' })}
-                                    style={{ width: '80px', padding: '6px 10px', borderRadius: '8px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.85rem', fontWeight: 700, outline: 'none' }}
+                                    style={{ width: '80px', padding: '6px 10px', borderRadius: '8px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.85rem', fontWeight: 700, outline: 'none' }}
                                   />
                                   <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>Days</span>
                                 </div>
@@ -3567,7 +3567,14 @@ const handleDeleteHabitDb = async (id) => {
                           )}
                         </div>
 
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
+                        <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                          <button 
+                            className="secondary-btn"
+                            onClick={() => setIsAddHabitModalOpen(false)}
+                            style={{ flex: 1, padding: '12px', fontSize: '0.92rem', fontWeight: 700 }}
+                          >
+                            Cancel
+                          </button>
                           <button 
                             className="blue-btn"
                             onClick={async () => {
@@ -3578,31 +3585,29 @@ const handleDeleteHabitDb = async (id) => {
 
                               const finalCategory = newHabitData.category === 'Other' 
                                 ? (customPillarInput.trim() || 'General') 
-                                : (newHabitData.category.trim() || 'General');
+                                : (newHabitData.category || 'General');
 
                               try {
                                 const res = await fetch('/api/habits', {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                  body: JSON.stringify({
-                                    label: newHabitData.title.trim(),
-                                    category: finalCategory,
-                                    target: newHabitData.target.trim() || '30 mins/day',
-                                    challenge_days: newHabitData.challengeMode ? newHabitData.challengeDays : 0
+                                  body: JSON.stringify({ 
+                                    label: newHabitData.title.trim(), 
+                                    category: finalCategory, 
+                                    target: newHabitData.target.trim() || 'Daily'
                                   })
                                 });
+
                                 if (res.ok) {
-                                  const data = await res.json();
-                                  const newItem = {
-                                    id: data.id,
-                                    title: data.label,
-                                    category: data.category,
-                                    target: newHabitData.target.trim() || '30 mins/day',
-                                    streak: 0,
-                                    completionRate: 100,
+                                  const saved = await res.json();
+                                  setHabits(prev => [...prev, {
+                                    id: saved.id,
+                                    title: saved.label,
+                                    category: saved.category,
+                                    streak: saved.streak || 0,
+                                    target: saved.target || 'Daily',
                                     checkedToday: false
-                                  };
-                                  setHabits([newItem, ...habits]);
+                                  }]);
 
                                   // Also create a linked today item
                                   try {
@@ -3613,13 +3618,13 @@ const handleDeleteHabitDb = async (id) => {
                                         label: newHabitData.title.trim(),
                                         category: finalCategory,
                                         time: '',
-                                        habit_id: data.id,
+                                        habit_id: saved.id,
                                         date: todayKey(userProfile.timezone)
                                       })
                                     });
                                     if (todayRes.ok) {
                                       const todayData = await todayRes.json();
-                                      setTodayItems(prev => [...prev, { id: todayData.id, title: todayData.label, category: todayData.category, time: todayData.time, checked: false, habitId: data.id }]);
+                                      setTodayItems(prev => [...prev, { id: todayData.id, title: todayData.label, category: todayData.category, time: todayData.time, checked: false, habitId: saved.id }]);
                                     }
                                   } catch (linkErr) {
                                     console.error('Failed to create linked today item:', linkErr);
