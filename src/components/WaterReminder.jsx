@@ -262,32 +262,51 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', width: '100%', maxWidth: '300px' }}>
-            <input
-              id="water-goal-input"
-              type="number"
-              step="0.1"
-              min="0.1"
-              placeholder="e.g. 2.5"
-              value={goalInput}
-              onChange={e => { setGoalInput(e.target.value); setGoalInputError(''); }}
-              onKeyDown={e => e.key === 'Enter' && handleSetGoal()}
-              style={{
-                flex: 1, padding: '10px 14px', borderRadius: '12px',
-                border: `1px solid ${goalInputError ? '#ef4444' : 'var(--border-color)'}`,
-                background: 'var(--bg-main)', color: 'var(--text-main)',
-                fontSize: '1rem', outline: 'none', fontWeight: 600
-              }}
-            />
-            <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 700 }}>L</span>
-            <button
-              id="water-goal-save-btn"
-              className="blue-btn"
-              onClick={handleSetGoal}
-              style={{ padding: '10px 18px', borderRadius: '12px', fontWeight: 700, fontSize: '0.9rem' }}
-            >
-              Save
-            </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', maxWidth: '340px' }}>
+            <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              {[2.0, 2.5, 3.0, 3.5].map(val => (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => { setGoalInput(val.toString()); setGoalInputError(''); }}
+                  style={{
+                    padding: '6px 12px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 700,
+                    border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {val} L
+                </button>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', width: '100%' }}>
+              <input
+                id="water-goal-input"
+                type="number"
+                step="0.1"
+                min="0.1"
+                placeholder="e.g. 2.5"
+                value={goalInput}
+                onChange={e => { setGoalInput(e.target.value); setGoalInputError(''); }}
+                onKeyDown={e => e.key === 'Enter' && handleSetGoal()}
+                style={{
+                  flex: 1, padding: '10px 14px', borderRadius: '12px',
+                  border: `1px solid ${goalInputError ? '#ef4444' : 'var(--border-color)'}`,
+                  background: 'var(--bg-main)', color: 'var(--text-main)',
+                  fontSize: '1rem', outline: 'none', fontWeight: 600
+                }}
+              />
+              <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 700 }}>L</span>
+              <button
+                id="water-goal-save-btn"
+                className="blue-btn"
+                onClick={handleSetGoal}
+                style={{ padding: '10px 20px', borderRadius: '12px', fontWeight: 700, fontSize: '0.9rem', flexShrink: 0 }}
+              >
+                Save Goal
+              </button>
+            </div>
           </div>
 
           {goalInputError && (

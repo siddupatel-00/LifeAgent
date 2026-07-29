@@ -141,67 +141,147 @@ export default function NotesPanel({
               {notesList.length === 0 ? (
                 <div className="glass-card" style={{ textAlign: 'center', padding: '36px 20px', background: 'var(--bg-main)', borderRadius: '18px', border: '1px dashed var(--border-color)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
                   <BookOpen size={40} style={{ color: 'var(--accent-blue)', opacity: 0.5 }} />
-                  <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>No items logged yet</div>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>No items logged yet. Click + to add your first entry</p>
+                  <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>No notes created yet</div>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>Click below to create your first note or diary page</p>
                   <button
-                    onClick={handleCreateNote}
+                    onClick={async () => {
+                      const baseTitle = getFormattedDateTitle();
+                      const count = notesList.filter(n => n.title === baseTitle || n.title.startsWith(`${baseTitle} (`)).length;
+                      const defaultTitle = count > 0 ? `${baseTitle} (${count + 1})` : baseTitle;
+                      handleCreateNoteDb(defaultTitle, '', true, (newNote) => {
+                        setNotesList([newNote, ...notesList]);
+                        setActiveNoteId(newNote.id);
+                      });
+                    }}
                     className="blue-btn"
                     style={{ marginTop: '8px', padding: '8px 18px', fontSize: '0.85rem', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                   >
-                    <Plus size={16} /> New Note
+                    <Plus size={16} /> Create First Note
                   </button>
                 </div>
               ) : (
                 [...notesList]
                   .filter(note => !searchQuery || note.title?.toLowerCase().includes(searchQuery.toLowerCase()) || note.content?.toLowerCase().includes(searchQuery.toLowerCase()))
                   .sort((a, b) => new Date(b.updated_at || b.date || 0) - new Date(a.updated_at || a.date || 0)).map(note => (
-                  <div
-                    key={note.id}
-                    onClick={() => setActiveNoteId(note.id)}
-                    style={{
-                      padding: '14px 16px',
-                      borderRadius: '14px',
-                      background: activeNoteId === note.id ? 'var(--accent-blue-dim)' : 'var(--bg-main)',
-                      color: 'var(--text-main)',
-                      border: `1px solid ${activeNoteId === note.id ? 'var(--accent-blue)' : 'var(--border-color)'}`,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      display: 'flex', flexDirection: 'column', gap: '6px'
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.7rem', fontWeight: 800, background: activeNoteId === note.id ? 'rgba(255,255,255,0.2)' : 'var(--bg-main)', padding: '2px 8px', borderRadius: '8px' }}>
-                        {note.category}
-                      </span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        {note.shareWithAi && (
-                          <span title="Shared with AI Agent" style={{ fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '4px', background: activeNoteId === note.id ? 'var(--accent-blue-dim)' : 'rgba(34,197,94,0.15)', color: activeNoteId === note.id ? 'var(--accent-blue)' : '#22c55e', padding: '2px 8px', borderRadius: '10px', fontWeight: 700 }}>
-                            🤖 AI Shared
-                          </span>
-                        )}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleUpdateNoteDb({ id: note.id, is_trashed: 1, deleted_at: new Date().toISOString() });
-                            setTrashNotes([{ ...note, deletedAt: Date.now() }, ...trashNotes]);
-                            const next = notesList.filter(n => n.id !== note.id);
-                            setNotesList(next);
-                            if (activeNoteId === note.id && next.length > 0) setActiveNoteId(next[0].id);
-                          }}
-                          style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '2px', opacity: 0.8 }}
-                          title="Move to Trash (Kept for 49 days)"
-                        >
-                          <Trash2 size={15} />
-                        </button>
+                  <React.Fragment key={note.id}>
+                    <div
+                      onClick={() => setActiveNoteId(activeNoteId === note.id ? null : note.id)}
+                      style={{
+                        padding: '14px 16px',
+                        borderRadius: '14px',
+                        background: activeNoteId === note.id ? 'var(--accent-blue-dim)' : 'var(--bg-main)',
+                        color: 'var(--text-main)',
+                        border: `1px solid ${activeNoteId === note.id ? 'var(--accent-blue)' : 'var(--border-color)'}`,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        display: 'flex', flexDirection: 'column', gap: '6px'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.7rem', fontWeight: 800, background: activeNoteId === note.id ? 'rgba(255,255,255,0.2)' : 'var(--bg-main)', padding: '2px 8px', borderRadius: '8px' }}>
+                          {note.category || 'General'}
+                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {note.shareWithAi && (
+                            <span title="Shared with AI Agent" style={{ fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '4px', background: activeNoteId === note.id ? 'var(--accent-blue-dim)' : 'rgba(34,197,94,0.15)', color: activeNoteId === note.id ? 'var(--accent-blue)' : '#22c55e', padding: '2px 8px', borderRadius: '10px', fontWeight: 700 }}>
+                              🤖 AI Shared
+                            </span>
+                          )}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleUpdateNoteDb({ id: note.id, is_trashed: 1, deleted_at: new Date().toISOString() });
+                              setTrashNotes([{ ...note, deletedAt: Date.now() }, ...trashNotes]);
+                              const next = notesList.filter(n => n.id !== note.id);
+                              setNotesList(next);
+                              if (activeNoteId === note.id) setActiveNoteId(next[0]?.id || null);
+                            }}
+                            style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '2px', opacity: 0.8 }}
+                            title="Move to Trash"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
                       </div>
+                      <h5 style={{ fontSize: '0.96rem', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', margin: 0 }}>
+                        {note.title}
+                      </h5>
+                      <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>
+                        Last updated: {note.date || 'Today'}
+                      </span>
                     </div>
-                    <h5 style={{ fontSize: '0.96rem', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {note.title}
-                    </h5>
-                    <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>
-                      Last updated: {note.date}
-                    </span>
-                  </div>
+
+                    {/* INLINE EXPANDING NOTE EDITOR BOX UNDER SELECTED NOTE */}
+                    {activeNoteId === note.id && (
+                      <div
+                        className="animate-entrance"
+                        style={{
+                          background: 'var(--bg-card)',
+                          border: '1px solid var(--accent-blue)',
+                          borderRadius: '14px',
+                          padding: '14px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '10px',
+                          marginBottom: '8px'
+                        }}
+                      >
+                        <input
+                          type="text"
+                          value={note.title}
+                          onChange={(e) => {
+                            const newTitle = e.target.value;
+                            const updated = notesList.map(n => n.id === note.id ? { ...n, title: newTitle } : n);
+                            setNotesList(updated);
+                          }}
+                          placeholder="Note title..."
+                          style={{
+                            width: '100%', padding: '10px 12px', borderRadius: '10px',
+                            background: 'var(--bg-main)', color: 'var(--text-main)',
+                            border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 700, outline: 'none'
+                          }}
+                        />
+                        <textarea
+                          rows={6}
+                          value={note.content}
+                          onChange={(e) => {
+                            const newContent = e.target.value;
+                            const updated = notesList.map(n => n.id === note.id ? { ...n, content: newContent } : n);
+                            setNotesList(updated);
+                          }}
+                          placeholder="Write your note, thoughts, or daily diary entry here..."
+                          style={{
+                            width: '100%', padding: '10px 12px', borderRadius: '10px',
+                            background: 'var(--bg-main)', color: 'var(--text-main)',
+                            border: '1px solid var(--border-color)', fontSize: '0.9rem', outline: 'none',
+                            resize: 'vertical', minHeight: '120px'
+                          }}
+                        />
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600, cursor: 'pointer' }}>
+                            <input
+                              type="checkbox"
+                              checked={!!note.shareWithAi}
+                              onChange={(e) => {
+                                const val = e.target.checked;
+                                const updated = notesList.map(n => n.id === note.id ? { ...n, shareWithAi: val } : n);
+                                setNotesList(updated);
+                              }}
+                            />
+                            Share with AI Assistant
+                          </label>
+                          <button
+                            type="button"
+                            className="blue-btn"
+                            onClick={() => handleManualSave(note)}
+                            style={{ padding: '8px 18px', fontSize: '0.85rem', fontWeight: 700, borderRadius: '10px' }}
+                          >
+                            💾 Save Note
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </React.Fragment>
                 ))
               )}
             </div>

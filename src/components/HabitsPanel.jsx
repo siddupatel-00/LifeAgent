@@ -180,7 +180,7 @@ export default function HabitsPanel({
                       <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>days</span>
                     </div>
                   ) : (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '4px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '4px', flexWrap: 'nowrap', width: '100%' }}>
                       {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => {
                         const selectedDays = Array.isArray(newHabitData.customDays)
                           ? newHabitData.customDays
@@ -457,7 +457,7 @@ export default function HabitsPanel({
                     <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>days</span>
                   </div>
                 ) : (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '4px', flexWrap: 'nowrap', width: '100%' }}>
                     {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => {
                       const selectedDays = Array.isArray(newHabitData.customDays)
                         ? newHabitData.customDays

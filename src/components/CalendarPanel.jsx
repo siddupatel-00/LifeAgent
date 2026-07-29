@@ -185,10 +185,10 @@ export default function CalendarPanel({
   const sortedEventsList = [...filteredEventsList].sort((a, b) => a.date.localeCompare(b.date));
 
   const groupedSections = [
-    { key: 'today', title: `📌 Today (${todayStr})`, badgeBg: 'var(--accent-blue-dim)', badgeColor: 'var(--accent-blue)', events: [] },
-    { key: 'tomorrow', title: `🌅 Tomorrow (${tomorrowStr})`, badgeBg: 'rgba(139, 92, 246, 0.15)', badgeColor: '#8b5cf6', events: [] },
-    { key: 'upcoming', title: '🚀 Upcoming', badgeBg: 'rgba(16, 185, 129, 0.15)', badgeColor: '#10b981', events: [] },
-    { key: 'past', title: '⏳ Earlier / Past', badgeBg: 'rgba(107, 114, 128, 0.15)', badgeColor: '#6b7280', events: [] }
+    { key: 'today', title: `📌 Today (${todayStr})`, badgeBg: 'var(--accent-blue-dim)', badgeColor: 'var(--accent-blue)', emptyMsg: 'No events scheduled for today', events: [] },
+    { key: 'tomorrow', title: `🌅 Tomorrow (${tomorrowStr})`, badgeBg: 'rgba(139, 92, 246, 0.15)', badgeColor: '#8b5cf6', emptyMsg: 'No events scheduled for tomorrow', events: [] },
+    { key: 'upcoming', title: '🚀 Upcoming', badgeBg: 'rgba(16, 185, 129, 0.15)', badgeColor: '#10b981', emptyMsg: 'No upcoming events found', events: [] },
+    { key: 'past', title: '⏳ Earlier / Past', badgeBg: 'rgba(107, 114, 128, 0.15)', badgeColor: '#6b7280', emptyMsg: 'No past events in this range', events: [] }
   ];
 
   sortedEventsList.forEach(e => {
@@ -358,11 +358,11 @@ export default function CalendarPanel({
         </div>
       )}
 
-      <div className="calendar-main-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '24px', alignItems: 'start' }}>
-        {/* Left: Mini Calendar Grid (Sticky in view) */}
-        <div style={{ background: 'var(--bg-card)', borderRadius: '18px', border: '1px solid var(--border-color)', padding: '24px', position: 'sticky', top: '20px' }}>
+      <div className="calendar-main-grid">
+        {/* Left: Mini Calendar Grid */}
+        <div className="calendar-left-col" style={{ background: 'var(--bg-card)', borderRadius: '18px', border: '1px solid var(--border-color)', padding: '24px', width: '100%', boxSizing: 'border-box' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h4 style={{ fontSize: '1.2rem', fontWeight: 800 }}>{new Date(calendarMonth.year, calendarMonth.month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</h4>
+            <h4 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0 }}>{new Date(calendarMonth.year, calendarMonth.month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</h4>
             <div style={{ display: 'flex', gap: '8px' }}>
               <button onClick={() => setCalendarMonth(prev => { const d = new Date(prev.year, prev.month - 1); return { year: d.getFullYear(), month: d.getMonth() }; })} style={{ background: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: '8px', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-main)', cursor: 'pointer' }}>&lt;</button>
               <button onClick={() => setCalendarMonth(prev => { const d = new Date(prev.year, prev.month + 1); return { year: d.getFullYear(), month: d.getMonth() }; })} style={{ background: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: '8px', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-main)', cursor: 'pointer' }}>&gt;</button>
@@ -415,7 +415,7 @@ export default function CalendarPanel({
         </div>
         
         {/* Right: Event List */}
-        <div style={{ background: 'var(--bg-card)', borderRadius: '18px', border: '1px solid var(--border-color)', padding: '24px' }}>
+        <div className="calendar-right-col" style={{ background: 'var(--bg-card)', borderRadius: '18px', border: '1px solid var(--border-color)', padding: '24px', width: '100%', boxSizing: 'border-box' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <h4 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0 }}>
               {selectedCalendarDate ? `Events for ${selectedCalendarDate}` : calendarSubTab === 'today' ? "Today's Events" : calendarSubTab === 'custom' ? 'Custom Range Events' : 'Filtered Events'}
@@ -436,18 +436,20 @@ export default function CalendarPanel({
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
+                  justifyContent: 'space-between',
                   gap: '8px',
                   fontSize: '0.82rem',
                   fontWeight: 800,
                   textTransform: 'uppercase',
                   letterSpacing: '0.5px',
                   color: group.badgeColor,
-                  marginBottom: '10px',
+                  marginBottom: '12px',
                   paddingBottom: '6px',
                   borderBottom: `2px solid ${group.badgeColor}33`
                 }}>
-                  <span>{group.icon}</span>
-                  <span>{group.title}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span>{group.title}</span>
+                  </div>
                   <span style={{
                     background: group.badgeBg,
                     color: group.badgeColor,
@@ -467,22 +469,37 @@ export default function CalendarPanel({
                       const isDropdownOpen = openStatusDropdown === e.id;
                       
                       return (
-                        <div key={e.id} style={{ padding: '14px 16px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', borderLeft: `4px solid ${e.color || 'var(--accent-blue)'}`, position: 'relative' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
+                        <div
+                          key={e.id}
+                          className="calendar-event-card"
+                          style={{
+                            padding: '14px 16px',
+                            background: 'var(--bg-main)',
+                            borderRadius: '14px',
+                            border: '1px solid var(--border-color)',
+                            borderLeft: `4px solid ${e.color || 'var(--accent-blue)'}`,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '10px',
+                            boxShadow: '0 2px 6px rgba(0,0,0,0.03)'
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                             <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
                               <CalendarIcon size={14} /> {e.date}
                             </div>
                             
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                               {/* Status Badge with Dropdown */}
                               <div style={{ position: 'relative' }}>
                                 <button
                                   onClick={() => setOpenStatusDropdown(isDropdownOpen ? null : e.id)}
                                   style={{
-                                    display: 'flex', alignItems: 'center', gap: '4px',
+                                    display: 'inline-flex', alignItems: 'center', gap: '5px',
                                     background: badge.bg, color: badge.color,
-                                    border: `1px solid ${badge.color}`, borderRadius: '12px',
-                                    padding: '3px 10px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer'
+                                    border: `1px solid ${badge.color}44`, borderRadius: '20px',
+                                    padding: '4px 12px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer',
+                                    transition: 'all 0.15s ease'
                                   }}
                                 >
                                   {badge.icon} {badge.label} <ChevronDown size={12} />
@@ -490,9 +507,9 @@ export default function CalendarPanel({
                                 
                                 {isDropdownOpen && (
                                   <div style={{
-                                    position: 'absolute', top: '100%', right: 0, marginTop: '4px',
+                                    position: 'absolute', top: '100%', right: 0, marginTop: '6px',
                                     background: 'var(--bg-card)', border: '1px solid var(--border-color)',
-                                    borderRadius: '10px', zIndex: 10, minWidth: '130px', boxShadow: '0 6px 16px rgba(0,0,0,0.2)',
+                                    borderRadius: '12px', zIndex: 20, minWidth: '140px', boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
                                     overflow: 'hidden'
                                   }}>
                                     {['upcoming', 'completed', 'failed', 'expired'].map(status => {
@@ -502,9 +519,10 @@ export default function CalendarPanel({
                                           key={status}
                                           onClick={() => handleUpdateStatus(e.id, status)}
                                           style={{
-                                            padding: '8px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '8px',
+                                            padding: '9px 14px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '8px',
                                             cursor: 'pointer', borderBottom: '1px solid var(--border-color)',
-                                            color: sBadge.color, fontWeight: 600, background: 'var(--bg-card)'
+                                            color: sBadge.color, fontWeight: 600, background: 'var(--bg-card)',
+                                            transition: 'background 0.15s'
                                           }}
                                         >
                                           {sBadge.icon} {sBadge.label}
@@ -515,19 +533,19 @@ export default function CalendarPanel({
                                 )}
                               </div>
 
-                              {/* DELETE BUTTON */}
+                              {/* Delete Button */}
                               <button 
                                 onClick={() => setDeleteConfirmId(e.id)}
                                 style={{
-                                  background: 'rgba(239, 68, 68, 0.1)',
-                                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                                  background: 'rgba(239, 68, 68, 0.08)',
+                                  border: '1px solid rgba(239, 68, 68, 0.2)',
                                   color: '#ef4444',
                                   borderRadius: '8px',
-                                  padding: '4px 8px',
+                                  padding: '4px 10px',
                                   fontSize: '0.75rem',
                                   fontWeight: 700,
                                   cursor: 'pointer',
-                                  display: 'flex',
+                                  display: 'inline-flex',
                                   alignItems: 'center',
                                   gap: '4px',
                                   transition: 'all 0.2s'
@@ -539,13 +557,15 @@ export default function CalendarPanel({
                             </div>
                           </div>
                           
-                          <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-main)' }}>{e.title}</div>
+                          <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', wordBreak: 'break-word', lineHeight: 1.4 }}>
+                            {e.title}
+                          </div>
                         </div>
                       );
                     })}
                   </div>
                 ) : (
-                  <div style={{ padding: '14px 16px', background: 'var(--bg-main)', borderRadius: '12px', border: '1px dashed var(--border-color)', fontSize: '0.82rem', color: 'var(--text-muted)', textAlign: 'center', fontStyle: 'italic' }}>
+                  <div style={{ padding: '12px 16px', background: 'var(--bg-main)', borderRadius: '12px', border: '1px dashed var(--border-color)', fontSize: '0.82rem', color: 'var(--text-muted)', textAlign: 'center', fontStyle: 'italic' }}>
                     {group.emptyMsg}
                   </div>
                 )}
@@ -553,14 +573,36 @@ export default function CalendarPanel({
             ))}
 
             {filteredEventsList.length === 0 && (
-              <div className="glass-card" style={{ padding: '36px 20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem', background: 'var(--bg-main)', borderRadius: '18px', border: '1px dashed var(--border-color)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-                <CalendarIcon size={40} style={{ color: 'var(--accent-blue)', opacity: 0.5 }} />
-                <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>No items logged yet</div>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>No items logged yet. Click + to add your first entry</p>
+              <div
+                className="glass-card"
+                style={{
+                  padding: '32px 20px',
+                  textAlign: 'center',
+                  color: 'var(--text-muted)',
+                  background: 'var(--bg-main)',
+                  borderRadius: '16px',
+                  border: '1px dashed var(--border-color)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '10px'
+                }}
+              >
+                <div style={{
+                  width: '52px', height: '52px', borderRadius: '50%',
+                  background: 'var(--accent-blue-dim)', display: 'flex',
+                  alignItems: 'center', justifyContent: 'center', marginBottom: '4px'
+                }}>
+                  <CalendarIcon size={26} style={{ color: 'var(--accent-blue)' }} />
+                </div>
+                <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>No events found</div>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', margin: 0, maxWidth: '300px', lineHeight: 1.4 }}>
+                  No events scheduled for this view. Click below to add your first entry.
+                </p>
                 <button
                   onClick={() => { setIsAddEventFormOpen(true); setNewEventDate(selectedCalendarDate || todayKey(userProfile?.timezone)); setNewEventTitle(''); }}
                   className="blue-btn"
-                  style={{ marginTop: '8px', padding: '8px 18px', fontSize: '0.85rem', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  style={{ marginTop: '6px', padding: '8px 18px', fontSize: '0.85rem', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                 >
                   <Plus size={16} /> Add Event
                 </button>
