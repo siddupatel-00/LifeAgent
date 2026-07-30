@@ -2922,7 +2922,7 @@ const handleDeleteHabitDb = async (id) => {
           </aside>
 
           {/* MAIN RIGHT AREA (MeraBaazar layout without Verified Pro, Live, or top Log Out) */}
-          <section style={{ flex: 1, height: '100vh', padding: '24px 16px', overflowY: activeTab === 'ai' ? 'hidden' : 'auto' }}>
+          <section className={`main-layout-section ${activeTab === 'ai' ? 'ai-tab-active' : ''}`} style={{ flex: 1, height: '100vh', padding: '24px 16px', overflowY: activeTab === 'ai' ? 'hidden' : 'auto' }}>
             
             <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
               <div>
@@ -3589,13 +3589,14 @@ const handleDeleteHabitDb = async (id) => {
                   display: 'flex',
                   flexDirection: 'column',
                   height: 'calc(100vh - 170px)',
+                  maxHeight: 'calc(100vh - 130px)',
                   overflow: 'hidden',
                   background: 'var(--bg-main)',
                   borderRadius: '20px',
                   border: '1px solid var(--border-color)'
                 }}>
                   {/* Header */}
-                  <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-card)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                  <div className="ai-chat-header" style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-card)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
                     <div style={{ position: 'absolute', left: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 8px #22c55e' }} />
                     </div>
@@ -3609,7 +3610,7 @@ const handleDeleteHabitDb = async (id) => {
                     </button>
                   </div>
                   {/* Messages - ONLY THIS SCROLLS */}
-                  <div ref={mainAiChatScrollRef} style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px', WebkitOverflowScrolling: 'touch' }}>
+                  <div ref={mainAiChatScrollRef} className="ai-chat-messages" style={{ flex: 1, overflowY: 'auto', minHeight: 0, padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px', WebkitOverflowScrolling: 'touch' }}>
                     {(!Array.isArray(aiMessages) || aiMessages.length === 0) && (
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)', margin: 'auto' }}>
                         <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🤖</div>
@@ -3624,7 +3625,7 @@ const handleDeleteHabitDb = async (id) => {
                     ))}
                   </div>
                   {/* Input - FIXED AT BOTTOM, never scrolls */}
-                  <form onSubmit={handleSendAi} style={{ display: 'flex', gap: '8px', padding: '12px 16px', background: 'var(--bg-card)', borderTop: '1px solid var(--border-color)', flexShrink: 0 }}>
+                  <form onSubmit={handleSendAi} className="ai-chat-input-form" style={{ display: 'flex', gap: '8px', padding: '12px 16px', background: 'var(--bg-card)', borderTop: '1px solid var(--border-color)', flexShrink: 0 }}>
                     <input
                       type="text"
                       placeholder="Ask anything... (habits, money, sleep)"

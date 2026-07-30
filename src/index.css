@@ -1018,19 +1018,49 @@ input[type="checkbox"]:checked::after {
     padding: 18px 14px !important;
   }
 
-  /* Full screen mobile AI Chat styling */
+  /* Full screen mobile AI Chat & Section styling */
+  section.ai-tab-active {
+    height: calc(100dvh - 75px) !important;
+    height: calc(100vh - 75px) !important;
+    max-height: calc(100dvh - 75px) !important;
+    overflow: hidden !important;
+    overflow-y: hidden !important;
+    padding-bottom: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
   .ai-chat-view {
-    height: calc(100dvh - 130px) !important;
+    flex: 1 !important;
+    height: calc(100dvh - 140px) !important;
+    height: calc(100vh - 140px) !important;
+    max-height: calc(100dvh - 130px) !important;
+    max-height: calc(100vh - 130px) !important;
+    display: flex !important;
+    flex-direction: column !important;
     overflow: hidden !important;
     padding-bottom: 0 !important;
     margin-bottom: 0 !important;
+    min-height: 0 !important;
   }
 
-  .ai-chat-input-container {
-    position: sticky !important;
-    bottom: 70px !important;
-    z-index: 100 !important;
-    backdrop-filter: blur(16px) !important;
+  .ai-chat-messages {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    min-height: 0 !important;
+    padding-bottom: 12px !important;
+  }
+
+  .ai-chat-input-form {
+    flex-shrink: 0 !important;
+    position: relative !important;
+    bottom: auto !important;
+    padding: 10px 14px !important;
+    padding-bottom: max(12px, env(safe-area-inset-bottom, 12px)) !important;
+    background: var(--bg-card) !important;
+    border-top: 1px solid var(--border-color) !important;
+    margin-bottom: 0 !important;
+    z-index: 10 !important;
   }
   
   /* Form input sizing & focus feedback (Prevents iOS auto-zoom + provides mobile focus rings) */
@@ -1146,13 +1176,13 @@ input[type="checkbox"]:checked::after {
     flex-shrink: 0 !important;
   }
   
-  .ai-chat-messages, .messages-container {
+  .messages-container {
     flex: 1 !important;
     overflow-y: auto !important;
     padding-bottom: 120px !important;
   }
 
-  .ai-chat-input-container, .chat-input-wrapper {
+  .chat-input-wrapper {
     position: fixed !important;
     bottom: 0 !important;
     left: 0 !important;
@@ -1168,11 +1198,11 @@ input[type="checkbox"]:checked::after {
     align-items: center !important;
   }
   
-  [data-theme="light"] .ai-chat-input-container, [data-theme="light"] .chat-input-wrapper {
+  [data-theme="light"] .chat-input-wrapper {
     background: rgba(255, 255, 255, 0.85) !important;
   }
   
-  .ai-chat-input-container input, .chat-input-wrapper input {
+  .chat-input-wrapper input {
     flex: 1 !important;
     background: var(--bg-card) !important;
     border: 1px solid var(--border-color) !important;
@@ -1182,7 +1212,7 @@ input[type="checkbox"]:checked::after {
     color: var(--text-main) !important;
   }
   
-  .ai-chat-input-container button, .chat-input-wrapper button {
+  .chat-input-wrapper button {
     width: 44px !important;
     height: 44px !important;
     border-radius: 50% !important;
