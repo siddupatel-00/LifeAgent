@@ -19,9 +19,7 @@ class GlobalErrorBoundary extends Component {
   }
 
   handleReload = () => {
-    try {
-      safeStorage.clear();
-    } catch (e) {}
+    try { safeStorage.clear(); } catch (e) {}
     window.location.reload();
   };
 
@@ -29,8 +27,6 @@ class GlobalErrorBoundary extends Component {
     if (this.state.hasError) {
       return (
         <div style={{
-          position: 'fixed',
-          inset: 0,
           position: 'fixed',
           inset: 0,
           display: 'flex',
@@ -75,18 +71,16 @@ class GlobalErrorBoundary extends Component {
   }
 }
 
+// Always unregister old service workers and clear stale caches
 if ('serviceWorker' in navigator) {
-  if (window.Capacitor) {
-    navigator.serviceWorker.getRegistrations().then(registrations => {
-      for (let reg of registrations) {
-        reg.unregister();
-      }
-    });
-  } else if (window.location.protocol !== 'file:') {
+  navigator.serviceWorker.getRegistrations().then(registrations => {
+    for (let reg of registrations) {
+      reg.unregister();
+    }
+  }).catch(() => {});
+  if (!window.Capacitor && window.location.protocol !== 'file:') {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js').catch(err => {
-        console.log('ServiceWorker registration failed: ', err);
-      });
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
     });
   }
 }
@@ -96,4 +90,3 @@ createRoot(document.getElementById('root')).render(
     <App />
   </GlobalErrorBoundary>
 )
-
