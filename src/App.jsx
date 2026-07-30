@@ -1949,26 +1949,8 @@ const handleDeleteHabitDb = async (id) => {
                   </span>
                 </div>
 
-                {/* Interactive Tabs Row with Physical Sliding Blue Pill */}
+                {/* Interactive Tabs Row */}
                 <div style={{ display: 'flex', gap: '4px', overflowX: 'auto', padding: '2px', scrollbarWidth: 'none', position: 'relative' }}>
-                  {/* Sliding Blue Pill Indicator (Reverse-U Motion) */}
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: '2px',
-                      left: `${pillStyle.left}px`,
-                      width: `${pillStyle.width}px`,
-                      height: '35px',
-                      borderRadius: '10px',
-                      background: 'var(--accent-blue)',
-                      boxShadow: '0 4px 18px rgba(59, 130, 246, 0.45)',
-                      transition: 'all 0.65s cubic-bezier(0.85, 0.05, 0.15, 0.95)',
-                      pointerEvents: 'none',
-                      zIndex: 1,
-                      opacity: pillStyle.opacity
-                    }}
-                  />
-
                   {[
                     { id: 'Money', label: 'Money', icon: DollarSign },
                     { id: 'Sleep', label: 'Sleep', icon: SleepIcon },
@@ -1994,15 +1976,17 @@ const handleDeleteHabitDb = async (id) => {
                           borderRadius: '10px',
                           fontSize: '0.85rem',
                           fontWeight: isActive ? 700 : 500,
-                          color: isActive ? 'var(--accent-text)' : 'var(--text-muted)',
-                          background: 'transparent',
+                          color: isActive ? '#ffffff' : 'var(--text-muted)',
+                          background: isActive ? 'var(--accent-blue)' : 'transparent',
+                          boxShadow: isActive ? '0 4px 18px rgba(59, 130, 246, 0.45)' : 'none',
                           border: 'none',
                           cursor: 'pointer',
                           position: 'relative',
                           zIndex: 2,
-                          transition: 'color 0.4s ease, transform 0.4s ease',
+                          transition: 'all 0.4s ease',
                           whiteSpace: 'nowrap',
-                          transform: isActive ? 'scale(1.03)' : 'scale(1)'
+                          transform: isActive ? 'scale(1.03)' : 'scale(1)',
+                          flexShrink: 0
                         }}
                       >
                         <Icon size={14} />
