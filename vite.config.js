@@ -6,11 +6,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api': {
-        target: 'https://ailifeagent.vercel.app',
-        changeOrigin: true,
-        secure: false
-      }
+      '/api': 'http://localhost:3000'
     }
   },
   build: {

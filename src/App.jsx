@@ -22,6 +22,7 @@ import Modal from './components/Modal';
 import { todayKey, localTimeZone, getWeekDays, isHabitScheduledOnDay, ALL_WEEK_DAYS } from './utils/date';
 import WaterReminder from './components/WaterReminder';
 import TabErrorBoundary from './components/TabErrorBoundary';
+import { getApiUrl } from './utils/apiConfig';
 
 const getFormattedDateTitle = (dateStr) => {
   let targetDate = new Date();
