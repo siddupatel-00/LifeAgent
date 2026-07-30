@@ -1,14 +1,25 @@
 // Calendar dates must be created in the user's local timezone, not UTC.
-export const todayKey = (timeZone) => {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: timeZone || Intl.DateTimeFormat().resolvedOptions().timeZone,
-    year: 'numeric', month: '2-digit', day: '2-digit'
-  }).formatToParts(new Date());
-  const value = Object.fromEntries(parts.map(({ type, value }) => [type, value]));
-  return `${value.year}-${value.month}-${value.day}`;
+export const localTimeZone = () => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  } catch (e) {
+    return 'UTC';
+  }
 };
 
-export const localTimeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+export const todayKey = (timeZone) => {
+  try {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: timeZone || localTimeZone(),
+      year: 'numeric', month: '2-digit', day: '2-digit'
+    }).formatToParts(new Date());
+    const value = Object.fromEntries(parts.map(({ type, value }) => [type, value]));
+    return `${value.year}-${value.month}-${value.day}`;
+  } catch (e) {
+    const d = new Date();
+    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+  }
+};
 
 export const ALL_WEEK_DAYS = [
   { name: 'Sunday', code: 'Sun', letter: 'S', dayIdx: 0 },

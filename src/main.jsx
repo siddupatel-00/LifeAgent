@@ -31,20 +31,28 @@ class GlobalErrorBoundary extends Component {
         <div style={{
           position: 'fixed',
           inset: 0,
-          background: '#0a0c10',
-          color: '#ffffff',
+          position: 'fixed',
+          inset: 0,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '24px',
-          textAlign: 'center',
-          fontFamily: "'Outfit', sans-serif"
+          background: '#0a0c10',
+          color: '#ffffff',
+          fontFamily: 'system-ui, -apple-system, sans-serif',
+          zIndex: 99999,
+          padding: '20px',
+          textAlign: 'center'
         }}>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '8px' }}>Something went wrong</h2>
-          <p style={{ fontSize: '0.9rem', color: '#94a3b8', marginBottom: '20px', maxWidth: '320px' }}>
+          <h2 style={{ marginBottom: '8px', fontSize: '20px', fontWeight: '600' }}>Something went wrong</h2>
+          <p style={{ color: '#888', marginBottom: '24px', fontSize: '14px', maxWidth: '300px' }}>
             The app encountered an unexpected error. Tap below to reload cleanly.
           </p>
+          {this.state.error && (
+            <div style={{ background: '#220000', color: '#ff6b6b', padding: '12px', borderRadius: '8px', marginBottom: '24px', fontSize: '12px', maxWidth: '90%', wordWrap: 'break-word', textAlign: 'left' }}>
+              <strong>Error:</strong> {this.state.error.toString()}
+            </div>
+          )}
           <button 
             onClick={this.handleReload}
             style={{
