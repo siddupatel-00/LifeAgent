@@ -759,7 +759,7 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
               <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>No items logged yet</div>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>No items logged yet. Click + to add your first entry</p>
               <button 
-                onClick={() => setIsAddWorkoutOpen(true)}
+                onClick={() => { setIsAddWorkoutOpen(true); setShowForm?.(true); }}
                 className="blue-btn"
                 style={{ marginTop: '8px', padding: '8px 18px', fontSize: '0.85rem', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
               >

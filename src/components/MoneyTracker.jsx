@@ -182,6 +182,7 @@ export default function MoneyTracker({ transactions = [], setTransactions, token
         setNewNotes('');
         showToast('Transaction Added', 'success');
         setRightPanelView('charts');
+        setShowForm?.(false);
       }
     } catch (err) {
       console.error(err);
@@ -295,7 +296,10 @@ export default function MoneyTracker({ transactions = [], setTransactions, token
               <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>No items logged yet</div>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>No items logged yet. Click + to add your first entry</p>
               <button
-                onClick={() => setIsAddOpen(true)}
+                onClick={() => {
+                  setRightPanelView('add');
+                  setShowForm?.(true);
+                }}
                 className="blue-btn"
                 style={{ marginTop: '8px', padding: '8px 18px', fontSize: '0.85rem', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
               >
@@ -378,7 +382,7 @@ export default function MoneyTracker({ transactions = [], setTransactions, token
       
       <Modal
         isOpen={rightPanelView === 'add'}
-        onClose={() => setRightPanelView('charts')}
+        onClose={() => { setRightPanelView('charts'); setShowForm?.(false); }}
         title="Add Transaction"
         icon={Plus}
         maxWidth="440px"
@@ -446,7 +450,7 @@ export default function MoneyTracker({ transactions = [], setTransactions, token
             <input type="text" placeholder="Enter notes..." value={newNotes} onChange={(e) => setNewNotes(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
           </div>
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px' }}>
-            <button type="button" onClick={() => setRightPanelView('charts')} className="secondary-btn" style={{ padding: '10px 20px', borderRadius: '50px', fontSize: '0.9rem' }}>Cancel</button>
+            <button type="button" onClick={() => { setRightPanelView('charts'); setShowForm?.(false); }} className="secondary-btn" style={{ padding: '10px 20px', borderRadius: '50px', fontSize: '0.9rem' }}>Cancel</button>
             <button type="submit" className="blue-btn" style={{ padding: '10px 20px', borderRadius: '50px', fontSize: '0.9rem', justifyContent: 'center' }}><Plus size={18} /> Record Entry</button>
           </div>
         </form>
