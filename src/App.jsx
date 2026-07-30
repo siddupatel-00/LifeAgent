@@ -145,6 +145,18 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
+  // Smoothly dismiss initial HTML splash loader once React App is mounted
+  useEffect(() => {
+    const splash = document.getElementById('initial-splash-loader');
+    if (splash) {
+      splash.style.opacity = '0';
+      splash.style.pointerEvents = 'none';
+      setTimeout(() => {
+        splash.style.display = 'none';
+      }, 400);
+    }
+  }, []);
+
   // Form state for Waitlist Only
   const [waitlistName, setWaitlistName] = useState('');
   const [waitlistEmail, setWaitlistEmail] = useState('');
