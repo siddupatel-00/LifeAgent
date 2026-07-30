@@ -355,26 +355,27 @@ export default function App() {
       }
       
       if (data && data.error) {
-        throw new Error(data.error);
+        setAuthError(data.error);
+        return;
       }
 
-      // Offline mobile app fallback login
-      const mockToken = 'offline_user_token_' + Date.now();
-      safeStorage.setItem('token', mockToken);
-      setToken(mockToken);
-      setIsAuthenticated(true);
-      setAuthForm({ name: '', handle: '', email: '', password: '', phone: '' });
-      navigate('dashboard', '/dashboard');
+      if (!res.ok) {
+        setAuthError(authMode === 'login' ? 'Invalid email or password.' : 'Registration failed. Please try again.');
+        return;
+      }
+
+      setAuthError('Unexpected server response. Please try again.');
     } catch (err) {
-      if (err.message && !err.message.includes('JSON') && err.message !== 'Failed to fetch') {
-        setAuthError(err.message);
-      } else {
+      if (window.Capacitor || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+        // Standalone offline native mobile app fallback
         const mockToken = 'offline_user_token_' + Date.now();
         safeStorage.setItem('token', mockToken);
         setToken(mockToken);
         setIsAuthenticated(true);
         setAuthForm({ name: '', handle: '', email: '', password: '', phone: '' });
         navigate('dashboard', '/dashboard');
+      } else {
+        setAuthError(err?.message || 'Network error. Please check your internet connection.');
       }
     } finally {
       setAuthLoading(false);
@@ -1912,25 +1913,14 @@ const handleDeleteHabitDb = async (id) => {
           </section>
 
           {/* INTERACTIVE 80% PRODUCT PREVIEW SECTION */}
-          <section className="scroll-swipe-up scroll-delay-1" style={{ margin: '30px auto 80px', width: '85%', minWidth: '320px', maxWidth: '1100px' }}>
+          <section className="scroll-swipe-up scroll-delay-1" style={{ margin: '30px auto 80px', width: '100%', maxWidth: '1100px' }}>
             <div 
               onMouseEnter={() => setIsHoveringMockup(true)}
               onMouseLeave={() => setIsHoveringMockup(false)}
-              className="glass-card scroll-swipe-up scroll-delay-2" 
-              style={{ 
-                borderRadius: '24px', 
-                border: '1px solid var(--border-color)', 
-                overflow: 'hidden', 
-                boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.5), 0 0 35px rgba(59, 130, 246, 0.15)',
-                background: 'var(--bg-card)',
-                height: '480px',
-                maxHeight: '480px',
-                display: 'flex',
-                flexDirection: 'column'
-              }}
+              className="glass-card hero-mockup-frame scroll-swipe-up scroll-delay-2" 
             >
               {/* Window Titlebar Header */}
-              <div style={{
+              <div className="hero-mockup-titlebar" style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
@@ -1998,25 +1988,25 @@ const handleDeleteHabitDb = async (id) => {
               </div>
 
               {/* Tab Display Area */}
-              <div style={{ padding: '28px', height: '100%', overflow: 'hidden', overflowY: 'hidden', background: 'var(--bg-main)' }}>
+              <div className="hero-mockup-body">
                 
                 {/* 1. MONEY TAB MOCK */}
                 {previewTab === 'Money' && (
                   <div className="animate-tab-matter" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                    <div className="hero-grid-responsive">
                       <div className="glass-card" style={{ padding: '18px', borderRadius: '16px' }}>
                         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Monthly Income</div>
-                        <div style={{ fontSize: '1.7rem', fontWeight: 800, color: '#10b981', marginTop: '6px' }}>+$6,450.00</div>
+                        <div className="hero-stat-amount" style={{ fontSize: '1.7rem', fontWeight: 800, color: '#10b981', marginTop: '6px' }}>+$6,450.00</div>
                         <div style={{ fontSize: '0.75rem', color: '#10b981', marginTop: '4px' }}>↑ 14% vs last month</div>
                       </div>
                       <div className="glass-card" style={{ padding: '18px', borderRadius: '16px' }}>
                         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Total Expenses</div>
-                        <div style={{ fontSize: '1.7rem', fontWeight: 800, color: '#ef4444', marginTop: '6px' }}>-$1,820.40</div>
+                        <div className="hero-stat-amount" style={{ fontSize: '1.7rem', fontWeight: 800, color: '#ef4444', marginTop: '6px' }}>-$1,820.40</div>
                         <div style={{ fontSize: '0.75rem', color: '#10b981', marginTop: '4px' }}>↓ 8% spent vs budget</div>
                       </div>
                       <div className="glass-card" style={{ padding: '18px', borderRadius: '16px' }}>
                         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Net Savings Rate</div>
-                        <div style={{ fontSize: '1.7rem', fontWeight: 800, color: 'var(--accent-blue)', marginTop: '6px' }}>71.7%</div>
+                        <div className="hero-stat-amount" style={{ fontSize: '1.7rem', fontWeight: 800, color: 'var(--accent-blue)', marginTop: '6px' }}>71.7%</div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>+$4,629.60 saved</div>
                       </div>
                     </div>

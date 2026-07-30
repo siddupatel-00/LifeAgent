@@ -1449,6 +1449,65 @@ input[type="checkbox"]:checked::after {
     max-width: 100% !important;
     box-sizing: border-box !important;
   }
+
+  .hero-mockup-frame {
+    min-height: auto !important;
+    height: auto !important;
+    max-height: none !important;
+    border-radius: 16px !important;
+  }
+
+  .hero-mockup-body {
+    padding: 12px 14px !important;
+    overflow-y: visible !important;
+  }
+
+  .hero-grid-responsive {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .hero-sleep-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .hero-stat-amount {
+    font-size: 1.35rem !important;
+  }
+}
+
+/* Hero Mockup Section Desktop Base Styles */
+.hero-mockup-frame {
+  border-radius: 24px;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.5), 0 0 35px rgba(59, 130, 246, 0.15);
+  background: var(--bg-card);
+  min-height: 480px;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.hero-mockup-body {
+  padding: 24px;
+  flex: 1;
+  background: var(--bg-main);
+  overflow-y: auto;
+}
+
+.hero-grid-responsive {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.hero-sleep-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 20px;
+  align-items: stretch;
 }
 
 
