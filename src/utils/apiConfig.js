@@ -1,4 +1,4 @@
-export const API_BASE_URL = (typeof window !== 'undefined' && (window.Capacitor || window.location.protocol === 'file:' || window.location.hostname === 'localhost'))
+export const API_BASE_URL = (typeof window !== 'undefined' && (window.Capacitor || window.location.protocol === 'file:'))
   ? 'https://ailifeagent.vercel.app'
   : '';
 
