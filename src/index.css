@@ -1444,5 +1444,11 @@ input[type="checkbox"]:checked::after {
     padding: 8px 0 !important;
     font-size: 0.82rem !important;
   }
+  section.scroll-swipe-up {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
 }
+
 
