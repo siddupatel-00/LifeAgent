@@ -67,15 +67,47 @@ const TAB_SLUGS = {
 };
 const SLUG_TO_TAB = Object.fromEntries(Object.entries(TAB_SLUGS).map(([k, v]) => [v, k]));
 
+const safeStorage = {
+  getItem: (key) => {
+    try {
+      if (typeof window === 'undefined' || !window.localStorage) return null;
+      return localStorage.getItem(key);
+    } catch (e) {
+      return null;
+    }
+  },
+  setItem: (key, val) => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.setItem(key, val);
+      }
+    } catch (e) {}
+  },
+  removeItem: (key) => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.removeItem(key);
+      }
+    } catch (e) {}
+  },
+  clear: () => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.clear();
+      }
+    } catch (e) {}
+  }
+};
+
 export default function App() {
-  const [themeMode, setThemeMode] = useState(() => localStorage.getItem('themeMode') || 'pc'); // 'dark', 'light', 'pc'
+  const [themeMode, setThemeMode] = useState(() => safeStorage.getItem('themeMode') || 'pc'); // 'dark', 'light', 'pc'
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
   const themeDropdownRef = useRef(null);
 
   // Sync initial page with URL pathname (/dashboard, /waitlist, /contact, or /)
   const [currentPage, setCurrentPage] = useState(() => {
     const path = window.location.pathname;
-    const token = localStorage.getItem('token');
+    const token = safeStorage.getItem('token');
     const isAuth = !!token;
     
     if (path.includes('/dashboard')) return isAuth ? 'dashboard' : 'auth';
@@ -88,7 +120,7 @@ export default function App() {
 
   // Helper to change page and URL address bar simultaneously
   const navigate = (page, path) => {
-    const isAuth = !!localStorage.getItem('token');
+    const isAuth = !!safeStorage.getItem('token');
     if (page === 'auth' && isAuth) {
       setCurrentPage('dashboard');
       window.history.pushState({}, '', '/dashboard');
@@ -102,7 +134,7 @@ export default function App() {
   useEffect(() => {
     const handlePopState = () => {
       const path = window.location.pathname;
-      const isAuth = !!localStorage.getItem('token');
+      const isAuth = !!safeStorage.getItem('token');
       
       if (path.includes('/dashboard') || SLUG_TO_TAB[path]) {
         if (!isAuth) window.history.replaceState({}, '', '/auth');
@@ -253,8 +285,8 @@ export default function App() {
   const [settingsSaved, setSettingsSaved] = useState(false);
 
   // Authentication State
-  const [isAuthenticated, setIsAuthenticated] = useState(() => !!localStorage.getItem('token'));
-  const [token, setToken] = useState(() => localStorage.getItem('token') || '');
+  const [isAuthenticated, setIsAuthenticated] = useState(() => !!safeStorage.getItem('token'));
+  const [token, setToken] = useState(() => safeStorage.getItem('token') || '');
   const [authMode, setAuthMode] = useState('login'); // 'login', 'signup', or 'forgot'
   const [authForm, setAuthForm] = useState({ name: '', handle: '', email: '', password: '', phone: '' });
   const [authLoading, setAuthLoading] = useState(false);
@@ -1226,15 +1258,18 @@ const handleDeleteHabitDb = async (id) => {
   // Handle PC/System vs explicit Dark/Light mode
   useEffect(() => {
     const root = document.documentElement;
-    localStorage.setItem('themeMode', themeMode);
+    safeStorage.setItem('themeMode', themeMode);
     
     if (themeMode === 'pc') {
-      const isSystemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const isSystemDark = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
       root.setAttribute('data-theme', isSystemDark ? 'dark' : 'light');
       
-      const listener = (e) => root.setAttribute('data-theme', e.matches ? 'dark' : 'light');
-      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', listener);
-      return () => window.matchMedia('(prefers-color-scheme: dark)').removeEventListener('change', listener);
+      if (window.matchMedia) {
+        const listener = (e) => root.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+        const media = window.matchMedia('(prefers-color-scheme: dark)');
+        media.addEventListener ? media.addEventListener('change', listener) : media.addListener(listener);
+        return () => media.removeEventListener ? media.removeEventListener('change', listener) : media.removeListener(listener);
+      }
     } else {
       root.setAttribute('data-theme', themeMode);
     }
@@ -1242,13 +1277,12 @@ const handleDeleteHabitDb = async (id) => {
 
   // Theme Color Sync
   const [themeColor, setThemeColor] = useState(() => {
-    if (typeof window !== 'undefined') return localStorage.getItem('themeColor') || 'blue';
-    return 'blue';
+    return safeStorage.getItem('themeColor') || 'blue';
   });
 
   useEffect(() => {
     const handleStorageChange = () => {
-      const newColor = localStorage.getItem('themeColor') || 'blue';
+      const newColor = safeStorage.getItem('themeColor') || 'blue';
       if (newColor !== themeColor) {
         setThemeColor(newColor);
         document.documentElement.setAttribute('data-color-theme', newColor);

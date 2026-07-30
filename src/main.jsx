@@ -18,7 +18,9 @@ class GlobalErrorBoundary extends Component {
   }
 
   handleReload = () => {
-    localStorage.clear();
+    try {
+      localStorage.clear();
+    } catch (e) {}
     window.location.reload();
   };
 
