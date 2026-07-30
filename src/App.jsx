@@ -609,9 +609,10 @@ export default function App() {
   // 5) Sleep state
   const [sleepLogs, setSleepLogs] = useState([]);
 
-  // 6) Notes & Diary state (with AI sharing permissions)
+  // 6) Notes & Diary state
   const [notesList, setNotesList] = useState([]);
   const [activeNoteId, setActiveNoteId] = useState(null);
+  const [expandedNoteId, setExpandedNoteId] = useState(null);
   const [isFloatingDiaryOpen, setIsFloatingDiaryOpen] = useState(false);
   const [floatingDiaryContent, setFloatingDiaryContent] = useState("");
   const [floatingDiaryShare, setFloatingDiaryShare] = useState(true);
@@ -3843,7 +3844,7 @@ const handleDeleteHabitDb = async (id) => {
                                 <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>days</span>
                               </div>
                             ) : (
-                              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '4px', flexWrap: 'nowrap', width: '100%' }}>
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', width: '100%', boxSizing: 'border-box' }}>
                                 {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => {
                                   const selectedDays = Array.isArray(newHabitData.customDays)
                                     ? newHabitData.customDays
@@ -3860,11 +3861,12 @@ const handleDeleteHabitDb = async (id) => {
                                         setNewHabitData({ ...newHabitData, customDays: nextDays, intervalDays: 0, interval_days: 0 });
                                       }}
                                       style={{
-                                        flex: 1, padding: '8px 0', borderRadius: '8px',
+                                        width: '100%', padding: '8px 0', borderRadius: '8px',
                                         border: `1px solid ${isSelected ? 'var(--accent-blue)' : 'var(--border-color)'}`,
                                         background: isSelected ? 'var(--accent-blue-dim)' : 'var(--bg-main)',
                                         color: isSelected ? 'var(--accent-blue)' : 'var(--text-muted)',
-                                        fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer', transition: 'all 0.15s'
+                                        fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer', transition: 'all 0.15s',
+                                        boxSizing: 'border-box', textAlign: 'center'
                                       }}
                                     >
                                       {day}
@@ -4214,7 +4216,7 @@ const handleDeleteHabitDb = async (id) => {
                                 </div>
 
                                 {/* 7-Day Activity Pill Heatmap with Dynamic Week Start */}
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px', marginBottom: '16px' }}>
+                                <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: '6px', marginBottom: '16px' }}>
                                   {weekDays.map((day, dIdx) => {
                                     const todayDate = new Date();
                                     const todayJsDayIdx = todayDate.getDay();
@@ -4231,7 +4233,7 @@ const handleDeleteHabitDb = async (id) => {
                                       : true;
 
                                     return (
-                                      <div key={dIdx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                                      <div key={dIdx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', minWidth: 0 }}>
                                         <div style={{
                                           width: '100%',
                                           height: '24px',
@@ -4454,7 +4456,7 @@ const handleDeleteHabitDb = async (id) => {
                                   <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>days</span>
                                 </div>
                               ) : (
-                                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '4px', flexWrap: 'nowrap', width: '100%' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', width: '100%', boxSizing: 'border-box' }}>
                                   {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => {
                                     const selectedDays = Array.isArray(editingHabitData.customDays)
                                       ? editingHabitData.customDays
@@ -4471,11 +4473,12 @@ const handleDeleteHabitDb = async (id) => {
                                           setEditingHabitData({ ...editingHabitData, customDays: nextDays, intervalDays: 0, interval_days: 0 });
                                         }}
                                         style={{
-                                          flex: 1, padding: '6px 0', borderRadius: '6px',
+                                          width: '100%', padding: '6px 0', borderRadius: '6px',
                                           border: `1px solid ${isSelected ? 'var(--accent-blue)' : 'var(--border-color)'}`,
                                           background: isSelected ? 'var(--accent-blue-dim)' : 'var(--bg-main)',
                                           color: isSelected ? 'var(--accent-blue)' : 'var(--text-muted)',
-                                          fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer'
+                                          fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer',
+                                          boxSizing: 'border-box', textAlign: 'center'
                                         }}
                                       >
                                         {day}
@@ -4666,11 +4669,13 @@ const handleDeleteHabitDb = async (id) => {
                         const updatedList = [tempNote, ...notesList];
                         setNotesList(updatedList);
                         setActiveNoteId(tempId);
+                        setExpandedNoteId(tempId);
 
                         // Background DB creation
                         handleCreateNoteDb(defaultTitle, '', true, (serverNote) => {
                           setNotesList(prev => prev.map(n => n.id === tempId ? { ...n, id: serverNote.id } : n));
                           setActiveNoteId(serverNote.id);
+                          setExpandedNoteId(serverNote.id);
                         });
                       }}
                       style={{ padding: '10px 22px', fontSize: '0.92rem' }}
@@ -4687,6 +4692,7 @@ const handleDeleteHabitDb = async (id) => {
                           onClick={() => {
                             setNotesViewMode('active');
                             setActiveNoteId(null);
+                            setExpandedNoteId(null);
                           }}
                           style={{
                             flex: 1, padding: '8px', borderRadius: '10px', border: 'none',
@@ -4701,6 +4707,7 @@ const handleDeleteHabitDb = async (id) => {
                           onClick={() => {
                             setNotesViewMode('trash');
                             setActiveNoteId(null);
+                            setExpandedNoteId(null);
                           }}
                           style={{
                             flex: 1, padding: '8px', borderRadius: '10px', border: 'none',
@@ -4720,56 +4727,153 @@ const handleDeleteHabitDb = async (id) => {
                               No notes yet. Click + to add one.
                             </div>
                           ) : (
-                            notesList.map(note => (
-                              <div
-                                key={note.id}
-                                onClick={() => setActiveNoteId(note.id)}
-                                style={{
-                                  padding: '14px 16px',
-                                  borderRadius: '14px',
-                                  background: activeNoteId === note.id ? 'var(--accent-blue)' : 'var(--bg-card)',
-                                  color: activeNoteId === note.id ? 'var(--accent-text)' : 'var(--text-main)',
-                                  border: `1px solid ${activeNoteId === note.id ? 'var(--accent-blue)' : 'var(--border-color)'}`,
-                                  cursor: 'pointer',
-                                  transition: 'all 0.2s',
-                                  display: 'flex', flexDirection: 'column', gap: '6px'
-                                }}
-                              >
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                  <span style={{ fontSize: '0.7rem', fontWeight: 800, background: activeNoteId === note.id ? 'rgba(255,255,255,0.2)' : 'var(--bg-main)', padding: '2px 8px', borderRadius: '8px' }}>
-                                    {note.category}
-                                  </span>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    {note.shareWithAi && (
-                                      <span title="Shared with AI Agent" style={{ fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '4px', background: activeNoteId === note.id ? 'rgba(255,255,255,0.25)' : 'rgba(34,197,94,0.15)', color: activeNoteId === note.id ? 'var(--accent-text)' : '#22c55e', padding: '2px 8px', borderRadius: '10px', fontWeight: 700 }}>
-                                        🤖 AI Shared
+                            notesList.map(note => {
+                              const isExpanded = expandedNoteId === note.id;
+                              const isActive = activeNoteId === note.id;
+                              return (
+                                <React.Fragment key={note.id}>
+                                  <div
+                                    onClick={() => {
+                                      setActiveNoteId(note.id);
+                                      setExpandedNoteId(prev => prev === note.id ? null : note.id);
+                                    }}
+                                    style={{
+                                      padding: '14px 16px',
+                                      borderRadius: '14px',
+                                      background: isActive ? 'var(--accent-blue)' : 'var(--bg-card)',
+                                      color: isActive ? 'var(--accent-text)' : 'var(--text-main)',
+                                      border: `1px solid ${isActive ? 'var(--accent-blue)' : 'var(--border-color)'}`,
+                                      cursor: 'pointer',
+                                      transition: 'all 0.2s',
+                                      display: 'flex', flexDirection: 'column', gap: '6px'
+                                    }}
+                                  >
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                      <span style={{ fontSize: '0.7rem', fontWeight: 800, background: isActive ? 'rgba(255,255,255,0.2)' : 'var(--bg-main)', padding: '2px 8px', borderRadius: '8px' }}>
+                                        {note.category}
                                       </span>
-                                    )}
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleUpdateNoteDb({ id: note.id, is_trashed: 1, deleted_at: new Date().toISOString() });
-                                        setTrashNotes([{ ...note, deletedAt: Date.now(), is_trashed: 1 }, ...trashNotes]);
-                                        const next = notesList.filter(n => n.id !== note.id);
-                                        setNotesList(next);
-                                        if (activeNoteId === note.id && next.length > 0) setActiveNoteId(next[0].id);
-                                        showToast('Note moved to Trash. Click 🗑️ Trash to restore anytime!');
-                                      }}
-                                      style={{ background: 'transparent', border: 'none', color: activeNoteId === note.id ? 'var(--accent-text)' : '#ef4444', cursor: 'pointer', padding: '2px', opacity: 0.8 }}
-                                      title="Move to Trash (Kept for 49 days)"
-                                    >
-                                      <Trash2 size={15} />
-                                    </button>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleUpdateNoteDb({ id: note.id, is_trashed: 1, deleted_at: new Date().toISOString() });
+                                            setTrashNotes([{ ...note, deletedAt: Date.now(), is_trashed: 1 }, ...trashNotes]);
+                                            const next = notesList.filter(n => n.id !== note.id);
+                                            setNotesList(next);
+                                            if (activeNoteId === note.id && next.length > 0) setActiveNoteId(next[0].id);
+                                            if (expandedNoteId === note.id) setExpandedNoteId(next.length > 0 ? next[0].id : null);
+                                            showToast('Note moved to Trash. Click 🗑️ Trash to restore anytime!');
+                                          }}
+                                          style={{ background: 'transparent', border: 'none', color: isActive ? 'var(--accent-text)' : '#ef4444', cursor: 'pointer', padding: '2px', opacity: 0.8 }}
+                                          title="Move to Trash (Kept for 49 days)"
+                                        >
+                                          <Trash2 size={15} />
+                                        </button>
+                                      </div>
+                                    </div>
+                                    <h5 style={{ fontSize: '0.96rem', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                      {note.title}
+                                    </h5>
+                                    <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>
+                                      Last updated: {note.date}
+                                    </span>
                                   </div>
-                                </div>
-                                <h5 style={{ fontSize: '0.96rem', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                  {note.title}
-                                </h5>
-                                <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>
-                                  Last updated: {note.date}
-                                </span>
-                              </div>
-                            ))
+
+                                  {/* MOBILE INLINE EXPANDED CONTENT EDITOR */}
+                                  {isExpanded && (
+                                    <div
+                                      className="notes-mobile-editor animate-entrance"
+                                      style={{
+                                        background: 'var(--bg-card)',
+                                        border: '1px solid var(--accent-blue)',
+                                        borderRadius: '14px',
+                                        padding: '14px',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '12px',
+                                        marginTop: '2px',
+                                        marginBottom: '6px'
+                                      }}
+                                    >
+                                      <input
+                                        type="text"
+                                        disabled={notesViewMode === 'trash'}
+                                        value={note.title}
+                                        onChange={(e) => {
+                                          const updatedTitle = e.target.value;
+                                          setNotesList(notesList.map(n => n.id === note.id ? { ...n, title: updatedTitle, date: todayKey(userProfile.timezone) } : n));
+                                        }}
+                                        onBlur={() => handleUpdateNoteDb(note)}
+                                        placeholder="Note title..."
+                                        style={{
+                                          width: '100%', fontSize: '1.1rem', fontWeight: 800,
+                                          background: 'var(--bg-main)', color: 'var(--text-main)',
+                                          border: '1px solid var(--border-color)', borderRadius: '10px',
+                                          padding: '10px 12px', outline: 'none'
+                                        }}
+                                      />
+                                      <textarea
+                                        disabled={notesViewMode === 'trash'}
+                                        value={note.content}
+                                        onChange={(e) => {
+                                          const updatedContent = e.target.value;
+                                          setNotesList(notesList.map(n => n.id === note.id ? { ...n, content: updatedContent, date: todayKey(userProfile.timezone) } : n));
+                                        }}
+                                        onBlur={() => handleUpdateNoteDb(note)}
+                                        placeholder="Write your diary entry, personal reflection, or goals..."
+                                        style={{
+                                          width: '100%', minHeight: '160px', padding: '12px',
+                                          borderRadius: '10px', background: 'var(--bg-main)',
+                                          color: 'var(--text-main)', border: '1px solid var(--border-color)',
+                                          fontSize: '0.95rem', lineHeight: '1.6', outline: 'none', resize: 'vertical'
+                                        }}
+                                      />
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const trashedNote = { ...note, deletedAt: Date.now(), is_trashed: 1 };
+                                            setTrashNotes([trashedNote, ...trashNotes]);
+                                            const nextList = notesList.filter(n => n.id !== note.id);
+                                            setNotesList(nextList);
+                                            handleUpdateNoteDb(trashedNote);
+                                            showToast('Note moved to Trash. Click 🗑️ Trash to restore anytime!');
+                                            if (nextList.length > 0) {
+                                              setActiveNoteId(nextList[0].id);
+                                              setExpandedNoteId(nextList[0].id);
+                                            } else {
+                                              setActiveNoteId(null);
+                                              setExpandedNoteId(null);
+                                            }
+                                          }}
+                                          style={{
+                                            display: 'flex', alignItems: 'center', gap: '6px',
+                                            padding: '8px 14px', borderRadius: '12px',
+                                            background: 'rgba(239, 68, 68, 0.12)', color: '#ef4444',
+                                            border: '1px solid rgba(239, 68, 68, 0.3)',
+                                            fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer'
+                                          }}
+                                          title="Move this note to Trash"
+                                        >
+                                          <Trash2 size={15} /> Delete Note
+                                        </button>
+                                        <button
+                                          type="button"
+                                          className="blue-btn"
+                                          onClick={async () => {
+                                            await handleUpdateNoteDb(note);
+                                            showToast('Successfully saved', 'success');
+                                          }}
+                                          style={{ padding: '8px 18px', fontSize: '0.88rem', fontWeight: 700, borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                                        >
+                                          <Save size={16} /> Save Note
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+                                </React.Fragment>
+                              );
+                            })
                           )}
                         </div>
                       ) : (
@@ -4783,80 +4887,145 @@ const handleDeleteHabitDb = async (id) => {
                             </div>
                           ) : (
                             trashNotes.map(tNote => {
+                              const isExpanded = expandedNoteId === tNote.id;
+                              const isActive = activeNoteId === tNote.id;
                               const daysLeft = Math.max(0, 49 - Math.floor((Date.now() - (tNote.deletedAt || Date.now())) / (1000 * 60 * 60 * 24)));
                               return (
-                                <div
-                                  key={tNote.id}
-                                  onClick={() => setActiveNoteId(tNote.id)}
-                                  style={{
-                                    padding: '14px 16px', borderRadius: '14px',
-                                    background: activeNoteId === tNote.id ? 'rgba(239, 68, 68, 0.15)' : 'var(--bg-card)',
-                                    border: `1px solid ${activeNoteId === tNote.id ? '#ef4444' : 'var(--border-color)'}`,
-                                    cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '8px'
-                                  }}
-                                >
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <span style={{ fontSize: '0.72rem', color: '#ef4444', fontWeight: 800 }}>
-                                      ⏳ {daysLeft} days until deletion
-                                    </span>
-                                    <div style={{ display: 'flex', gap: '6px' }}>
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          const restoredNote = { ...tNote, is_trashed: 0, deletedAt: null, deleted_at: null };
-                                          handleUpdateNoteDb(restoredNote);
-                                          setNotesList(prev => [restoredNote, ...prev]);
-                                          const remainingTrash = trashNotes.filter(n => n.id !== tNote.id);
-                                          setTrashNotes(remainingTrash);
-                                          // Stay on trash tab; select next trash note if available
-                                          if (remainingTrash.length > 0) {
-                                            setActiveNoteId(remainingTrash[0].id);
-                                          } else {
-                                            setActiveNoteId(null);
-                                          }
-                                          showToast('Note restored to active notes!');
-                                        }}
-                                        style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', border: 'none', borderRadius: '6px', padding: '4px 8px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}
-                                        title="Restore Note to Active"
-                                      >
-                                        ♻️ Restore
-                                      </button>
-                                      <button
-                                        onClick={async (e) => {
-                                          e.stopPropagation();
-                                          const remainingTrash = trashNotes.filter(n => n.id !== tNote.id);
-                                          setTrashNotes(remainingTrash);
-                                          // Select next trash note or clear selection
-                                          if (activeNoteId === tNote.id) {
-                                            setActiveNoteId(remainingTrash.length > 0 ? remainingTrash[0].id : null);
-                                          }
-                                          try {
-                                            const delRes = await fetch(getApiUrl('/api/notes'), {
-                                              method: 'DELETE',
-                                              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                              body: JSON.stringify({ id: tNote.id })
-                                            });
-                                            if (delRes.ok) {
-                                              showToast('Note permanently deleted', 'success');
+                                <React.Fragment key={tNote.id}>
+                                  <div
+                                    onClick={() => {
+                                      setActiveNoteId(tNote.id);
+                                      setExpandedNoteId(prev => prev === tNote.id ? null : tNote.id);
+                                    }}
+                                    style={{
+                                      padding: '14px 16px', borderRadius: '14px',
+                                      background: isActive ? 'rgba(239, 68, 68, 0.15)' : 'var(--bg-card)',
+                                      border: `1px solid ${isActive ? '#ef4444' : 'var(--border-color)'}`,
+                                      cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '8px'
+                                    }}
+                                  >
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                      <span style={{ fontSize: '0.72rem', color: '#ef4444', fontWeight: 800 }}>
+                                        ⏳ {daysLeft} days until deletion
+                                      </span>
+                                      <div style={{ display: 'flex', gap: '6px' }}>
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            const restoredNote = { ...tNote, is_trashed: 0, deletedAt: null, deleted_at: null };
+                                            handleUpdateNoteDb(restoredNote);
+                                            setNotesList(prev => [restoredNote, ...prev]);
+                                            const remainingTrash = trashNotes.filter(n => n.id !== tNote.id);
+                                            setTrashNotes(remainingTrash);
+                                            if (remainingTrash.length > 0) {
+                                              setActiveNoteId(remainingTrash[0].id);
+                                              setExpandedNoteId(remainingTrash[0].id);
                                             } else {
+                                              setActiveNoteId(null);
+                                              setExpandedNoteId(null);
+                                            }
+                                            showToast('Note restored to active notes!');
+                                          }}
+                                          style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', border: 'none', borderRadius: '6px', padding: '4px 8px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}
+                                          title="Restore Note to Active"
+                                        >
+                                          ♻️ Restore
+                                        </button>
+                                        <button
+                                          onClick={async (e) => {
+                                            e.stopPropagation();
+                                            const remainingTrash = trashNotes.filter(n => n.id !== tNote.id);
+                                            setTrashNotes(remainingTrash);
+                                            if (activeNoteId === tNote.id) {
+                                              setActiveNoteId(remainingTrash.length > 0 ? remainingTrash[0].id : null);
+                                              setExpandedNoteId(remainingTrash.length > 0 ? remainingTrash[0].id : null);
+                                            }
+                                            try {
+                                              const delRes = await fetch(getApiUrl('/api/notes'), {
+                                                method: 'DELETE',
+                                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                                body: JSON.stringify({ id: tNote.id })
+                                              });
+                                              if (delRes.ok) {
+                                                showToast('Note permanently deleted', 'success');
+                                              } else {
+                                                showToast('Failed to delete note', 'error');
+                                              }
+                                            } catch (err) {
+                                              console.error(err);
                                               showToast('Failed to delete note', 'error');
                                             }
-                                          } catch (err) {
-                                            console.error(err);
-                                            showToast('Failed to delete note', 'error');
-                                          }
-                                        }}
-                                        style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: 'none', borderRadius: '6px', padding: '4px 8px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}
-                                        title="Permanently Delete Now"
-                                      >
-                                        ❌ Delete
-                                      </button>
+                                          }}
+                                          style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: 'none', borderRadius: '6px', padding: '4px 8px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}
+                                          title="Permanently Delete Now"
+                                        >
+                                          ❌ Delete
+                                        </button>
+                                      </div>
                                     </div>
+                                    <h5 style={{ fontSize: '0.94rem', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--text-main)' }}>
+                                      {tNote.title}
+                                    </h5>
                                   </div>
-                                  <h5 style={{ fontSize: '0.94rem', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--text-main)' }}>
-                                    {tNote.title}
-                                  </h5>
-                                </div>
+
+                                  {/* MOBILE INLINE EXPANDED VIEW FOR TRASH NOTE */}
+                                  {isExpanded && (
+                                    <div
+                                      className="notes-mobile-editor animate-entrance"
+                                      style={{
+                                        background: 'var(--bg-card)',
+                                        border: '1px solid #ef4444',
+                                        borderRadius: '14px',
+                                        padding: '14px',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '12px',
+                                        marginTop: '2px',
+                                        marginBottom: '6px'
+                                      }}
+                                    >
+                                      <div style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--text-main)' }}>{tNote.title}</div>
+                                      <textarea
+                                        disabled
+                                        rows={5}
+                                        value={tNote.content}
+                                        style={{
+                                          width: '100%', padding: '12px', borderRadius: '10px',
+                                          background: 'var(--bg-main)', color: 'var(--text-main)',
+                                          border: '1px solid var(--border-color)', fontSize: '0.95rem', lineHeight: '1.6', outline: 'none',
+                                          resize: 'none', opacity: 0.7
+                                        }}
+                                      />
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
+                                        <span style={{ fontSize: '0.78rem', color: '#ef4444', fontWeight: 700 }}>In Trash Bin</span>
+                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              const restoredNote = { ...tNote, is_trashed: 0, deletedAt: null, deleted_at: null };
+                                              handleUpdateNoteDb(restoredNote);
+                                              setNotesList(prev => [restoredNote, ...prev]);
+                                              const remainingTrash = trashNotes.filter(n => n.id !== tNote.id);
+                                              setTrashNotes(remainingTrash);
+                                              if (remainingTrash.length > 0) {
+                                                setActiveNoteId(remainingTrash[0].id);
+                                                setExpandedNoteId(remainingTrash[0].id);
+                                              } else {
+                                                setActiveNoteId(null);
+                                                setExpandedNoteId(null);
+                                              }
+                                              showToast('Note restored to active notes!');
+                                            }}
+                                            className="blue-btn"
+                                            style={{ padding: '6px 14px', fontSize: '0.82rem' }}
+                                          >
+                                            ♻️ Restore Note
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+                                </React.Fragment>
                               );
                             })
                           )}

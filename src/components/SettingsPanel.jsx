@@ -472,39 +472,6 @@ const SettingsPanel = ({
               </div>
             </div>
 
-            <div className="settings-row">
-              <div>
-                <div style={{ fontWeight: 700, fontSize: '1rem' }}>Share Notes with AI Assistant</div>
-                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>When enabled, notes marked for sharing can be queried by your AI assistant. Off by default.</div>
-              </div>
-              <div
-                onClick={async () => {
-                  const newVal = !(userProfile.share_notes_with_ai || false);
-                  setUserProfile({ ...userProfile, share_notes_with_ai: newVal });
-                  try {
-                    await fetch(getApiUrl('/api/settings'), {
-                      method: 'PUT',
-                      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                      body: JSON.stringify({ share_notes_with_ai: newVal ? 1 : 0 })
-                    });
-                  } catch(e) {}
-                  showToast('Saved successfully', 'success');
-                }}
-                style={{
-                  width: '52px', height: '28px', borderRadius: '14px', cursor: 'pointer', flexShrink: 0,
-                  background: (userProfile.share_notes_with_ai) ? 'var(--accent-blue)' : 'var(--border-color)',
-                  position: 'relative', transition: 'background 0.25s'
-                }}
-              >
-                <div style={{
-                  position: 'absolute', top: '3px',
-                  left: (userProfile.share_notes_with_ai) ? '26px' : '3px',
-                  width: '22px', height: '22px', borderRadius: '50%',
-                  background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
-                  transition: 'left 0.25s'
-                }} />
-              </div>
-            </div>
 
             <div className="settings-row">
               <div>

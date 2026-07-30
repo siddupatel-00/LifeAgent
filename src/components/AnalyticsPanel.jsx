@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  CheckCircle2, DollarSign, Activity, Check, Moon as SleepIcon, RefreshCw 
+  CheckCircle2, DollarSign, Activity, Check, Moon as SleepIcon, RefreshCw, Filter 
 } from 'lucide-react';
+import CustomSelect from './CustomSelect';
 import { todayKey } from '../utils/date';
 import { getApiUrl } from '../utils/apiUrl';
 
@@ -158,16 +159,25 @@ function AnalyticsPanelInner({ token, showToast, currency = '$', timeRange = '7d
     
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-          {ranges.map(r => (
-            <button
-              key={r.value}
-              onClick={() => handleRangeChange(r.value)}
-              style={range === r.value ? { background: 'var(--accent-blue)', color: 'var(--accent-text)', borderRadius: '30px', padding: '8px 16px', fontWeight: 700, border: 'none', cursor: 'pointer', fontSize: '0.85rem' } : { background: 'var(--bg-card)', color: 'var(--text-muted)', borderRadius: '30px', padding: '8px 16px', fontWeight: 600, border: '1px solid var(--border-color)', cursor: 'pointer', fontSize: '0.85rem' }}
-            >
-              {r.label}
-            </button>
-          ))}
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <Filter size={15} /> Timeframe:
+          </span>
+          <CustomSelect
+            className="timeframe-dropdown"
+            value={range}
+            onChange={(e) => handleRangeChange(e.target.value)}
+            options={ranges}
+            style={{
+              width: '180px',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '30px',
+              padding: '8px 16px',
+              color: 'var(--text-primary)',
+              fontSize: '0.85rem'
+            }}
+          />
         </div>
 
         {range === 'custom' && (

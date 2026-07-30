@@ -40,8 +40,19 @@ export default function BodyGym(props) {
 }
 
 function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodyStats = [], setBodyStats, userProfile, showForm, setShowForm, isEditSplitOpen: externalIsEditSplitOpen, setIsEditSplitOpen: externalSetIsEditSplitOpen }) {
-  const [activeSubTab, setActiveSubTab] = useState('today'); // 'today', 'workouts', 'stats'
+  const userHasChangedTab = React.useRef(false);
+  const [activeSubTab, setActiveSubTab] = useState(() => (!initialWorkouts || initialWorkouts.length === 0) ? 'workouts' : 'today');
   const [workouts, setWorkouts] = useState(() => Array.isArray(initialWorkouts) ? initialWorkouts : []);
+
+  useEffect(() => {
+    if (!userHasChangedTab.current) {
+      if (!workouts || workouts.length === 0) {
+        setActiveSubTab('workouts');
+      } else {
+        setActiveSubTab('today');
+      }
+    }
+  }, [workouts]);
 
   // Workout Split Rotation State
   const [workoutSettings, setWorkoutSettings] = useState({ split_type: 'weekly', templates: null });
@@ -52,6 +63,9 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
   const setIsEditSplitOpen = externalSetIsEditSplitOpen || setInternalIsEditSplitOpen;
   const [newSplitName, setNewSplitName] = useState('');
 
+  const WEEKDAYS = useMemo(() => ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], []);
+  const isWeekly = workoutSettings.split_type === 'weekly';
+
   const saveSplitList = (newList) => {
     setSplitList(newList);
     setHasCustomSplit(true);
@@ -61,20 +75,41 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
   const todayStr = todayKey(userProfile?.timezone);
   const totalWorkoutsCount = workouts.length;
   
+  let dayOfWeek = 0;
+  if (todayStr) {
+    const parts = todayStr.split('-');
+    if (parts.length === 3) {
+      const dateObj = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      dayOfWeek = (dateObj.getDay() + 6) % 7; // 0 = Monday, ..., 6 = Sunday
+    } else {
+      dayOfWeek = (new Date().getDay() + 6) % 7;
+    }
+  } else {
+    dayOfWeek = (new Date().getDay() + 6) % 7;
+  }
+
   let todaySplitIdx = 0;
   if (splitList.length > 0) {
-    if (workoutSettings.split_type === 'rotational') {
+    if (!isWeekly) {
       todaySplitIdx = totalWorkoutsCount % splitList.length;
     } else {
-      const todayDateObj = new Date(todayStr);
-      const daysEpoch = Math.floor(todayDateObj.getTime() / (1000 * 60 * 60 * 24));
-      todaySplitIdx = Math.abs(daysEpoch) % splitList.length;
+      todaySplitIdx = dayOfWeek % splitList.length;
     }
   }
 
-  const todayWorkoutTitle = splitList.length > 0 ? ((splitList[todaySplitIdx]?.name || splitList[todaySplitIdx]) || 'Workout') : 'Workout';
-  const tomorrowWorkoutTitle = splitList.length > 0 ? ((splitList[(todaySplitIdx + 1) % splitList.length]?.name || splitList[(todaySplitIdx + 1) % splitList.length]) || 'Workout') : 'Workout';
-  const dayAfterWorkoutTitle = splitList.length > 0 ? ((splitList[(todaySplitIdx + 2) % splitList.length]?.name || splitList[(todaySplitIdx + 2) % splitList.length]) || 'Workout') : 'Workout';
+  const getSplitTitle = (idx) => {
+    if (splitList.length === 0) return 'Workout';
+    const item = splitList[idx % splitList.length];
+    return typeof item === 'string' ? item : (item?.name || item?.title || 'Workout');
+  };
+
+  const todayWorkoutTitle = splitList.length > 0 ? getSplitTitle(todaySplitIdx) : 'Workout';
+  const tomorrowWorkoutTitle = splitList.length > 0 
+    ? getSplitTitle(isWeekly ? (dayOfWeek + 1) % splitList.length : (todaySplitIdx + 1) % splitList.length)
+    : 'Workout';
+  const dayAfterWorkoutTitle = splitList.length > 0 
+    ? getSplitTitle(isWeekly ? (dayOfWeek + 2) % splitList.length : (todaySplitIdx + 2) % splitList.length)
+    : 'Workout';
 
   // Workout form state
   const [isAddWorkoutOpen, setIsAddWorkoutOpen] = useState(false);
@@ -517,7 +552,7 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
       {/* Sub-tab navigation: Today | Workouts | Body Stats */}
       <div style={{ display: 'flex', gap: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
         <button 
-          onClick={() => setActiveSubTab('today')}
+          onClick={() => { userHasChangedTab.current = true; setActiveSubTab('today'); }}
           style={{ 
             background: 'none', border: 'none', padding: '8px 16px', cursor: 'pointer',
             fontSize: '1rem', fontWeight: activeSubTab === 'today' ? 700 : 500,
@@ -528,7 +563,7 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
           Today
         </button>
         <button 
-          onClick={() => setActiveSubTab('workouts')}
+          onClick={() => { userHasChangedTab.current = true; setActiveSubTab('workouts'); }}
           style={{ 
             background: 'none', border: 'none', padding: '8px 16px', cursor: 'pointer',
             fontSize: '1rem', fontWeight: activeSubTab === 'workouts' ? 700 : 500,
@@ -539,7 +574,7 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
           Workouts
         </button>
         <button 
-          onClick={() => setActiveSubTab('stats')}
+          onClick={() => { userHasChangedTab.current = true; setActiveSubTab('stats'); }}
           style={{ 
             background: 'none', border: 'none', padding: '8px 16px', cursor: 'pointer',
             fontSize: '1rem', fontWeight: activeSubTab === 'stats' ? 700 : 500,
@@ -589,17 +624,23 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
             </div>
 
             {/* Rotation Timeline Preview */}
-            <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid var(--border-color)', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+            <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid var(--border-color)', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' }}>
               <div style={{ background: 'var(--accent-blue-dim)', border: '1px solid var(--accent-blue-dim)', padding: '12px 16px', borderRadius: '14px' }}>
-                <div style={{ fontSize: '0.72rem', color: 'var(--accent-blue)', fontWeight: 800 }}>TODAY (DAY {todaySplitIdx + 1})</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--accent-blue)', fontWeight: 800 }}>
+                  {isWeekly ? `TODAY (${WEEKDAYS[dayOfWeek]?.toUpperCase()})` : `TODAY (DAY ${todaySplitIdx + 1})`}
+                </div>
                 <div style={{ fontSize: '0.95rem', fontWeight: 700, marginTop: '2px' }}>{todayWorkoutTitle}</div>
               </div>
               <div style={{ background: 'var(--bg-main)', border: '1px solid var(--border-color)', padding: '12px 16px', borderRadius: '14px', opacity: 0.85 }}>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700 }}>TOMORROW</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700 }}>
+                  {isWeekly ? `TOMORROW (${WEEKDAYS[(dayOfWeek + 1) % 7]?.toUpperCase()})` : `TOMORROW`}
+                </div>
                 <div style={{ fontSize: '0.95rem', fontWeight: 700, marginTop: '2px' }}>{tomorrowWorkoutTitle}</div>
               </div>
               <div style={{ background: 'var(--bg-main)', border: '1px solid var(--border-color)', padding: '12px 16px', borderRadius: '14px', opacity: 0.65 }}>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700 }}>DAY AFTER</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700 }}>
+                  {isWeekly ? `DAY AFTER (${WEEKDAYS[(dayOfWeek + 2) % 7]?.toUpperCase()})` : `DAY AFTER`}
+                </div>
                 <div style={{ fontSize: '0.95rem', fontWeight: 700, marginTop: '2px' }}>{dayAfterWorkoutTitle}</div>
               </div>
             </div>
@@ -690,23 +731,26 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
           <div className="glass-card" style={{ padding: '24px', borderRadius: '18px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', marginBottom: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
               <div>
-                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)' }}>🔄 Workout Rotation Split ({splitList.length} Days)</h3>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                  {isWeekly ? '📅 Weekly Workout Schedule' : `🔄 Workout Rotation Split (${splitList.length} Days)`}
+                </h3>
                 <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                  Your scheduled workouts rotate automatically day by day in this cycle.
+                  {isWeekly ? 'Your scheduled workouts mapped to each day of the week.' : 'Your scheduled workouts rotate automatically day by day in this cycle.'}
                 </p>
               </div>
               <button 
                 onClick={() => setIsEditSplitOpen(true)}
                 style={{ background: 'var(--accent-blue-dim)', color: 'var(--accent-blue)', border: '1px solid var(--accent-blue)', padding: '8px 16px', fontSize: '0.84rem', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
               >
-                + Add Routine
+                + Edit Split
               </button>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '4px' }}>
+            <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '8px' }}>
               {splitList.map((dayObj, idx) => {
-                const isCurrentToday = idx === todaySplitIdx;
+                const isCurrentToday = isWeekly ? idx === (dayOfWeek % splitList.length) : idx === todaySplitIdx;
                 const dayName = typeof dayObj === 'string' ? dayObj : dayObj.name;
+                const dayHeader = isWeekly ? (WEEKDAYS[idx] || `DAY ${idx + 1}`) : `DAY ${idx + 1}`;
                 return (
                   <div 
                     key={idx} 
@@ -717,7 +761,7 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
                     }}
                   >
                     <div style={{ fontSize: '0.7rem', fontWeight: 800, color: isCurrentToday ? 'var(--accent-blue)' : 'var(--text-muted)', textTransform: 'uppercase' }}>
-                      {isCurrentToday ? '🎯 TODAY (DAY ' + (idx + 1) + ')' : 'DAY ' + (idx + 1)}
+                      {isCurrentToday ? `🎯 TODAY (${dayHeader})` : dayHeader}
                     </div>
                     <div style={{ fontSize: '0.92rem', fontWeight: 700, marginTop: '4px', color: 'var(--text-main)' }}>
                       {dayName}
@@ -1187,71 +1231,169 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
         onClose={() => setIsEditSplitOpen(false)}
         title="Customize Workout Split"
         icon={Dumbbell}
-        maxWidth="440px"
+        maxWidth="460px"
       >
-        <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', marginBottom: '20px' }}>
-          Your workouts will automatically rotate day by day in this order.
-        </p>
+        <div style={{ paddingBottom: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', margin: 0 }}>
+            {isWeekly 
+              ? "Configure your workout routine for each day of the week (Monday – Sunday)."
+              : "Your workouts will automatically rotate day by day in this order."}
+          </p>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px', maxHeight: '400px', overflowY: 'auto' }}>
-          {splitList.length === 0 ? (
-            <div style={{ padding: '16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.88rem', background: 'var(--bg-main)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-              No split days added yet. Type a split day name below and click + Add to create your routine.
-            </div>
-          ) : (
-            splitList.map((itemObj, idx) => {
-              const item = typeof itemObj === 'string' ? { name: itemObj, exercises: [] } : itemObj;
-              return (
-              <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px 14px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>Day {idx + 1}: {item.name}</span>
-                  <button 
-                    onClick={() => saveSplitList(splitList.filter((_, i) => i !== idx))}
-                    style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
-                    title="Remove Day"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-                <div style={{ paddingLeft: '8px', borderLeft: '2px solid var(--border-color)' }}>
-                  {item.exercises && item.exercises.length > 0 ? item.exercises.map((ex, eIdx) => (
-                    <div key={eIdx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', marginBottom: '4px' }}>
-                      <span>{ex.name}</span>
-                      <span style={{ color: 'var(--text-muted)' }}>{ex.sets}</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+            <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)' }}>Split Type:</label>
+            <CustomSelect 
+              className="glass-input"
+              style={{ width: '220px', padding: '8px 12px', fontSize: '0.84rem', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '10px' }}
+              value={workoutSettings.split_type || 'weekly'}
+              onChange={(e) => {
+                const newType = e.target.value;
+                setWorkoutSettings(prev => ({...prev, split_type: newType}));
+                fetch(getApiUrl('/api/settings'), {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                  body: JSON.stringify({ workout_split_type: newType })
+                }).catch(err => console.error('Failed to update split type:', err));
+              }}
+              options={[
+                { value: "weekly", label: "Weekly Schedule (Mon - Sun)" },
+                { value: "rotational", label: "Sequential Rotation (Day 1...)" }
+              ]}
+            />
+          </div>
+
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: '12px', 
+            maxHeight: '340px', 
+            overflowY: 'auto', 
+            paddingRight: '4px',
+            WebkitOverflowScrolling: 'touch' 
+          }}>
+            {splitList.length === 0 ? (
+              <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.88rem', background: 'var(--bg-main)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                {isWeekly
+                  ? "No weekly split days added yet. Type a split day name below and click + Add to create your routine for Monday - Sunday."
+                  : "No split days added yet. Type a split day name below and click + Add to create your routine."}
+              </div>
+            ) : (
+              splitList.map((itemObj, idx) => {
+                const item = typeof itemObj === 'string' ? { name: itemObj, exercises: [] } : itemObj;
+                const weekdayName = WEEKDAYS[idx];
+                const cardHeader = isWeekly 
+                  ? (weekdayName ? `${weekdayName}: ${item.name}` : `Day ${idx + 1}: ${item.name}`)
+                  : `Day ${idx + 1}: ${item.name}`;
+
+                return (
+                  <div key={idx} style={{ 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    gap: '10px', 
+                    padding: '14px', 
+                    borderRadius: '14px', 
+                    background: 'var(--bg-main)', 
+                    border: '1px solid var(--border-color)',
+                    boxSizing: 'border-box',
+                    width: '100%'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                      <span style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-main)' }}>
+                        {cardHeader}
+                      </span>
+                      <button 
+                        type="button"
+                        onClick={() => saveSplitList(splitList.filter((_, i) => i !== idx))}
+                        style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
+                        title="Remove Day"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </div>
-                  )) : (
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>No exercises added.</div>
-                  )}
-                  <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
-                    <input 
-                      type="text" 
-                      placeholder="Exercise (e.g. Dips)" 
-                      id={`ex-name-${idx}`}
-                      className="glass-input" 
-                      style={{ flex: 1, padding: '8px 12px', fontSize: '0.75rem', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '12px' }}
-                    />
-                    <input 
-                      type="text" 
-                      placeholder="Sets (e.g. 5x2)" 
-                      id={`ex-sets-${idx}`}
-                      className="glass-input" 
-                      style={{ width: '110px', padding: '8px 12px', fontSize: '0.75rem', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '12px' }}
-                    />
-                    <button 
-                      type="button" 
-                      className="secondary-btn" 
-                          style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+
+                    <div style={{ paddingLeft: '8px', borderLeft: '2px solid var(--border-color)' }}>
+                      {item.exercises && item.exercises.length > 0 ? (
+                        item.exercises.map((ex, eIdx) => (
+                          <div key={eIdx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', marginBottom: '6px' }}>
+                            <span style={{ fontWeight: 600 }}>{ex.name}</span>
+                            <span style={{ color: 'var(--text-muted)' }}>{ex.sets}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '6px' }}>No exercises added.</div>
+                      )}
+
+                      {/* Exercise Input Row - Clean Wrap & Mobile Friendly */}
+                      <div style={{ 
+                        display: 'flex', 
+                        flexWrap: 'wrap', 
+                        gap: '8px', 
+                        marginTop: '10px', 
+                        width: '100%', 
+                        boxSizing: 'border-box',
+                        alignItems: 'center'
+                      }}>
+                        <input 
+                          type="text" 
+                          placeholder="Exercise (e.g. Dips)" 
+                          id={`ex-name-${idx}`}
+                          className="glass-input" 
+                          style={{ 
+                            flex: '1 1 120px', 
+                            minWidth: 0, 
+                            padding: '8px 12px', 
+                            fontSize: '0.78rem', 
+                            background: 'var(--bg-main)', 
+                            color: 'var(--text-main)', 
+                            border: '1px solid var(--border-color)', 
+                            borderRadius: '10px', 
+                            boxSizing: 'border-box' 
+                          }}
+                        />
+                        <input 
+                          type="text" 
+                          placeholder="Sets (e.g. 5x2)" 
+                          id={`ex-sets-${idx}`}
+                          className="glass-input" 
+                          style={{ 
+                            flex: '1 1 80px', 
+                            minWidth: 0, 
+                            padding: '8px 12px', 
+                            fontSize: '0.78rem', 
+                            background: 'var(--bg-main)', 
+                            color: 'var(--text-main)', 
+                            border: '1px solid var(--border-color)', 
+                            borderRadius: '10px', 
+                            boxSizing: 'border-box' 
+                          }}
+                        />
+                        <button 
+                          type="button" 
+                          className="secondary-btn" 
+                          style={{ 
+                            padding: '8px 14px', 
+                            fontSize: '0.78rem', 
+                            fontWeight: 700, 
+                            whiteSpace: 'nowrap', 
+                            flexShrink: 0, 
+                            boxSizing: 'border-box',
+                            borderRadius: '10px'
+                          }}
                           onClick={() => {
-                            const name = document.getElementById(`ex-name-${idx}`).value;
-                            const sets = document.getElementById(`ex-sets-${idx}`).value;
+                            const nameEl = document.getElementById(`ex-name-${idx}`);
+                            const setsEl = document.getElementById(`ex-sets-${idx}`);
+                            const name = nameEl?.value;
+                            const sets = setsEl?.value;
                             if (name && sets) {
                               const newList = [...splitList];
-                              const current = typeof newList[idx] === 'string' ? { name: newList[idx], exercises: [] } : { ...newList[idx], exercises: newList[idx].exercises || [] };
+                              const current = typeof newList[idx] === 'string' 
+                                ? { name: newList[idx], exercises: [] } 
+                                : { ...newList[idx], exercises: newList[idx].exercises ? [...newList[idx].exercises] : [] };
                               current.exercises.push({ name, sets });
                               newList[idx] = current;
                               saveSplitList(newList);
-                              document.getElementById(`ex-name-${idx}`).value = '';
-                              document.getElementById(`ex-sets-${idx}`).value = '';
+                              if (nameEl) nameEl.value = '';
+                              if (setsEl) setsEl.value = '';
                             }
                           }}
                         >
@@ -1262,66 +1404,48 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
                   </div>
                 );
               })
-          )}
-            </div>
+            )}
+          </div>
 
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              if (newSplitName.trim()) {
-                saveSplitList([...splitList, { name: newSplitName.trim(), exercises: [] }]);
-                setNewSplitName('');
-              }
-            }} style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
-              <input 
-                type="text" 
-                placeholder="Add new split day (e.g. Arms Day)..." 
-                value={newSplitName} 
-                onChange={(e) => setNewSplitName(e.target.value)} 
-                className="glass-input" 
-                style={{ flex: 1, padding: '12px 14px', fontSize: '0.88rem', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '12px' }}
-              />
-              <button type="submit" className="blue-btn" style={{ padding: '10px 16px', fontSize: '0.85rem' }}>+ Add</button>
-            </form>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            if (newSplitName.trim()) {
+              saveSplitList([...splitList, { name: newSplitName.trim(), exercises: [] }]);
+              setNewSplitName('');
+            }
+          }} style={{ display: 'flex', gap: '8px', width: '100%', boxSizing: 'border-box' }}>
+            <input 
+              type="text" 
+              placeholder={isWeekly && splitList.length < 7 
+                ? `Add workout for ${WEEKDAYS[splitList.length]} (e.g. Push Day)...` 
+                : "Add new split day (e.g. Arms Day)..."} 
+              value={newSplitName} 
+              onChange={(e) => setNewSplitName(e.target.value)} 
+              className="glass-input" 
+              style={{ flex: '1 1 180px', minWidth: 0, padding: '10px 14px', fontSize: '0.84rem', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '12px', boxSizing: 'border-box' }}
+            />
+            <button type="submit" className="blue-btn" style={{ padding: '10px 16px', fontSize: '0.84rem', whiteSpace: 'nowrap', flexShrink: 0, borderRadius: '12px' }}>+ Add</button>
+          </form>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <CustomSelect 
-                className="glass-input"
-                style={{ width: '100%', padding: '12px 14px', fontSize: '0.85rem', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '12px' }}
-                value={workoutSettings.split_type}
-                onChange={(e) => {
-                  const newType = e.target.value;
-                  setWorkoutSettings({...workoutSettings, split_type: newType});
-                  fetch(getApiUrl('/api/settings'), {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ workout_split_type: newType })
-                  }).catch(err => console.error('Failed to update split type:', err));
-                }}
-                options={[
-                  { value: "weekly", label: "Weekly Rotation" },
-                  { value: "rotational", label: "Count-based Rotation" }
-                ]}
-              />
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <button 
-                type="button" 
-                onClick={() => saveSplitList([])}
-                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline' }}
-              >
-                Clear All Split Days
-              </button>
-              <button type="button" className="blue-btn" onClick={() => {
-                setIsEditSplitOpen(false);
-                setHasCustomSplit(true);
-                fetch(getApiUrl('/api/settings'), {
-                  method: 'PUT',
-                  headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                  body: JSON.stringify({ workout_templates: JSON.stringify(splitList) })
-                }).catch(err => console.error('Failed to update templates:', err));
-              }}>Done</button>
-            </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
+            <button 
+              type="button" 
+              onClick={() => saveSplitList([])}
+              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline' }}
+            >
+              Clear All Split Days
+            </button>
+            <button type="button" className="blue-btn" style={{ padding: '10px 24px', borderRadius: '12px' }} onClick={() => {
+              setIsEditSplitOpen(false);
+              setHasCustomSplit(true);
+              fetch(getApiUrl('/api/settings'), {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ workout_templates: JSON.stringify(splitList) })
+              }).catch(err => console.error('Failed to update templates:', err));
+            }}>Done</button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

@@ -183,11 +183,6 @@ export default function NotesPanel({
                           {note.category || 'General'}
                         </span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          {note.shareWithAi && (
-                            <span title="Shared with AI Agent" style={{ fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '4px', background: activeNoteId === note.id ? 'var(--accent-blue-dim)' : 'rgba(34,197,94,0.15)', color: activeNoteId === note.id ? 'var(--accent-blue)' : '#22c55e', padding: '2px 8px', borderRadius: '10px', fontWeight: 700 }}>
-                              🤖 AI Shared
-                            </span>
-                          )}
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -215,7 +210,7 @@ export default function NotesPanel({
                     {/* INLINE EXPANDING NOTE EDITOR BOX UNDER SELECTED NOTE */}
                     {activeNoteId === note.id && (
                       <div
-                        className="animate-entrance"
+                        className="notes-mobile-editor animate-entrance"
                         style={{
                           background: 'var(--bg-card)',
                           border: '1px solid var(--accent-blue)',
@@ -258,19 +253,7 @@ export default function NotesPanel({
                             resize: 'vertical', minHeight: '120px'
                           }}
                         />
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600, cursor: 'pointer' }}>
-                            <input
-                              type="checkbox"
-                              checked={!!note.shareWithAi}
-                              onChange={(e) => {
-                                const val = e.target.checked;
-                                const updated = notesList.map(n => n.id === note.id ? { ...n, shareWithAi: val } : n);
-                                setNotesList(updated);
-                              }}
-                            />
-                            Share with AI Assistant
-                          </label>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
                           <button
                             type="button"
                             className="blue-btn"

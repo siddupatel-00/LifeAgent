@@ -181,7 +181,7 @@ export default function HabitsPanel({
                       <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>days</span>
                     </div>
                   ) : (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '4px', flexWrap: 'nowrap', width: '100%' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', width: '100%', boxSizing: 'border-box' }}>
                       {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => {
                         const selectedDays = Array.isArray(newHabitData.customDays)
                           ? newHabitData.customDays
@@ -198,11 +198,12 @@ export default function HabitsPanel({
                               setNewHabitData({ ...newHabitData, customDays: nextDays, intervalDays: 0, interval_days: 0 });
                             }}
                             style={{
-                              flex: 1, padding: '6px 0', borderRadius: '6px',
+                              width: '100%', padding: '6px 0', borderRadius: '6px',
                               border: `1px solid ${isSelected ? 'var(--accent-blue)' : 'var(--border-color)'}`,
                               background: isSelected ? 'var(--accent-blue-dim)' : 'var(--bg-main)',
                               color: isSelected ? 'var(--accent-blue)' : 'var(--text-muted)',
-                              fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer'
+                              fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer',
+                              boxSizing: 'border-box', textAlign: 'center'
                             }}
                           >
                             {day}
@@ -458,7 +459,7 @@ export default function HabitsPanel({
                     <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>days</span>
                   </div>
                 ) : (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '4px', flexWrap: 'nowrap', width: '100%' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', width: '100%', boxSizing: 'border-box' }}>
                     {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => {
                       const selectedDays = Array.isArray(newHabitData.customDays)
                         ? newHabitData.customDays
@@ -475,11 +476,12 @@ export default function HabitsPanel({
                             setNewHabitData({ ...newHabitData, customDays: nextDays, intervalDays: 0, interval_days: 0 });
                           }}
                           style={{
-                            flex: 1, padding: '6px 0', borderRadius: '6px',
+                            width: '100%', padding: '6px 0', borderRadius: '6px',
                             border: `1px solid ${isSelected ? 'var(--accent-blue)' : 'var(--border-color)'}`,
                             background: isSelected ? 'var(--accent-blue-dim)' : 'var(--bg-main)',
                             color: isSelected ? 'var(--accent-blue)' : 'var(--text-muted)',
-                            fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer'
+                            fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer',
+                            boxSizing: 'border-box', textAlign: 'center'
                           }}
                         >
                           {day}

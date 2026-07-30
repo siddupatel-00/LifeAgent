@@ -3,8 +3,8 @@ import { todayKey } from '../utils/date';
 import { getApiUrl } from '../utils/apiConfig';
 import { Calendar as CalendarIcon, Plus, Trash2, ChevronDown, Filter, AlertCircle, CheckCircle, Clock, X } from 'lucide-react';
 import ConfirmModal from './ConfirmModal';
-
 import Modal from './Modal';
+import CustomSelect from './CustomSelect';
 
 const formatDateStr = (d) => {
   const y = d.getFullYear();
@@ -276,38 +276,37 @@ export default function CalendarPanel({
 
       {/* Sub-tabs & Range Selection */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '20px' }}>
-        <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px', flexWrap: 'wrap', alignItems: 'center' }}>
-          {[
-            { id: 'today', label: '📌 Today' },
-            { id: 'this_month', label: 'This Month' },
-            { id: 'this_week', label: 'This Week' },
-            { id: 'next_week', label: 'Next Week' },
-            { id: 'next_month', label: 'Next Month' },
-            { id: 'this_year', label: 'This Year' },
-            { id: 'custom', label: '📅 Custom Range' },
-            { id: 'all', label: 'All Events' }
-          ].map(tab => {
-            const isActive = calendarSubTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => {
-                  setCalendarSubTab(tab.id);
-                  setSelectedCalendarDate('');
-                }}
-                style={{
-                  padding: '8px 16px', borderRadius: '50px', border: '1px solid',
-                  borderColor: isActive ? 'var(--accent-blue)' : 'var(--border-color)',
-                  background: isActive ? 'var(--accent-blue-dim)' : 'var(--bg-card)',
-                  color: isActive ? 'var(--accent-blue)' : 'var(--text-muted)',
-                  fontWeight: isActive ? 800 : 500, cursor: 'pointer',
-                  fontSize: '0.85rem', transition: 'all 0.2s', whiteSpace: 'nowrap'
-                }}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <Filter size={15} /> Timeframe:
+          </span>
+          <CustomSelect
+            className="timeframe-dropdown"
+            value={calendarSubTab}
+            onChange={(e) => {
+              setCalendarSubTab(e.target.value);
+              setSelectedCalendarDate('');
+            }}
+            options={[
+              { value: 'today', label: '📌 Today' },
+              { value: 'this_week', label: '🗓️ This Week' },
+              { value: 'next_week', label: '➡️ Next Week' },
+              { value: 'this_month', label: '📅 This Month' },
+              { value: 'next_month', label: '📆 Next Month' },
+              { value: 'this_year', label: '📊 This Year' },
+              { value: 'all', label: '📋 All Events' },
+              { value: 'custom', label: '🔍 Custom Range' }
+            ]}
+            style={{
+              width: '190px',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '30px',
+              padding: '8px 16px',
+              color: 'var(--text-primary)',
+              fontSize: '0.85rem'
+            }}
+          />
         </div>
 
         {/* Toggle Expired Events checkbox for non-custom tabs */}
@@ -379,7 +378,7 @@ export default function CalendarPanel({
               const firstDay = new Date(calendarMonth.year, calendarMonth.month, 1).getDay();
               const daysInMonth = new Date(calendarMonth.year, calendarMonth.month + 1, 0).getDate();
               const cells = [];
-              for (let i = 0; i < firstDay; i++) cells.push(<div key={`empty-${i}`} />);
+              for (let i = 0; i < firstDay; i++) cells.push(<div key={`empty-${i}`} className="calendar-empty-cell" />);
               for (let d = 1; d <= daysInMonth; d++) {
                 const dateStr = `${calendarMonth.year}-${(calendarMonth.month + 1).toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
                 const dayEvents = calendarEvents.filter(e => e.date === dateStr);
@@ -388,20 +387,18 @@ export default function CalendarPanel({
                 cells.push(
                   <div 
                     key={d} 
+                    className="calendar-date-cell"
                     onClick={() => setSelectedCalendarDate(isSelected ? '' : dateStr)}
                     style={{ 
-                      padding: '10px 0', borderRadius: '10px', 
                       background: isSelected ? 'var(--accent-blue)' : isToday ? 'var(--accent-blue-dim)' : 'var(--bg-main)', 
                       color: isSelected ? '#fff' : 'var(--text-main)',
-                      cursor: 'pointer', position: 'relative',
                       fontWeight: isSelected || isToday ? 800 : 500,
-                      fontSize: '0.9rem',
                       border: isToday && !isSelected ? '2px solid var(--accent-blue)' : '1px solid var(--border-color)'
                     }}
                   >
-                    {d}
+                    <span>{d}</span>
                     {dayEvents.length > 0 && (
-                      <div style={{ display: 'flex', justifyContent: 'center', gap: '2px', position: 'absolute', bottom: '4px', left: 0, right: 0 }}>
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: '2px', position: 'absolute', bottom: '3px', left: 0, right: 0 }}>
                         {dayEvents.slice(0, 3).map((e, idx) => (
                           <div key={idx} style={{ width: '4px', height: '4px', borderRadius: '50%', background: isSelected ? '#fff' : e.color || 'var(--accent-blue)' }} />
                         ))}

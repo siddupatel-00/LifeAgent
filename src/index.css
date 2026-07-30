@@ -983,7 +983,7 @@ input[type="checkbox"]:checked::after {
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) !important;
     gap: 12px !important;
   }
-  div[style*="display: grid"]:not([style*="grid-template-columns: repeat(auto-fit"]),
+  div[style*="display: grid"]:not([style*="grid-template-columns: repeat(auto-fit"]):not([style*="grid-template-columns: repeat(7"]):not(.calendar-day-grid),
   div[style*="grid-template-columns: 1fr 340px"],
   div[style*="grid-template-columns: 320px 1fr"],
   div[style*="grid-template-columns: 1.5fr 1fr 1fr auto"],
@@ -997,10 +997,26 @@ input[type="checkbox"]:checked::after {
     gap: 16px !important;
   }
   
-  /* Exception: Calendar days grid */
-  div[style*="grid-template-columns: repeat(7"] {
+  /* Exception: Calendar days grid & Habit modal day selector grid */
+  div[style*="grid-template-columns: repeat(7"],
+  .calendar-day-grid,
+  .habit-day-selector-grid {
     display: grid !important;
     grid-template-columns: repeat(7, 1fr) !important;
+    flex-direction: row !important;
+    gap: 4px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Habit card horizontal weekly tracker row */
+  .habit-weekly-tracker-row {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+    gap: 6px !important;
   }
 
   /* Modals and Cards width to fit mobile screen without scrollbar overflow */
@@ -1439,6 +1455,10 @@ input[type="checkbox"]:checked::after {
   }
 }
 
+.notes-mobile-editor {
+  display: none;
+}
+
 @media (max-width: 768px) {
   .notes-container,
   .notes-main-grid {
@@ -1448,11 +1468,18 @@ input[type="checkbox"]:checked::after {
     min-height: auto !important;
     overflow: visible !important;
   }
-  .notes-left-col, .notes-right-col {
+  .notes-left-col {
     flex: auto !important;
+    width: 100% !important;
     height: auto !important;
     max-height: none !important;
     overflow-y: visible !important;
+  }
+  .notes-right-col {
+    display: none !important;
+  }
+  .notes-mobile-editor {
+    display: flex !important;
   }
   .calendar-main-grid {
     display: flex !important;
@@ -1468,11 +1495,19 @@ input[type="checkbox"]:checked::after {
     box-sizing: border-box !important;
   }
   .calendar-day-grid {
+    display: grid !important;
+    grid-template-columns: repeat(7, 1fr) !important;
     gap: 4px !important;
+    flex-direction: row !important;
   }
-  .calendar-day-grid > div {
-    padding: 8px 0 !important;
-    font-size: 0.82rem !important;
+  .calendar-date-cell {
+    padding: 2px 0 !important;
+    font-size: 0.8rem !important;
+    aspect-ratio: 1 / 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
   }
   section.scroll-swipe-up {
     width: 100% !important;
@@ -1504,6 +1539,15 @@ input[type="checkbox"]:checked::after {
 
   .hero-stat-amount {
     font-size: 1.35rem !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .notes-mobile-editor {
+    display: none !important;
+  }
+  .notes-right-col {
+    display: flex !important;
   }
 }
 
