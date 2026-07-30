@@ -186,6 +186,14 @@ export default function App() {
     return SLUG_TO_TAB[path] || 'today';
   });
   const activeTab = activeTabRaw;
+  const [visitedTabs, setVisitedTabs] = useState(() => new Set(['today', activeTabRaw]));
+
+  useEffect(() => {
+    if (activeTab && !visitedTabs.has(activeTab)) {
+      setVisitedTabs(prev => new Set([...prev, activeTab]));
+    }
+  }, [activeTab]);
+
   const setActiveTab = (tab) => {
     setActiveTabRaw(tab);
     if (TAB_SLUGS[tab]) {
@@ -5008,76 +5016,85 @@ const handleDeleteHabitDb = async (id) => {
               )}
 
               {/* 3) MONEY TRACKING */}
-              {activeTab === 'finance' && (
-                <TabErrorBoundary tabName="Finance & Money">
-                  <MoneyTracker
-                    transactions={transactions}
-                    setTransactions={setTransactions}
-                    token={token}
-                    showToast={showToast}
-                    currency={userProfile.currency || '$'}
-                    timeRange={timeRange}
-                    setTimeframe={setTimeRange}
-                    userProfile={userProfile}
-                    timezone={userProfile.timezone}
-                    showForm={showFinanceForm}
-                    setShowForm={setShowFinanceForm}
-                    customStartDate={customStartDate}
-                    customEndDate={customEndDate}
-                  />
-                </TabErrorBoundary>
+              {visitedTabs.has('finance') && (
+                <div style={{ display: activeTab === 'finance' ? 'block' : 'none' }}>
+                  <TabErrorBoundary tabName="Finance & Money">
+                    <MoneyTracker
+                      transactions={transactions}
+                      setTransactions={setTransactions}
+                      token={token}
+                      showToast={showToast}
+                      currency={userProfile.currency || '$'}
+                      timeRange={timeRange}
+                      setTimeframe={setTimeRange}
+                      userProfile={userProfile}
+                      timezone={userProfile.timezone}
+                      showForm={showFinanceForm}
+                      setShowForm={setShowFinanceForm}
+                      customStartDate={customStartDate}
+                      customEndDate={customEndDate}
+                    />
+                  </TabErrorBoundary>
+                </div>
               )}
 
               {/* 4) BODY & GYM */}
-              {(activeTab === 'body' || activeTab === 'gym') && (
-                <TabErrorBoundary tabName="Body & Gym">
-                  <BodyGym
-                    token={token}
-                    showToast={showToast}
-                    timeRange={timeRange}
-                    userProfile={userProfile}
-                    bodyStats={bodyStats}
-                    setBodyStats={setBodyStats}
-                    workouts={workouts}
-                    setWorkouts={setWorkouts}
-                    showForm={showWorkoutForm}
-                    setShowForm={setShowWorkoutForm}
-                    isEditSplitOpen={isEditSplitOpen}
-                    setIsEditSplitOpen={setIsEditSplitOpen}
-                  />
-                </TabErrorBoundary>
+              {(visitedTabs.has('body') || visitedTabs.has('gym')) && (
+                <div style={{ display: (activeTab === 'body' || activeTab === 'gym') ? 'block' : 'none' }}>
+                  <TabErrorBoundary tabName="Body & Gym">
+                    <BodyGym
+                      token={token}
+                      showToast={showToast}
+                      timeRange={timeRange}
+                      userProfile={userProfile}
+                      bodyStats={bodyStats}
+                      setBodyStats={setBodyStats}
+                      workouts={workouts}
+                      setWorkouts={setWorkouts}
+                      showForm={showWorkoutForm}
+                      setShowForm={setShowWorkoutForm}
+                      isEditSplitOpen={isEditSplitOpen}
+                      setIsEditSplitOpen={setIsEditSplitOpen}
+                    />
+                  </TabErrorBoundary>
+                </div>
               )}
 
               {/* 5) SLEEP & RECOVERY */}
-              {activeTab === 'sleep' && (
-                <TabErrorBoundary tabName="Sleep & Recovery">
-                  <SleepTracker
-                    token={token}
-                    showToast={showToast}
-                    timeRange={timeRange}
-                    userProfile={userProfile}
-                    sleepLogs={sleepLogs}
-                    setSleepLogs={setSleepLogs}
-                  />
-                </TabErrorBoundary>
+              {visitedTabs.has('sleep') && (
+                <div style={{ display: activeTab === 'sleep' ? 'block' : 'none' }}>
+                  <TabErrorBoundary tabName="Sleep & Recovery">
+                    <SleepTracker
+                      token={token}
+                      showToast={showToast}
+                      timeRange={timeRange}
+                      userProfile={userProfile}
+                      sleepLogs={sleepLogs}
+                      setSleepLogs={setSleepLogs}
+                    />
+                  </TabErrorBoundary>
+                </div>
               )}
 
               {/* 6) MASTER ANALYTICS HUB */}
-              {activeTab === 'analytics' && (
-                <TabErrorBoundary tabName="Master Analytics">
-                  <AnalyticsPanel
-                    token={token}
-                    showToast={showToast}
-                    currency={userProfile.currency || '$'}
-                    timeRange={timeRange}
-                    userProfile={userProfile}
-                  />
-                </TabErrorBoundary>
+              {visitedTabs.has('analytics') && (
+                <div style={{ display: activeTab === 'analytics' ? 'block' : 'none' }}>
+                  <TabErrorBoundary tabName="Master Analytics">
+                    <AnalyticsPanel
+                      token={token}
+                      showToast={showToast}
+                      currency={userProfile.currency || '$'}
+                      timeRange={timeRange}
+                      userProfile={userProfile}
+                    />
+                  </TabErrorBoundary>
+                </div>
               )}
 
               {/* 7) SETTINGS & PROFILE */}
-              {activeTab === 'settings' && (
-                <TabErrorBoundary tabName="Settings">
+              {visitedTabs.has('settings') && (
+                <div style={{ display: activeTab === 'settings' ? 'block' : 'none' }}>
+                  <TabErrorBoundary tabName="Settings">
                   <SettingsPanel
                     userProfile={userProfile}
                     setUserProfile={setUserProfile}
@@ -5101,6 +5118,7 @@ const handleDeleteHabitDb = async (id) => {
                     onResetAllAccountData={handleResetAllAccountData}
                   />
                 </TabErrorBoundary>
+              </div>
               )}
 
             </div>

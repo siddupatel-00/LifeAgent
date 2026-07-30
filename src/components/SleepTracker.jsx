@@ -8,8 +8,8 @@ import Modal from './Modal';
 import CustomSelect from './CustomSelect';
 
 export default function SleepTracker({ token, showToast, userProfile, todayStat, sleepLogs = [], setSleepLogs }) {
-  const [logs, setLogs] = useState(() => Array.isArray(sleepLogs) && sleepLogs.length > 0 ? sleepLogs : []);
-  const [isLoading, setIsLoading] = useState(!Array.isArray(sleepLogs) || sleepLogs.length === 0);
+  const [logs, setLogs] = useState(() => Array.isArray(sleepLogs) ? sleepLogs : []);
+  const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingLogId, setEditingLogId] = useState(null);
   const [formData, setFormData] = useState({
@@ -31,7 +31,7 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
   const [chartType, setChartType] = useState('bar');
 
   useEffect(() => {
-    if (Array.isArray(sleepLogs) && sleepLogs.length > 0) {
+    if (Array.isArray(sleepLogs)) {
       setLogs(sleepLogs);
       setIsLoading(false);
     }

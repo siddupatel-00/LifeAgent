@@ -3,7 +3,7 @@ import {
   CheckCircle2, DollarSign, Activity, Check, Moon as SleepIcon, RefreshCw 
 } from 'lucide-react';
 import { todayKey } from '../utils/date';
-import { getApiUrl } from '../utils/apiConfig';
+import { getApiUrl } from '../utils/apiUrl';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -79,16 +79,37 @@ function AnalyticsPanelInner({ token, showToast, currency = '$', timeRange = '7d
           }
         });
         
-        if (!res.ok) {
-          throw new Error('Failed to fetch analytics data');
-        }
-        
-        const result = await res.json();
-        if (mounted) {
-          setData(result);
+        if (res.ok) {
+          const result = await res.json();
+          if (mounted) {
+            setData(result);
+          }
+        } else {
+          if (mounted && !data) {
+            setData({
+              range,
+              habits: { total: 0, completedToday: 0, consistency: 0, totalStreaks: 0, bestStreak: 0, breakdown: [], categories: {} },
+              finance: { totalEarned: 0, totalSpent: 0, netBalance: 0 },
+              today: { total: 0, done: 0 },
+              notes: { count: 0 },
+              sleep: { avgHours: 0 },
+              workouts: { thisWeek: 0, totalMinutes: 0, totalCalories: 0 }
+            });
+          }
         }
       } catch (err) {
-        // background fetch error
+        console.error('Analytics fetch error:', err);
+        if (mounted && !data) {
+          setData({
+            range,
+            habits: { total: 0, completedToday: 0, consistency: 0, totalStreaks: 0, bestStreak: 0, breakdown: [], categories: {} },
+            finance: { totalEarned: 0, totalSpent: 0, netBalance: 0 },
+            today: { total: 0, done: 0 },
+            notes: { count: 0 },
+            sleep: { avgHours: 0 },
+            workouts: { thisWeek: 0, totalMinutes: 0, totalCalories: 0 }
+          });
+        }
       } finally {
         if (mounted) {
           setLoading(false);
