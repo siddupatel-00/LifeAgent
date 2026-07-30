@@ -1522,8 +1522,51 @@ input[type="checkbox"]:checked::after {
     border-radius: 16px !important;
   }
 
+  .hero-mockup-titlebar {
+    padding: 10px 12px !important;
+    gap: 8px !important;
+    flex-wrap: wrap !important;
+  }
+
+  .hero-mockup-title-info {
+    width: 100% !important;
+    justify-content: flex-start !important;
+  }
+
+  .hero-mockup-tabs {
+    display: flex !important;
+    gap: 4px !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 2px 0 4px !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+
+  .hero-mockup-tabs::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+
+  .hero-mockup-tab-btn {
+    padding: 6px 11px !important;
+    font-size: 0.78rem !important;
+    gap: 4px !important;
+    border-radius: 8px !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+
+  .hero-mockup-tab-btn svg {
+    width: 13px !important;
+    height: 13px !important;
+  }
+
   .hero-mockup-body {
-    padding: 12px 14px !important;
+    padding: 14px 12px !important;
     overflow-y: visible !important;
   }
 
@@ -1539,6 +1582,78 @@ input[type="checkbox"]:checked::after {
 
   .hero-stat-amount {
     font-size: 1.35rem !important;
+  }
+
+  .hero-mockup-section-title {
+    font-size: 0.95rem !important;
+  }
+
+  .hero-mockup-calendar-header {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    align-items: flex-start !important;
+  }
+
+  .hero-mockup-add-event-btn {
+    font-size: 0.75rem !important;
+    padding: 6px 12px !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+
+  .hero-mockup-event-item {
+    padding: 10px 12px !important;
+    gap: 10px !important;
+    flex-wrap: wrap !important;
+  }
+
+  .hero-mockup-event-date {
+    width: auto !important;
+    min-width: 75px !important;
+    font-size: 0.75rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  .hero-mockup-event-divider {
+    height: 26px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .hero-mockup-event-details {
+    flex: 1 !important;
+    min-width: 130px !important;
+  }
+
+  .hero-mockup-big-stat {
+    font-size: 2.1rem !important;
+  }
+
+  .hero-mockup-stat-trio {
+    gap: 6px !important;
+    flex-wrap: wrap !important;
+  }
+
+  .hero-mockup-stat-trio > div {
+    padding: 8px 6px !important;
+    min-width: 70px !important;
+  }
+
+  .hero-mockup-tx-item,
+  .hero-mockup-ex-item,
+  .hero-mockup-habit-item {
+    padding: 10px 12px !important;
+    gap: 8px !important;
+    flex-wrap: wrap !important;
+  }
+
+  .hero-mockup-graph-card {
+    padding: 14px !important;
+  }
+
+  .hero-mockup-ai-input {
+    padding: 10px 12px !important;
+    gap: 8px !important;
+    flex-wrap: wrap !important;
   }
 }
 

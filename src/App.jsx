@@ -1934,7 +1934,7 @@ const handleDeleteHabitDb = async (id) => {
                 flexWrap: 'wrap',
                 gap: '12px'
               }}>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <div className="hero-mockup-title-info" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                   <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ff5f56' }} />
                   <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ffbd2e' }} />
                   <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#27c93f' }} />
@@ -1944,7 +1944,7 @@ const handleDeleteHabitDb = async (id) => {
                 </div>
 
                 {/* Interactive Tabs Row */}
-                <div style={{ display: 'flex', gap: '4px', overflowX: 'auto', padding: '2px', scrollbarWidth: 'none', position: 'relative' }}>
+                <div className="hero-mockup-tabs" style={{ display: 'flex', gap: '4px', overflowX: 'auto', padding: '2px', scrollbarWidth: 'none', position: 'relative', maxWidth: '100%', WebkitOverflowScrolling: 'touch' }}>
                   {[
                     { id: 'Money', label: 'Money', icon: DollarSign },
                     { id: 'Sleep', label: 'Sleep', icon: SleepIcon },
@@ -1960,6 +1960,7 @@ const handleDeleteHabitDb = async (id) => {
                     return (
                       <button
                         key={tab.id}
+                        className={`hero-mockup-tab-btn ${isActive ? 'active' : ''}`}
                         ref={el => (tabRefs.current[tab.id] = el)}
                         onClick={() => handlePreviewTabClick(tab.id)}
                         style={{
@@ -2016,7 +2017,7 @@ const handleDeleteHabitDb = async (id) => {
                     </div>
 
                     <div className="glass-card" style={{ padding: '20px', borderRadius: '16px' }}>
-                      <div style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                         <span>Recent Transactions & AI Categorization</span>
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -2026,17 +2027,17 @@ const handleDeleteHabitDb = async (id) => {
                           { title: 'Organic Whole Foods & Grocery', category: 'Health & Food', amount: '-$124.50', date: '2 days ago', type: 'expense' },
                           { title: 'Gym Membership & Recovery', category: 'Fitness', amount: '-$85.00', date: '3 days ago', type: 'expense' },
                         ].slice(0, 3).map((tx, idx) => (
-                          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderRadius: '12px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                              <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: tx.type === 'income' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <div key={idx} className="hero-mockup-tx-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderRadius: '12px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', flexWrap: 'wrap', gap: '8px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+                              <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: tx.type === 'income' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                 <DollarSign size={16} color={tx.type === 'income' ? '#10b981' : '#ef4444'} />
                               </div>
-                              <div>
-                                <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>{tx.title}</div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: '0.9rem', fontWeight: 600, wordBreak: 'break-word' }}>{tx.title}</div>
                                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{tx.category} • {tx.date}</div>
                               </div>
                             </div>
-                            <div style={{ fontSize: '0.95rem', fontWeight: 700, color: tx.type === 'income' ? '#10b981' : 'var(--text-main)' }}>
+                            <div style={{ fontSize: '0.95rem', fontWeight: 700, color: tx.type === 'income' ? '#10b981' : 'var(--text-main)', whiteSpace: 'nowrap', flexShrink: 0 }}>
                               {tx.amount}
                             </div>
                           </div>
@@ -2049,20 +2050,20 @@ const handleDeleteHabitDb = async (id) => {
                 {/* 2. SLEEP TAB MOCK */}
                 {previewTab === 'Sleep' && (
                   <div className="animate-tab-matter" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '20px', alignItems: 'stretch' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '20px', alignItems: 'stretch' }} className="hero-sleep-grid">
                       <div className="glass-card" style={{ padding: '22px', borderRadius: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                         <div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                             <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>Sleep Quality & Duration</span>
                             <span className="pill-tag" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', fontSize: '0.75rem', border: 'none' }}>🌟 Excellent</span>
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', marginTop: '14px' }}>
-                            <span style={{ fontSize: '2.8rem', fontWeight: 900, color: 'var(--accent-blue)' }}>8h 15m</span>
+                          <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', marginTop: '14px', flexWrap: 'wrap' }}>
+                            <span className="hero-mockup-big-stat" style={{ fontSize: '2.8rem', fontWeight: 900, color: 'var(--accent-blue)' }}>8h 15m</span>
                             <span style={{ fontSize: '1.05rem', fontWeight: 600, color: 'var(--text-main)' }}>Avg Duration</span>
                           </div>
                           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '8px' }}>Bedtime 11:00 PM — Woke up at 07:15 AM</p>
                         </div>
-                        <div style={{ marginTop: '20px', display: 'flex', gap: '12px' }}>
+                        <div className="hero-mockup-stat-trio" style={{ marginTop: '20px', display: 'flex', gap: '12px' }}>
                           <div style={{ flex: 1, padding: '12px', borderRadius: '12px', background: 'var(--bg-card)', textAlign: 'center' }}>
                             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Bed Time</div>
                             <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)', marginTop: '2px' }}>11:00 PM</div>
@@ -2085,7 +2086,7 @@ const handleDeleteHabitDb = async (id) => {
                           { date: 'Yesterday', duration: '7h 45m', quality: '😊 Good', time: '11:30 PM - 07:15 AM' },
                           { date: '2 days ago', duration: '8h 00m', quality: '😊 Good', time: '11:00 PM - 07:00 AM' },
                         ].map((log, idx) => (
-                          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderRadius: '12px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+                          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderRadius: '12px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', flexWrap: 'wrap', gap: '6px' }}>
                             <div>
                               <div style={{ fontSize: '0.88rem', fontWeight: 700 }}>{log.duration} • <span style={{ color: '#10b981', fontSize: '0.8rem' }}>{log.quality}</span></div>
                               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>{log.date} ({log.time})</div>
@@ -2100,12 +2101,12 @@ const handleDeleteHabitDb = async (id) => {
                 {/* 3. CALENDAR TAB MOCK */}
                 {previewTab === 'Calendar' && (
                   <div className="animate-tab-matter" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div className="hero-mockup-calendar-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
                       <div>
-                        <div style={{ fontSize: '1.1rem', fontWeight: 800 }}>Upcoming Events & Reminders</div>
+                        <div className="hero-mockup-section-title" style={{ fontSize: '1.1rem', fontWeight: 800 }}>Upcoming Events & Reminders</div>
                         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Plan, track, and never miss what matters</div>
                       </div>
-                      <div className="pill-tag" style={{ background: 'var(--accent-blue-dim)', color: 'var(--accent-blue)', border: 'none', fontSize: '0.8rem' }}>
+                      <div className="pill-tag hero-mockup-add-event-btn" style={{ background: 'var(--accent-blue-dim)', color: 'var(--accent-blue)', border: 'none', fontSize: '0.8rem', whiteSpace: 'nowrap', padding: '6px 14px', flexShrink: 0, cursor: 'pointer' }}>
                         + Add Event
                       </div>
                     </div>
@@ -2119,13 +2120,13 @@ const handleDeleteHabitDb = async (id) => {
                           { day: 'Wed, Jul 30', title: '🚗 Car Servicing & Oil Change', tag: 'Personal', color: '#f59e0b' },
                           { day: 'Fri, Aug 1', title: '💰 Freelance Invoice Due', tag: 'Finance', color: '#10b981' },
                         ].map((item, idx) => (
-                          <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '12px 16px', borderRadius: '14px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
-                            <div style={{ fontSize: '0.78rem', fontWeight: 700, fontFamily: 'monospace', color: 'var(--text-muted)', width: '90px', flexShrink: 0 }}>
+                          <div key={idx} className="hero-mockup-event-item" style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '12px 16px', borderRadius: '14px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+                            <div className="hero-mockup-event-date" style={{ fontSize: '0.78rem', fontWeight: 700, fontFamily: 'monospace', color: 'var(--text-muted)', width: '90px', flexShrink: 0 }}>
                               {item.day}
                             </div>
-                            <div style={{ width: '4px', height: '32px', borderRadius: '2px', background: item.color, flexShrink: 0 }} />
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>{item.title}</div>
+                            <div className="hero-mockup-event-divider" style={{ width: '4px', height: '32px', borderRadius: '2px', background: item.color, flexShrink: 0 }} />
+                            <div className="hero-mockup-event-details" style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: '0.9rem', fontWeight: 600, wordBreak: 'break-word' }}>{item.title}</div>
                               <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{item.tag}</div>
                             </div>
                           </div>
@@ -2139,12 +2140,12 @@ const handleDeleteHabitDb = async (id) => {
                 {previewTab === 'Notes' && (
                   <div className="animate-tab-matter" style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
                     <div className="glass-card" style={{ padding: '22px', borderRadius: '16px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                           <FileText size={18} color="var(--accent-blue)" />
-                          <span style={{ fontSize: '1.1rem', fontWeight: 800 }}>Goals of 2026</span>
+                          <span style={{ fontSize: '1.1rem', fontWeight: 800 }} className="hero-mockup-section-title">Goals of 2026</span>
                         </div>
-                        <span className="pill-tag" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', fontSize: '0.75rem', border: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span className="pill-tag" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', fontSize: '0.75rem', border: 'none', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
                           <div className="pulse-dot-container"><div className="pulse-dot-ring"></div><div className="pulse-dot-core"></div></div>
                           AI Connected
                         </span>
@@ -2156,8 +2157,8 @@ const handleDeleteHabitDb = async (id) => {
                         <p style={{ marginBottom: '10px' }}>• Gift new mobile to mom and new earbuds to dad</p>
                       </div>
 
-                      <div style={{ marginTop: '16px', padding: '12px 16px', borderRadius: '12px', background: 'var(--accent-blue-dim)', border: '1px solid rgba(59, 130, 246, 0.3)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <Sparkles size={16} color="var(--accent-blue)" />
+                      <div style={{ marginTop: '16px', padding: '12px 16px', borderRadius: '12px', background: 'var(--accent-blue-dim)', border: '1px solid rgba(59, 130, 246, 0.3)', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                        <Sparkles size={16} color="var(--accent-blue)" style={{ flexShrink: 0 }} />
                         <span style={{ fontSize: '0.82rem', color: 'var(--accent-blue-light)', fontWeight: 500 }}>
                           AI Insight: 3 key 2026 milestones logged. Your income and business metrics are tracked live!
                         </span>
@@ -2169,7 +2170,7 @@ const handleDeleteHabitDb = async (id) => {
                 {/* 5. GYM TAB MOCK */}
                 {previewTab === 'Gym' && (
                   <div className="animate-tab-matter" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }} className="hero-grid-responsive">
                       <div className="glass-card" style={{ padding: '18px', borderRadius: '16px' }}>
                         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Active Session</div>
                         <div style={{ fontSize: '1.2rem', fontWeight: 800, marginTop: '4px' }}>Push Workout A</div>
@@ -2195,12 +2196,12 @@ const handleDeleteHabitDb = async (id) => {
                           { name: 'Overhead Shoulder Press', sets: '3 sets × 10 reps', weight: '65 kg', note: 'Clean form' },
                           { name: 'Incline Dumbbell Flyes', sets: '3 sets × 12 reps', weight: '28 kg', note: 'Hypertrophy focus' },
                         ].map((ex, i) => (
-                          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderRadius: '12px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
-                            <div>
-                              <div style={{ fontSize: '0.88rem', fontWeight: 600 }}>{ex.name}</div>
+                          <div key={i} className="hero-mockup-ex-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderRadius: '12px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', flexWrap: 'wrap', gap: '8px' }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: '0.88rem', fontWeight: 600, wordBreak: 'break-word' }}>{ex.name}</div>
                               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{ex.sets} • {ex.note}</div>
                             </div>
-                            <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--accent-blue)' }}>{ex.weight}</div>
+                            <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--accent-blue)', whiteSpace: 'nowrap', flexShrink: 0 }}>{ex.weight}</div>
                           </div>
                         ))}
                       </div>
@@ -2211,7 +2212,7 @@ const handleDeleteHabitDb = async (id) => {
                 {/* 6. ANALYTICS TAB MOCK */}
                 {previewTab === 'Analytics' && (
                   <div className="animate-tab-matter" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }} className="hero-grid-responsive">
                       <div className="glass-card" style={{ padding: '18px', borderRadius: '16px' }}>
                         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Habit Consistency</div>
                         <div style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--accent-blue)', marginTop: '4px' }}>94%</div>
@@ -2229,9 +2230,9 @@ const handleDeleteHabitDb = async (id) => {
                       </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
                       {/* Executive Telemetry Graph */}
-                      <div className="glass-card" style={{ padding: '20px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <div className="glass-card hero-mockup-graph-card" style={{ padding: '20px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                         <div style={{ fontSize: '0.92rem', fontWeight: 700 }}>30-Day Executive Telemetry</div>
                         <div style={{ display: 'flex', height: '110px', alignItems: 'flex-end', gap: '6px', paddingTop: '10px' }}>
                           {[65, 78, 82, 90, 85, 88, 94, 92, 96, 89, 94, 98].map((val, idx) => (
@@ -2244,8 +2245,8 @@ const handleDeleteHabitDb = async (id) => {
                       </div>
 
                       {/* Money & Cash Flow Graph */}
-                      <div className="glass-card" style={{ padding: '20px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div className="glass-card hero-mockup-graph-card" style={{ padding: '20px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
                           <span style={{ fontSize: '0.92rem', fontWeight: 700 }}>Money & Cash Flow Graph</span>
                           <span style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 600 }}>+$4,629.60 Saved</span>
                         </div>
@@ -2285,10 +2286,10 @@ const handleDeleteHabitDb = async (id) => {
                       </div>
 
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        <div style={{ alignSelf: 'flex-end', background: 'var(--accent-blue)', color: 'var(--accent-text)', padding: '10px 14px', borderRadius: '14px 14px 2px 14px', fontSize: '0.88rem', maxWidth: '80%' }}>
+                        <div style={{ alignSelf: 'flex-end', background: 'var(--accent-blue)', color: 'var(--accent-text)', padding: '10px 14px', borderRadius: '14px 14px 2px 14px', fontSize: '0.88rem', maxWidth: '85%' }}>
                           Audit my day: check sleep recovery, push workout volume, and remaining daily budget.
                         </div>
-                        <div style={{ alignSelf: 'flex-start', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', padding: '14px', borderRadius: '14px 14px 14px 2px', fontSize: '0.88rem', maxWidth: '90%', lineHeight: 1.6 }}>
+                        <div style={{ alignSelf: 'flex-start', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', padding: '14px', borderRadius: '14px 14px 14px 2px', fontSize: '0.88rem', maxWidth: '100%', lineHeight: 1.6 }}>
                           <p style={{ fontWeight: 700, marginBottom: '6px', color: 'var(--accent-blue-light)' }}>🤖 Executive Daily Audit:</p>
                           <p>• <strong>Sleep</strong>: 8h 12m (94% optimal score) — Excellent recovery state.</p>
                           <p>• <strong>Gym</strong>: Push Workout A logged with 12,450 kg volume (Bench PR set!).</p>
@@ -2298,10 +2299,10 @@ const handleDeleteHabitDb = async (id) => {
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', borderRadius: '14px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
-                      <Bot size={16} color="var(--text-muted)" />
-                      <input type="text" readOnly value="Ask AI to log expense, track workout, or optimize schedule... (⌘K)" style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '0.85rem', width: '100%', outline: 'none' }} />
-                      <button className="blue-btn" style={{ padding: '6px 14px', fontSize: '0.8rem', borderRadius: '8px' }}>Send</button>
+                    <div className="hero-mockup-ai-input" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', borderRadius: '14px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', flexWrap: 'wrap' }}>
+                      <Bot size={16} color="var(--text-muted)" style={{ flexShrink: 0 }} />
+                      <input type="text" readOnly value="Ask AI to log expense, track workout, or optimize schedule... (⌘K)" style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '0.85rem', flex: 1, minWidth: '140px', outline: 'none' }} />
+                      <button className="blue-btn" style={{ padding: '6px 14px', fontSize: '0.8rem', borderRadius: '8px', flexShrink: 0 }}>Send</button>
                     </div>
                   </div>
                 )}
@@ -2309,12 +2310,12 @@ const handleDeleteHabitDb = async (id) => {
                 {/* 8. HABITS TAB MOCK */}
                 {previewTab === 'Habits' && (
                   <div className="animate-tab-matter" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                       <div>
-                        <div style={{ fontSize: '1.1rem', fontWeight: 800 }}>Daily Habit Checklist</div>
+                        <div className="hero-mockup-section-title" style={{ fontSize: '1.1rem', fontWeight: 800 }}>Daily Habit Checklist</div>
                         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>4 of 5 Habits Completed Today (80%)</div>
                       </div>
-                      <div className="pill-tag" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: 'none', fontSize: '0.8rem' }}>
+                      <div className="pill-tag" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: 'none', fontSize: '0.8rem', whiteSpace: 'nowrap', flexShrink: 0 }}>
                         🔥 24 Day Streak Active
                       </div>
                     </div>
@@ -2327,17 +2328,17 @@ const handleDeleteHabitDb = async (id) => {
                         { title: 'No Junk Food & Hit 180g Protein Target', category: 'Nutrition', streak: '8 day streak', checked: true },
                         { title: 'Evening Book Reading (30 mins)', category: 'Mindset', streak: '15 day streak', checked: false },
                       ].slice(0, 3).map((habit, idx) => (
-                        <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderRadius: '14px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <div style={{ width: '22px', height: '22px', borderRadius: '6px', background: habit.checked ? 'var(--accent-blue)' : 'transparent', border: habit.checked ? 'none' : '2px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div key={idx} className="hero-mockup-habit-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderRadius: '14px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', flexWrap: 'wrap', gap: '8px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+                            <div style={{ width: '22px', height: '22px', borderRadius: '6px', background: habit.checked ? 'var(--accent-blue)' : 'transparent', border: habit.checked ? 'none' : '2px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                               {habit.checked && <Check size={14} color="var(--accent-text)" />}
                             </div>
-                            <div>
-                              <div style={{ fontSize: '0.9rem', fontWeight: 600, textDecoration: habit.checked ? 'line-through' : 'none', opacity: habit.checked ? 0.85 : 1 }}>{habit.title}</div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: '0.9rem', fontWeight: 600, textDecoration: habit.checked ? 'line-through' : 'none', opacity: habit.checked ? 0.85 : 1, wordBreak: 'break-word' }}>{habit.title}</div>
                               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{habit.category}</div>
                             </div>
                           </div>
-                          <span style={{ fontSize: '0.8rem', color: habit.checked ? '#10b981' : 'var(--text-muted)', fontWeight: 600 }}>
+                          <span style={{ fontSize: '0.8rem', color: habit.checked ? '#10b981' : 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0 }}>
                             🔥 {habit.streak}
                           </span>
                         </div>
