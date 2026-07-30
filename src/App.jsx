@@ -1,3 +1,4 @@
+import { getApiUrl } from './utils/apiUrl';
 import React, { useState, useEffect, useRef } from 'react';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { 
@@ -295,7 +296,7 @@ export default function App() {
   // Validate session on mount if token exists; log out if account was deleted or token expired
   useEffect(() => {
     if (!token) return;
-    fetch('/api/auth?action=me', {
+    fetch(getApiUrl('/api/auth?action=me'), {
       headers: { 'Authorization': `Bearer ${token}` }
     }).then(res => {
       if (res.status === 401 || res.status === 403 || res.status === 404) {
@@ -322,7 +323,10 @@ export default function App() {
     setAuthLoading(true);
     setAuthError('');
     try {
-      const endpoint = authMode === 'login' ? '/api/auth?action=login' : '/api/auth?action=register';
+      const endpoint = authMode === 'login' 
+        ? getApiUrl('/api/auth?action=login') 
+        : getApiUrl('/api/auth?action=register');
+
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -366,17 +370,8 @@ export default function App() {
 
       setAuthError('Unexpected server response. Please try again.');
     } catch (err) {
-      if (window.Capacitor || (typeof navigator !== 'undefined' && !navigator.onLine)) {
-        // Standalone offline native mobile app fallback
-        const mockToken = 'offline_user_token_' + Date.now();
-        safeStorage.setItem('token', mockToken);
-        setToken(mockToken);
-        setIsAuthenticated(true);
-        setAuthForm({ name: '', handle: '', email: '', password: '', phone: '' });
-        navigate('dashboard', '/dashboard');
-      } else {
-        setAuthError(err?.message || 'Network error. Please check your internet connection.');
-      }
+      console.error('Auth fetch error:', err);
+      setAuthError(err?.message && !err.message.includes('JSON') ? err.message : 'Unable to connect to authentication server. Please check your internet connection.');
     } finally {
       setAuthLoading(false);
     }
@@ -388,7 +383,7 @@ export default function App() {
     setAuthError('');
     setResetSuccessMsg('');
     try {
-      const res = await fetch('/api/auth?action=forgot-password', {
+      const res = await fetch(getApiUrl('/api/auth?action=forgot-password'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ emailOrHandle: resetEmailOrHandle })
@@ -413,7 +408,7 @@ export default function App() {
     setAuthError('');
     setResetSuccessMsg('');
     try {
-      const res = await fetch('/api/auth?action=verify-reset-code', {
+      const res = await fetch(getApiUrl('/api/auth?action=verify-reset-code'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -441,7 +436,7 @@ export default function App() {
     setAuthError('');
     setResetSuccessMsg('');
     try {
-      const res = await fetch('/api/auth?action=reset-password', {
+      const res = await fetch(getApiUrl('/api/auth?action=reset-password'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -583,7 +578,7 @@ export default function App() {
     }
     
     if (token) {
-      fetch('/api/fitness?type=body-stats', {
+      fetch(getApiUrl('/api/fitness?type=body-stats'), {
         method: payload.id ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(payload)
@@ -624,7 +619,7 @@ export default function App() {
       if (expired.length > 0) {
         // Permanently delete expired notes from DB
         expired.forEach(note => {
-          fetch('/api/notes', {
+          fetch(getApiUrl('/api/notes'), {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ id: note.id })
@@ -711,9 +706,9 @@ export default function App() {
       const clientDate = todayKey(timezone);
 
       const [settingsRes, todayRes, habitsRes] = await Promise.all([
-        fetch('/api/settings', { headers }).catch(e => null),
+        fetch(getApiUrl('/api/settings'), { headers }).catch(e => null),
         fetch(`/api/today?client_date=${clientDate}`, { headers }).catch(e => null),
-        fetch('/api/habits', { headers }).catch(e => null)
+        fetch(getApiUrl('/api/habits'), { headers }).catch(e => null)
       ]);
 
       if (settingsRes && settingsRes.ok) {
@@ -776,8 +771,8 @@ export default function App() {
     try {
       const headers = { 'Authorization': `Bearer ${token}` };
       const [workoutsRes, statsRes] = await Promise.all([
-        fetch('/api/fitness?type=workouts', { headers }).catch(e => null),
-        fetch('/api/fitness?type=body-stats', { headers }).catch(e => null)
+        fetch(getApiUrl('/api/fitness?type=workouts'), { headers }).catch(e => null),
+        fetch(getApiUrl('/api/fitness?type=body-stats'), { headers }).catch(e => null)
       ]);
 
       if (workoutsRes && workoutsRes.ok) {
@@ -803,8 +798,8 @@ export default function App() {
     try {
       const headers = { 'Authorization': `Bearer ${token}` };
       const [txRes, financeRes] = await Promise.all([
-        fetch('/api/transactions', { headers }).catch(e => null),
-        fetch('/api/finance', { headers }).catch(e => null)
+        fetch(getApiUrl('/api/transactions'), { headers }).catch(e => null),
+        fetch(getApiUrl('/api/finance'), { headers }).catch(e => null)
       ]);
       const validTxRes = (txRes && txRes.ok) ? txRes : (financeRes && financeRes.ok ? financeRes : null);
       if (validTxRes) {
@@ -824,7 +819,7 @@ export default function App() {
     if (!force && loadedTabsRef.current.notes) return;
     try {
       const headers = { 'Authorization': `Bearer ${token}` };
-      const notesRes = await fetch('/api/notes', { headers }).catch(e => null);
+      const notesRes = await fetch(getApiUrl('/api/notes'), { headers }).catch(e => null);
       if (notesRes && notesRes.ok) {
         const notesData = await notesRes.json();
         let activeNotes = notesData.filter(n => !n.is_trashed).map(n => ({ id: n.id, title: n.title, content: n.content, category: n.category, date: n.date, shareWithAi: !!n.share_with_ai }));
@@ -846,7 +841,7 @@ export default function App() {
     if (!force && loadedTabsRef.current.sleep) return;
     try {
       const headers = { 'Authorization': `Bearer ${token}` };
-      const sleepRes = await fetch('/api/sleep', { headers }).catch(e => null);
+      const sleepRes = await fetch(getApiUrl('/api/sleep'), { headers }).catch(e => null);
       if (sleepRes && sleepRes.ok) {
         const sLogs = await sleepRes.json();
         setSleepLogs(sLogs);
@@ -863,7 +858,7 @@ export default function App() {
     if (!force && loadedTabsRef.current.calendar) return;
     try {
       const headers = { 'Authorization': `Bearer ${token}` };
-      const calRes = await fetch('/api/calendar', { headers }).catch(e => null);
+      const calRes = await fetch(getApiUrl('/api/calendar'), { headers }).catch(e => null);
       if (calRes && calRes.ok) {
         const calData = await calRes.json();
         const mappedCal = calData.map(c => ({ id: c.id, title: c.title, date: c.date, color: c.color, status: c.status, endDate: c.end_date }));
@@ -881,7 +876,7 @@ export default function App() {
     if (!force && loadedTabsRef.current.ai) return;
     try {
       const headers = { 'Authorization': `Bearer ${token}` };
-      const chatRes = await fetch('/api/chat', { headers }).catch(e => null);
+      const chatRes = await fetch(getApiUrl('/api/chat'), { headers }).catch(e => null);
       if (chatRes && chatRes.ok) {
         const cData = await chatRes.json();
         const mappedChat = cData.map(c => ({ id: c.id, sender: c.sender, text: c.text, time: c.time }));
@@ -897,7 +892,7 @@ export default function App() {
   const handleResetAllAccountData = async () => {
     if (!token) return;
     try {
-      const res = await fetch('/api/settings?action=reset-all', {
+      const res = await fetch(getApiUrl('/api/settings?action=reset-all'), {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -950,7 +945,7 @@ export default function App() {
       const isTrashed = note.is_trashed !== undefined ? (note.is_trashed ? 1 : 0) : (note.deletedAt ? 1 : 0);
       const deletedAt = isTrashed === 0 ? null : (note.deletedAt ? new Date(note.deletedAt).toISOString() : (note.deleted_at || new Date().toISOString()));
 
-      await fetch('/api/notes', {
+      await fetch(getApiUrl('/api/notes'), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
@@ -970,7 +965,7 @@ export default function App() {
   const handleCreateNoteDb = async (title, content, shareWithAi, callback) => {
     if (!token) return;
     try {
-      const res = await fetch('/api/notes', {
+      const res = await fetch(getApiUrl('/api/notes'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ title, content, share_with_ai: shareWithAi })
@@ -987,7 +982,7 @@ export default function App() {
   const handleUpdateTodayDb = async (id, checked) => {
     if (!token || !id) return;
     try {
-      await fetch('/api/today', {
+      await fetch(getApiUrl('/api/today'), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ id, checked })
@@ -1001,7 +996,7 @@ export default function App() {
         const payload = { id, streak, checked_today, paused_until };
         if (archived !== undefined) payload.archived = archived;
         if (completed_at !== undefined) payload.completed_at = completed_at;
-        await fetch('/api/habits', {
+        await fetch(getApiUrl('/api/habits'), {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify(payload)
@@ -1113,7 +1108,7 @@ export default function App() {
           id: Date.now()
         };
         if (token) {
-          fetch('/api/fitness?type=workouts', {
+          fetch(getApiUrl('/api/fitness?type=workouts'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify(newWorkout)
@@ -1145,7 +1140,7 @@ export default function App() {
       }
 
       if (token) {
-        fetch('/api/fitness?type=body-stats', {
+        fetch(getApiUrl('/api/fitness?type=body-stats'), {
           method: payload.id ? 'PUT' : 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify(payload)
@@ -1186,7 +1181,7 @@ export default function App() {
         if (nextChecked) {
           const newTodayItem = { id: Date.now(), habitId: targetHabitId, title: h.title, category: h.category, checked: true, time: 'Daily' };
           if (token) {
-            fetch('/api/today', {
+            fetch(getApiUrl('/api/today'), {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
               body: JSON.stringify({ label: h.title, category: h.category, checked: 1, habit_id: targetHabitId, time: 'Daily', client_date: todayKey(userProfile?.timezone) })
@@ -1216,7 +1211,7 @@ export default function App() {
         const match = h.target ? h.target.match(/\d+/) : null;
         const numValue = match ? match[0] : "1";
         
-        fetch('/api/analytics?type=metrics', {
+        fetch(getApiUrl('/api/analytics?type=metrics'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({
@@ -1243,7 +1238,7 @@ export default function App() {
 const handleDeleteHabitDb = async (id) => {
       if (!token) return;
       try {
-        await fetch('/api/habits', {
+        await fetch(getApiUrl('/api/habits'), {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({ id })
@@ -1319,7 +1314,7 @@ const handleDeleteHabitDb = async (id) => {
     if (!waitlistEmail.trim() || !waitlistName.trim()) return;
     
     try {
-      const response = await fetch('/api/waitlist', {
+      const response = await fetch(getApiUrl('/api/waitlist'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: waitlistName, email: waitlistEmail })
@@ -1357,7 +1352,7 @@ const handleDeleteHabitDb = async (id) => {
     setUserProfile(updatedProfile);
 
     if (token) {
-      fetch('/api/settings', {
+      fetch(getApiUrl('/api/settings'), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(updatedProfile)
@@ -1370,7 +1365,7 @@ const handleDeleteHabitDb = async (id) => {
     showToast?.('AI Chat history cleared', 'info');
     try {
       if (token) {
-        await fetch('/api/chat', {
+        await fetch(getApiUrl('/api/chat'), {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -1401,7 +1396,7 @@ const handleDeleteHabitDb = async (id) => {
       const fallbackReply = "Please provide your Gemini or Groq API key in the settings to use the AI Assistant.";
       const aiMsg = { id: Date.now() + 1, sender: 'ai', text: fallbackReply, time: nowTime };
       setAiMessages(prev => [...prev, aiMsg]);
-      fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify([newMsg, aiMsg]) }).catch(err => console.error(err));
+      fetch(getApiUrl('/api/chat'), { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify([newMsg, aiMsg]) }).catch(err => console.error(err));
       return;
     }
 
@@ -1509,7 +1504,7 @@ const handleDeleteHabitDb = async (id) => {
         for (const match of calendarMatches) {
           try {
             const data = JSON.parse(match[1]);
-            const res = await fetch('/api/calendar', {
+            const res = await fetch(getApiUrl('/api/calendar'), {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
               body: JSON.stringify({
@@ -1541,7 +1536,7 @@ const handleDeleteHabitDb = async (id) => {
         for (const match of habitMatches) {
           try {
             const data = JSON.parse(match[1]);
-            const res = await fetch('/api/habits', {
+            const res = await fetch(getApiUrl('/api/habits'), {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
               body: JSON.stringify({
@@ -1572,7 +1567,7 @@ const handleDeleteHabitDb = async (id) => {
         for (const match of txMatches) {
           try {
             const data = JSON.parse(match[1]);
-            const res = await fetch('/api/transactions', {
+            const res = await fetch(getApiUrl('/api/transactions'), {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
               body: JSON.stringify({
@@ -1600,7 +1595,7 @@ const handleDeleteHabitDb = async (id) => {
         for (const match of noteMatches) {
           try {
             const data = JSON.parse(match[1]);
-            const res = await fetch('/api/notes', {
+            const res = await fetch(getApiUrl('/api/notes'), {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
               body: JSON.stringify({
@@ -1627,7 +1622,7 @@ const handleDeleteHabitDb = async (id) => {
         for (const match of sleepMatches) {
           try {
             const data = JSON.parse(match[1]);
-            await fetch('/api/sleep', {
+            await fetch(getApiUrl('/api/sleep'), {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
               body: JSON.stringify({
@@ -1653,7 +1648,7 @@ const handleDeleteHabitDb = async (id) => {
         for (const match of workoutMatches) {
           try {
             const data = JSON.parse(match[1]);
-            await fetch('/api/fitness?type=workouts', {
+            await fetch(getApiUrl('/api/fitness?type=workouts'), {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
               body: JSON.stringify({
@@ -1678,7 +1673,7 @@ const handleDeleteHabitDb = async (id) => {
         for (const match of bodyMatches) {
           try {
             const data = JSON.parse(match[1]);
-            await fetch('/api/fitness?type=body-stats', {
+            await fetch(getApiUrl('/api/fitness?type=body-stats'), {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
               body: JSON.stringify({
@@ -1711,7 +1706,7 @@ const handleDeleteHabitDb = async (id) => {
       const aiMsg = { id: Date.now() + 1, sender: 'ai', text: finalReply, time: nowTime };
       setAiMessages(prev => prev.map(m => m.id === 'loading' ? aiMsg : m));
       
-      fetch('/api/chat', {
+      fetch(getApiUrl('/api/chat'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify([newMsg, aiMsg])
@@ -1727,7 +1722,7 @@ const handleDeleteHabitDb = async (id) => {
       const aiMsg = { id: Date.now() + 1, sender: 'ai', text: errorText, time: nowTime };
       setAiMessages(prev => prev.map(m => m.id === 'loading' ? aiMsg : m));
       
-      fetch('/api/chat', {
+      fetch(getApiUrl('/api/chat'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify([newMsg, aiMsg])
@@ -1742,7 +1737,7 @@ const handleDeleteHabitDb = async (id) => {
     if (!newTitle || !newAmount) return;
     
     try {
-      const res = await fetch('/api/transactions', {
+      const res = await fetch(getApiUrl('/api/transactions'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ title: newTitle, amount: parseFloat(newAmount), type: newType })
@@ -3260,7 +3255,7 @@ const handleDeleteHabitDb = async (id) => {
                                   <button 
                                     onClick={async () => {
                                       try {
-                                        const res = await fetch('/api/fitness?type=workouts', {
+                                        const res = await fetch(getApiUrl('/api/fitness?type=workouts'), {
                                           method: 'POST',
                                           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                                           body: JSON.stringify({ title: currentTitle, category: 'Strength', duration_mins: 45, calories: 320, notes: `Completed scheduled ${currentTitle}`, date: todayKeyStr })
@@ -3329,7 +3324,7 @@ const handleDeleteHabitDb = async (id) => {
                                 return [{ ...payload, id: tempId, weight: Number(latestStat?.weight) || 0, target_weight: targetW }, ...list];
                               });
 
-                              const res = await fetch('/api/fitness', {
+                              const res = await fetch(getApiUrl('/api/fitness'), {
                                 method: 'POST',
                                 headers: {
                                   'Content-Type': 'application/json',
@@ -3430,7 +3425,7 @@ const handleDeleteHabitDb = async (id) => {
 
                             try {
                               if (token) {
-                                const res = await fetch('/api/fitness?type=body-stats', {
+                                const res = await fetch(getApiUrl('/api/fitness?type=body-stats'), {
                                   method: isExistingToday ? 'PUT' : 'POST',
                                   headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                                   body: JSON.stringify(payload)
@@ -3949,7 +3944,7 @@ const handleDeleteHabitDb = async (id) => {
                             const iDays = freq === 'custom' ? Number(newHabitData.intervalDays || newHabitData.interval_days || 0) : 0;
 
                             try {
-                              const res = await fetch('/api/habits', {
+                              const res = await fetch(getApiUrl('/api/habits'), {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                                 body: JSON.stringify({ 
@@ -3981,7 +3976,7 @@ const handleDeleteHabitDb = async (id) => {
                                 }]);
 
                                 try {
-                                  const todayRes = await fetch('/api/today', {
+                                  const todayRes = await fetch(getApiUrl('/api/today'), {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                                     body: JSON.stringify({
@@ -4550,7 +4545,7 @@ const handleDeleteHabitDb = async (id) => {
 
                               try {
                                 if (token) {
-                                  const res = await fetch('/api/habits', {
+                                  const res = await fetch(getApiUrl('/api/habits'), {
                                     method: 'PUT',
                                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                                     body: JSON.stringify({
@@ -4827,7 +4822,7 @@ const handleDeleteHabitDb = async (id) => {
                                             setActiveNoteId(remainingTrash.length > 0 ? remainingTrash[0].id : null);
                                           }
                                           try {
-                                            const delRes = await fetch('/api/notes', {
+                                            const delRes = await fetch(getApiUrl('/api/notes'), {
                                               method: 'DELETE',
                                               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                                               body: JSON.stringify({ id: tNote.id })
@@ -4950,7 +4945,7 @@ const handleDeleteHabitDb = async (id) => {
                                       // Select next trash note or clear selection
                                       setActiveNoteId(remainingTrash.length > 0 ? remainingTrash[0].id : null);
                                       try {
-                                        const delRes = await fetch('/api/notes', {
+                                        const delRes = await fetch(getApiUrl('/api/notes'), {
                                           method: 'DELETE',
                                           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                                           body: JSON.stringify({ id: noteId })

@@ -1,0 +1,9 @@
+export const API_BASE_URL = (typeof window !== 'undefined' && (window.Capacitor || window.location.protocol === 'file:'))
+  ? 'https://ailifeagent.vercel.app'
+  : '';
+
+export const getApiUrl = (path) => {
+  if (!path) return API_BASE_URL;
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  return `${API_BASE_URL}${path.startsWith('/') ? '' : '/'}${path}`;
+};
