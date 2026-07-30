@@ -83,10 +83,6 @@ export default function App() {
     if (path.includes('/waitlist')) return 'waitlist';
     if (path.includes('/contact')) return 'contact';
     
-    if (isAuth) {
-      window.history.replaceState({}, '', '/dashboard');
-      return 'dashboard';
-    }
     return 'landing';
   });
 
@@ -115,19 +111,13 @@ export default function App() {
           setActiveTabRaw(SLUG_TO_TAB[path]);
         }
       } else if (path.includes('/auth') || path === '/login') {
-        if (isAuth) window.history.replaceState({}, '', '/dashboard');
         setCurrentPage(isAuth ? 'dashboard' : 'auth');
       } else if (path.includes('/waitlist')) {
         setCurrentPage('waitlist');
       } else if (path.includes('/contact')) {
         setCurrentPage('contact');
       } else {
-        if (isAuth) {
-          window.history.replaceState({}, '', '/dashboard');
-          setCurrentPage('dashboard');
-        } else {
-          setCurrentPage('landing');
-        }
+        setCurrentPage('landing');
       }
     };
     window.addEventListener('popstate', handlePopState);
@@ -147,13 +137,8 @@ export default function App() {
 
   // Smoothly dismiss initial HTML splash loader once React App is mounted
   useEffect(() => {
-    const splash = document.getElementById('initial-splash-loader');
-    if (splash) {
-      splash.style.opacity = '0';
-      splash.style.pointerEvents = 'none';
-      setTimeout(() => {
-        splash.style.display = 'none';
-      }, 400);
+    if (window.hideSplash) {
+      window.hideSplash();
     }
   }, []);
 
@@ -1844,13 +1829,23 @@ const handleDeleteHabitDb = async (id) => {
               </div>
             </div>
 
-            <button 
-              className="blue-btn" 
-              style={{ padding: '9px 22px', fontSize: '0.9rem' }}
-              onClick={() => { setWaitlistSuccess(false); navigate('auth', '/auth'); }}
-            >
-              Sign Up <ArrowRight size={16} />
-            </button>
+            {token ? (
+              <button 
+                className="blue-btn" 
+                style={{ padding: '9px 22px', fontSize: '0.9rem' }}
+                onClick={() => navigate('dashboard', '/dashboard')}
+              >
+                Go to Dashboard <ArrowRight size={16} />
+              </button>
+            ) : (
+              <button 
+                className="blue-btn" 
+                style={{ padding: '9px 22px', fontSize: '0.9rem' }}
+                onClick={() => { setWaitlistSuccess(false); navigate('auth', '/auth'); }}
+              >
+                Sign Up <ArrowRight size={16} />
+              </button>
+            )}
           </div>
         </nav>
       )}

@@ -64,12 +64,20 @@ class GlobalErrorBoundary extends Component {
   }
 }
 
-if ('serviceWorker' in navigator && window.location.protocol !== 'file:' && !window.Capacitor) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(err => {
-      console.log('ServiceWorker registration failed: ', err);
+if ('serviceWorker' in navigator) {
+  if (window.Capacitor) {
+    navigator.serviceWorker.getRegistrations().then(registrations => {
+      for (let reg of registrations) {
+        reg.unregister();
+      }
     });
-  });
+  } else if (window.location.protocol !== 'file:') {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch(err => {
+        console.log('ServiceWorker registration failed: ', err);
+      });
+    });
+  }
 }
 
 createRoot(document.getElementById('root')).render(

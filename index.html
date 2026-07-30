@@ -31,6 +31,20 @@
             document.documentElement.setAttribute('data-theme', 'light');
           }
         } catch (e) {}
+
+        window.hideSplash = function() {
+          var splash = document.getElementById('initial-splash-loader');
+          if (splash && splash.style.display !== 'none') {
+            splash.style.opacity = '0';
+            splash.style.pointerEvents = 'none';
+            setTimeout(function() { splash.style.display = 'none'; }, 400);
+          }
+        };
+
+        // Guarantee splash loader auto-dismisses after 1.0s max
+        setTimeout(function() {
+          if (window.hideSplash) window.hideSplash();
+        }, 1000);
       })();
     </script>
   </head>
