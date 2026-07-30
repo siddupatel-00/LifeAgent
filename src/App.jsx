@@ -71,7 +71,7 @@ const safeStorage = {
   getItem: (key) => {
     try {
       if (typeof window === 'undefined' || !window.localStorage) return null;
-      return localStorage.getItem(key);
+      return window.localStorage.getItem(key);
     } catch (e) {
       return null;
     }
@@ -79,21 +79,21 @@ const safeStorage = {
   setItem: (key, val) => {
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
-        localStorage.setItem(key, val);
+        window.localStorage.setItem(key, val);
       }
     } catch (e) {}
   },
   removeItem: (key) => {
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
-        localStorage.removeItem(key);
+        window.localStorage.removeItem(key);
       }
     } catch (e) {}
   },
   clear: () => {
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
-        localStorage.clear();
+        window.localStorage.clear();
       }
     } catch (e) {}
   }
@@ -338,14 +338,14 @@ export default function App() {
       } catch (e) {}
 
       if (res.ok && data && data.token) {
-        const savedThemeMode = localStorage.getItem('themeMode');
-        const savedThemeColor = localStorage.getItem('themeColor');
-        localStorage.clear();
-        if (savedThemeMode) localStorage.setItem('themeMode', savedThemeMode);
-        if (savedThemeColor) localStorage.setItem('themeColor', savedThemeColor);
+        const savedThemeMode = safeStorage.getItem('themeMode');
+        const savedThemeColor = safeStorage.getItem('themeColor');
+        safeStorage.clear();
+        if (savedThemeMode) safeStorage.setItem('themeMode', savedThemeMode);
+        if (savedThemeColor) safeStorage.setItem('themeColor', savedThemeColor);
 
         resetLoadedTabs();
-        localStorage.setItem('token', data.token);
+        safeStorage.setItem('token', data.token);
         setToken(data.token);
         setIsAuthenticated(true);
         if (data.user && data.user.ai_name) setAiName(data.user.ai_name);
@@ -360,7 +360,7 @@ export default function App() {
 
       // Offline mobile app fallback login
       const mockToken = 'offline_user_token_' + Date.now();
-      localStorage.setItem('token', mockToken);
+      safeStorage.setItem('token', mockToken);
       setToken(mockToken);
       setIsAuthenticated(true);
       setAuthForm({ name: '', handle: '', email: '', password: '', phone: '' });
@@ -370,7 +370,7 @@ export default function App() {
         setAuthError(err.message);
       } else {
         const mockToken = 'offline_user_token_' + Date.now();
-        localStorage.setItem('token', mockToken);
+        safeStorage.setItem('token', mockToken);
         setToken(mockToken);
         setIsAuthenticated(true);
         setAuthForm({ name: '', handle: '', email: '', password: '', phone: '' });
@@ -472,11 +472,11 @@ export default function App() {
   const handleLogout = () => {
     // Purge all localStorage data on logout while retaining essential theme options
     resetLoadedTabs();
-    const savedThemeMode = localStorage.getItem('themeMode');
-    const savedThemeColor = localStorage.getItem('themeColor');
-    localStorage.clear();
-    if (savedThemeMode) localStorage.setItem('themeMode', savedThemeMode);
-    if (savedThemeColor) localStorage.setItem('themeColor', savedThemeColor);
+    const savedThemeMode = safeStorage.getItem('themeMode');
+    const savedThemeColor = safeStorage.getItem('themeColor');
+    safeStorage.clear();
+    if (savedThemeMode) safeStorage.setItem('themeMode', savedThemeMode);
+    if (savedThemeColor) safeStorage.setItem('themeColor', savedThemeColor);
     setToken('');
     setIsAuthenticated(false);
     setUserProfile({ name: '', handle: '', email: '', aiTone: 'Analytical & Direct', morningAudit: false, smartAlerts: false, currency: '$', timezone: localTimeZone() });
@@ -721,7 +721,7 @@ export default function App() {
           const userTz = sData.timezone && sData.timezone !== 'UTC' ? sData.timezone : timezone;
           setUserProfile(prev => {
             const next = { ...prev, ...sData, currency: sData.currency || '$', timezone: userTz };
-            localStorage.setItem('cache_userProfile', JSON.stringify(next));
+            safeStorage.setItem('cache_userProfile', JSON.stringify(next));
             return next;
           });
           setGeminiApiKey(sData.gemini_api_key || '');
@@ -736,7 +736,7 @@ export default function App() {
         todayData = await todayRes.json();
         const mappedToday = todayData.map(t => ({ id: t.id, time: t.time, title: t.label, category: t.category, checked: !!t.checked, habitId: t.habit_id || null }));
         setTodayItems(mappedToday);
-        localStorage.setItem('cache_todayItems', JSON.stringify(mappedToday));
+        safeStorage.setItem('cache_todayItems', JSON.stringify(mappedToday));
       }
 
       if (habitsRes && habitsRes.ok) {
@@ -754,7 +754,7 @@ export default function App() {
           interval_days: h.interval_days || 0
         }));
         setHabits(mappedHabits);
-        localStorage.setItem('cache_habits', JSON.stringify(mappedHabits));
+        safeStorage.setItem('cache_habits', JSON.stringify(mappedHabits));
       }
 
       loadedTabsRef.current.startup = true;
@@ -782,13 +782,13 @@ export default function App() {
       if (workoutsRes && workoutsRes.ok) {
         const wData = await workoutsRes.json();
         setWorkouts(wData);
-        localStorage.setItem('cache_workouts', JSON.stringify(wData));
+        safeStorage.setItem('cache_workouts', JSON.stringify(wData));
       }
 
       if (statsRes && statsRes.ok) {
         const sData = await statsRes.json();
         setBodyStats(sData);
-        localStorage.setItem('cache_bodyStats', JSON.stringify(sData));
+        safeStorage.setItem('cache_bodyStats', JSON.stringify(sData));
       }
       loadedTabsRef.current.body = true;
     } catch (err) {
@@ -810,7 +810,7 @@ export default function App() {
         const txData = await validTxRes.json();
         const mappedTx = txData.map(t => ({ id: t.id, title: t.title, amount: t.amount, type: t.type, date: t.date }));
         setTransactions(mappedTx);
-        localStorage.setItem('cache_transactions', JSON.stringify(mappedTx));
+        safeStorage.setItem('cache_transactions', JSON.stringify(mappedTx));
       }
       loadedTabsRef.current.finance = true;
     } catch (err) {
@@ -830,9 +830,9 @@ export default function App() {
         const trashedNotes = notesData.filter(n => !!n.is_trashed).map(n => ({ id: n.id, title: n.title, content: n.content, category: n.category, date: n.date, shareWithAi: !!n.share_with_ai, deletedAt: n.deleted_at ? new Date(n.deleted_at).getTime() : Date.now() }));
 
         setTrashNotes(trashedNotes);
-        localStorage.setItem('cache_trashNotes', JSON.stringify(trashedNotes));
+        safeStorage.setItem('cache_trashNotes', JSON.stringify(trashedNotes));
         setNotesList(activeNotes);
-        localStorage.setItem('cache_notesList', JSON.stringify(activeNotes));
+        safeStorage.setItem('cache_notesList', JSON.stringify(activeNotes));
       }
       loadedTabsRef.current.notes = true;
     } catch (err) {
@@ -849,7 +849,7 @@ export default function App() {
       if (sleepRes && sleepRes.ok) {
         const sLogs = await sleepRes.json();
         setSleepLogs(sLogs);
-        localStorage.setItem('cache_sleepLogs', JSON.stringify(sLogs));
+        safeStorage.setItem('cache_sleepLogs', JSON.stringify(sLogs));
       }
       loadedTabsRef.current.sleep = true;
     } catch (err) {
@@ -867,7 +867,7 @@ export default function App() {
         const calData = await calRes.json();
         const mappedCal = calData.map(c => ({ id: c.id, title: c.title, date: c.date, color: c.color, status: c.status, endDate: c.end_date }));
         setCalendarEvents(mappedCal);
-        localStorage.setItem('cache_calendarEvents', JSON.stringify(mappedCal));
+        safeStorage.setItem('cache_calendarEvents', JSON.stringify(mappedCal));
       }
       loadedTabsRef.current.calendar = true;
     } catch (err) {
@@ -885,7 +885,7 @@ export default function App() {
         const cData = await chatRes.json();
         const mappedChat = cData.map(c => ({ id: c.id, sender: c.sender, text: c.text, time: c.time }));
         setAiMessages(mappedChat);
-        localStorage.setItem('cache_aiMessages', JSON.stringify(mappedChat));
+        safeStorage.setItem('cache_aiMessages', JSON.stringify(mappedChat));
       }
       loadedTabsRef.current.ai = true;
     } catch (err) {
@@ -918,16 +918,16 @@ export default function App() {
         resetLoadedTabs();
 
         // Clear localStorage except token, theme, and userProfile cache
-        const savedToken = localStorage.getItem('token');
-        const savedThemeMode = localStorage.getItem('themeMode');
-        const savedThemeColor = localStorage.getItem('themeColor');
-        const savedUserProfile = localStorage.getItem('cache_userProfile');
-        localStorage.clear();
-        if (savedToken) localStorage.setItem('token', savedToken);
-        if (savedThemeMode) localStorage.setItem('themeMode', savedThemeMode);
-        if (savedThemeColor) localStorage.setItem('themeColor', savedThemeColor);
-        if (savedUserProfile) localStorage.setItem('cache_userProfile', savedUserProfile);
-        localStorage.removeItem('water_target_goal');
+        const savedToken = safeStorage.getItem('token');
+        const savedThemeMode = safeStorage.getItem('themeMode');
+        const savedThemeColor = safeStorage.getItem('themeColor');
+        const savedUserProfile = safeStorage.getItem('cache_userProfile');
+        safeStorage.clear();
+        if (savedToken) safeStorage.setItem('token', savedToken);
+        if (savedThemeMode) safeStorage.setItem('themeMode', savedThemeMode);
+        if (savedThemeColor) safeStorage.setItem('themeColor', savedThemeColor);
+        if (savedUserProfile) safeStorage.setItem('cache_userProfile', savedUserProfile);
+        safeStorage.removeItem('water_target_goal');
 
         // Call showToast('Account reset to fresh start!', 'info')
         showToast('Account reset to fresh start!', 'info');
@@ -1811,7 +1811,7 @@ const handleDeleteHabitDb = async (id) => {
               <CustomSelect 
                 value={themeColor || 'blue'}
                 onChange={(e) => {
-                  localStorage.setItem('themeColor', e.target.value);
+                  safeStorage.setItem('themeColor', e.target.value);
                   document.documentElement.setAttribute('data-color-theme', e.target.value);
                   window.dispatchEvent(new Event('storage'));
                 }} 
@@ -3247,7 +3247,7 @@ const handleDeleteHabitDb = async (id) => {
                     (() => {
                       const hasWorkoutData = Array.isArray(workouts) && workouts.length > 0;
                       const hasProteinSetup = Array.isArray(bodyStats) && bodyStats.some(s => Number(s.target_protein) > 0 || Number(s.protein) > 0);
-                      const hasWaterSetup = !!localStorage.getItem('water_target_goal') && Number(localStorage.getItem('water_target_goal')) > 0;
+                      const hasWaterSetup = !!safeStorage.getItem('water_target_goal') && Number(safeStorage.getItem('water_target_goal')) > 0;
                       if (!hasWorkoutData && !hasProteinSetup && !hasWaterSetup) return null;
                       return (
                     <div style={{ background: 'var(--bg-main)', borderRadius: '20px', border: '1px solid var(--border-color)', padding: '24px', marginBottom: '28px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -3419,11 +3419,11 @@ const handleDeleteHabitDb = async (id) => {
                         })()}
 
                         {/* c) Daily Hydration Tracker */}
-                        {todayWidgetsConfig.showHydration && !!localStorage.getItem('water_target_goal') && Number(localStorage.getItem('water_target_goal')) > 0 && (() => {
+                        {todayWidgetsConfig.showHydration && !!safeStorage.getItem('water_target_goal') && Number(safeStorage.getItem('water_target_goal')) > 0 && (() => {
                           const latestStat = Array.isArray(bodyStats) && bodyStats.length > 0 ? bodyStats[0] : null;
                           const isToday = latestStat?.date === todayKey(userProfile?.timezone);
                           const hydration = isToday ? (Number(latestStat?.hydration) || 0) : 0;
-                          const goal = Number(localStorage.getItem('water_target_goal')) || 3.0;
+                          const goal = Number(safeStorage.getItem('water_target_goal')) || 3.0;
                           const pct = Math.min(100, Math.max(0, Math.round((hydration / goal) * 100)));
 
                           const handleAddWater = async (liters) => {

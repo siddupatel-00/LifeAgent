@@ -1,3 +1,4 @@
+import { safeStorage } from './utils/safeStorage';
 import React, { Component } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
@@ -19,7 +20,7 @@ class GlobalErrorBoundary extends Component {
 
   handleReload = () => {
     try {
-      localStorage.clear();
+      safeStorage.clear();
     } catch (e) {}
     window.location.reload();
   };

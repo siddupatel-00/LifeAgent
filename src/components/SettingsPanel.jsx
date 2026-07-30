@@ -1,3 +1,4 @@
+import { safeStorage } from '../utils/safeStorage';
 import React, { useState } from 'react';
 import { Check, User, Bot, Save, LogOut, AlertTriangle } from 'lucide-react';
 import CustomSelect from './CustomSelect';
@@ -281,9 +282,9 @@ const SettingsPanel = ({
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Personalize your dashboard's accent colors.</div>
               </div>
               <CustomSelect 
-                value={typeof window !== 'undefined' ? (localStorage.getItem('themeColor') || 'blue') : 'blue'}
+                value={typeof window !== 'undefined' ? (safeStorage.getItem('themeColor') || 'blue') : 'blue'}
                 onChange={(e) => {
-                  localStorage.setItem('themeColor', e.target.value);
+                  safeStorage.setItem('themeColor', e.target.value);
                   document.documentElement.setAttribute('data-color-theme', e.target.value);
                   window.dispatchEvent(new Event('storage'));
                 }} 

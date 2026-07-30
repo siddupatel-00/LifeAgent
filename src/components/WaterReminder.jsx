@@ -1,3 +1,4 @@
+import { safeStorage } from '../utils/safeStorage';
 import React, { useState, useEffect } from 'react';
 import { Droplet, Bell, BellOff, Plus, RotateCcw, Clock, X, Edit2, Check, MoreVertical } from 'lucide-react';
 import Modal from './Modal';
@@ -13,7 +14,7 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
     : (todayStat?.date ? (todayStat.date === todayDateStr ? todayStat : null) : todayStat);
   const [hydrationLiters, setHydrationLiters] = useState(Number(statObj?.hydration || 0));
   const [targetGoal, setTargetGoal] = useState(() => {
-    const saved = localStorage.getItem('water_target_goal');
+    const saved = safeStorage.getItem('water_target_goal');
     return saved && Number(saved) > 0 ? Number(saved) : null;
   });
 
@@ -47,7 +48,7 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
     }
     setGoalInputError('');
     setTargetGoal(val);
-    localStorage.setItem('water_target_goal', val.toString());
+    safeStorage.setItem('water_target_goal', val.toString());
     setModalTargetGoal(val.toString());
     showToast?.(`🎯 Daily water goal set to ${val} L!`, 'success');
   };
@@ -57,11 +58,11 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
     const newInterval = parseInt(modalReminderInterval, 10) || 60;
     
     setTargetGoal(newTarget);
-    localStorage.setItem('water_target_goal', newTarget.toString());
+    safeStorage.setItem('water_target_goal', newTarget.toString());
     setReminderIntervalMinutes(newInterval);
     
     try {
-      const token = localStorage.getItem('token');
+      const token = safeStorage.getItem('token');
       if (token) {
         await fetch(getApiUrl('/api/settings'), {
           method: 'PUT',
@@ -89,7 +90,7 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
       : (todayStat?.date ? (todayStat.date === todayStr ? todayStat : null) : todayStat);
     setHydrationLiters(Number(currentStat?.hydration || 0));
 
-    const saved = localStorage.getItem('water_target_goal');
+    const saved = safeStorage.getItem('water_target_goal');
     if (saved && Number(saved) > 0) {
       setTargetGoal(Number(saved));
     } else {
@@ -137,7 +138,7 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
     }
 
     try {
-      const token = localStorage.getItem('token');
+      const token = safeStorage.getItem('token');
       if (token) {
         fetch(getApiUrl('/api/settings'), {
           method: 'PUT',
@@ -156,7 +157,7 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
     }
     
     try {
-      const token = localStorage.getItem('token');
+      const token = safeStorage.getItem('token');
       if (token) {
         fetch(getApiUrl('/api/settings'), {
           method: 'PUT',
