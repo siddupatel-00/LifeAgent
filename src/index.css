@@ -372,7 +372,19 @@ body {
 .glass-card:hover {
   border-color: rgba(59, 130, 246, 0.4);
   box-shadow: 0 12px 32px rgba(0,0,0,0.15);
-} 
+}
+
+/* Standardized Tab Content Housing Box (Consistent sizing, padding, and layout across all tabs) */
+.tab-content-housing-box {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  margin-bottom: 24px !important;
+  padding: 32px !important;
+  border-radius: 20px !important;
+  border: 1px solid var(--border-color) !important;
+  background: var(--bg-card);
+}
 
 /* Blur overlay for modals and side panel */
 .blur-overlay, .modal-overlay {
@@ -1032,6 +1044,14 @@ input[type="checkbox"]:checked::after {
     max-width: calc(100vw - 24px) !important;
     box-sizing: border-box !important;
     padding: 18px 14px !important;
+  }
+  .tab-content-housing-box {
+    padding: 24px 20px !important;
+    margin-bottom: 24px !important;
+    border-radius: 20px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   /* Full screen mobile AI Chat & Section styling */
