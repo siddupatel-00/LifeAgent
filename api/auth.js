@@ -1,3 +1,4 @@
+import { handleCors } from './_cors.js';
 import db, { ensureDbSchema } from '../lib/db.js';
 import bcrypt from 'bcryptjs';
 import { signToken } from '../lib/auth.js';
@@ -6,6 +7,8 @@ import { sendPasswordResetEmail } from '../lib/email.js';
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default async function handler(req, res) {
+  if (handleCors(req, res)) return;
+
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   await ensureDbSchema();

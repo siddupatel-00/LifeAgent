@@ -1,7 +1,10 @@
+import { handleCors } from './_cors.js';
 import db, { ensureDbSchema } from '../lib/db.js';
 import { getUserId } from '../lib/auth.js';
 
 export default async function handler(req, res) {
+  if (handleCors(req, res)) return;
+
   await ensureDbSchema();
   const userId = getUserId(req);
   if (!userId) return res.status(401).json({ error: 'Unauthorized' });
