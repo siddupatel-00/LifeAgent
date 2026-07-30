@@ -111,7 +111,7 @@ export default function App() {
     const token = safeStorage.getItem('token');
     const isAuth = !!token;
     
-    if (path.includes('/dashboard')) return isAuth ? 'dashboard' : 'auth';
+    if (path.includes('/dashboard') || SLUG_TO_TAB[path]) return isAuth ? 'dashboard' : 'auth';
     if (path.includes('/auth') || path.includes('/login')) return isAuth ? 'dashboard' : 'auth';
     if (path.includes('/waitlist')) return 'waitlist';
     if (path.includes('/contact')) return 'contact';
