@@ -9,6 +9,17 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+      @keyframes splashPulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.08); opacity: 0.85; }
+      }
+      @keyframes splashProgress {
+        0% { left: -40%; width: 40%; }
+        50% { width: 60%; }
+        100% { left: 100%; width: 40%; }
+      }
+    </style>
     <script>
       (function() {
         try {
@@ -24,7 +35,18 @@
     </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div id="initial-splash-loader" style="position: fixed; inset: 0; background: #0a0c10; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 99999; color: #ffffff; font-family: 'Outfit', sans-serif;">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 16px; text-align: center;">
+          <img src="/logo.svg" alt="LifeAgent Logo" style="width: 72px; height: 72px; filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.4)); animation: splashPulse 2s infinite ease-in-out;" />
+          <h1 style="margin: 0; font-size: 1.8rem; font-weight: 800; tracking: -0.5px; background: linear-gradient(135deg, #ffffff 0%, #94a3b8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">LifeAgent</h1>
+          <p style="margin: 0; font-size: 0.9rem; color: #94a3b8; font-weight: 500;">AI Progress & Life Coach</p>
+          <div style="width: 140px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; margin-top: 12px; position: relative;">
+            <div style="position: absolute; top: 0; left: 0; height: 100%; width: 40%; background: #3b82f6; border-radius: 4px; animation: splashProgress 1.4s infinite ease-in-out;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

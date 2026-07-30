@@ -22,8 +22,6 @@ import Modal from './components/Modal';
 import { todayKey, localTimeZone, getWeekDays, isHabitScheduledOnDay, ALL_WEEK_DAYS } from './utils/date';
 import WaterReminder from './components/WaterReminder';
 import TabErrorBoundary from './components/TabErrorBoundary';
-import { getApiUrl } from './utils/apiConfig';
-import LandingPage from './components/LandingPage';
 
 const getFormattedDateTitle = (dateStr) => {
   let targetDate = new Date();
@@ -77,16 +75,11 @@ export default function App() {
   // Sync initial page with URL pathname (/dashboard, /waitlist, /contact, or /)
   const [currentPage, setCurrentPage] = useState(() => {
     const path = window.location.pathname;
-    const isAuth = !!localStorage.getItem('token');
+    const token = localStorage.getItem('token');
+    const isAuth = !!token;
     
-    if (path.includes('/dashboard') || SLUG_TO_TAB[path]) {
-      if (!isAuth) window.history.replaceState({}, '', '/auth');
-      return isAuth ? 'dashboard' : 'auth';
-    }
-    if (path.includes('/auth') || path === '/login') {
-      if (isAuth) window.history.replaceState({}, '', '/dashboard');
-      return isAuth ? 'dashboard' : 'auth';
-    }
+    if (path.includes('/dashboard')) return isAuth ? 'dashboard' : 'auth';
+    if (path.includes('/auth') || path.includes('/login')) return isAuth ? 'dashboard' : 'auth';
     if (path.includes('/waitlist')) return 'waitlist';
     if (path.includes('/contact')) return 'contact';
     
@@ -283,7 +276,7 @@ export default function App() {
   // Validate session on mount if token exists; log out if account was deleted or token expired
   useEffect(() => {
     if (!token) return;
-    fetch(getApiUrl('/api/auth?action=me'), {
+    fetch('/api/auth?action=me', {
       headers: { 'Authorization': `Bearer ${token}` }
     }).then(res => {
       if (res.status === 401 || res.status === 403 || res.status === 404) {
@@ -311,12 +304,12 @@ export default function App() {
     setAuthError('');
     try {
       const endpoint = authMode === 'login' ? '/api/auth?action=login' : '/api/auth?action=register';
-      const res = await fetch(getApiUrl(endpoint), {
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(authForm)
       });
-      const data = await res.json().catch(() => ({}));
+      const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Authentication failed');
 
       // Purge all user-specific localStorage data while retaining essential theme options
@@ -330,7 +323,7 @@ export default function App() {
       localStorage.setItem('token', data.token);
       setToken(data.token);
       setIsAuthenticated(true);
-      if (data.user?.ai_name) setAiName(data.user.ai_name);
+      if (data.user.ai_name) setAiName(data.user.ai_name);
       setAuthForm({ name: '', handle: '', email: '', password: '', phone: '' });
       navigate('dashboard', '/dashboard');
     } catch (err) {
@@ -346,12 +339,12 @@ export default function App() {
     setAuthError('');
     setResetSuccessMsg('');
     try {
-      const res = await fetch(getApiUrl('/api/auth?action=forgot-password'), {
+      const res = await fetch('/api/auth?action=forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ emailOrHandle: resetEmailOrHandle })
       });
-      const data = await res.json().catch(() => ({}));
+      const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Account not found');
 
       setResetStep(2);
@@ -371,7 +364,7 @@ export default function App() {
     setAuthError('');
     setResetSuccessMsg('');
     try {
-      const res = await fetch(getApiUrl('/api/auth?action=verify-reset-code'), {
+      const res = await fetch('/api/auth?action=verify-reset-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -379,7 +372,7 @@ export default function App() {
           code: resetCode
         })
       });
-      const data = await res.json().catch(() => ({}));
+      const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Invalid reset code');
 
       setResetStep(3);
@@ -399,7 +392,7 @@ export default function App() {
     setAuthError('');
     setResetSuccessMsg('');
     try {
-      const res = await fetch(getApiUrl('/api/auth?action=reset-password'), {
+      const res = await fetch('/api/auth?action=reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -408,7 +401,7 @@ export default function App() {
           newPassword: resetNewPassword
         })
       });
-      const data = await res.json().catch(() => ({}));
+      const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to reset password');
 
       setResetSuccessMsg(data.message || 'Password reset successfully!');
@@ -502,13 +495,9 @@ export default function App() {
 
 
   // 2) Habit Tracker state
+  // Habits state with exact daily tracking items: Gym, Study, Code, Reading
   const [showHabitHistory, setShowHabitHistory] = useState(false);
-  const [habits, setHabits] = useState(() => {
-    try {
-      const saved = localStorage.getItem('cache_habits');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) { return []; }
-  });
+  const [habits, setHabits] = useState([]);
   const [isAddHabitModalOpen, setIsAddHabitModalOpen] = useState(false);
   const [isEditHabitModalOpen, setIsEditHabitModalOpen] = useState(false);
   const [editingHabitData, setEditingHabitData] = useState(null);
@@ -516,39 +505,19 @@ export default function App() {
   const [customPillarInput, setCustomPillarInput] = useState('');
   const [newTodayItemData, setNewTodayItemData] = useState({ title: '', category: 'Coding', time: '10:00 AM' });
   const [isAddTodayItemOpen, setIsAddTodayItemOpen] = useState(false);
-  const [todayItems, setTodayItems] = useState(() => {
-    try {
-      const saved = localStorage.getItem('cache_todayItems');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) { return []; }
-  });
+  const [todayItems, setTodayItems] = useState([]);
   const [habitCardViews, setHabitCardViews] = useState({}); // { habitId: 'progress' | 'heatmap' }
   const [habitMenuOpen, setHabitMenuOpen] = useState(null); // habitId
 
   // 3) Finance state
-  const [transactions, setTransactions] = useState(() => {
-    try {
-      const saved = localStorage.getItem('cache_transactions');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) { return []; }
-  });
+  const [transactions, setTransactions] = useState([]);
   const [newTitle, setNewTitle] = useState('');
   const [newAmount, setNewAmount] = useState('');
   const [newType, setNewType] = useState('spend');
 
   // 4) Body & Gym state
-  const [workouts, setWorkouts] = useState(() => {
-    try {
-      const saved = localStorage.getItem('cache_workouts');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) { return []; }
-  });
-  const [bodyStats, setBodyStats] = useState(() => {
-    try {
-      const saved = localStorage.getItem('cache_bodyStats');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) { return []; }
-  });
+  const [workouts, setWorkouts] = useState([]);
+  const [bodyStats, setBodyStats] = useState([]);
 
   const handleSaveBodyStat = async (updated) => {
     const todayStr = todayKey(userProfile?.timezone);
@@ -565,7 +534,7 @@ export default function App() {
     }
     
     if (token) {
-      fetch(getApiUrl('/api/fitness?type=body-stats'), {
+      fetch('/api/fitness?type=body-stats', {
         method: payload.id ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(payload)
@@ -575,33 +544,21 @@ export default function App() {
     setBodyStats(prev => {
        const arr = Array.isArray(prev) ? prev : (prev ? [prev] : []);
        const existingIdx = arr.findIndex(s => s.date === todayStr);
-       let nextArr = [];
        if (existingIdx >= 0) {
-          nextArr = [...arr];
-          nextArr[existingIdx] = { ...nextArr[existingIdx], ...payload };
+          const next = [...arr];
+          next[existingIdx] = { ...next[existingIdx], ...payload };
+          return next;
        } else {
-          nextArr = [{ ...payload, id: payload.id || Date.now() }, ...arr];
+          return [{ ...payload, id: payload.id || Date.now() }, ...arr];
        }
-       localStorage.setItem('cache_bodyStats', JSON.stringify(nextArr));
-       return nextArr;
     });
   };
 
   // 5) Sleep state
-  const [sleepLogs, setSleepLogs] = useState(() => {
-    try {
-      const saved = localStorage.getItem('cache_sleepLogs');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) { return []; }
-  });
+  const [sleepLogs, setSleepLogs] = useState([]);
 
   // 6) Notes & Diary state (with AI sharing permissions)
-  const [notesList, setNotesList] = useState(() => {
-    try {
-      const saved = localStorage.getItem('cache_notesList');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) { return []; }
-  });
+  const [notesList, setNotesList] = useState([]);
   const [activeNoteId, setActiveNoteId] = useState(null);
   const [isFloatingDiaryOpen, setIsFloatingDiaryOpen] = useState(false);
   const [floatingDiaryContent, setFloatingDiaryContent] = useState("");
@@ -618,7 +575,7 @@ export default function App() {
       if (expired.length > 0) {
         // Permanently delete expired notes from DB
         expired.forEach(note => {
-          fetch(getApiUrl('/api/notes'), {
+          fetch('/api/notes', {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ id: note.id })
@@ -646,12 +603,7 @@ export default function App() {
   }, [activeTab, userProfile.auto_open_ai_sidechat]);
 
   // 8) Calendar state
-  const [calendarEvents, setCalendarEvents] = useState(() => {
-    try {
-      const saved = localStorage.getItem('cache_calendarEvents');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) { return []; }
-  });
+  const [calendarEvents, setCalendarEvents] = useState([]);
   const [calendarSubTab, setCalendarSubTab] = useState('today');
   const [selectedCalendarDate, setSelectedCalendarDate] = useState(null);
   const [calendarMonth, setCalendarMonth] = useState(() => {
@@ -710,9 +662,9 @@ export default function App() {
       const clientDate = todayKey(timezone);
 
       const [settingsRes, todayRes, habitsRes] = await Promise.all([
-        fetch(getApiUrl('/api/settings'), { headers }).catch(e => null),
-        fetch(getApiUrl(`/api/today?client_date=${clientDate}`), { headers }).catch(e => null),
-        fetch(getApiUrl('/api/habits'), { headers }).catch(e => null)
+        fetch('/api/settings', { headers }).catch(e => null),
+        fetch(`/api/today?client_date=${clientDate}`, { headers }).catch(e => null),
+        fetch('/api/habits', { headers }).catch(e => null)
       ]);
 
       if (settingsRes && settingsRes.ok) {
@@ -775,8 +727,8 @@ export default function App() {
     try {
       const headers = { 'Authorization': `Bearer ${token}` };
       const [workoutsRes, statsRes] = await Promise.all([
-        fetch(getApiUrl('/api/fitness?type=workouts'), { headers }).catch(e => null),
-        fetch(getApiUrl('/api/fitness?type=body-stats'), { headers }).catch(e => null)
+        fetch('/api/fitness?type=workouts', { headers }).catch(e => null),
+        fetch('/api/fitness?type=body-stats', { headers }).catch(e => null)
       ]);
 
       if (workoutsRes && workoutsRes.ok) {
@@ -802,8 +754,8 @@ export default function App() {
     try {
       const headers = { 'Authorization': `Bearer ${token}` };
       const [txRes, financeRes] = await Promise.all([
-        fetch(getApiUrl('/api/transactions'), { headers }).catch(e => null),
-        fetch(getApiUrl('/api/finance'), { headers }).catch(e => null)
+        fetch('/api/transactions', { headers }).catch(e => null),
+        fetch('/api/finance', { headers }).catch(e => null)
       ]);
       const validTxRes = (txRes && txRes.ok) ? txRes : (financeRes && financeRes.ok ? financeRes : null);
       if (validTxRes) {
@@ -823,7 +775,7 @@ export default function App() {
     if (!force && loadedTabsRef.current.notes) return;
     try {
       const headers = { 'Authorization': `Bearer ${token}` };
-      const notesRes = await fetch(getApiUrl('/api/notes'), { headers }).catch(e => null);
+      const notesRes = await fetch('/api/notes', { headers }).catch(e => null);
       if (notesRes && notesRes.ok) {
         const notesData = await notesRes.json();
         let activeNotes = notesData.filter(n => !n.is_trashed).map(n => ({ id: n.id, title: n.title, content: n.content, category: n.category, date: n.date, shareWithAi: !!n.share_with_ai }));
@@ -845,7 +797,7 @@ export default function App() {
     if (!force && loadedTabsRef.current.sleep) return;
     try {
       const headers = { 'Authorization': `Bearer ${token}` };
-      const sleepRes = await fetch(getApiUrl('/api/sleep'), { headers }).catch(e => null);
+      const sleepRes = await fetch('/api/sleep', { headers }).catch(e => null);
       if (sleepRes && sleepRes.ok) {
         const sLogs = await sleepRes.json();
         setSleepLogs(sLogs);
@@ -862,7 +814,7 @@ export default function App() {
     if (!force && loadedTabsRef.current.calendar) return;
     try {
       const headers = { 'Authorization': `Bearer ${token}` };
-      const calRes = await fetch(getApiUrl('/api/calendar'), { headers }).catch(e => null);
+      const calRes = await fetch('/api/calendar', { headers }).catch(e => null);
       if (calRes && calRes.ok) {
         const calData = await calRes.json();
         const mappedCal = calData.map(c => ({ id: c.id, title: c.title, date: c.date, color: c.color, status: c.status, endDate: c.end_date }));
@@ -880,7 +832,7 @@ export default function App() {
     if (!force && loadedTabsRef.current.ai) return;
     try {
       const headers = { 'Authorization': `Bearer ${token}` };
-      const chatRes = await fetch(getApiUrl('/api/chat'), { headers }).catch(e => null);
+      const chatRes = await fetch('/api/chat', { headers }).catch(e => null);
       if (chatRes && chatRes.ok) {
         const cData = await chatRes.json();
         const mappedChat = cData.map(c => ({ id: c.id, sender: c.sender, text: c.text, time: c.time }));
@@ -896,7 +848,7 @@ export default function App() {
   const handleResetAllAccountData = async () => {
     if (!token) return;
     try {
-      const res = await fetch(getApiUrl('/api/settings?action=reset-all'), {
+      const res = await fetch('/api/settings?action=reset-all', {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -1874,7 +1826,544 @@ const handleDeleteHabitDb = async (id) => {
 
       {/* LANDING PAGE (Personal AI Operating System at /) */}
       {currentPage === 'landing' && (
-        <LandingPage onNavigate={navigate} setAuthMode={setAuthMode} />
+        <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 16px' }}>
+          {/* HERO SECTION */}
+          <section className="animate-entrance" style={{ textAlign: 'center', padding: '60px 0 36px' }}>
+
+            <h1 style={{ fontSize: '3.8rem', fontWeight: 900, lineHeight: 1.08, letterSpacing: '-2px', marginBottom: '22px', color: 'var(--text-main)' }}>
+              Your Life Connected with Your Personal AI Agent
+            </h1>
+
+            <p style={{ maxWidth: '780px', margin: '0 auto 36px', fontSize: '1.25rem', color: 'var(--text-muted)', lineHeight: 1.6, fontWeight: 400 }}>
+              Track your habits, money, sleep, workouts, calendar, notes and daily progress — while your AI understands everything in one place.
+            </p>
+
+            {/* CTAs */}
+            <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '32px' }}>
+              <button 
+                className="blue-btn" 
+                style={{ fontSize: '1.05rem', padding: '14px 36px', borderRadius: '14px', boxShadow: '0 8px 24px rgba(59, 130, 246, 0.35)' }} 
+                onClick={() => { setAuthMode('signup'); navigate('auth', '/auth'); }}
+              >
+                Get Started Free <ArrowRight size={18} />
+              </button>
+            </div>
+
+          </section>
+
+          {/* INTERACTIVE 80% PRODUCT PREVIEW SECTION */}
+          <section className="scroll-swipe-up scroll-delay-1" style={{ margin: '30px auto 80px', width: '85%', minWidth: '320px', maxWidth: '1100px' }}>
+            <div 
+              onMouseEnter={() => setIsHoveringMockup(true)}
+              onMouseLeave={() => setIsHoveringMockup(false)}
+              className="glass-card scroll-swipe-up scroll-delay-2" 
+              style={{ 
+                borderRadius: '24px', 
+                border: '1px solid var(--border-color)', 
+                overflow: 'hidden', 
+                boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.5), 0 0 35px rgba(59, 130, 246, 0.15)',
+                background: 'var(--bg-card)',
+                height: '480px',
+                maxHeight: '480px',
+                display: 'flex',
+                flexDirection: 'column'
+              }}
+            >
+              {/* Window Titlebar Header */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '14px 20px',
+                borderBottom: '1px solid var(--border-color)',
+                background: 'rgba(0, 0, 0, 0.25)',
+                flexWrap: 'wrap',
+                gap: '12px'
+              }}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ff5f56' }} />
+                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ffbd2e' }} />
+                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#27c93f' }} />
+                  <span style={{ marginLeft: '12px', fontSize: '0.78rem', color: 'var(--text-muted)', fontFamily: 'monospace', opacity: 0.85 }}>
+                    LifeAgent-Dashboard
+                  </span>
+                </div>
+
+                {/* Interactive Tabs Row with Physical Sliding Blue Pill */}
+                <div style={{ display: 'flex', gap: '4px', overflowX: 'auto', padding: '2px', scrollbarWidth: 'none', position: 'relative' }}>
+                  {/* Sliding Blue Pill Indicator (Reverse-U Motion) */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '2px',
+                      left: `${pillStyle.left}px`,
+                      width: `${pillStyle.width}px`,
+                      height: '35px',
+                      borderRadius: '10px',
+                      background: 'var(--accent-blue)',
+                      boxShadow: '0 4px 18px rgba(59, 130, 246, 0.45)',
+                      transition: 'all 0.65s cubic-bezier(0.85, 0.05, 0.15, 0.95)',
+                      pointerEvents: 'none',
+                      zIndex: 1,
+                      opacity: pillStyle.opacity
+                    }}
+                  />
+
+                  {[
+                    { id: 'Money', label: 'Money', icon: DollarSign },
+                    { id: 'Sleep', label: 'Sleep', icon: SleepIcon },
+                    { id: 'Calendar', label: 'Calendar', icon: Calendar },
+                    { id: 'Notes', label: 'Notes', icon: FileText },
+                    { id: 'Gym', label: 'Gym', icon: Dumbbell },
+                    { id: 'AI', label: 'AI', icon: Bot },
+                    { id: 'Habits', label: 'Habits', icon: CheckCircle2 },
+                    { id: 'Analytics', label: 'Analytics', icon: BarChart3 },
+                  ].map((tab) => {
+                    const Icon = tab.icon;
+                    const isActive = previewTab === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        ref={el => (tabRefs.current[tab.id] = el)}
+                        onClick={() => handlePreviewTabClick(tab.id)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '7px 14px',
+                          borderRadius: '10px',
+                          fontSize: '0.85rem',
+                          fontWeight: isActive ? 700 : 500,
+                          color: isActive ? 'var(--accent-text)' : 'var(--text-muted)',
+                          background: 'transparent',
+                          border: 'none',
+                          cursor: 'pointer',
+                          position: 'relative',
+                          zIndex: 2,
+                          transition: 'color 0.4s ease, transform 0.4s ease',
+                          whiteSpace: 'nowrap',
+                          transform: isActive ? 'scale(1.03)' : 'scale(1)'
+                        }}
+                      >
+                        <Icon size={14} />
+                        <span>{tab.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Tab Display Area */}
+              <div style={{ padding: '28px', height: '100%', overflow: 'hidden', overflowY: 'hidden', background: 'var(--bg-main)' }}>
+                
+                {/* 1. MONEY TAB MOCK */}
+                {previewTab === 'Money' && (
+                  <div className="animate-tab-matter" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                      <div className="glass-card" style={{ padding: '18px', borderRadius: '16px' }}>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Monthly Income</div>
+                        <div style={{ fontSize: '1.7rem', fontWeight: 800, color: '#10b981', marginTop: '6px' }}>+$6,450.00</div>
+                        <div style={{ fontSize: '0.75rem', color: '#10b981', marginTop: '4px' }}>↑ 14% vs last month</div>
+                      </div>
+                      <div className="glass-card" style={{ padding: '18px', borderRadius: '16px' }}>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Total Expenses</div>
+                        <div style={{ fontSize: '1.7rem', fontWeight: 800, color: '#ef4444', marginTop: '6px' }}>-$1,820.40</div>
+                        <div style={{ fontSize: '0.75rem', color: '#10b981', marginTop: '4px' }}>↓ 8% spent vs budget</div>
+                      </div>
+                      <div className="glass-card" style={{ padding: '18px', borderRadius: '16px' }}>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Net Savings Rate</div>
+                        <div style={{ fontSize: '1.7rem', fontWeight: 800, color: 'var(--accent-blue)', marginTop: '6px' }}>71.7%</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>+$4,629.60 saved</div>
+                      </div>
+                    </div>
+
+                    <div className="glass-card" style={{ padding: '20px', borderRadius: '16px' }}>
+                      <div style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span>Recent Transactions & AI Categorization</span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {[
+                          { title: 'Software Subscription (Autonomous AI & Vercel)', category: 'Tech & Dev', amount: '-$45.00', date: 'Today', type: 'expense' },
+                          { title: 'Client Retainer Payment', category: 'Income', amount: '+$3,200.00', date: 'Yesterday', type: 'income' },
+                          { title: 'Organic Whole Foods & Grocery', category: 'Health & Food', amount: '-$124.50', date: '2 days ago', type: 'expense' },
+                          { title: 'Gym Membership & Recovery', category: 'Fitness', amount: '-$85.00', date: '3 days ago', type: 'expense' },
+                        ].slice(0, 3).map((tx, idx) => (
+                          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderRadius: '12px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                              <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: tx.type === 'income' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <DollarSign size={16} color={tx.type === 'income' ? '#10b981' : '#ef4444'} />
+                              </div>
+                              <div>
+                                <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>{tx.title}</div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{tx.category} • {tx.date}</div>
+                              </div>
+                            </div>
+                            <div style={{ fontSize: '0.95rem', fontWeight: 700, color: tx.type === 'income' ? '#10b981' : 'var(--text-main)' }}>
+                              {tx.amount}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. SLEEP TAB MOCK */}
+                {previewTab === 'Sleep' && (
+                  <div className="animate-tab-matter" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '20px', alignItems: 'stretch' }}>
+                      <div className="glass-card" style={{ padding: '22px', borderRadius: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                        <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>Sleep Quality & Duration</span>
+                            <span className="pill-tag" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', fontSize: '0.75rem', border: 'none' }}>🌟 Excellent</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', marginTop: '14px' }}>
+                            <span style={{ fontSize: '2.8rem', fontWeight: 900, color: 'var(--accent-blue)' }}>8h 15m</span>
+                            <span style={{ fontSize: '1.05rem', fontWeight: 600, color: 'var(--text-main)' }}>Avg Duration</span>
+                          </div>
+                          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '8px' }}>Bedtime 11:00 PM — Woke up at 07:15 AM</p>
+                        </div>
+                        <div style={{ marginTop: '20px', display: 'flex', gap: '12px' }}>
+                          <div style={{ flex: 1, padding: '12px', borderRadius: '12px', background: 'var(--bg-card)', textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Bed Time</div>
+                            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)', marginTop: '2px' }}>11:00 PM</div>
+                          </div>
+                          <div style={{ flex: 1, padding: '12px', borderRadius: '12px', background: 'var(--bg-card)', textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Wake Time</div>
+                            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)', marginTop: '2px' }}>07:15 AM</div>
+                          </div>
+                          <div style={{ flex: 1, padding: '12px', borderRadius: '12px', background: 'var(--bg-card)', textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Rating</div>
+                            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#10b981', marginTop: '2px' }}>Good</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="glass-card" style={{ padding: '22px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <div style={{ fontSize: '0.9rem', fontWeight: 700, marginBottom: '4px' }}>Recent Sleep Logs</div>
+                        {[
+                          { date: 'Today', duration: '8h 15m', quality: '🌟 Excellent', time: '11:00 PM - 07:15 AM' },
+                          { date: 'Yesterday', duration: '7h 45m', quality: '😊 Good', time: '11:30 PM - 07:15 AM' },
+                          { date: '2 days ago', duration: '8h 00m', quality: '😊 Good', time: '11:00 PM - 07:00 AM' },
+                        ].map((log, idx) => (
+                          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderRadius: '12px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+                            <div>
+                              <div style={{ fontSize: '0.88rem', fontWeight: 700 }}>{log.duration} • <span style={{ color: '#10b981', fontSize: '0.8rem' }}>{log.quality}</span></div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>{log.date} ({log.time})</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. CALENDAR TAB MOCK */}
+                {previewTab === 'Calendar' && (
+                  <div className="animate-tab-matter" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontSize: '1.1rem', fontWeight: 800 }}>Upcoming Events & Reminders</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Plan, track, and never miss what matters</div>
+                      </div>
+                      <div className="pill-tag" style={{ background: 'var(--accent-blue-dim)', color: 'var(--accent-blue)', border: 'none', fontSize: '0.8rem' }}>
+                        + Add Event
+                      </div>
+                    </div>
+
+                    {/* This Week */}
+                    <div>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent-blue)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📅 This Week</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {[
+                          { day: 'Mon, Jul 28', title: '🤖 Attend AI Strategy Meeting', tag: 'Work', color: 'var(--accent-blue)' },
+                          { day: 'Wed, Jul 30', title: '🚗 Car Servicing & Oil Change', tag: 'Personal', color: '#f59e0b' },
+                          { day: 'Fri, Aug 1', title: '💰 Freelance Invoice Due', tag: 'Finance', color: '#10b981' },
+                        ].map((item, idx) => (
+                          <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '12px 16px', borderRadius: '14px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+                            <div style={{ fontSize: '0.78rem', fontWeight: 700, fontFamily: 'monospace', color: 'var(--text-muted)', width: '90px', flexShrink: 0 }}>
+                              {item.day}
+                            </div>
+                            <div style={{ width: '4px', height: '32px', borderRadius: '2px', background: item.color, flexShrink: 0 }} />
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>{item.title}</div>
+                              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{item.tag}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 4. NOTES TAB MOCK */}
+                {previewTab === 'Notes' && (
+                  <div className="animate-tab-matter" style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                    <div className="glass-card" style={{ padding: '22px', borderRadius: '16px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <FileText size={18} color="var(--accent-blue)" />
+                          <span style={{ fontSize: '1.1rem', fontWeight: 800 }}>Goals of 2026</span>
+                        </div>
+                        <span className="pill-tag" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', fontSize: '0.75rem', border: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <div className="pulse-dot-container"><div className="pulse-dot-ring"></div><div className="pulse-dot-core"></div></div>
+                          AI Connected
+                        </span>
+                      </div>
+
+                      <div style={{ fontSize: '0.92rem', color: 'var(--text-muted)', lineHeight: 1.75 }}>
+                        <p style={{ marginBottom: '10px' }}>• Earn my first 10k</p>
+                        <p style={{ marginBottom: '10px' }}>• Grow business by 3x</p>
+                        <p style={{ marginBottom: '10px' }}>• Gift new mobile to mom and new earbuds to dad</p>
+                      </div>
+
+                      <div style={{ marginTop: '16px', padding: '12px 16px', borderRadius: '12px', background: 'var(--accent-blue-dim)', border: '1px solid rgba(59, 130, 246, 0.3)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <Sparkles size={16} color="var(--accent-blue)" />
+                        <span style={{ fontSize: '0.82rem', color: 'var(--accent-blue-light)', fontWeight: 500 }}>
+                          AI Insight: 3 key 2026 milestones logged. Your income and business metrics are tracked live!
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 5. GYM TAB MOCK */}
+                {previewTab === 'Gym' && (
+                  <div className="animate-tab-matter" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+                      <div className="glass-card" style={{ padding: '18px', borderRadius: '16px' }}>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Active Session</div>
+                        <div style={{ fontSize: '1.2rem', fontWeight: 800, marginTop: '4px' }}>Push Workout A</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--accent-blue)', marginTop: '4px' }}>55 mins • 485 kcal burned</div>
+                      </div>
+                      <div className="glass-card" style={{ padding: '18px', borderRadius: '16px' }}>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Total Session Volume</div>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--accent-blue)', marginTop: '4px' }}>12,450 kg</div>
+                        <div style={{ fontSize: '0.75rem', color: '#10b981', marginTop: '4px' }}>⭐ New Personal Record</div>
+                      </div>
+                      <div className="glass-card" style={{ padding: '18px', borderRadius: '16px' }}>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Daily Protein Goal</div>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#10b981', marginTop: '4px' }}>168g / 180g</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>93% target complete</div>
+                      </div>
+                    </div>
+
+                    <div className="glass-card" style={{ padding: '20px', borderRadius: '16px' }}>
+                      <div style={{ fontSize: '0.92rem', fontWeight: 700, marginBottom: '12px' }}>Exercise Sets & Progress</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {[
+                          { name: 'Barbell Bench Press', sets: '4 sets × 8 reps', weight: '100 kg', note: 'PR achieved 🔥' },
+                          { name: 'Overhead Shoulder Press', sets: '3 sets × 10 reps', weight: '65 kg', note: 'Clean form' },
+                          { name: 'Incline Dumbbell Flyes', sets: '3 sets × 12 reps', weight: '28 kg', note: 'Hypertrophy focus' },
+                        ].map((ex, i) => (
+                          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderRadius: '12px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+                            <div>
+                              <div style={{ fontSize: '0.88rem', fontWeight: 600 }}>{ex.name}</div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{ex.sets} • {ex.note}</div>
+                            </div>
+                            <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--accent-blue)' }}>{ex.weight}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 6. ANALYTICS TAB MOCK */}
+                {previewTab === 'Analytics' && (
+                  <div className="animate-tab-matter" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                      <div className="glass-card" style={{ padding: '18px', borderRadius: '16px' }}>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Habit Consistency</div>
+                        <div style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--accent-blue)', marginTop: '4px' }}>94%</div>
+                        <div style={{ fontSize: '0.75rem', color: '#10b981', marginTop: '4px' }}>24 day active streak</div>
+                      </div>
+                      <div className="glass-card" style={{ padding: '18px', borderRadius: '16px' }}>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Monthly Income / Savings</div>
+                        <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#10b981', marginTop: '4px' }}>+$6,450.00</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>71.7% Net Savings Rate</div>
+                      </div>
+                      <div className="glass-card" style={{ padding: '18px', borderRadius: '16px' }}>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Weekly Deep Work</div>
+                        <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#8b5cf6', marginTop: '4px' }}>42.5 hrs</div>
+                        <div style={{ fontSize: '0.75rem', color: '#10b981', marginTop: '4px' }}>↑ 6 hrs vs last week</div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
+                      {/* Executive Telemetry Graph */}
+                      <div className="glass-card" style={{ padding: '20px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <div style={{ fontSize: '0.92rem', fontWeight: 700 }}>30-Day Executive Telemetry</div>
+                        <div style={{ display: 'flex', height: '110px', alignItems: 'flex-end', gap: '6px', paddingTop: '10px' }}>
+                          {[65, 78, 82, 90, 85, 88, 94, 92, 96, 89, 94, 98].map((val, idx) => (
+                            <div key={idx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
+                              <div style={{ width: '100%', height: `${val}%`, background: idx === 11 ? 'var(--accent-blue)' : 'rgba(59, 130, 246, 0.3)', borderRadius: '6px' }} />
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center' }}>Habit & Performance Telemetry (Peak at 98%)</div>
+                      </div>
+
+                      {/* Money & Cash Flow Graph */}
+                      <div className="glass-card" style={{ padding: '20px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.92rem', fontWeight: 700 }}>Money & Cash Flow Graph</span>
+                          <span style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 600 }}>+$4,629.60 Saved</span>
+                        </div>
+                        <div style={{ display: 'flex', height: '110px', alignItems: 'flex-end', gap: '10px', paddingTop: '10px' }}>
+                          {[
+                            { month: 'Jan', inc: 70, exp: 30 },
+                            { month: 'Feb', inc: 80, exp: 35 },
+                            { month: 'Mar', inc: 85, exp: 40 },
+                            { month: 'Apr', inc: 75, exp: 32 },
+                            { month: 'May', inc: 92, exp: 38 },
+                            { month: 'Jun', inc: 100, exp: 42 },
+                          ].map((m, idx) => (
+                            <div key={idx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', height: '100%', justifyContent: 'flex-end' }}>
+                              <div style={{ display: 'flex', gap: '3px', alignItems: 'flex-end', width: '100%', height: '100%' }}>
+                                <div style={{ flex: 1, height: `${m.inc}%`, background: '#10b981', borderRadius: '4px 4px 0 0' }} />
+                                <div style={{ flex: 1, height: `${m.exp}%`, background: '#ff5252', borderRadius: '4px 4px 0 0', opacity: 0.8 }} />
+                              </div>
+                              <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>{m.month}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center' }}>Monthly Income (Green) vs Expenses (Red)</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 7. AI TAB MOCK */}
+                {previewTab === 'AI' && (
+                  <div className="animate-tab-matter" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div className="glass-card" style={{ padding: '18px', borderRadius: '16px', background: 'var(--bg-card)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                        <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'var(--accent-blue)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Bot size={16} color="var(--accent-text)" />
+                        </div>
+                        <span style={{ fontSize: '0.9rem', fontWeight: 700 }}>Personal AI Assistant</span>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <div style={{ alignSelf: 'flex-end', background: 'var(--accent-blue)', color: 'var(--accent-text)', padding: '10px 14px', borderRadius: '14px 14px 2px 14px', fontSize: '0.88rem', maxWidth: '80%' }}>
+                          Audit my day: check sleep recovery, push workout volume, and remaining daily budget.
+                        </div>
+                        <div style={{ alignSelf: 'flex-start', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', padding: '14px', borderRadius: '14px 14px 14px 2px', fontSize: '0.88rem', maxWidth: '90%', lineHeight: 1.6 }}>
+                          <p style={{ fontWeight: 700, marginBottom: '6px', color: 'var(--accent-blue-light)' }}>🤖 Executive Daily Audit:</p>
+                          <p>• <strong>Sleep</strong>: 8h 12m (94% optimal score) — Excellent recovery state.</p>
+                          <p>• <strong>Gym</strong>: Push Workout A logged with 12,450 kg volume (Bench PR set!).</p>
+                          <p>• <strong>Money</strong>: Spent $18.50 today — $26.50 under your daily budget.</p>
+                          <p style={{ marginTop: '8px', color: 'var(--text-muted)', fontSize: '0.8rem' }}>💡 Everything is tracking on schedule for your weekly goals!</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', borderRadius: '14px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+                      <Bot size={16} color="var(--text-muted)" />
+                      <input type="text" readOnly value="Ask AI to log expense, track workout, or optimize schedule... (⌘K)" style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '0.85rem', width: '100%', outline: 'none' }} />
+                      <button className="blue-btn" style={{ padding: '6px 14px', fontSize: '0.8rem', borderRadius: '8px' }}>Send</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* 8. HABITS TAB MOCK */}
+                {previewTab === 'Habits' && (
+                  <div className="animate-tab-matter" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontSize: '1.1rem', fontWeight: 800 }}>Daily Habit Checklist</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>4 of 5 Habits Completed Today (80%)</div>
+                      </div>
+                      <div className="pill-tag" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: 'none', fontSize: '0.8rem' }}>
+                        🔥 24 Day Streak Active
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      {[
+                        { title: 'Morning Sunlight & Hydration Protocol', category: 'Health', streak: '28 day streak', checked: true },
+                        { title: 'Coding / DSA', category: 'Productivity', streak: '44 day streak', checked: true },
+                        { title: 'Push Day', category: 'Fitness', streak: '12 day streak', checked: true },
+                        { title: 'No Junk Food & Hit 180g Protein Target', category: 'Nutrition', streak: '8 day streak', checked: true },
+                        { title: 'Evening Book Reading (30 mins)', category: 'Mindset', streak: '15 day streak', checked: false },
+                      ].slice(0, 3).map((habit, idx) => (
+                        <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderRadius: '14px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{ width: '22px', height: '22px', borderRadius: '6px', background: habit.checked ? 'var(--accent-blue)' : 'transparent', border: habit.checked ? 'none' : '2px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              {habit.checked && <Check size={14} color="var(--accent-text)" />}
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '0.9rem', fontWeight: 600, textDecoration: habit.checked ? 'line-through' : 'none', opacity: habit.checked ? 0.85 : 1 }}>{habit.title}</div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{habit.category}</div>
+                            </div>
+                          </div>
+                          <span style={{ fontSize: '0.8rem', color: habit.checked ? '#10b981' : 'var(--text-muted)', fontWeight: 600 }}>
+                            🔥 {habit.streak}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            </div>
+          </section>
+
+          {/* THREE PILLAR FEATURE CARDS */}
+          <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginBottom: '80px' }}>
+            <div className="glass-card motion-card scroll-swipe-up" style={{ padding: '30px', borderRadius: '20px' }}>
+              <div style={{ background: 'var(--accent-blue-dim)', width: '48px', height: '48px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
+                <Activity size={24} color="var(--accent-blue)" />
+              </div>
+              <h4 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '10px' }}>Health Precision Engine</h4>
+              <p style={{ color: 'var(--text-muted)', lineHeight: 1.6, fontSize: '0.95rem' }}>
+                Glanceable biometrics, workout logging, sleep stages, and progress telemetry engineered for peak physical and mental clarity.
+              </p>
+            </div>
+
+            <div className="glass-card motion-card scroll-swipe-up scroll-delay-1" style={{ padding: '30px', borderRadius: '20px' }}>
+              <div style={{ background: 'var(--accent-blue-dim)', width: '48px', height: '48px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
+                <Zap size={24} color="var(--accent-blue)" />
+              </div>
+              <h4 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '10px' }}>High-Velocity Command Palette</h4>
+              <p style={{ color: 'var(--text-muted)', lineHeight: 1.6, fontSize: '0.95rem' }}>
+                Instant keyboard commands (`⌘K` / `Ctrl+J`), zero lag workspace switching, and high-velocity workflow automation.
+              </p>
+            </div>
+
+            <div className="glass-card motion-card scroll-swipe-up scroll-delay-2" style={{ padding: '30px', borderRadius: '20px' }}>
+              <div style={{ background: 'var(--accent-blue-dim)', width: '48px', height: '48px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
+                <Bot size={24} color="var(--accent-blue)" />
+              </div>
+              <h4 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '10px' }}>Personal AI Intelligence</h4>
+              <p style={{ color: 'var(--text-muted)', lineHeight: 1.6, fontSize: '0.95rem' }}>
+                Sleek dark/light typography paired with a personal AI companion that understands your notes, budget, and habits in unison.
+              </p>
+            </div>
+          </section>
+
+          {/* BOTTOM CTA CARD */}
+          <div className="glass-card scroll-swipe-up scroll-delay-3" style={{ padding: '50px 30px', textAlign: 'center', borderRadius: '24px', border: '1px solid var(--border-color)', marginBottom: '40px' }}>
+            <h3 style={{ fontSize: '2.2rem', fontWeight: 800, marginBottom: '14px', letterSpacing: '-1px' }}>
+              Ready to connect your life with your Personal AI Agent?
+            </h3>
+            <p style={{ color: 'var(--text-muted)', marginBottom: '28px', fontSize: '1.1rem', maxWidth: '600px', margin: '0 auto 28px' }}>
+              Start organizing your habits, money, sleep, workouts, and calendar with intelligence today.
+            </p>
+            <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button 
+                className="blue-btn" 
+                style={{ fontSize: '1.1rem', padding: '16px 36px', borderRadius: '14px' }} 
+                onClick={() => { setAuthMode('signup'); navigate('auth', '/auth'); }}
+              >
+                Get Started Free <ArrowRight size={18} />
+              </button>
+            </div>
+          </div>
+        </main>
       )}
 
       {/* JOIN WAITLIST PAGE (At /waitlist) */}
@@ -3062,13 +3551,11 @@ const handleDeleteHabitDb = async (id) => {
                 <div className="ai-chat-view animate-entrance" style={{
                   display: 'flex',
                   flexDirection: 'column',
-                  height: 'calc(100dvh - 145px)',
-                  maxHeight: 'calc(100dvh - 145px)',
+                  height: 'calc(100vh - 170px)',
                   overflow: 'hidden',
                   background: 'var(--bg-main)',
                   borderRadius: '20px',
-                  border: '1px solid var(--border-color)',
-                  boxSizing: 'border-box'
+                  border: '1px solid var(--border-color)'
                 }}>
                   {/* Header */}
                   <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-card)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
@@ -4669,7 +5156,7 @@ const handleDeleteHabitDb = async (id) => {
             </button>
             <button className={`mobile-nav-btn ${activeTab === 'ai' ? 'active' : ''}`} onClick={() => setActiveTab('ai')}>
               <Bot size={22} />
-              <span>AI Agent</span>
+              <span>AI</span>
             </button>
             <button className={`mobile-nav-btn ${activeTab === 'finance' ? 'active' : ''}`} onClick={() => setActiveTab('finance')}>
               <DollarSign size={22} />

@@ -2,10 +2,6 @@
   "appId": "com.lifeagent.app",
   "appName": "LifeAgent",
   "webDir": "dist",
-  "server": {
-    "url": "https://ailifeagent.vercel.app",
-    "cleartext": true
-  },
   "android": {
     "allowMixedContent": true,
     "captureInput": true,

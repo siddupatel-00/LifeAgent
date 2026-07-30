@@ -113,6 +113,14 @@ div, section, main, aside, article, nav, form, ul, ol, body, html {
   --accent-blue-dim: rgba(16, 185, 129, 0.1);
 }
 
+html, body, #root, .app-container {
+  height: 100dvh;
+  min-height: 100dvh;
+  background: var(--bg-main);
+  margin: 0;
+  padding: 0;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -280,6 +288,7 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 20px 0;
+  padding-top: max(12px, env(safe-area-inset-top)) !important;
   border-bottom: 1px solid var(--border-color);
   margin-bottom: 40px;
   position: sticky;
@@ -880,7 +889,8 @@ input[type="checkbox"]:checked::after {
   
   /* Bottom nav improvements */
   .mobile-bottom-nav {
-    padding-bottom: max(10px, env(safe-area-inset-bottom)) !important;
+    padding-bottom: max(8px, env(safe-area-inset-bottom)) !important;
+    min-height: calc(60px + env(safe-area-inset-bottom)) !important;
   }
 
   /* Dashboard entrance & layout */
@@ -900,10 +910,12 @@ input[type="checkbox"]:checked::after {
     bottom: 0 !important;
     left: 0 !important;
     right: 0 !important;
-    height: 68px !important;
+    height: auto !important;
+    min-height: calc(60px + env(safe-area-inset-bottom)) !important;
     background: var(--bg-card) !important;
     border-top: 1px solid var(--border-color) !important;
-    padding: 6px 8px 10px !important;
+    padding: 6px 8px max(8px, env(safe-area-inset-bottom)) !important;
+    padding-bottom: max(8px, env(safe-area-inset-bottom)) !important;
     justify-content: space-around !important;
     align-items: center !important;
     z-index: 9990 !important;
@@ -935,11 +947,34 @@ input[type="checkbox"]:checked::after {
     transform: translateY(-2px) !important;
   }
 
-  .ai-chat-view {
-    height: calc(100dvh - 145px) !important;
-    max-height: calc(100dvh - 145px) !important;
-    margin-bottom: 76px !important;
-    overflow: hidden !important;
+  .mobile-nav-btn.ai-center-btn,
+  .ai-center-btn,
+  .mobile-bottom-nav .ai-center-btn {
+    background: transparent !important;
+    color: var(--text-muted) !important;
+    width: auto !important;
+    height: auto !important;
+    border-radius: 0 !important;
+    border: none !important;
+    margin-top: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    padding: 0 !important;
+  }
+
+  .mobile-bottom-nav .ai-nav-item {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 6px 8px !important;
+    flex: 1 !important;
   }
 
   /* Make grids stack cleanly or wrap 2-column nicely */
@@ -1165,6 +1200,7 @@ input[type="checkbox"]:checked::after {
     justify-content: space-between !important;
     gap: 8px !important;
     padding: 12px 14px !important;
+    padding-top: max(12px, env(safe-area-inset-top)) !important;
     background: var(--bg-card) !important;
     border-bottom: 1px solid var(--border-color) !important;
     position: sticky !important;
