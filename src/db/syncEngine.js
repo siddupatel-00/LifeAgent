@@ -80,8 +80,8 @@ export const triggerSync = async () => {
   const shouldSync = shouldSyncState ? shouldSyncState.value : true;
   const pendingCount = await db.syncQueue.where('status').equals('pending').count();
 
-  if (!shouldSync && pendingCount === 0) {
-    notifyStatusChange();
+  if (!shouldSync) {
+    if (pendingCount > 0) notifyStatusChange();
     return;
   }
 
@@ -166,13 +166,13 @@ export const initSyncListeners = () => {
 
   window.addEventListener('online', () => {
     notifyStatusChange();
-    triggerSync();
+    checkDailySyncFlag().then(() => triggerSync());
   });
   window.addEventListener('offline', () => {
     notifyStatusChange();
   });
   window.addEventListener('focus', () => {
-    triggerSync();
+    checkDailySyncFlag().then(() => triggerSync());
   });
 
   // Check every hour for midnight day rollover

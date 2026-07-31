@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { todayKey } from '../utils/date';
 import { getApiUrl } from '../utils/apiConfig';
+import db from '../db/db';
+import { queueMutation } from '../db/syncEngine';
 import { Calendar as CalendarIcon, Plus, Trash2, ChevronDown, Filter, AlertCircle, CheckCircle, Clock, X } from 'lucide-react';
 import ConfirmModal from './ConfirmModal';
 import Modal from './Modal';
@@ -34,21 +36,22 @@ export default function CalendarPanel({
   const handleAddEvent = async () => {
     if (!newEventTitle.trim()) return;
     try {
-      const res = await fetch(getApiUrl('/api/calendar'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ title: newEventTitle.trim(), date: newEventDate, color: 'var(--accent-blue)' })
-      });
-      if (res.ok) {
-        const ev = await res.json();
-        setCalendarEvents(prev => [...prev.filter(e => e.id !== ev.id), ev]);
-        setNewEventTitle('');
-        setIsAddEventFormOpen(false);
-        showToast?.('Event saved successfully!', 'success');
-      } else {
-        const err = await res.json();
-        showToast?.(err.error || 'Failed to save event', 'error');
-      }
+      const newRecord = {
+        id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+        title: newEventTitle.trim(),
+        date: newEventDate,
+        color: 'var(--accent-blue)',
+        status: 'upcoming',
+        createdAt: new Date().toISOString()
+      };
+      
+      await db.calendarEvents.put(newRecord);
+      await queueMutation('calendarEvents', 'create', newRecord.id, newRecord);
+
+      setCalendarEvents(prev => [...prev.filter(e => e.id !== newRecord.id), newRecord]);
+      setNewEventTitle('');
+      setIsAddEventFormOpen(false);
+      showToast?.('Event saved successfully!', 'success');
     } catch (err) {
       console.error('Failed to add event:', err);
       showToast?.('Network error saving event', 'error');
@@ -58,17 +61,11 @@ export default function CalendarPanel({
   const performDeleteEvent = async (id) => {
     if (!id) return;
     try {
-      const res = await fetch(getApiUrl('/api/calendar'), {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ id })
-      });
-      if (res.ok) {
-        setCalendarEvents(prev => prev.filter(ev => ev.id !== id));
-        showToast?.('Event deleted successfully', 'success');
-      } else {
-        showToast?.('Failed to delete event', 'error');
-      }
+      await db.calendarEvents.delete(id.toString());
+      await queueMutation('calendarEvents', 'delete', id.toString());
+
+      setCalendarEvents(prev => prev.filter(ev => ev.id !== id));
+      showToast?.('Event deleted successfully', 'success');
     } catch (err) {
       console.error('Failed to delete event:', err);
       showToast?.('Network error deleting event', 'error');
@@ -77,20 +74,16 @@ export default function CalendarPanel({
 
   const handleUpdateStatus = async (id, status) => {
     try {
-      const safeId = Number(id); // Convert BigInt/string to number for JSON serialization
-      const res = await fetch(getApiUrl('/api/calendar'), {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ id: safeId, status })
-      });
-      if (res.ok) {
-        setCalendarEvents(prev => prev.map(ev => Number(ev.id) === safeId ? { ...ev, status } : ev));
-        setOpenStatusDropdown(null);
-        showToast?.('Status updated', 'success');
-      } else {
-        const err = await res.json().catch(() => ({}));
-        showToast?.('Failed to update status: ' + (err.error || res.status), 'error');
-      }
+      const safeId = id.toString();
+      const existing = await db.calendarEvents.get(safeId);
+      const updated = { ...existing, status, id: safeId, updatedAt: new Date().toISOString() };
+      
+      await db.calendarEvents.put(updated);
+      await queueMutation('calendarEvents', 'update', safeId, updated);
+
+      setCalendarEvents(prev => prev.map(ev => String(ev.id) === safeId ? { ...ev, status } : ev));
+      setOpenStatusDropdown(null);
+      showToast?.('Status updated', 'success');
     } catch (err) {
       console.error('Status update error:', err);
       showToast?.('Error updating status', 'error');

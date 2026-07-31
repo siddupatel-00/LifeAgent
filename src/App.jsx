@@ -677,11 +677,9 @@ export default function App() {
       if (expired.length > 0) {
         // Permanently delete expired notes from DB
         expired.forEach(note => {
-          fetch(getApiUrl('/api/notes'), {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ id: note.id })
-          }).catch(err => console.error('Failed to auto-delete expired trash note:', err));
+          db.notes.delete(note.id)
+            .then(() => queueMutation('notes', 'delete', note.id, { id: note.id }))
+            .catch(err => console.error('Failed to auto-delete expired trash note:', err));
         });
         const validNotes = trashNotes.filter(note => (now - (note.deletedAt || now)) <= fortyNineDaysMs);
         setTrashNotes(validNotes);
@@ -883,18 +881,14 @@ export default function App() {
     if (!token) return;
     if (!force && loadedTabsRef.current.notes) return;
     try {
-      const headers = { 'Authorization': `Bearer ${token}` };
-      const notesRes = await fetch(getApiUrl('/api/notes'), { headers }).catch(e => null);
-      if (notesRes && notesRes.ok) {
-        const notesData = await notesRes.json();
-        let activeNotes = notesData.filter(n => !n.is_trashed).map(n => ({ id: n.id, title: n.title, content: n.content, category: n.category, date: n.date, shareWithAi: !!n.share_with_ai }));
-        const trashedNotes = notesData.filter(n => !!n.is_trashed).map(n => ({ id: n.id, title: n.title, content: n.content, category: n.category, date: n.date, shareWithAi: !!n.share_with_ai, deletedAt: n.deleted_at ? new Date(n.deleted_at).getTime() : Date.now() }));
+      const localNotes = await db.notes.toArray();
+      let activeNotes = localNotes.filter(n => !n.is_trashed).map(n => ({ id: n.id, title: n.title, content: n.content, category: n.category, date: n.date, shareWithAi: !!n.share_with_ai }));
+      const trashedNotes = localNotes.filter(n => !!n.is_trashed).map(n => ({ id: n.id, title: n.title, content: n.content, category: n.category, date: n.date, shareWithAi: !!n.share_with_ai, deletedAt: n.deleted_at ? new Date(n.deleted_at).getTime() : Date.now() }));
 
-        setTrashNotes(trashedNotes);
-        safeStorage.setItem('cache_trashNotes', JSON.stringify(trashedNotes));
-        setNotesList(activeNotes);
-        safeStorage.setItem('cache_notesList', JSON.stringify(activeNotes));
-      }
+      setTrashNotes(trashedNotes);
+      safeStorage.setItem('cache_trashNotes', JSON.stringify(trashedNotes));
+      setNotesList(activeNotes);
+      safeStorage.setItem('cache_notesList', JSON.stringify(activeNotes));
       loadedTabsRef.current.notes = true;
     } catch (err) {
       console.error('Failed to fetch notes data:', err);
@@ -905,13 +899,9 @@ export default function App() {
     if (!token) return;
     if (!force && loadedTabsRef.current.sleep) return;
     try {
-      const headers = { 'Authorization': `Bearer ${token}` };
-      const sleepRes = await fetch(getApiUrl('/api/sleep'), { headers }).catch(e => null);
-      if (sleepRes && sleepRes.ok) {
-        const sLogs = await sleepRes.json();
-        setSleepLogs(sLogs);
-        safeStorage.setItem('cache_sleepLogs', JSON.stringify(sLogs));
-      }
+      const sLogs = await db.sleepLogs.toArray();
+      setSleepLogs(sLogs);
+      safeStorage.setItem('cache_sleepLogs', JSON.stringify(sLogs));
       loadedTabsRef.current.sleep = true;
     } catch (err) {
       console.error('Failed to fetch sleep data:', err);
@@ -1010,18 +1000,20 @@ export default function App() {
       const isTrashed = note.is_trashed !== undefined ? (note.is_trashed ? 1 : 0) : (note.deletedAt ? 1 : 0);
       const deletedAt = isTrashed === 0 ? null : (note.deletedAt ? new Date(note.deletedAt).toISOString() : (note.deleted_at || new Date().toISOString()));
 
-      await fetch(getApiUrl('/api/notes'), {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({
-          id: note.id,
-          title: note.title,
-          content: note.content,
-          share_with_ai: note.shareWithAi !== undefined ? note.shareWithAi : note.share_with_ai,
-          is_trashed: isTrashed,
-          deleted_at: deletedAt
-        })
-      });
+      const existing = await db.notes.get(note.id);
+      const payload = {
+        ...(existing || {}),
+        id: note.id.toString(),
+        title: note.title,
+        content: note.content,
+        share_with_ai: note.shareWithAi !== undefined ? (note.shareWithAi ? 1 : 0) : (note.share_with_ai ? 1 : 0),
+        is_trashed: isTrashed,
+        deleted_at: deletedAt,
+        updatedAt: new Date().toISOString()
+      };
+      
+      await db.notes.put(payload);
+      await queueMutation('notes', 'update', note.id.toString(), payload);
     } catch (err) {
       console.error(err);
     }
@@ -1030,15 +1022,22 @@ export default function App() {
   const handleCreateNoteDb = async (title, content, shareWithAi, callback) => {
     if (!token) return;
     try {
-      const res = await fetch(getApiUrl('/api/notes'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ title, content, share_with_ai: shareWithAi })
-      });
-      if (res.ok) {
-        const newNote = await res.json();
-        callback({ ...newNote, shareWithAi: !!newNote.share_with_ai });
-      }
+      const id = Date.now().toString();
+      const payload = {
+        id,
+        title,
+        content,
+        share_with_ai: shareWithAi ? 1 : 0,
+        is_trashed: 0,
+        deleted_at: null,
+        date: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      await db.notes.put(payload);
+      await queueMutation('notes', 'create', id, payload);
+      
+      callback({ ...payload, shareWithAi: !!payload.share_with_ai });
     } catch (err) {
       console.error(err);
     }
@@ -1181,13 +1180,7 @@ export default function App() {
           date: todayStr,
           id: Date.now()
         };
-        if (token) {
-          fetch(getApiUrl('/api/fitness?type=workouts'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify(newWorkout)
-          }).catch(console.error);
-        }
+        db.workouts.put(newWorkout).then(() => queueMutation('workouts', 'create', newWorkout.id, newWorkout)).then(() => triggerSync()).catch(console.error);
         setWorkouts(prev => [newWorkout, ...(Array.isArray(prev) ? prev : [])]);
       }
     }
@@ -1213,13 +1206,9 @@ export default function App() {
         payload.id = latestStat.id;
       }
 
-      if (token) {
-        fetch(getApiUrl('/api/fitness?type=body-stats'), {
-          method: payload.id ? 'PUT' : 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify(payload)
-        }).catch(console.error);
-      }
+      const tempId = payload.id || Date.now().toString();
+      const finalPayload = { ...payload, id: tempId };
+      db.bodyStats.put(finalPayload).then(() => queueMutation('bodyStats', payload.id ? 'update' : 'create', tempId, finalPayload)).then(() => triggerSync()).catch(console.error);
 
       setBodyStats(prev => {
         if (Array.isArray(prev)) {
@@ -1573,21 +1562,18 @@ export default function App() {
         for (const match of calendarMatches) {
           try {
             const data = JSON.parse(match[1]);
-            const res = await fetch(getApiUrl('/api/calendar'), {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-              body: JSON.stringify({
-                title: data.title || 'AI Event',
-                date: data.date || todayStr,
-                end_date: data.endDate || null,
-                color: data.color || '#3b82f6',
-                status: 'upcoming'
-              })
-            });
-            if (res.ok) {
-              const saved = await res.json();
-              newEvents.push(saved);
-            }
+            const newRecord = {
+              id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+              title: data.title || 'AI Event',
+              date: data.date || todayStr,
+              end_date: data.endDate || null,
+              color: data.color || '#3b82f6',
+              status: 'upcoming',
+              createdAt: new Date().toISOString()
+            };
+            await db.calendarEvents.put(newRecord);
+            await queueMutation('calendarEvents', 'create', newRecord.id, newRecord);
+            newEvents.push(newRecord);
             finalReply = finalReply.replace(match[0], '').trim();
           } catch (err) {
             console.error("Failed to parse calendar event JSON", err);
@@ -1636,21 +1622,18 @@ export default function App() {
         for (const match of txMatches) {
           try {
             const data = JSON.parse(match[1]);
-            const res = await fetch(getApiUrl('/api/transactions'), {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-              body: JSON.stringify({
-                title: data.title || 'Transaction',
-                amount: Number(data.amount) || 0,
-                type: data.type || 'spend',
-                category: data.category || 'General',
-                date: data.date || todayStr
-              })
-            });
-            if (res.ok) {
-              const saved = await res.json();
-              setTransactions(prev => [saved, ...prev]);
-            }
+            const newRecord = {
+              id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+              title: data.title || 'Transaction',
+              amount: Number(data.amount) || 0,
+              type: data.type || 'spend',
+              category: data.category || 'General',
+              date: data.date || todayStr,
+              createdAt: new Date().toISOString()
+            };
+            await db.transactions.put(newRecord);
+            await queueMutation('transactions', 'create', newRecord.id, newRecord);
+            setTransactions(prev => [newRecord, ...prev]);
             finalReply = finalReply.replace(match[0], '').trim();
           } catch (err) {
             console.error("Failed to parse transaction JSON", err);
@@ -1664,20 +1647,21 @@ export default function App() {
         for (const match of noteMatches) {
           try {
             const data = JSON.parse(match[1]);
-            const res = await fetch(getApiUrl('/api/notes'), {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-              body: JSON.stringify({
-                title: data.title || 'AI Note',
-                content: data.content || '',
-                category: data.category || 'General',
-                share_with_ai: true
-              })
-            });
-            if (res.ok) {
-              const saved = await res.json();
-              setNotesList(prev => [saved, ...prev]);
-            }
+            const id = Date.now().toString();
+            const payload = {
+              id,
+              title: data.title || 'AI Note',
+              content: data.content || '',
+              category: data.category || 'General',
+              share_with_ai: 1,
+              is_trashed: 0,
+              deleted_at: null,
+              date: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            };
+            await db.notes.put(payload);
+            await queueMutation('notes', 'create', id, payload);
+            setNotesList(prev => [{ ...payload, shareWithAi: true }, ...prev]);
             finalReply = finalReply.replace(match[0], '').trim();
           } catch (err) {
             console.error("Failed to parse note JSON", err);
@@ -1691,19 +1675,21 @@ export default function App() {
         for (const match of sleepMatches) {
           try {
             const data = JSON.parse(match[1]);
-            await fetch(getApiUrl('/api/sleep'), {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-              body: JSON.stringify({
-                date: data.date || todayStr,
-                hours: Number(data.hours) || 8,
-                minutes: Number(data.minutes) || 0,
-                sleep_time: data.sleep_time || '23:00',
-                wake_time: data.wake_time || '07:00',
-                quality: data.quality || 'Good',
-                notes: data.notes || ''
-              })
-            });
+            const id = Date.now().toString();
+            const payload = {
+              id,
+              date: data.date || todayStr,
+              hours: Number(data.hours) || 8,
+              minutes: Number(data.minutes) || 0,
+              sleep_time: data.sleep_time || '23:00',
+              wake_time: data.wake_time || '07:00',
+              quality: data.quality || 'Good',
+              notes: data.notes || '',
+              updatedAt: new Date().toISOString()
+            };
+            await db.sleepLogs.put(payload);
+            await queueMutation('sleepLogs', 'create', id, payload);
+            setSleepLogs(prev => [payload, ...prev]);
             finalReply = finalReply.replace(match[0], '').trim();
           } catch (err) {
             console.error("Failed to parse sleep JSON", err);
@@ -1717,18 +1703,11 @@ export default function App() {
         for (const match of workoutMatches) {
           try {
             const data = JSON.parse(match[1]);
-            await fetch(getApiUrl('/api/fitness?type=workouts'), {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-              body: JSON.stringify({
-                title: data.title || 'Workout',
-                category: data.category || 'General',
-                duration_mins: Number(data.duration_mins) || 30,
-                calories: Number(data.calories) || 200,
-                notes: data.notes || '',
-                date: todayStr
-              })
-            });
+            const newWorkout = { title: data.title || 'Workout', category: data.category || 'General', duration_mins: Number(data.duration_mins) || 30, calories: Number(data.calories) || 200, notes: data.notes || '', date: todayStr, id: Date.now().toString() };
+            await db.workouts.put(newWorkout);
+            await queueMutation('workouts', 'create', newWorkout.id, newWorkout);
+            triggerSync();
+            setWorkouts(prev => [newWorkout, ...(Array.isArray(prev) ? prev : [])]);
             finalReply = finalReply.replace(match[0], '').trim();
           } catch (err) {
             console.error("Failed to parse workout JSON", err);
@@ -1742,17 +1721,8 @@ export default function App() {
         for (const match of bodyMatches) {
           try {
             const data = JSON.parse(match[1]);
-            await fetch(getApiUrl('/api/fitness?type=body-stats'), {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-              body: JSON.stringify({
-                weight: Number(data.weight) || 0,
-                target_weight: Number(data.target_weight) || 0,
-                protein: Number(data.protein) || 0,
-                hydration: Number(data.hydration) || 0,
-                date: todayStr
-              })
-            });
+            const newStats = { weight: Number(data.weight) || 0, target_weight: Number(data.target_weight) || 0, protein: Number(data.protein) || 0, hydration: Number(data.hydration) || 0, date: todayStr };
+            await handleSaveBodyStat(newStats);
             finalReply = finalReply.replace(match[0], '').trim();
           } catch (err) {
             console.error("Failed to parse body stats JSON", err);
@@ -1806,27 +1776,21 @@ export default function App() {
     if (!newTitle || !newAmount) return;
     
     try {
-      const res = await fetch(getApiUrl('/api/transactions'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ title: newTitle, amount: parseFloat(newAmount), type: newType })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setTransactions(prev => [
-          {
-            id: data.id,
-            title: data.title,
-            amount: data.amount,
-            type: data.type,
-            category: data.type === 'spend' ? 'Personal' : 'Income',
-            date: todayKey(userProfile.timezone)
-          },
-          ...prev
-        ]);
-        setNewTitle('');
-        setNewAmount('');
-      }
+      const newRecord = {
+        id: Date.now().toString(),
+        title: newTitle,
+        amount: parseFloat(newAmount),
+        type: newType,
+        category: newType === 'spend' ? 'Personal' : 'Income',
+        date: todayKey(userProfile.timezone),
+        createdAt: new Date().toISOString()
+      };
+      await db.transactions.put(newRecord);
+      await queueMutation('transactions', 'create', newRecord.id, newRecord);
+      
+      setTransactions(prev => [newRecord, ...prev]);
+      setNewTitle('');
+      setNewAmount('');
     } catch(err) {
       console.error(err);
     }
@@ -3456,22 +3420,14 @@ export default function App() {
                                   <button 
                                     onClick={async () => {
                                       try {
-                                        const res = await fetch(getApiUrl('/api/fitness?type=workouts'), {
-                                          method: 'POST',
-                                          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                          body: JSON.stringify({ title: currentTitle, category: 'Strength', duration_mins: 45, calories: 320, notes: `Completed scheduled ${currentTitle}`, date: todayKeyStr })
-                                        });
-                                        if (res.ok) {
-                                          const newW = await res.json();
-                                          setWorkouts(prev => [newW, ...(Array.isArray(prev) ? prev : [])]);
-                                          showToast(`🎉 ${currentTitle} Completed!`, 'success');
-                                        } else {
-                                          setWorkouts(prev => [{ title: currentTitle, category: 'Strength', duration_mins: 45, calories: 320, notes: `Completed scheduled ${currentTitle}`, date: todayKeyStr, id: Date.now() }, ...(Array.isArray(prev) ? prev : [])]);
-                                          showToast(`🎉 ${currentTitle} Completed!`, 'success');
-                                        }
-                                      } catch(e) {
-                                        setWorkouts(prev => [{ title: currentTitle, category: 'Strength', duration_mins: 45, calories: 320, notes: `Completed scheduled ${currentTitle}`, date: todayKeyStr, id: Date.now() }, ...(Array.isArray(prev) ? prev : [])]);
+                                        const newW = { title: currentTitle, category: 'Strength', duration_mins: 45, calories: 320, notes: `Completed scheduled ${currentTitle}`, date: todayKeyStr, id: Date.now().toString() };
+                                        await db.workouts.put(newW);
+                                        await queueMutation('workouts', 'create', newW.id, newW);
+                                        triggerSync();
+                                        setWorkouts(prev => [newW, ...(Array.isArray(prev) ? prev : [])]);
                                         showToast(`🎉 ${currentTitle} Completed!`, 'success');
+                                      } catch(e) {
+                                        console.error(e);
                                       }
                                     }}
                                     className="blue-btn"
@@ -3525,21 +3481,12 @@ export default function App() {
                                 return [{ ...payload, id: tempId, weight: Number(latestStat?.weight) || 0, target_weight: targetW }, ...list];
                               });
 
-                              const res = await fetch(getApiUrl('/api/fitness'), {
-                                method: 'POST',
-                                headers: {
-                                  'Content-Type': 'application/json',
-                                  ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-                                },
-                                body: JSON.stringify(payload)
-                              });
-
-                              if (res.status === 200 || res.status === 201) {
-                                const sign = amount >= 0 ? '+' : '';
-                                showToast(`Protein logged: ${sign}${amount}g`, 'success');
-                              } else {
-                                console.error('Failed to log protein in App.jsx:', res.status, res.statusText);
-                              }
+                              const finalPayload = { ...payload, id: tempId.toString(), weight: Number(latestStat?.weight) || 0, target_weight: targetW };
+                              await db.bodyStats.put(finalPayload);
+                              await queueMutation('bodyStats', todayStat?.id ? 'update' : 'create', tempId.toString(), finalPayload);
+                              triggerSync();
+                              const sign = amount >= 0 ? '+' : '';
+                              showToast(`Protein logged: ${sign}${amount}g`, 'success');
                             } catch (e) {
                               console.error('Error logging protein in App.jsx:', e);
                             }
@@ -3625,19 +3572,10 @@ export default function App() {
                             });
 
                             try {
-                              if (token) {
-                                const res = await fetch(getApiUrl('/api/fitness?type=body-stats'), {
-                                  method: isExistingToday ? 'PUT' : 'POST',
-                                  headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                  body: JSON.stringify(payload)
-                                });
-                                if (res.ok) {
-                                  if (!isExistingToday) {
-                                    const data = await res.json();
-                                    setBodyStats(prev => prev.map(s => s.id === tempId ? data : s));
-                                  }
-                                }
-                              }
+                              const finalPayload = { ...payload, id: tempId.toString() };
+                              await db.bodyStats.put(finalPayload);
+                              await queueMutation('bodyStats', isExistingToday ? 'update' : 'create', tempId.toString(), finalPayload);
+                              triggerSync();
                             } catch (e) {
                               console.error(e);
                             }
@@ -5137,16 +5075,9 @@ export default function App() {
                                               setExpandedNoteId(remainingTrash.length > 0 ? remainingTrash[0].id : null);
                                             }
                                             try {
-                                              const delRes = await fetch(getApiUrl('/api/notes'), {
-                                                method: 'DELETE',
-                                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                                body: JSON.stringify({ id: tNote.id })
-                                              });
-                                              if (delRes.ok) {
-                                                showToast('Note permanently deleted', 'success');
-                                              } else {
-                                                showToast('Failed to delete note', 'error');
-                                              }
+                                              await db.notes.delete(tNote.id);
+                                              await queueMutation('notes', 'delete', tNote.id, { id: tNote.id });
+                                              showToast('Note permanently deleted', 'success');
                                             } catch (err) {
                                               console.error(err);
                                               showToast('Failed to delete note', 'error');
@@ -5319,16 +5250,9 @@ export default function App() {
                                       // Select next trash note or clear selection
                                       setActiveNoteId(remainingTrash.length > 0 ? remainingTrash[0].id : null);
                                       try {
-                                        const delRes = await fetch(getApiUrl('/api/notes'), {
-                                          method: 'DELETE',
-                                          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                          body: JSON.stringify({ id: noteId })
-                                        });
-                                        if (delRes.ok) {
-                                          showToast('Note permanently deleted', 'success');
-                                        } else {
-                                          showToast('Failed to delete note', 'error');
-                                        }
+                                        await db.notes.delete(noteId);
+                                        await queueMutation('notes', 'delete', noteId, { id: noteId });
+                                        showToast('Note permanently deleted', 'success');
                                       } catch(e){
                                         console.error(e);
                                         showToast('Failed to delete note', 'error');
