@@ -16,6 +16,23 @@ export default async function handler(req, res) {
   const body = req.body || {};
 
   try {
+    if (action === 'waitlist') {
+      const { name, email } = body;
+      if (!email) return res.status(400).json({ error: 'Email is required' });
+      
+      const existing = await db.execute({
+        sql: 'SELECT id FROM waitlist WHERE email = ?',
+        args: [email]
+      });
+      if (existing.rows.length > 0) return res.status(200).json({ success: true, message: 'Already on the waitlist!' });
+      
+      await db.execute({
+        sql: 'INSERT INTO waitlist (name, email) VALUES (?, ?)',
+        args: [name || '', email]
+      });
+      return res.status(201).json({ success: true, message: 'Added to waitlist!' });
+    }
+
     if (action === 'register') {
       const { name, email, phone, handle, password } = body;
       if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
