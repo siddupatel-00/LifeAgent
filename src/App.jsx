@@ -1,5 +1,6 @@
 import { getApiUrl } from './utils/apiUrl';
 import React, { useState, useEffect, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { 
   Sparkles, TrendingUp, Calendar, BookOpen, Bot, DollarSign, 
@@ -1840,7 +1841,7 @@ const handleDeleteHabitDb = async (id) => {
                 ]}
               />
 
-              <div className="theme-dropdown" ref={themeDropdownRef}>
+              <div className="theme-dropdown" ref={themeDropdownRef} style={{ position: 'relative' }}>
                 <button 
                   className="theme-toggle-btn"
                   style={{ padding: '8px 12px', borderRadius: '40px' }}
@@ -1853,28 +1854,50 @@ const handleDeleteHabitDb = async (id) => {
                   <ChevronDown size={14} style={{ transform: isThemeMenuOpen ? 'rotate(180deg)' : 'none', transition: '0.2s' }} />
                 </button>
 
-                {isThemeMenuOpen && (
-                  <div className="theme-dropdown-menu">
-                    <button 
-                      className={`theme-dropdown-item ${themeMode === 'dark' ? 'active' : ''}`}
-                      onClick={() => { setThemeMode('dark'); setIsThemeMenuOpen(false); }}
+                {isThemeMenuOpen && (() => {
+                  const rect = themeDropdownRef.current?.getBoundingClientRect();
+                  const top = rect ? rect.bottom + 8 : 60;
+                  const right = rect ? Math.max(16, window.innerWidth - rect.right) : 16;
+
+                  return ReactDOM.createPortal(
+                    <div 
+                      className="theme-dropdown-menu"
+                      style={{ 
+                        position: 'fixed',
+                        top: `${top}px`,
+                        right: `${right}px`,
+                        left: 'auto',
+                        minWidth: '160px',
+                        zIndex: 99999999,
+                        boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+                        background: 'var(--bg-card)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '16px',
+                        padding: '8px'
+                      }}
                     >
-                      <Moon size={14} /> Dark Mode
-                    </button>
-                    <button 
-                      className={`theme-dropdown-item ${themeMode === 'light' ? 'active' : ''}`}
-                      onClick={() => { setThemeMode('light'); setIsThemeMenuOpen(false); }}
-                    >
-                      <Sun size={14} /> Light Mode
-                    </button>
-                    <button 
-                      className={`theme-dropdown-item ${themeMode === 'pc' ? 'active' : ''}`}
-                      onClick={() => { setThemeMode('pc'); setIsThemeMenuOpen(false); }}
-                    >
-                      <Monitor size={14} /> PC / System
-                    </button>
-                  </div>
-                )}
+                      <button 
+                        className={`theme-dropdown-item ${themeMode === 'dark' ? 'active' : ''}`}
+                        onClick={() => { setThemeMode('dark'); setIsThemeMenuOpen(false); }}
+                      >
+                        <Moon size={14} /> Dark Mode
+                      </button>
+                      <button 
+                        className={`theme-dropdown-item ${themeMode === 'light' ? 'active' : ''}`}
+                        onClick={() => { setThemeMode('light'); setIsThemeMenuOpen(false); }}
+                      >
+                        <Sun size={14} /> Light Mode
+                      </button>
+                      <button 
+                        className={`theme-dropdown-item ${themeMode === 'pc' ? 'active' : ''}`}
+                        onClick={() => { setThemeMode('pc'); setIsThemeMenuOpen(false); }}
+                      >
+                        <Monitor size={14} /> PC / System
+                      </button>
+                    </div>,
+                    document.body
+                  );
+                })()}
               </div>
             </div>
 
@@ -2982,7 +3005,7 @@ const handleDeleteHabitDb = async (id) => {
                     </button>
                   )}
 
-                  <div ref={themeDropdownRef} style={{ position: 'relative', zIndex: 10001 }}>
+                  <div ref={themeDropdownRef} style={{ position: 'relative' }}>
                     <button 
                       className="theme-toggle-btn"
                       style={{ padding: '8px 14px', borderRadius: '30px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}
@@ -2995,28 +3018,50 @@ const handleDeleteHabitDb = async (id) => {
                       <ChevronDown size={14} style={{ transform: isThemeMenuOpen ? 'rotate(180deg)' : 'none', transition: '0.2s' }} />
                     </button>
 
-                    {isThemeMenuOpen && (
-                      <div className="theme-dropdown-menu" style={{ right: 0, left: 'auto', minWidth: '150px' }}>
-                        <button 
-                          className={`theme-dropdown-item ${themeMode === 'dark' ? 'active' : ''}`}
-                          onClick={() => { setThemeMode('dark'); setIsThemeMenuOpen(false); }}
+                    {isThemeMenuOpen && (() => {
+                      const rect = themeDropdownRef.current?.getBoundingClientRect();
+                      const top = rect ? rect.bottom + 8 : 60;
+                      const right = rect ? Math.max(16, window.innerWidth - rect.right) : 16;
+
+                      return ReactDOM.createPortal(
+                        <div 
+                          className="theme-dropdown-menu" 
+                          style={{ 
+                            position: 'fixed',
+                            top: `${top}px`,
+                            right: `${right}px`,
+                            left: 'auto',
+                            minWidth: '160px',
+                            zIndex: 99999999,
+                            boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+                            background: 'var(--bg-card)',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: '16px',
+                            padding: '8px'
+                          }}
                         >
-                          <Moon size={14} /> Dark Mode
-                        </button>
-                        <button 
-                          className={`theme-dropdown-item ${themeMode === 'light' ? 'active' : ''}`}
-                          onClick={() => { setThemeMode('light'); setIsThemeMenuOpen(false); }}
-                        >
-                          <Sun size={14} /> Light Mode
-                        </button>
-                        <button 
-                          className={`theme-dropdown-item ${themeMode === 'pc' ? 'active' : ''}`}
-                          onClick={() => { setThemeMode('pc'); setIsThemeMenuOpen(false); }}
-                        >
-                          <Monitor size={14} /> PC / System
-                        </button>
-                      </div>
-                    )}
+                          <button 
+                            className={`theme-dropdown-item ${themeMode === 'dark' ? 'active' : ''}`}
+                            onClick={() => { setThemeMode('dark'); setIsThemeMenuOpen(false); }}
+                          >
+                            <Moon size={14} /> Dark Mode
+                          </button>
+                          <button 
+                            className={`theme-dropdown-item ${themeMode === 'light' ? 'active' : ''}`}
+                            onClick={() => { setThemeMode('light'); setIsThemeMenuOpen(false); }}
+                          >
+                            <Sun size={14} /> Light Mode
+                          </button>
+                          <button 
+                            className={`theme-dropdown-item ${themeMode === 'pc' ? 'active' : ''}`}
+                            onClick={() => { setThemeMode('pc'); setIsThemeMenuOpen(false); }}
+                          >
+                            <Monitor size={14} /> PC / System
+                          </button>
+                        </div>,
+                        document.body
+                      );
+                    })()}
                   </div>
                 </div>
               )}
