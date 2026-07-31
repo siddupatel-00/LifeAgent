@@ -131,10 +131,10 @@ export default async function handler(req, res) {
             await db.execute({ sql: 'DELETE FROM chat_history WHERE id = ? AND user_id = ?', args: [recordId, userId] });
           } else {
             await db.execute({
-              sql: `INSERT INTO chat_history (id, user_id, role, content, created_at)
-                    VALUES (?, ?, ?, ?, ?)
-                    ON CONFLICT(id) DO UPDATE SET content=excluded.content`,
-              args: [recordId, userId, payload.role || 'user', payload.content || '', nowIso]
+              sql: `INSERT INTO chat_history (id, user_id, sender, text, time, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(id) DO UPDATE SET text=excluded.text`,
+              args: [recordId, userId, payload.sender || 'user', payload.text || '', payload.time || nowIso, nowIso]
             });
           }
         }
