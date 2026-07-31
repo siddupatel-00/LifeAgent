@@ -3,6 +3,7 @@ import { ChevronDown } from 'lucide-react';
 
 const CustomSelect = ({ value, onChange, options = [], style, className }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [openUpwards, setOpenUpwards] = useState(false);
   const containerRef = useRef(null);
 
   useEffect(() => {
@@ -15,6 +16,19 @@ const CustomSelect = ({ value, onChange, options = [], style, className }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const handleToggle = () => {
+    if (!isOpen && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      if (spaceBelow < 240 && rect.top > spaceBelow) {
+        setOpenUpwards(true);
+      } else {
+        setOpenUpwards(false);
+      }
+    }
+    setIsOpen(prev => !prev);
+  };
+
   const selectedOption = options.find(opt => opt.value === value) || options[0];
 
   return (
@@ -25,7 +39,7 @@ const CustomSelect = ({ value, onChange, options = [], style, className }) => {
     >
       <div 
         className={`custom-select-trigger ${className || ''}`}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleToggle}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -51,15 +65,17 @@ const CustomSelect = ({ value, onChange, options = [], style, className }) => {
           className="custom-select-dropdown glass-panel"
           style={{
             position: 'absolute',
-            top: 'calc(100% + 4px)',
+            top: openUpwards ? 'auto' : 'calc(100% + 4px)',
+            bottom: openUpwards ? 'calc(100% + 4px)' : 'auto',
             left: 0,
             right: 0,
-            zIndex: 99999,
+            minWidth: '140px',
+            zIndex: 9999999,
             background: 'var(--bg-card)',
             border: '1px solid var(--border-color)',
             borderRadius: '12px',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
-            maxHeight: style?.maxHeight || '340px',
+            boxShadow: '0 12px 32px rgba(0,0,0,0.35)',
+            maxHeight: style?.maxHeight || '240px',
             overflowY: 'auto',
             WebkitOverflowScrolling: 'touch',
             padding: '4px'
