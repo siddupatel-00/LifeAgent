@@ -61,7 +61,7 @@ export const queueMutation = async (table, op, recordId, payload) => {
 };
 
 // Main Background Sync Process
-export const triggerSync = async () => {
+export const triggerSync = async (forcePull = false) => {
   if (isSyncing) return;
   if (typeof window !== 'undefined' && !navigator.onLine) {
     notifyStatusChange();
@@ -74,14 +74,16 @@ export const triggerSync = async () => {
     return;
   }
 
-  await checkDailySyncFlag();
-
-  const shouldSyncState = await db.metaState.get('shouldSyncToday');
-  const shouldSync = shouldSyncState ? shouldSyncState.value : true;
   const pendingCount = await db.syncQueue.where('status').equals('pending').count();
 
-  if (!shouldSync) {
-    if (pendingCount > 0) notifyStatusChange();
+  await checkDailySyncFlag();
+  const shouldSyncState = await db.metaState.get('shouldSyncToday');
+  const shouldSync = shouldSyncState ? shouldSyncState.value : true;
+  
+  const needsPull = forcePull || shouldSync;
+
+  if (pendingCount === 0 && !needsPull) {
+    notifyStatusChange();
     return;
   }
 
@@ -111,45 +113,47 @@ export const triggerSync = async () => {
     }
 
     // 2. Fetch remote changes and merge using Last-Write-Wins (LWW)
-    const lastSyncedState = await db.metaState.get('lastSyncedAt');
-    const since = lastSyncedState?.value || '1970-01-01T00:00:00.000Z';
+    if (needsPull) {
+      const lastSyncedState = await db.metaState.get('lastSyncedAt');
+      const since = lastSyncedState?.value || '1970-01-01T00:00:00.000Z';
 
-    const pullRes = await fetch(getApiUrl(`/api/sync?since=${encodeURIComponent(since)}`), {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
+      const pullRes = await fetch(getApiUrl(`/api/sync?since=${encodeURIComponent(since)}`), {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
 
-    if (pullRes.ok) {
-      const remoteData = await pullRes.json();
+      if (pullRes.ok) {
+        const remoteData = await pullRes.json();
 
-      // Merge remote tables using LWW conflict resolution based on updatedAt timestamp
-      const tableNames = ['habits', 'todayItems', 'transactions', 'workouts', 'bodyStats', 'sleepLogs', 'notes', 'calendarEvents', 'aiMessages'];
-      for (const tableName of tableNames) {
-        const remoteRecords = remoteData[tableName] || [];
-        for (const remoteRec of remoteRecords) {
-          const localRec = await db[tableName].get(remoteRec.id);
-          const remoteTime = new Date(remoteRec.updatedAt || remoteRec.updated_at || 0).getTime();
-          const localTime = localRec ? new Date(localRec.updatedAt || localRec.updated_at || 0).getTime() : 0;
+        // Merge remote tables using LWW conflict resolution based on updatedAt timestamp
+        const tableNames = ['habits', 'todayItems', 'transactions', 'workouts', 'bodyStats', 'sleepLogs', 'notes', 'calendarEvents', 'aiMessages'];
+        for (const tableName of tableNames) {
+          const remoteRecords = remoteData[tableName] || [];
+          for (const remoteRec of remoteRecords) {
+            const localRec = await db[tableName].get(remoteRec.id);
+            const remoteTime = new Date(remoteRec.updatedAt || remoteRec.updated_at || 0).getTime();
+            const localTime = localRec ? new Date(localRec.updatedAt || localRec.updated_at || 0).getTime() : 0;
 
-          if (!localRec || remoteTime >= localTime) {
-            if (remoteRec.is_deleted) {
-              await db[tableName].delete(remoteRec.id);
-            } else {
-              await db[tableName].put({ ...remoteRec, lastSyncedAt: new Date().toISOString() });
+            if (!localRec || remoteTime >= localTime) {
+              if (remoteRec.is_deleted) {
+                await db[tableName].delete(remoteRec.id);
+              } else {
+                await db[tableName].put({ ...remoteRec, lastSyncedAt: new Date().toISOString() });
+              }
             }
           }
         }
+
+        const nowStr = new Date().toISOString();
+        const todayStr = nowStr.split('T')[0];
+
+        await db.metaState.put({ key: 'lastSyncedAt', value: nowStr });
+        await db.metaState.put({ key: 'lastSyncDate', value: todayStr });
+        await db.metaState.put({ key: 'shouldSyncToday', value: false });
+      } else {
+        throw new Error('Failed to fetch remote changes');
       }
-
-      const nowStr = new Date().toISOString();
-      const todayStr = nowStr.split('T')[0];
-
-      await db.metaState.put({ key: 'lastSyncedAt', value: nowStr });
-      await db.metaState.put({ key: 'lastSyncDate', value: todayStr });
-      await db.metaState.put({ key: 'shouldSyncToday', value: false });
-    } else {
-      throw new Error('Failed to fetch remote changes');
     }
   } catch (error) {
     console.warn('Sync engine background synchronization delayed:', error.message);
@@ -157,6 +161,9 @@ export const triggerSync = async () => {
   } finally {
     isSyncing = false;
     notifyStatusChange();
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('syncComplete'));
+    }
   }
 };
 
@@ -166,20 +173,20 @@ export const initSyncListeners = () => {
 
   window.addEventListener('online', () => {
     notifyStatusChange();
-    checkDailySyncFlag().then(() => triggerSync());
+    checkDailySyncFlag().then(() => triggerSync(true));
   });
   window.addEventListener('offline', () => {
     notifyStatusChange();
   });
   window.addEventListener('focus', () => {
-    checkDailySyncFlag().then(() => triggerSync());
+    checkDailySyncFlag().then(() => triggerSync(true));
   });
 
   // Check every hour for midnight day rollover
   setInterval(() => {
-    checkDailySyncFlag().then(() => triggerSync());
+    checkDailySyncFlag().then(() => triggerSync(true));
   }, 3600000);
 
   // Initial trigger on app launch
-  checkDailySyncFlag().then(() => triggerSync());
+  checkDailySyncFlag().then(() => triggerSync(true));
 };

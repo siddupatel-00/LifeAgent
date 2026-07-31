@@ -217,6 +217,15 @@ export default function App() {
     };
 
     loadLocalRecords();
+
+    const handleSyncComplete = () => {
+      loadLocalRecords();
+    };
+    window.addEventListener('syncComplete', handleSyncComplete);
+
+    return () => {
+      window.removeEventListener('syncComplete', handleSyncComplete);
+    };
   }, []);
 
   // Form state for Waitlist Only
