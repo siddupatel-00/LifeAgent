@@ -26,30 +26,7 @@ export default function MoneyTracker({ transactions = [], setTransactions, token
       setRightPanelView('add');
     }
   }, [showForm]);
-  // Fetch initial transactions
-  useEffect(() => {
-    const fetchTransactions = async () => {
-      if (!token) return;
-      setLoading(true);
-      try {
-        const res = await fetch(getApiUrl('/api/transactions'), {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setTransactions(data);
-        } else {
-          showToast?.('Failed to load transactions', 'error');
-        }
-      } catch (e) {
-        showToast?.('Network error loading transactions', 'error');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchTransactions();
-  }, []);
-  
+
   const [chartType, setChartType] = useState('bar');
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
@@ -358,7 +335,7 @@ export default function MoneyTracker({ transactions = [], setTransactions, token
                     transition: 'all 0.2s' 
                   }}
                 >
-                  <IconComp size={18} />
+                  <IconComp size={18} color={isActive ? 'var(--accent-text)' : 'var(--text-muted)'} />
                 </button>
               );
             })}

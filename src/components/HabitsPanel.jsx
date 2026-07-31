@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Plus, Flame, CheckCircle2, MoreVertical, Trash2, X } from 'lucide-react';
 import Modal from './Modal';
 import { getApiUrl } from '../utils/apiConfig';
+import { db } from '../db/db';
+import { queueMutation } from '../db/syncEngine';
 
 export default function HabitsPanel({
   habits = [], setHabits, todayItems = [], setTodayItems,
@@ -14,11 +16,12 @@ export default function HabitsPanel({
   const handleUpdateHabitDb = async (id, streak, checked_today, paused_until) => {
     if (!token || !id) return;
     try {
-      await fetch(getApiUrl('/api/habits'), {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ id, streak, checked_today, paused_until })
-      });
+      const h = await db.habits.get(id);
+      if (h) {
+        const payload = { ...h, streak, checked_today, paused_until, updatedAt: new Date().toISOString() };
+        await db.habits.put(payload);
+        await queueMutation('habits', 'update', id, payload);
+      }
     } catch(e) {}
   };
 
@@ -31,11 +34,15 @@ export default function HabitsPanel({
       // Sync the linked today item
       setTodayItems(prevToday => prevToday.map(ti => {
         if (ti.habitId !== targetHabitId) return ti;
-        fetch(getApiUrl('/api/today'), {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ id: ti.id, checked: nextChecked })
-        }).catch(() => {});
+        const updateToday = async () => {
+          const tDb = await db.todayItems.get(ti.id);
+          if (tDb) {
+             const payload = { ...tDb, completed: nextChecked ? 1 : 0, updatedAt: new Date().toISOString() };
+             await db.todayItems.put(payload);
+             await queueMutation('todayItems', 'update', ti.id, payload);
+          }
+        };
+        updateToday();
         return { ...ti, checked: nextChecked };
       }));
 
@@ -47,11 +54,8 @@ export default function HabitsPanel({
   const handleDeleteHabitDb = async (id) => {
     if (!token) return;
     try {
-      await fetch(getApiUrl('/api/habits'), {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ id })
-      });
+      await db.habits.delete(id);
+      await queueMutation('habits', 'delete', id);
       setHabits(prev => prev.filter(h => h.id !== id));
       setTodayItems(prev => prev.filter(ti => ti.habitId !== id));
       showToast('Habit Deleted', 'success');
@@ -224,25 +228,22 @@ export default function HabitsPanel({
                   const freq = newHabitData.frequency || 'daily';
                   const cDays = Array.isArray(newHabitData.customDays) ? newHabitData.customDays.join(',') : (newHabitData.customDays || '');
                   const iDays = freq === 'custom' ? Number(newHabitData.intervalDays || newHabitData.interval_days || 0) : 0;
-                  const res = await fetch(getApiUrl('/api/habits'), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ label: newHabitData.title, category: newHabitData.category, target: newHabitData.target, frequency: freq, custom_days: cDays, interval_days: iDays })
-                  });
-                  if (res.ok) {
-                    const saved = await res.json();
-                    const newItem = {
-                      id: saved.id, title: saved.label, category: saved.category,
-                      target: saved.target, checkedToday: false, streak: 0,
-                      startDate: saved.start_date || new Date().toISOString().split('T')[0],
-                      completionRate: 0, history: [0,0,0,0,0,0,0],
-                      frequency: saved.frequency || freq, customDays: saved.custom_days || cDays,
-                      interval_days: saved.interval_days || iDays, intervalDays: saved.interval_days || iDays
-                    };
-                    setHabits([newItem, ...habits]);
-                    setNewHabitData({ title: '', category: '', target: '', frequency: 'daily', customDays: ['Mon', 'Wed', 'Fri'], intervalDays: 0, interval_days: 0 });
-                    showToast('Habit Added', 'success');
-                  }
+                  const id = Date.now().toString();
+                  const saved = { id, label: newHabitData.title, category: newHabitData.category, target: newHabitData.target, frequency: freq, custom_days: cDays, interval_days: iDays, streak: 0, checked_today: 0, paused_until: null, created_at: new Date().toISOString(), updatedAt: new Date().toISOString() };
+                  await db.habits.put(saved);
+                  await queueMutation('habits', 'create', id, saved);
+                  
+                  const newItem = {
+                    id: saved.id, title: saved.label, category: saved.category,
+                    target: saved.target, checkedToday: false, streak: 0,
+                    startDate: new Date().toISOString().split('T')[0],
+                    completionRate: 0, history: [0,0,0,0,0,0,0],
+                    frequency: saved.frequency || freq, customDays: saved.custom_days || cDays,
+                    interval_days: saved.interval_days || iDays, intervalDays: saved.interval_days || iDays
+                  };
+                  setHabits([newItem, ...habits]);
+                  setNewHabitData({ title: '', category: '', target: '', frequency: 'daily', customDays: ['Mon', 'Wed', 'Fri'], intervalDays: 0, interval_days: 0 });
+                  showToast('Habit Added', 'success');
                 } catch (e) {}
               }}
               style={{ padding: '16px', fontSize: '1.05rem', fontWeight: 800, marginTop: '8px' }}
@@ -510,26 +511,23 @@ export default function HabitsPanel({
                   const freq = newHabitData.frequency || 'daily';
                   const cDays = Array.isArray(newHabitData.customDays) ? newHabitData.customDays.join(',') : (newHabitData.customDays || '');
                   const iDays = freq === 'custom' ? Number(newHabitData.intervalDays || newHabitData.interval_days || 0) : 0;
-                  const res = await fetch(getApiUrl('/api/habits'), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ label: newHabitData.title, category: newHabitData.category, target: newHabitData.target, frequency: freq, custom_days: cDays, interval_days: iDays })
-                  });
-                  if (res.ok) {
-                    const saved = await res.json();
-                    const newItem = {
-                      id: saved.id, title: saved.label, category: saved.category,
-                      target: saved.target, checkedToday: false, streak: 0,
-                      startDate: saved.start_date || new Date().toISOString().split('T')[0],
-                      completionRate: 0, history: [0,0,0,0,0,0,0],
-                      frequency: saved.frequency || freq, customDays: saved.custom_days || cDays,
-                      interval_days: saved.interval_days || iDays, intervalDays: saved.interval_days || iDays
-                    };
-                    setHabits([newItem, ...habits]);
-                    setNewHabitData({ title: '', category: '', target: '', frequency: 'daily', customDays: ['Mon', 'Wed', 'Fri'], intervalDays: 0, interval_days: 0 });
-                    setIsAddHabitModalOpen(false);
-                    showToast('Habit Added', 'success');
-                  }
+                  const id = Date.now().toString();
+                  const saved = { id, label: newHabitData.title, category: newHabitData.category, target: newHabitData.target, frequency: freq, custom_days: cDays, interval_days: iDays, streak: 0, checked_today: 0, paused_until: null, created_at: new Date().toISOString(), updatedAt: new Date().toISOString() };
+                  await db.habits.put(saved);
+                  await queueMutation('habits', 'create', id, saved);
+                  
+                  const newItem = {
+                    id: saved.id, title: saved.label, category: saved.category,
+                    target: saved.target, checkedToday: false, streak: 0,
+                    startDate: new Date().toISOString().split('T')[0],
+                    completionRate: 0, history: [0,0,0,0,0,0,0],
+                    frequency: saved.frequency || freq, customDays: saved.custom_days || cDays,
+                    interval_days: saved.interval_days || iDays, intervalDays: saved.interval_days || iDays
+                  };
+                  setHabits([newItem, ...habits]);
+                  setNewHabitData({ title: '', category: '', target: '', frequency: 'daily', customDays: ['Mon', 'Wed', 'Fri'], intervalDays: 0, interval_days: 0 });
+                  setIsAddHabitModalOpen(false);
+                  showToast('Habit Added', 'success');
                 } catch (e) {}
               }}
               style={{ flex: 1, padding: '12px 18px', borderRadius: '12px', fontSize: '0.92rem', fontWeight: 700 }}
