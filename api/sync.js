@@ -114,6 +114,29 @@ export default async function handler(req, res) {
               args: [recordId, userId, payload.title || '', payload.category || '', payload.date || nowIso.split('T')[0], payload.habit_id || null, payload.completed ? 1 : 0, payload.is_deleted ? 1 : 0]
             });
           }
+        } else if (table === 'workouts') {
+          if (op === 'delete' || payload?.is_deleted) {
+            await db.execute({ sql: 'DELETE FROM workouts WHERE id = ? AND user_id = ?', args: [recordId, userId] });
+          } else {
+            await db.execute({
+              sql: `INSERT INTO workouts (id, user_id, title, category, duration_mins, calories, date, notes, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(id) DO UPDATE SET
+                      title=excluded.title, category=excluded.category, duration_mins=excluded.duration_mins, calories=excluded.calories, notes=excluded.notes`,
+              args: [recordId, userId, payload.title || '', payload.category || '', payload.duration_mins || 0, payload.calories || 0, payload.date || nowIso.split('T')[0], payload.notes || '', nowIso]
+            });
+          }
+        } else if (table === 'aiMessages') {
+          if (op === 'delete' || payload?.is_deleted) {
+            await db.execute({ sql: 'DELETE FROM chat_history WHERE id = ? AND user_id = ?', args: [recordId, userId] });
+          } else {
+            await db.execute({
+              sql: `INSERT INTO chat_history (id, user_id, role, content, created_at)
+                    VALUES (?, ?, ?, ?, ?)
+                    ON CONFLICT(id) DO UPDATE SET content=excluded.content`,
+              args: [recordId, userId, payload.role || 'user', payload.content || '', nowIso]
+            });
+          }
         }
       }
 
@@ -129,6 +152,8 @@ export default async function handler(req, res) {
       const calendarEvents = await db.execute({ sql: 'SELECT * FROM calendar_events WHERE user_id = ?', args: [userId] });
       const bodyStats = await db.execute({ sql: 'SELECT * FROM body_stats WHERE user_id = ?', args: [userId] });
       const sleepLogs = await db.execute({ sql: 'SELECT * FROM sleep_logs WHERE user_id = ?', args: [userId] });
+      const workouts = await db.execute({ sql: 'SELECT * FROM workouts WHERE user_id = ?', args: [userId] });
+      const aiMessages = await db.execute({ sql: 'SELECT * FROM chat_history WHERE user_id = ?', args: [userId] });
 
       return res.status(200).json({
         habits: habits.rows || [],
@@ -138,7 +163,8 @@ export default async function handler(req, res) {
         calendarEvents: calendarEvents.rows || [],
         bodyStats: bodyStats.rows || [],
         sleepLogs: sleepLogs.rows || [],
-        aiMessages: []
+        workouts: workouts.rows || [],
+        aiMessages: aiMessages.rows || []
       });
     }
 
