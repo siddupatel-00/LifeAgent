@@ -238,9 +238,16 @@ export default function NotesPanel({
                           }}
                         />
                         <textarea
-                          rows={6}
+                          ref={(el) => {
+                            if (el) {
+                              el.style.height = 'auto';
+                              el.style.height = `${Math.max(120, el.scrollHeight)}px`;
+                            }
+                          }}
                           value={note.content}
                           onChange={(e) => {
+                            e.target.style.height = 'auto';
+                            e.target.style.height = `${Math.max(120, e.target.scrollHeight)}px`;
                             const newContent = e.target.value;
                             const updated = notesList.map(n => n.id === note.id ? { ...n, content: newContent } : n);
                             setNotesList(updated);
@@ -250,7 +257,7 @@ export default function NotesPanel({
                             width: '100%', padding: '10px 12px', borderRadius: '10px',
                             background: 'var(--bg-main)', color: 'var(--text-main)',
                             border: '1px solid var(--border-color)', fontSize: '0.9rem', outline: 'none',
-                            resize: 'vertical', minHeight: '120px'
+                            resize: 'none', overflow: 'hidden'
                           }}
                         />
                         <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
@@ -447,9 +454,17 @@ export default function NotesPanel({
               </div>
 
               <textarea
+                ref={(el) => {
+                  if (el) {
+                    el.style.height = 'auto';
+                    el.style.height = `${Math.max(220, el.scrollHeight)}px`;
+                  }
+                }}
                 disabled={notesViewMode === 'trash'}
                 value={currentNote.content}
                 onChange={(e) => {
+                  e.target.style.height = 'auto';
+                  e.target.style.height = `${Math.max(220, e.target.scrollHeight)}px`;
                   if (notesViewMode === 'active') {
                     const newContent = e.target.value;
                     if (currentNote.title !== savedSnapshot.title || newContent !== savedSnapshot.content) {
@@ -461,7 +476,7 @@ export default function NotesPanel({
                   }
                 }}
                 placeholder="Write your diary entry, personal reflection, or goals..."
-                style={{ flex: 1, width: '100%', height: '100%', minHeight: '220px', padding: '18px', borderRadius: '14px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '1rem', lineHeight: '1.6', outline: 'none', resize: 'none', overflowY: 'auto', opacity: notesViewMode === 'trash' ? 0.7 : 1 }}
+                style={{ width: '100%', padding: '18px', borderRadius: '14px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '1rem', lineHeight: '1.6', outline: 'none', resize: 'none', overflow: 'hidden', opacity: notesViewMode === 'trash' ? 0.7 : 1 }}
               />
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', color: 'var(--text-muted)' }}>

@@ -4833,21 +4833,30 @@ const handleDeleteHabitDb = async (id) => {
                                         }}
                                       />
                                       <textarea
-                                        disabled={notesViewMode === 'trash'}
-                                        value={note.content}
-                                        onChange={(e) => {
-                                          const updatedContent = e.target.value;
-                                          setNotesList(notesList.map(n => n.id === note.id ? { ...n, content: updatedContent, date: todayKey(userProfile.timezone) } : n));
-                                        }}
-                                        onBlur={() => handleUpdateNoteDb(note)}
-                                        placeholder="Write your diary entry, personal reflection, or goals..."
-                                        style={{
-                                          width: '100%', minHeight: '160px', padding: '12px',
-                                          borderRadius: '10px', background: 'var(--bg-main)',
-                                          color: 'var(--text-main)', border: '1px solid var(--border-color)',
-                                          fontSize: '0.95rem', lineHeight: '1.6', outline: 'none', resize: 'vertical'
-                                        }}
-                                      />
+                                         ref={(el) => {
+                                           if (el) {
+                                             el.style.height = 'auto';
+                                             el.style.height = `${Math.max(120, el.scrollHeight)}px`;
+                                           }
+                                         }}
+                                         disabled={notesViewMode === 'trash'}
+                                         value={note.content}
+                                         onChange={(e) => {
+                                           e.target.style.height = 'auto';
+                                           e.target.style.height = `${Math.max(120, e.target.scrollHeight)}px`;
+                                           const updatedContent = e.target.value;
+                                           setNotesList(notesList.map(n => n.id === note.id ? { ...n, content: updatedContent, date: todayKey(userProfile.timezone) } : n));
+                                         }}
+                                         onBlur={() => handleUpdateNoteDb(note)}
+                                         placeholder="Write your diary entry, personal reflection, or goals..."
+                                         style={{
+                                           width: '100%', padding: '12px',
+                                           borderRadius: '10px', background: 'var(--bg-main)',
+                                           color: 'var(--text-main)', border: '1px solid var(--border-color)',
+                                           fontSize: '0.95rem', lineHeight: '1.6', outline: 'none', resize: 'none',
+                                           overflow: 'hidden'
+                                         }}
+                                       />
                                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                                         <button
                                           type="button"
@@ -5168,16 +5177,24 @@ const handleDeleteHabitDb = async (id) => {
                           </div>
 
                           <textarea
+                            ref={(el) => {
+                              if (el) {
+                                el.style.height = 'auto';
+                                el.style.height = `${Math.max(220, el.scrollHeight)}px`;
+                              }
+                            }}
                             disabled={notesViewMode === 'trash'}
                             value={currentNote.content}
                             onChange={(e) => {
+                              e.target.style.height = 'auto';
+                              e.target.style.height = `${Math.max(220, e.target.scrollHeight)}px`;
                               if (notesViewMode === 'active') {
                                 setNotesList(notesList.map(n => n.id === currentNote.id ? { ...n, content: e.target.value, date: todayKey(userProfile.timezone) } : n));
                               }
                             }}
                             onBlur={() => handleUpdateNoteDb(currentNote)}
                             placeholder="Write your diary entry, personal reflection, or goals..."
-                            style={{ flex: 1, width: '100%', minHeight: '280px', padding: '18px', borderRadius: '14px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '1rem', lineHeight: '1.6', outline: 'none', resize: 'none', opacity: notesViewMode === 'trash' ? 0.7 : 1 }}
+                            style={{ width: '100%', padding: '18px', borderRadius: '14px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '1rem', lineHeight: '1.6', outline: 'none', resize: 'none', overflow: 'hidden', opacity: notesViewMode === 'trash' ? 0.7 : 1 }}
                           />
 
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
