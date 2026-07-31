@@ -24,6 +24,9 @@ import Modal from './components/Modal';
 import { todayKey, localTimeZone, getWeekDays, isHabitScheduledOnDay, ALL_WEEK_DAYS } from './utils/date';
 import WaterReminder from './components/WaterReminder';
 import TabErrorBoundary from './components/TabErrorBoundary';
+import db from './db/db';
+import { initSyncListeners, queueMutation, triggerSync } from './db/syncEngine';
+import SyncStatusIndicator from './components/SyncStatusIndicator';
 
 const getFormattedDateTitle = (dateStr) => {
   let targetDate = new Date();
@@ -177,6 +180,43 @@ export default function App() {
     if (window.hideSplash) {
       window.hideSplash();
     }
+  }, []);
+
+  // Initialize Offline-First Sync Engine & Load Local Records from IndexedDB
+  useEffect(() => {
+    initSyncListeners();
+
+    const loadLocalRecords = async () => {
+      try {
+        const localHabits = await db.habits.toArray();
+        if (localHabits.length > 0) setHabits(localHabits);
+
+        const localTodayItems = await db.todayItems.toArray();
+        if (localTodayItems.length > 0) setTodayItems(localTodayItems);
+
+        const localTransactions = await db.transactions.toArray();
+        if (localTransactions.length > 0) setTransactions(localTransactions);
+
+        const localWorkouts = await db.workouts.toArray();
+        if (localWorkouts.length > 0) setWorkouts(localWorkouts);
+
+        const localBodyStats = await db.bodyStats.toArray();
+        if (localBodyStats.length > 0) setBodyStats(localBodyStats);
+
+        const localSleepLogs = await db.sleepLogs.toArray();
+        if (localSleepLogs.length > 0) setSleepLogs(localSleepLogs);
+
+        const localNotes = await db.notes.toArray();
+        if (localNotes.length > 0) setNotesList(localNotes);
+
+        const localEvents = await db.calendarEvents.toArray();
+        if (localEvents.length > 0) setCalendarEvents(localEvents);
+      } catch (err) {
+        console.warn('Error loading offline IndexedDB data:', err);
+      }
+    };
+
+    loadLocalRecords();
   }, []);
 
   // Form state for Waitlist Only
@@ -577,37 +617,42 @@ export default function App() {
 
   const handleSaveBodyStat = async (updated) => {
     const todayStr = todayKey(userProfile?.timezone);
-    const isToday = updated.date === todayStr;
+    const arr = Array.isArray(bodyStats) ? bodyStats : (bodyStats ? [bodyStats] : []);
+    const existingObj = arr.find(s => s.date === (updated.date || todayStr)) || {};
+    
+    const recordId = existingObj.id || updated.id || Date.now().toString();
     const payload = {
-      weight: Number(updated.weight) || 0,
-      target_weight: Number(updated.target_weight) || 0,
-      protein: isToday ? (Number(updated.protein) || 0) : 0,
-      hydration: Number(updated.hydration) || 0,
-      date: todayStr
+      ...existingObj,
+      ...updated,
+      id: recordId,
+      weight: updated.weight !== undefined ? Number(updated.weight) : (Number(existingObj.weight) || 0),
+      target_weight: updated.target_weight !== undefined ? Number(updated.target_weight) : (Number(existingObj.target_weight) || 0),
+      protein: updated.protein !== undefined ? Number(updated.protein) : (Number(existingObj.protein) || 0),
+      hydration: updated.hydration !== undefined ? Number(updated.hydration) : (Number(existingObj.hydration) || 0),
+      date: updated.date || todayStr,
+      updatedAt: new Date().toISOString()
     };
-    if (isToday && updated.id) {
-       payload.id = updated.id;
-    }
     
-    if (token) {
-      fetch(getApiUrl('/api/fitness?type=body-stats'), {
-        method: payload.id ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(payload)
-      }).catch(console.error);
+    try {
+      await db.bodyStats.put(payload);
+      await queueMutation('bodyStats', 'update', recordId, payload);
+    } catch (e) {
+      console.warn('Error saving bodyStat to IndexedDB:', e);
     }
-    
+
     setBodyStats(prev => {
-       const arr = Array.isArray(prev) ? prev : (prev ? [prev] : []);
-       const existingIdx = arr.findIndex(s => s.date === todayStr);
+       const prevArr = Array.isArray(prev) ? prev : (prev ? [prev] : []);
+       const existingIdx = prevArr.findIndex(s => s.date === payload.date);
        if (existingIdx >= 0) {
-          const next = [...arr];
-          next[existingIdx] = { ...next[existingIdx], ...payload };
+          const next = [...prevArr];
+          next[existingIdx] = payload;
           return next;
        } else {
-          return [{ ...payload, id: payload.id || Date.now() }, ...arr];
+          return [payload, ...prevArr];
        }
     });
+
+    triggerSync();
   };
 
   // 5) Sleep state
@@ -3008,6 +3053,7 @@ const handleDeleteHabitDb = async (id) => {
 
               {!isAiSidePanelOpen && (
                 <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                  <SyncStatusIndicator />
                   {activeTab !== 'ai' && (
                     <button
                       onClick={() => setIsAiSidePanelOpen(!isAiSidePanelOpen)}
