@@ -69,7 +69,7 @@ export default async function handler(req, res) {
     }
     
     if (req.method === 'POST') {
-      const { label, category, target, challenge_days, frequency, custom_days, interval_days } = req.body;
+      const { label, category, target, challenge_days, frequency, custom_days, interval_days, client_date } = req.body;
       const freqVal = frequency || 'daily';
       const cdVal = Array.isArray(custom_days) ? custom_days.join(',') : (custom_days || '');
       const intervalVal = Number(interval_days) || 0;
@@ -78,7 +78,20 @@ export default async function handler(req, res) {
         sql: 'INSERT INTO habits (user_id, label, category, target, challenge_days, start_date, archived, completed_at, frequency, custom_days, interval_days) VALUES (?, ?, ?, ?, ?, ?, 0, NULL, ?, ?, ?)',
         args: [userId, label, category || '', target || '', challenge_days || 0, start_date, freqVal, cdVal, intervalVal]
       });
-      return res.status(201).json({ id: Number(result.lastInsertRowid), label, category, target, challenge_days, start_date, archived: 0, completed_at: null, frequency: freqVal, custom_days: cdVal, interval_days: intervalVal });
+
+      const newHabitId = Number(result.lastInsertRowid);
+      const todayDate = /^\d{4}-\d{2}-\d{2}$/.test(client_date || '') ? client_date : new Date().toISOString().split('T')[0];
+
+      try {
+        await db.execute({
+          sql: 'INSERT INTO today_items (user_id, label, category, time, habit_id, date, checked) VALUES (?, ?, ?, ?, ?, ?, 0)',
+          args: [userId, label, category || '', '', newHabitId, todayDate]
+        });
+      } catch (tErr) {
+        console.error('Failed to create today item in POST /api/habits:', tErr);
+      }
+
+      return res.status(201).json({ id: newHabitId, label, category, target, challenge_days, start_date, archived: 0, completed_at: null, frequency: freqVal, custom_days: cdVal, interval_days: intervalVal });
     }
     
     if (req.method === 'DELETE') {

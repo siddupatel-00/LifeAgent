@@ -206,6 +206,10 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
   const targetProteinGoal = Number(latestStat?.target_protein) || (targetWeight > 0 ? Math.round(targetWeight * 2) : 0);
   const proteinPercentComplete = Math.min(100, Math.max(0, Math.round((currentProtein / targetProteinGoal) * 100)));
 
+  const currentHydration = exactTodayStat ? (Number(exactTodayStat.hydration) || 0) : 0;
+  const targetHydrationGoal = Number(safeStorage.getItem('water_target_goal')) || 3.0;
+  const hydrationPercentComplete = Math.min(100, Math.max(0, Math.round((currentHydration / targetHydrationGoal) * 100)));
+
   // Check if today's scheduled workout has been logged
   const todayLoggedWorkout = workouts.find(w => w.date === todayStr);
   const isTodayCompleted = !!todayLoggedWorkout;
@@ -430,6 +434,56 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
   const handleAddProtein = handleLogProtein;
   const handleQuickAddProtein = (amount) => handleLogProtein(amount);
 
+  const handleLogHydration = async (deltaLiters) => {
+    if (!token) return;
+    try {
+      const newHydration = Math.max(0, parseFloat((currentHydration + deltaLiters).toFixed(2)));
+      const existingTodayStat = statsList.find(s => s && s.date === todayStr);
+
+      let res;
+      if (existingTodayStat && existingTodayStat.id) {
+        res = await fetch(getApiUrl('/api/fitness?type=body-stats'), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({
+            id: existingTodayStat.id,
+            hydration: newHydration,
+            protein: currentProtein,
+            target_protein: targetProteinGoal,
+            weight: Number(existingTodayStat.weight) || 0
+          })
+        });
+      } else {
+        res = await fetch(getApiUrl('/api/fitness?type=body-stats'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({
+            date: todayStr,
+            hydration: newHydration,
+            protein: currentProtein,
+            target_protein: targetProteinGoal,
+            weight: Number(latestStat?.weight) || 0
+          })
+        });
+      }
+
+      if (res.ok) {
+        setBodyStats(prev => {
+          const list = Array.isArray(prev) ? prev : [];
+          const exists = list.some(s => s && s.date === todayStr);
+          if (exists) {
+            return list.map(s => (s && s.date === todayStr) ? { ...s, hydration: newHydration } : s);
+          } else {
+            return [{ date: todayStr, hydration: newHydration, protein: currentProtein, target_protein: targetProteinGoal }, ...list];
+          }
+        });
+        showToast(`Hydration updated: ${deltaLiters > 0 ? '+' : ''}${deltaLiters} L`, 'success');
+      }
+    } catch (err) {
+      console.error('Error updating hydration:', err);
+    }
+  };
+
   const handleResetProtein = async () => {
     try {
       const today = todayKey(userProfile?.timezone);
@@ -586,110 +640,100 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
         </button>
       </div>
 
-      {/* 1. TODAY SUB-TAB: Workout Split Cycle & Daily Summary */}
+      {/* 1. TODAY SUB-TAB: Minimal Daily Protein & Hydration Trackers */}
       {activeSubTab === 'today' && (
-        <div className="animate-entrance" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          
-          {/* Main Hero Card: Today's Scheduled Workout — only shown when user has a custom split */}
-          {hasCustomSplit && (
-          <div className="glass-card" style={{ padding: '28px', borderRadius: '22px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
-              <div>
-                <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent-blue)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '6px' }}>
-                  🎯 Today's Scheduled Workout Split
+        <div className="animate-entrance" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+          {/* Daily Protein Tracker */}
+          <div className="glass-card" style={{ padding: '24px', borderRadius: '22px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                <div style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--accent-blue)', letterSpacing: '0.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  🥩 Daily Protein Tracker
                 </div>
-                <h2 style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '8px' }}>
-                  🏋️ {todayWorkoutTitle}
-                </h2>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', maxWidth: '520px', lineHeight: '1.5' }}>
-                  Your split automatically advances day by day ({splitList.map(s => typeof s === 'string' ? s : (s?.name || s?.title || 'Workout')).join(' → ')}). Complete it or let it roll automatically to tomorrow!
-                </p>
+                <span style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--accent-blue)' }}>
+                  {proteinPercentComplete}%
+                </span>
               </div>
 
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-                {isTodayCompleted ? (
-                  <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', padding: '10px 18px', borderRadius: '14px', fontWeight: 800, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Check size={18} /> Completed Today
-                  </span>
-                ) : (
-                  <button 
-                    onClick={handleQuickCompleteToday}
-                    className="blue-btn"
-                    style={{ padding: '10px 20px', fontSize: '0.9rem', fontWeight: 700, borderRadius: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}
-                  >
-                    <Check size={18} /> Mark Complete Today
-                  </button>
-                )}
+              <div style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--accent-blue)', display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                {currentProtein}g <span style={{ fontSize: '0.92rem', color: 'var(--text-muted)', fontWeight: 600 }}>/ {targetProteinGoal}g goal</span>
+              </div>
+
+              <div style={{ width: '100%', height: '10px', background: 'var(--bg-main)', borderRadius: '10px', marginTop: '14px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                <div style={{ height: '100%', width: `${proteinPercentComplete}%`, background: 'var(--accent-blue)', borderRadius: '10px', transition: 'width 0.3s ease' }} />
               </div>
             </div>
 
-            {/* Rotation Timeline Preview */}
-            <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid var(--border-color)', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' }}>
-              <div style={{ background: 'var(--accent-blue-dim)', border: '1px solid var(--accent-blue-dim)', padding: '12px 16px', borderRadius: '14px' }}>
-                <div style={{ fontSize: '0.72rem', color: 'var(--accent-blue)', fontWeight: 800 }}>
-                  {isWeekly ? `TODAY (${WEEKDAYS[dayOfWeek]?.toUpperCase()})` : `TODAY (DAY ${todaySplitIdx + 1})`}
-                </div>
-                <div style={{ fontSize: '0.95rem', fontWeight: 700, marginTop: '2px' }}>{todayWorkoutTitle}</div>
-              </div>
-              <div style={{ background: 'var(--bg-main)', border: '1px solid var(--border-color)', padding: '12px 16px', borderRadius: '14px', opacity: 0.85 }}>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700 }}>
-                  {isWeekly ? `TOMORROW (${WEEKDAYS[(dayOfWeek + 1) % 7]?.toUpperCase()})` : `TOMORROW`}
-                </div>
-                <div style={{ fontSize: '0.95rem', fontWeight: 700, marginTop: '2px' }}>{tomorrowWorkoutTitle}</div>
-              </div>
-              <div style={{ background: 'var(--bg-main)', border: '1px solid var(--border-color)', padding: '12px 16px', borderRadius: '14px', opacity: 0.65 }}>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700 }}>
-                  {isWeekly ? `DAY AFTER (${WEEKDAYS[(dayOfWeek + 2) % 7]?.toUpperCase()})` : `DAY AFTER`}
-                </div>
-                <div style={{ fontSize: '0.95rem', fontWeight: 700, marginTop: '2px' }}>{dayAfterWorkoutTitle}</div>
-              </div>
+            <div style={{ display: 'flex', gap: '10px', marginTop: '24px' }}>
+              <button
+                type="button"
+                onClick={() => handleLogProtein(25)}
+                style={{ flex: 1, padding: '12px 10px', borderRadius: '14px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.95rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s' }}
+              >
+                +25g
+              </button>
+              <button
+                type="button"
+                onClick={() => handleLogProtein(30)}
+                style={{ flex: 1, padding: '12px 10px', borderRadius: '14px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.95rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s' }}
+              >
+                +30g
+              </button>
+              <button
+                type="button"
+                onClick={() => handleLogProtein(-10)}
+                style={{ flex: 1, padding: '12px 10px', borderRadius: '14px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-muted)', fontSize: '0.95rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s' }}
+              >
+                -10g
+              </button>
             </div>
           </div>
-          )}
 
-          {/* Bottom Grid: Quick Protein Summary — only shown when user has protein data */}
-          {(Number(latestStat?.protein) > 0 || Number(latestStat?.target_protein) > 0) && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '20px' }}>
-            <div className="glass-card" style={{ padding: '20px', borderRadius: '18px', border: '1px solid var(--border-color)', background: 'var(--bg-card)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
-                <div style={{ fontSize: '0.95rem', fontWeight: 700 }}>🥩 Daily Protein Tracker</div>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button onClick={openLogProteinModal} className="blue-btn" style={{ padding: '4px 12px', fontSize: '0.78rem' }}>+ Log Protein</button>
-                  <button onClick={handleResetProtein} className="secondary-btn" style={{ padding: '4px 12px', fontSize: '0.78rem', color: '#ef4444', borderColor: 'rgba(239,68,68,0.3)' }}>Reset (0g)</button>
+          {/* Daily Hydration Tracker */}
+          <div className="glass-card" style={{ padding: '24px', borderRadius: '22px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                <div style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--accent-blue)', letterSpacing: '0.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  💧 Daily Hydration Tracker
                 </div>
+                <span style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--accent-blue)' }}>
+                  {hydrationPercentComplete}%
+                </span>
               </div>
-              <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--accent-blue)' }}>
-                {currentProtein}g <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>/ {targetProteinGoal}g goal</span>
+
+              <div style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--accent-blue)', display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                {currentHydration.toFixed(1)} L <span style={{ fontSize: '0.92rem', color: 'var(--text-muted)', fontWeight: 600 }}>/ {targetHydrationGoal} L target</span>
               </div>
-              <div style={{ width: '100%', height: '8px', background: 'var(--border-color)', borderRadius: '4px', marginTop: '10px', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${proteinPercentComplete}%`, background: 'var(--accent-blue)', borderRadius: '4px' }} />
-              </div>
-              <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
-                <button
-                  type="button"
-                  onClick={() => handleLogProtein(25)}
-                  style={{ flex: 1, padding: '7px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
-                >
-                  +25g
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleLogProtein(30)}
-                  style={{ flex: 1, padding: '7px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
-                >
-                  +30g
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleLogProtein(-10)}
-                  style={{ padding: '7px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-muted)', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
-                >
-                  -10g
-                </button>
+
+              <div style={{ width: '100%', height: '10px', background: 'var(--bg-main)', borderRadius: '10px', marginTop: '14px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                <div style={{ height: '100%', width: `${hydrationPercentComplete}%`, background: 'var(--accent-blue)', borderRadius: '10px', transition: 'width 0.3s ease' }} />
               </div>
             </div>
+
+            <div style={{ display: 'flex', gap: '10px', marginTop: '24px' }}>
+              <button
+                type="button"
+                onClick={() => handleLogHydration(0.5)}
+                style={{ flex: 1, padding: '12px 10px', borderRadius: '14px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.95rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s' }}
+              >
+                +0.5 L
+              </button>
+              <button
+                type="button"
+                onClick={() => handleLogHydration(1.0)}
+                style={{ flex: 1, padding: '12px 10px', borderRadius: '14px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.95rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s' }}
+              >
+                +1.0 L
+              </button>
+              <button
+                type="button"
+                onClick={() => handleLogHydration(-0.5)}
+                style={{ flex: 1, padding: '12px 10px', borderRadius: '14px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-muted)', fontSize: '0.95rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s' }}
+              >
+                -0.5 L
+              </button>
+            </div>
           </div>
-          )}
         </div>
       )}
 
