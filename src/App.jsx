@@ -202,7 +202,7 @@ export default function App() {
           setHabits(localHabits.map(h => ({
             ...h,
             title: h.title || h.label,
-            checkedToday: h.checkedToday !== undefined ? h.checkedToday : !!h.checked_today,
+            checkedToday: h.checked_today !== undefined ? !!h.checked_today : !!h.checkedToday,
             customDays: h.customDays || h.custom_days,
             intervalDays: h.intervalDays !== undefined ? h.intervalDays : h.interval_days,
             startDate: h.startDate || h.start_date,
@@ -215,7 +215,8 @@ export default function App() {
           setTodayItems(localTodayItems.map(ti => ({
             ...ti,
             habitId: ti.habitId || ti.habit_id,
-            completed: ti.completed !== undefined ? ti.completed : !!ti.completed
+            checked: ti.checked !== undefined ? !!ti.checked : !!ti.completed,
+            completed: ti.completed !== undefined ? !!ti.completed : !!ti.checked
           })));
         }
 
@@ -1110,7 +1111,7 @@ export default function App() {
     if (!id) return;
     try {
       const existing = await db.todayItems.get(id);
-      const record = { ...(existing || {}), id: id.toString(), checked: !!checked, updatedAt: new Date().toISOString() };
+      const record = { ...(existing || {}), id: id.toString(), checked: !!checked, completed: !!checked, updatedAt: new Date().toISOString() };
       await db.todayItems.put(record);
       await queueMutation('todayItems', 'update', id.toString(), record);
     } catch(e) {
@@ -1127,6 +1128,7 @@ export default function App() {
         id: id.toString(),
         streak: streak !== undefined ? streak : existing?.streak || 0,
         checked_today: checked_today !== undefined ? checked_today : existing?.checked_today || false,
+        checkedToday: checked_today !== undefined ? !!checked_today : !!existing?.checked_today,
         paused_until: paused_until !== undefined ? paused_until : existing?.paused_until || null,
         updatedAt: new Date().toISOString()
       };

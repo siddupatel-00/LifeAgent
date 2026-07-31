@@ -18,7 +18,7 @@ export default function HabitsPanel({
     try {
       const h = await db.habits.get(id);
       if (h) {
-        const payload = { ...h, streak, checked_today, paused_until, updatedAt: new Date().toISOString() };
+        const payload = { ...h, streak, checked_today: !!checked_today, checkedToday: !!checked_today, paused_until, updatedAt: new Date().toISOString() };
         await db.habits.put(payload);
         await queueMutation('habits', 'update', id, payload);
       }
@@ -37,7 +37,7 @@ export default function HabitsPanel({
         const updateToday = async () => {
           const tDb = await db.todayItems.get(ti.id);
           if (tDb) {
-             const payload = { ...tDb, completed: nextChecked ? 1 : 0, updatedAt: new Date().toISOString() };
+             const payload = { ...tDb, checked: nextChecked, completed: nextChecked, updatedAt: new Date().toISOString() };
              await db.todayItems.put(payload);
              await queueMutation('todayItems', 'update', ti.id, payload);
           }
