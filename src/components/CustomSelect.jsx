@@ -85,7 +85,15 @@ const CustomSelect = ({ value, onChange, options = [], style, className }) => {
             <div
               key={option.value}
               className="custom-select-option"
-              onClick={() => {
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onChange({ target: { value: option.value } });
+                setIsOpen(false);
+              }}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 onChange({ target: { value: option.value } });
                 setIsOpen(false);
               }}

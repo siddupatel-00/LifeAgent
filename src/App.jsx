@@ -1315,7 +1315,7 @@ const handleDeleteHabitDb = async (id) => {
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (themeDropdownRef.current && !themeDropdownRef.current.contains(e.target)) {
+      if (!e.target.closest('.theme-dropdown-menu') && !e.target.closest('.theme-toggle-btn')) {
         setIsThemeMenuOpen(false);
       }
       if (timeDropdownRef.current && !timeDropdownRef.current.contains(e.target)) {
@@ -1851,6 +1851,7 @@ const handleDeleteHabitDb = async (id) => {
                   {themeMode === 'dark' && <Moon size={18} />}
                   {themeMode === 'light' && <Sun size={18} />}
                   {themeMode === 'pc' && <Monitor size={18} />}
+                  {themeMode === 'night' && <Zap size={18} />}
                   <ChevronDown size={14} style={{ transform: isThemeMenuOpen ? 'rotate(180deg)' : 'none', transition: '0.2s' }} />
                 </button>
 
@@ -1858,6 +1859,16 @@ const handleDeleteHabitDb = async (id) => {
                   const rect = themeDropdownRef.current?.getBoundingClientRect();
                   const top = rect ? rect.bottom + 8 : 60;
                   const right = rect ? Math.max(16, window.innerWidth - rect.right) : 16;
+
+                  const handleSelectTheme = (mode, e) => {
+                    if (e) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }
+                    setThemeMode(mode);
+                    safeStorage.setItem('themeMode', mode);
+                    setIsThemeMenuOpen(false);
+                  };
 
                   return ReactDOM.createPortal(
                     <div 
@@ -1867,7 +1878,7 @@ const handleDeleteHabitDb = async (id) => {
                         top: `${top}px`,
                         right: `${right}px`,
                         left: 'auto',
-                        minWidth: '160px',
+                        minWidth: '165px',
                         zIndex: 99999999,
                         boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
                         background: 'var(--bg-card)',
@@ -1878,21 +1889,31 @@ const handleDeleteHabitDb = async (id) => {
                     >
                       <button 
                         className={`theme-dropdown-item ${themeMode === 'dark' ? 'active' : ''}`}
-                        onClick={() => { setThemeMode('dark'); setIsThemeMenuOpen(false); }}
+                        onMouseDown={(e) => handleSelectTheme('dark', e)}
+                        onClick={(e) => handleSelectTheme('dark', e)}
                       >
                         <Moon size={14} /> Dark Mode
                       </button>
                       <button 
                         className={`theme-dropdown-item ${themeMode === 'light' ? 'active' : ''}`}
-                        onClick={() => { setThemeMode('light'); setIsThemeMenuOpen(false); }}
+                        onMouseDown={(e) => handleSelectTheme('light', e)}
+                        onClick={(e) => handleSelectTheme('light', e)}
                       >
                         <Sun size={14} /> Light Mode
                       </button>
                       <button 
                         className={`theme-dropdown-item ${themeMode === 'pc' ? 'active' : ''}`}
-                        onClick={() => { setThemeMode('pc'); setIsThemeMenuOpen(false); }}
+                        onMouseDown={(e) => handleSelectTheme('pc', e)}
+                        onClick={(e) => handleSelectTheme('pc', e)}
                       >
                         <Monitor size={14} /> PC / System
+                      </button>
+                      <button 
+                        className={`theme-dropdown-item ${themeMode === 'night' ? 'active' : ''}`}
+                        onMouseDown={(e) => handleSelectTheme('night', e)}
+                        onClick={(e) => handleSelectTheme('night', e)}
+                      >
+                        <Zap size={14} /> 🌌 Night Mode
                       </button>
                     </div>,
                     document.body
@@ -3015,6 +3036,7 @@ const handleDeleteHabitDb = async (id) => {
                       {themeMode === 'dark' && <Moon size={16} />}
                       {themeMode === 'light' && <Sun size={16} />}
                       {themeMode === 'pc' && <Monitor size={16} />}
+                      {themeMode === 'night' && <Zap size={16} />}
                       <ChevronDown size={14} style={{ transform: isThemeMenuOpen ? 'rotate(180deg)' : 'none', transition: '0.2s' }} />
                     </button>
 
@@ -3022,6 +3044,16 @@ const handleDeleteHabitDb = async (id) => {
                       const rect = themeDropdownRef.current?.getBoundingClientRect();
                       const top = rect ? rect.bottom + 8 : 60;
                       const right = rect ? Math.max(16, window.innerWidth - rect.right) : 16;
+
+                      const handleSelectTheme = (mode, e) => {
+                        if (e) {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }
+                        setThemeMode(mode);
+                        safeStorage.setItem('themeMode', mode);
+                        setIsThemeMenuOpen(false);
+                      };
 
                       return ReactDOM.createPortal(
                         <div 
@@ -3031,7 +3063,7 @@ const handleDeleteHabitDb = async (id) => {
                             top: `${top}px`,
                             right: `${right}px`,
                             left: 'auto',
-                            minWidth: '160px',
+                            minWidth: '165px',
                             zIndex: 99999999,
                             boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
                             background: 'var(--bg-card)',
@@ -3042,21 +3074,31 @@ const handleDeleteHabitDb = async (id) => {
                         >
                           <button 
                             className={`theme-dropdown-item ${themeMode === 'dark' ? 'active' : ''}`}
-                            onClick={() => { setThemeMode('dark'); setIsThemeMenuOpen(false); }}
+                            onMouseDown={(e) => handleSelectTheme('dark', e)}
+                            onClick={(e) => handleSelectTheme('dark', e)}
                           >
                             <Moon size={14} /> Dark Mode
                           </button>
                           <button 
                             className={`theme-dropdown-item ${themeMode === 'light' ? 'active' : ''}`}
-                            onClick={() => { setThemeMode('light'); setIsThemeMenuOpen(false); }}
+                            onMouseDown={(e) => handleSelectTheme('light', e)}
+                            onClick={(e) => handleSelectTheme('light', e)}
                           >
                             <Sun size={14} /> Light Mode
                           </button>
                           <button 
                             className={`theme-dropdown-item ${themeMode === 'pc' ? 'active' : ''}`}
-                            onClick={() => { setThemeMode('pc'); setIsThemeMenuOpen(false); }}
+                            onMouseDown={(e) => handleSelectTheme('pc', e)}
+                            onClick={(e) => handleSelectTheme('pc', e)}
                           >
                             <Monitor size={14} /> PC / System
+                          </button>
+                          <button 
+                            className={`theme-dropdown-item ${themeMode === 'night' ? 'active' : ''}`}
+                            onMouseDown={(e) => handleSelectTheme('night', e)}
+                            onClick={(e) => handleSelectTheme('night', e)}
+                          >
+                            <Zap size={14} /> 🌌 Night Mode
                           </button>
                         </div>,
                         document.body

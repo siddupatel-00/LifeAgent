@@ -66,6 +66,16 @@ div, section, main, aside, article, nav, form, ul, ol, body, html {
   --accent-blue-dim: rgba(59, 130, 246, 0.1);
 }
 
+[data-theme="night"] {
+  --bg-main: #000000;
+  --bg-card: #09090b;
+  --bg-card-hover: #141417;
+  --border-color: rgba(255, 255, 255, 0.16);
+  --text-main: #ffffff;
+  --text-muted: #a1a1aa;
+  --accent-blue-dim: rgba(59, 130, 246, 0.2);
+}
+
 /* Color Themes */
 [data-color-theme="professional"] {
   --accent-blue: #ffffff;
