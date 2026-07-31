@@ -1,6 +1,6 @@
 import { safeStorage } from '../utils/safeStorage';
-import React, { useState, useEffect } from 'react';
-import { Droplet, Bell, BellOff, Plus, RotateCcw, Clock, X, Edit2, Check, MoreVertical } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Droplet, Bell, BellOff, Plus, RotateCcw, Clock, X, Edit2, Check, MoreVertical, Calendar } from 'lucide-react';
 import Modal from './Modal';
 import { todayKey } from '../utils/date';
 import { getApiUrl } from '../utils/apiConfig';
@@ -17,6 +17,39 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
     const saved = safeStorage.getItem('water_target_goal');
     return saved && Number(saved) > 0 ? Number(saved) : null;
   });
+
+  const [waterTimeframe, setWaterTimeframe] = useState('7d');
+
+  const statsList = useMemo(() => {
+    return Array.isArray(todayStat) ? todayStat : (todayStat ? [todayStat] : []);
+  }, [todayStat]);
+
+  const filteredHistory = useMemo(() => {
+    if (!statsList.length) return [];
+    
+    const sorted = [...statsList].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+    if (waterTimeframe === 'today') {
+      return sorted.filter(s => s.date === todayDateStr);
+    }
+
+    const now = new Date();
+    if (waterTimeframe === '7d') {
+      const limitDate = new Date();
+      limitDate.setDate(now.getDate() - 7);
+      const limitStr = limitDate.toISOString().split('T')[0];
+      return sorted.filter(s => (s.date || '') >= limitStr);
+    }
+
+    if (waterTimeframe === '30d') {
+      const limitDate = new Date();
+      limitDate.setDate(now.getDate() - 30);
+      const limitStr = limitDate.toISOString().split('T')[0];
+      return sorted.filter(s => (s.date || '') >= limitStr);
+    }
+
+    return sorted;
+  }, [statsList, waterTimeframe, todayDateStr]);
 
   // Empty-state goal setup
   const [goalInput, setGoalInput] = useState('');
@@ -484,6 +517,84 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
           >
             <RotateCcw size={12} /> Reset
           </button>
+        </div>
+      </div>
+
+      {/* Timeframe & Hydration History Section */}
+      <div style={{ marginTop: '28px' }}>
+        {/* Header & Timeframe Selector */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+          <h4 style={{ fontSize: '1.15rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+            <Calendar size={18} color="var(--accent-blue)" /> Hydration History
+          </h4>
+          <div style={{ display: 'flex', gap: '6px', background: 'var(--bg-main)', padding: '4px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+            {[
+              { id: 'today', label: 'Today' },
+              { id: '7d', label: '7 Days' },
+              { id: '30d', label: '30 Days' },
+              { id: 'all', label: 'All Time' }
+            ].map(tf => (
+              <button
+                key={tf.id}
+                type="button"
+                onClick={() => setWaterTimeframe(tf.id)}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: waterTimeframe === tf.id ? 'var(--accent-blue)' : 'transparent',
+                  color: waterTimeframe === tf.id ? 'var(--accent-text)' : 'var(--text-muted)',
+                  fontWeight: 700,
+                  fontSize: '0.8rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                {tf.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* History Cards List */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {filteredHistory.length === 0 ? (
+            <div className="glass-card" style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)', borderRadius: '16px', border: '1px dashed var(--border-color)' }}>
+              No hydration logs found for this timeframe.
+            </div>
+          ) : (
+            filteredHistory.map(record => {
+              const liters = Number(record.hydration || 0);
+              const goal = targetGoal || 3.0;
+              const pct = Math.min(100, Math.round((liters / goal) * 100));
+              const isGoalMet = liters >= goal;
+
+              return (
+                <div key={record.date || record.id} className="glass-card" style={{ padding: '16px 20px', borderRadius: '16px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--accent-blue-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Droplet size={20} color="var(--accent-blue)" />
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 800, fontSize: '0.98rem' }}>{record.date === todayDateStr ? 'Today' : record.date}</div>
+                      <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                        {liters.toFixed(1)} L of {goal} L target ({pct}%)
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1, maxWidth: '240px' }}>
+                    <div style={{ flex: 1, height: '6px', background: 'var(--bg-main)', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                      <div style={{ width: `${pct}%`, height: '100%', background: 'var(--accent-blue)', transition: 'width 0.3s' }} />
+                    </div>
+                    <span className="pill-tag" style={{ background: isGoalMet ? 'rgba(34, 197, 94, 0.15)' : 'var(--accent-blue-dim)', color: isGoalMet ? '#22c55e' : 'var(--accent-blue)', borderColor: isGoalMet ? '#22c55e' : 'var(--border-color)', fontWeight: 700, fontSize: '0.75rem' }}>
+                      {isGoalMet ? 'Goal Met 💧' : 'In Progress'}
+                    </span>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
 
