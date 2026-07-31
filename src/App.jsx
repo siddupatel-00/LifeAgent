@@ -3110,26 +3110,55 @@ const handleDeleteHabitDb = async (id) => {
               {/* 0) TODAY DAILY ROUTINE & HABITS CHECKLIST (Ultra-neat & clean UI) */}
               {activeTab === 'today' && (() => {
                 const activeHabits = (Array.isArray(habits) ? habits : []).filter(h => !h.archived && !h.completedAt);
-                const activeHabitIdMap = new Set(activeHabits.map(h => String(h.id)));
+                const activeHabitIdSet = new Set(activeHabits.map(h => String(h.id)));
                 
-                const existingItems = (Array.isArray(todayItems) ? todayItems : []).filter(item => {
-                  if (!item.habitId) return true;
-                  return activeHabitIdMap.has(String(item.habitId));
-                });
+                const seenKeys = new Set();
+                const activeTodayItems = [];
 
-                const existingHabitIdSet = new Set(existingItems.filter(i => i.habitId).map(i => String(i.habitId)));
-                
-                const missingItems = activeHabits
-                  .filter(h => !h.pausedUntil && !existingHabitIdSet.has(String(h.id)))
-                  .map(h => ({
-                    id: `synced-${h.id}`,
-                    title: h.title,
-                    category: h.category || '',
-                    checked: !!h.checkedToday,
-                    habitId: h.id
-                  }));
+                const rawItems = Array.isArray(todayItems) ? todayItems : [];
+                for (const item of rawItems) {
+                  const hId = item.habitId || item.habit_id;
+                  const titleKey = (item.title || item.label || '').trim().toLowerCase();
 
-                const activeTodayItems = [...existingItems, ...missingItems];
+                  if (hId) {
+                    const hIdStr = String(hId);
+                    if (!activeHabitIdSet.has(hIdStr)) continue;
+                    if (seenKeys.has(`id:${hIdStr}`) || (titleKey && seenKeys.has(`title:${titleKey}`))) continue;
+                    seenKeys.add(`id:${hIdStr}`);
+                    if (titleKey) seenKeys.add(`title:${titleKey}`);
+                  } else {
+                    if (!titleKey || seenKeys.has(`title:${titleKey}`)) continue;
+                    seenKeys.add(`title:${titleKey}`);
+                  }
+
+                  activeTodayItems.push({
+                    id: item.id,
+                    title: item.title || item.label,
+                    category: item.category || '',
+                    time: item.time || '',
+                    checked: !!item.checked,
+                    habitId: hId || null
+                  });
+                }
+
+                for (const habit of activeHabits) {
+                  if (habit.pausedUntil) continue;
+                  const hIdStr = String(habit.id);
+                  const titleKey = (habit.title || '').trim().toLowerCase();
+
+                  if (seenKeys.has(`id:${hIdStr}`) || (titleKey && seenKeys.has(`title:${titleKey}`))) continue;
+
+                  seenKeys.add(`id:${hIdStr}`);
+                  if (titleKey) seenKeys.add(`title:${titleKey}`);
+
+                  activeTodayItems.push({
+                    id: `synced-${habit.id}`,
+                    title: habit.title,
+                    category: habit.category || '',
+                    checked: !!habit.checkedToday,
+                    habitId: habit.id
+                  });
+                }
                 return (
                 <TabErrorBoundary tabName="Today's Routine">
                 <div className="animate-entrance">

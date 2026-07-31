@@ -47,12 +47,45 @@ export default async function handler(req, res) {
         args: [userId, targetDate]
       });
 
+      // Clean up any duplicate today_items for the same habit_id or label on targetDate
+      const seenHabitMap = new Map();
+      const duplicateIdsToDelete = [];
+
+      for (const row of items.rows) {
+        const key = row.habit_id ? `habit:${row.habit_id}` : `label:${(row.label || '').trim().toLowerCase()}`;
+        if (seenHabitMap.has(key)) {
+          const prev = seenHabitMap.get(key);
+          if (row.checked && !prev.checked) {
+            duplicateIdsToDelete.push(prev.id);
+            seenHabitMap.set(key, row);
+          } else {
+            duplicateIdsToDelete.push(row.id);
+          }
+        } else {
+          seenHabitMap.set(key, row);
+        }
+      }
+
+      if (duplicateIdsToDelete.length > 0) {
+        const placeholders = duplicateIdsToDelete.map(() => '?').join(',');
+        await db.execute({
+          sql: `DELETE FROM today_items WHERE id IN (${placeholders})`,
+          args: duplicateIdsToDelete
+        });
+        items = await db.execute({
+          sql: 'SELECT * FROM today_items WHERE user_id = ? AND date = ?',
+          args: [userId, targetDate]
+        });
+      }
+
       const existingHabitIdSet = new Set(items.rows.filter(t => t.habit_id).map(t => String(t.habit_id)));
+      const existingLabelSet = new Set(items.rows.map(t => (t.label || '').trim().toLowerCase()));
       let needsRefetch = false;
 
       for (const habit of activeHabits) {
         if (habit.paused_until) continue;
-        if (existingHabitIdSet.has(String(habit.id))) continue;
+        const habitLabelKey = (habit.label || '').trim().toLowerCase();
+        if (existingHabitIdSet.has(String(habit.id)) || (habitLabelKey && existingLabelSet.has(habitLabelKey))) continue;
 
         await db.execute({
           sql: 'INSERT INTO today_items (user_id, label, category, time, habit_id, date, checked) VALUES (?, ?, ?, ?, ?, ?, 0)',
