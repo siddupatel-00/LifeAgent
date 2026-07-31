@@ -1943,8 +1943,16 @@ const handleDeleteHabitDb = async (id) => {
                   </span>
                 </div>
 
-                {/* Interactive Tabs Row */}
-                <div className="hero-mockup-tabs" style={{ display: 'flex', gap: '4px', overflowX: 'auto', padding: '2px', scrollbarWidth: 'none', position: 'relative', maxWidth: '100%', WebkitOverflowScrolling: 'touch' }}>
+                {/* Interactive Tabs Row with Constant-Width Sliding Indicator */}
+                <div className="hero-mockup-tabs">
+                  {/* Apple-style Segmented Sliding Active Pill Indicator */}
+                  <div 
+                    className="hero-mockup-tab-indicator"
+                    style={{
+                      transform: `translate3d(${PREVIEW_TABS.indexOf(previewTab) * (96 + 6)}px, 0, 0)`
+                    }}
+                  />
+
                   {[
                     { id: 'Money', label: 'Money', icon: DollarSign },
                     { id: 'Sleep', label: 'Sleep', icon: SleepIcon },
@@ -1963,26 +1971,6 @@ const handleDeleteHabitDb = async (id) => {
                         className={`hero-mockup-tab-btn ${isActive ? 'active' : ''}`}
                         ref={el => (tabRefs.current[tab.id] = el)}
                         onClick={() => handlePreviewTabClick(tab.id)}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          padding: '7px 14px',
-                          borderRadius: '10px',
-                          fontSize: '0.85rem',
-                          fontWeight: isActive ? 700 : 500,
-                          color: isActive ? '#ffffff' : 'var(--text-muted)',
-                          background: isActive ? 'var(--accent-blue)' : 'transparent',
-                          boxShadow: isActive ? '0 4px 18px rgba(59, 130, 246, 0.45)' : 'none',
-                          border: 'none',
-                          cursor: 'pointer',
-                          position: 'relative',
-                          zIndex: 2,
-                          transition: 'all 0.4s ease',
-                          whiteSpace: 'nowrap',
-                          transform: isActive ? 'scale(1.03)' : 'scale(1)',
-                          flexShrink: 0
-                        }}
                       >
                         <Icon size={14} />
                         <span>{tab.label}</span>

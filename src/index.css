@@ -1559,12 +1559,12 @@ input[type="checkbox"]:checked::after {
 
   .hero-mockup-tabs {
     display: flex !important;
-    gap: 4px !important;
+    gap: 6px !important;
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch !important;
     width: 100% !important;
     max-width: 100% !important;
-    padding: 2px 0 4px !important;
+    padding: 3px !important;
     scrollbar-width: none !important;
     -ms-overflow-style: none !important;
   }
@@ -1573,20 +1573,6 @@ input[type="checkbox"]:checked::after {
     display: none !important;
     width: 0 !important;
     height: 0 !important;
-  }
-
-  .hero-mockup-tab-btn {
-    padding: 6px 11px !important;
-    font-size: 0.78rem !important;
-    gap: 4px !important;
-    border-radius: 8px !important;
-    white-space: nowrap !important;
-    flex-shrink: 0 !important;
-  }
-
-  .hero-mockup-tab-btn svg {
-    width: 13px !important;
-    height: 13px !important;
   }
 
   .hero-mockup-body {
@@ -1722,5 +1708,84 @@ input[type="checkbox"]:checked::after {
   gap: 20px;
   align-items: stretch;
 }
+
+/* Apple-Style Segmented Showcase Navigation Tabs */
+.hero-mockup-tabs {
+  display: flex !important;
+  gap: 6px !important;
+  overflow-x: auto !important;
+  padding: 3px !important;
+  border-radius: 12px !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid var(--border-color) !important;
+  position: relative !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+.hero-mockup-tabs::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.hero-mockup-tab-indicator {
+  position: absolute !important;
+  top: 3px !important;
+  bottom: 3px !important;
+  left: 3px !important;
+  width: 96px !important;
+  border-radius: 9px !important;
+  background: var(--accent-blue) !important;
+  box-shadow: 0 4px 18px rgba(59, 130, 246, 0.45) !important;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  will-change: transform !important;
+  z-index: 1 !important;
+  pointer-events: none !important;
+}
+
+.hero-mockup-tab-btn {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  width: 96px !important;
+  min-width: 96px !important;
+  max-width: 96px !important;
+  flex: 0 0 96px !important;
+  height: 34px !important;
+  padding: 0 !important;
+  border-radius: 9px !important;
+  font-size: 0.82rem !important;
+  font-weight: 500 !important;
+  color: var(--text-muted) !important;
+  background: transparent !important;
+  border: none !important;
+  cursor: pointer !important;
+  position: relative !important;
+  z-index: 2 !important;
+  transition: color 0.3s ease !important;
+  white-space: nowrap !important;
+  user-select: none !important;
+  box-sizing: border-box !important;
+}
+
+.hero-mockup-tab-btn.active {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.hero-mockup-tab-btn svg {
+  width: 14px !important;
+  height: 14px !important;
+}
+
 
 
