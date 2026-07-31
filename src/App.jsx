@@ -3507,12 +3507,12 @@ const handleDeleteHabitDb = async (id) => {
                   )}
 
 
-                  {/* Clean List of Today Items */}
+                  {/* Clean 2-Box Grid of Today Items (One line two boxes, habit name only) */}
                     {(!activeTodayItems || activeTodayItems.length === 0) ? (
                       <div className="glass-card" style={{ textAlign: 'center', padding: '36px 20px', background: 'var(--bg-main)', borderRadius: '18px', border: '1px dashed var(--border-color)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
                         <Clock size={40} style={{ color: 'var(--accent-blue)', opacity: 0.5 }} />
                         <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>No items logged yet</div>
-                        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>No items logged yet. Click + to add your first entry</p>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>Click + to add your first habit or task</p>
                         <button
                           onClick={() => setActiveTab('habits')}
                           className="blue-btn"
@@ -3522,66 +3522,48 @@ const handleDeleteHabitDb = async (id) => {
                         </button>
                       </div>
                     ) : (
-                      [...activeTodayItems].sort((a,b) => (a.checked === b.checked ? 0 : a.checked ? 1 : -1)).map(item => (
-                        <div 
-                          key={item.id} 
-                        onClick={() => handleToggleTodayItem(item.id)}
-                        style={{
-                          background: item.checked ? 'var(--accent-blue-dim)' : 'var(--bg-main)',
-                          padding: '20px 24px',
-                          borderRadius: '16px',
-                          border: `1px solid ${item.checked ? 'var(--accent-blue)' : 'var(--border-color)'}`,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          gap: '16px',
-                          flexWrap: 'wrap',
-                          transition: 'all 0.2s',
-                          cursor: 'pointer',
-                          userSelect: 'none',
-                          boxShadow: item.checked ? '0 4px 16px rgba(59,130,246,0.12)' : 'none'
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '18px', flexWrap: 'wrap' }}>
-                          <span style={{ 
-                            fontSize: '0.8rem', fontWeight: 800, color: item.checked ? 'var(--accent-blue)' : 'var(--text-muted)',
-                            background: 'var(--bg-card)', padding: '6px 12px', borderRadius: '10px', border: '1px solid var(--border-color)', minWidth: '110px', textAlign: 'center',
-                            display: item.time ? 'block' : 'none'
-                          }}>
-                            {item.time}
-                          </span>
-                          <div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-                              <h4 style={{ fontSize: '1.1rem', fontWeight: 800, textDecoration: item.checked ? 'line-through' : 'none', color: item.checked ? 'var(--text-main)' : 'var(--text-main)' }}>
-                                {item.title}
-                              </h4>
-                              <span className="pill-tag" style={{ background: 'var(--bg-card)', fontSize: '0.7rem', padding: '2px 8px' }}>
-                                {item.category}
-                              </span>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '14px' }}>
+                        {[...activeTodayItems].sort((a,b) => (a.checked === b.checked ? 0 : a.checked ? 1 : -1)).map(item => (
+                          <div 
+                            key={item.id} 
+                            onClick={() => handleToggleTodayItem(item.id)}
+                            style={{
+                              background: item.checked ? 'var(--accent-blue-dim)' : 'var(--bg-card)',
+                              padding: '20px 16px',
+                              borderRadius: '18px',
+                              border: `1px solid ${item.checked ? 'var(--accent-blue)' : 'var(--border-color)'}`,
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              textAlign: 'center',
+                              gap: '8px',
+                              transition: 'all 0.2s ease',
+                              cursor: 'pointer',
+                              userSelect: 'none',
+                              boxShadow: item.checked ? '0 4px 16px rgba(59,130,246,0.15)' : '0 2px 8px rgba(0,0,0,0.04)',
+                              minHeight: '100px'
+                            }}
+                          >
+                            <div style={{
+                              fontSize: '1.05rem',
+                              fontWeight: 800,
+                              color: 'var(--text-main)',
+                              textDecoration: item.checked ? 'line-through' : 'none',
+                              opacity: item.checked ? 0.75 : 1,
+                              wordBreak: 'break-word',
+                              lineHeight: '1.3'
+                            }}>
+                              {item.title}
                             </div>
-                            <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                              {item.checked ? 'Checked & verified for today ✓' : 'Pending completion today • Click anywhere to tick'}
-                            </span>
+                            {item.checked && (
+                              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--accent-blue)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <Check size={14} /> Done
+                              </span>
+                            )}
                           </div>
-                        </div>
-
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleToggleTodayItem(item.id);
-                          }}
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: '8px',
-                            padding: '10px 18px', borderRadius: '30px', border: item.checked ? 'none' : '1px solid var(--border-color)',
-                            background: item.checked ? 'var(--accent-blue)' : 'var(--bg-card)', color: item.checked ? 'var(--accent-text)' : 'var(--text-main)',
-                            fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer',
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.08)', transition: 'all 0.2s', flexShrink: 0
-                          }}
-                        >
-                          {item.checked ? <><Check size={16} /> Done</> : 'Pending'}
-                        </button>
+                        ))}
                       </div>
-                    ))
                     )}
                   </div>
 
