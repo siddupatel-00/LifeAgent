@@ -5408,9 +5408,9 @@ const handleDeleteHabitDb = async (id) => {
               <CheckCircle2 size={22} />
               <span>Daily</span>
             </button>
-            <button className={`mobile-nav-btn ${activeTab === 'ai' ? 'active' : ''}`} onClick={() => setActiveTab('ai')}>
-              <Bot size={22} />
-              <span>AI</span>
+            <button className={`mobile-nav-btn ${activeTab === 'calendar' ? 'active' : ''}`} onClick={() => setActiveTab('calendar')}>
+              <Calendar size={22} />
+              <span>Calendar</span>
             </button>
             <button className={`mobile-nav-btn ${activeTab === 'finance' ? 'active' : ''}`} onClick={() => setActiveTab('finance')}>
               <DollarSign size={22} />
@@ -5438,9 +5438,9 @@ const handleDeleteHabitDb = async (id) => {
                     <BookOpen size={20} />
                     <span>Notes</span>
                   </button>
-                  <button className={`drawer-btn ${activeTab === 'calendar' ? 'active' : ''}`} onClick={() => { setActiveTab('calendar'); setShowMobileMoreMenu(false); }}>
-                    <Calendar size={20} />
-                    <span>Calendar</span>
+                  <button className={`drawer-btn ${activeTab === 'ai' ? 'active' : ''}`} onClick={() => { setActiveTab('ai'); setShowMobileMoreMenu(false); }}>
+                    <Bot size={20} />
+                    <span>AI</span>
                   </button>
                   <button className={`drawer-btn ${activeTab === 'water' ? 'active' : ''}`} onClick={() => { setActiveTab('water'); setShowMobileMoreMenu(false); }}>
                     <Droplet size={20} />
