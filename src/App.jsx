@@ -714,10 +714,11 @@ export default function App() {
       const timezone = userProfile?.timezone || localTimeZone();
       const clientDate = todayKey(timezone);
 
-      const [settingsRes, todayRes, habitsRes] = await Promise.all([
+      const [settingsRes, todayRes, habitsRes, statsRes] = await Promise.all([
         fetch(getApiUrl('/api/settings'), { headers }).catch(e => null),
         fetch(`/api/today?client_date=${clientDate}`, { headers }).catch(e => null),
-        fetch(getApiUrl('/api/habits'), { headers }).catch(e => null)
+        fetch(getApiUrl('/api/habits'), { headers }).catch(e => null),
+        fetch(getApiUrl('/api/fitness?type=body-stats'), { headers }).catch(e => null)
       ]);
 
       if (settingsRes && settingsRes.ok) {
@@ -760,6 +761,12 @@ export default function App() {
         }));
         setHabits(mappedHabits);
         safeStorage.setItem('cache_habits', JSON.stringify(mappedHabits));
+      }
+
+      if (statsRes && statsRes.ok) {
+        const sData = await statsRes.json();
+        setBodyStats(sData);
+        safeStorage.setItem('cache_bodyStats', JSON.stringify(sData));
       }
 
       loadedTabsRef.current.startup = true;
@@ -3114,7 +3121,13 @@ const handleDeleteHabitDb = async (id) => {
             >
               
               {/* 0) TODAY DAILY ROUTINE & HABITS CHECKLIST (Ultra-neat & clean UI) */}
-              {activeTab === 'today' && (
+              {activeTab === 'today' && (() => {
+                const activeHabitIdMap = new Set((Array.isArray(habits) ? habits : []).filter(h => !h.archived && !h.completedAt).map(h => String(h.id)));
+                const activeTodayItems = (Array.isArray(todayItems) ? todayItems : []).filter(item => {
+                  if (!item.habitId) return true;
+                  return activeHabitIdMap.has(String(item.habitId));
+                });
+                return (
                 <TabErrorBoundary tabName="Today's Routine">
                 <div className="animate-entrance">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px', gap: '16px', flexWrap: 'wrap' }}>
@@ -3125,7 +3138,7 @@ const handleDeleteHabitDb = async (id) => {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <div style={{ width: '160px', height: '5px', background: 'var(--bg-card)', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
                           <div style={{
-                            width: `${(todayItems.filter(i => i.checked).length / (todayItems.length || 1)) * 100}%`,
+                            width: `${(activeTodayItems.filter(i => i.checked).length / (activeTodayItems.length || 1)) * 100}%`,
                             height: '100%',
                             background: 'var(--accent-blue)',
                             boxShadow: '0 0 8px rgba(59,130,246,0.4)',
@@ -3133,7 +3146,7 @@ const handleDeleteHabitDb = async (id) => {
                           }}></div>
                         </div>
                         <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>
-                          {todayItems.filter(i => i.checked).length}/{todayItems.length} done
+                          {activeTodayItems.filter(i => i.checked).length}/{activeTodayItems.length} done
                         </span>
                       </div>
                     </div>
@@ -3508,7 +3521,7 @@ const handleDeleteHabitDb = async (id) => {
 
 
                   {/* Clean List of Today Items */}
-                    {(!todayItems || todayItems.length === 0) ? (
+                    {(!activeTodayItems || activeTodayItems.length === 0) ? (
                       <div className="glass-card" style={{ textAlign: 'center', padding: '36px 20px', background: 'var(--bg-main)', borderRadius: '18px', border: '1px dashed var(--border-color)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
                         <Clock size={40} style={{ color: 'var(--accent-blue)', opacity: 0.5 }} />
                         <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>No items logged yet</div>
@@ -3522,7 +3535,7 @@ const handleDeleteHabitDb = async (id) => {
                         </button>
                       </div>
                     ) : (
-                      [...todayItems].sort((a,b) => (a.checked === b.checked ? 0 : a.checked ? 1 : -1)).map(item => (
+                      [...activeTodayItems].sort((a,b) => (a.checked === b.checked ? 0 : a.checked ? 1 : -1)).map(item => (
                         <div 
                           key={item.id} 
                         onClick={() => handleToggleTodayItem(item.id)}
@@ -3588,7 +3601,8 @@ const handleDeleteHabitDb = async (id) => {
 
 
                 </TabErrorBoundary>
-              )}
+                );
+              })()}
 
               {/* 1) AI CHAT MODE */}
               {activeTab === 'ai' && (

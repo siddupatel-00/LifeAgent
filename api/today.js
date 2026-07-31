@@ -12,6 +12,14 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       // The client supplies its calendar date so a new day starts in its timezone.
       const clientDate = /^\d{4}-\d{2}-\d{2}$/.test(req.query?.client_date || '') ? req.query.client_date : null;
+      // Delete any today_items that belong to archived or deleted habits
+      await db.execute({
+        sql: `DELETE FROM today_items WHERE user_id = ? AND habit_id IS NOT NULL AND habit_id NOT IN (
+          SELECT id FROM habits WHERE user_id = ? AND (archived IS NULL OR archived = 0) AND (completed_at IS NULL OR completed_at = "")
+        )`,
+        args: [userId, userId]
+      });
+
       let items;
       if (clientDate) {
         items = await db.execute({ sql: 'SELECT * FROM today_items WHERE user_id = ? AND date = ?', args: [userId, clientDate] });
@@ -20,7 +28,7 @@ export default async function handler(req, res) {
       }
       
       const targetDate = clientDate || new Date().toISOString().split('T')[0];
-      const habits = await db.execute({ sql: 'SELECT * FROM habits WHERE user_id = ?', args: [userId] });
+      const habits = await db.execute({ sql: 'SELECT * FROM habits WHERE user_id = ? AND (archived IS NULL OR archived = 0) AND (completed_at IS NULL OR completed_at = "")', args: [userId] });
       const existingHabitIds = items.rows.filter(t => t.habit_id).map(t => t.habit_id);
       
       let needsRefetch = false;

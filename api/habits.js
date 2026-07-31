@@ -87,6 +87,10 @@ export default async function handler(req, res) {
         sql: 'DELETE FROM habits WHERE id = ? AND user_id = ?',
         args: [id, userId]
       });
+      await db.execute({
+        sql: 'DELETE FROM today_items WHERE habit_id = ? AND user_id = ?',
+        args: [id, userId]
+      });
       return res.status(200).json({ success: true });
     }
     
