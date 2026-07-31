@@ -3015,19 +3015,6 @@ const handleDeleteHabitDb = async (id) => {
                       </div>
                     )}
                   </div>
-
-                  <span 
-                    onClick={() => setActiveTab('settings')}
-                    style={{ 
-                      fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-main)', 
-                      background: 'var(--bg-card)', border: '1px solid var(--border-color)',
-                      padding: '8px 16px', borderRadius: '30px', cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s',
-                      maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
-                    }}
-                  >
-                    <User size={16} color="var(--accent-blue)" /> {userProfile.handle}
-                  </span>
                 </div>
               )}
             </div>
