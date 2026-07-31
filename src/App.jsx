@@ -3928,25 +3928,27 @@ const handleDeleteHabitDb = async (id) => {
                         {newHabitData.challengeMode && (
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                             <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>Duration:</span>
-                            <select
+                            <CustomSelect
                               value={newHabitData.durationMode === 'custom' ? 'custom' : newHabitData.challengeDays}
                               onChange={(e) => {
-                                if (e.target.value === 'custom') {
+                                const val = e.target.value;
+                                if (val === 'custom') {
                                   setNewHabitData({ ...newHabitData, durationMode: 'custom', challengeDays: '' });
                                 } else {
-                                  setNewHabitData({ ...newHabitData, durationMode: 'preset', challengeDays: Number(e.target.value) });
+                                  setNewHabitData({ ...newHabitData, durationMode: 'preset', challengeDays: Number(val) });
                                 }
                               }}
-                              style={{ padding: '6px 12px', borderRadius: '8px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.85rem', fontWeight: 700, outline: 'none', cursor: 'pointer' }}
-                            >
-                              <option value={7} style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>7 Days</option>
-                              <option value={14} style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>14 Days</option>
-                              <option value={21} style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>21 Days</option>
-                              <option value={30} style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>30 Days</option>
-                              <option value={60} style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>60 Days</option>
-                              <option value={90} style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>90 Days</option>
-                              <option value="custom" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>Custom...</option>
-                            </select>
+                              options={[
+                                { value: 7, label: '7 Days' },
+                                { value: 14, label: '14 Days' },
+                                { value: 21, label: '21 Days' },
+                                { value: 30, label: '30 Days' },
+                                { value: 60, label: '60 Days' },
+                                { value: 90, label: '90 Days' },
+                                { value: 'custom', label: 'Custom...' }
+                              ]}
+                              style={{ padding: '6px 12px', fontSize: '0.85rem', fontWeight: 700 }}
+                            />
 
                             {newHabitData.durationMode === 'custom' && (
                               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
