@@ -3105,7 +3105,13 @@ const handleDeleteHabitDb = async (id) => {
             )}
 
             {/* TAB CONTENT HOUSING BOX */}
-            <div className="glass-card tab-content-housing-box" style={{ padding: '32px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '20px', marginBottom: '24px', width: '100%', boxSizing: 'border-box' }}>
+            <div 
+              className={activeTab === 'ai' ? 'ai-tab-housing-container' : 'glass-card tab-content-housing-box'} 
+              style={activeTab === 'ai' 
+                ? { width: '100%', boxSizing: 'border-box', padding: 0, margin: 0, background: 'transparent', border: 'none', boxShadow: 'none' } 
+                : { padding: '32px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '20px', marginBottom: '24px', width: '100%', boxSizing: 'border-box' }
+              }
+            >
               
               {/* 0) TODAY DAILY ROUTINE & HABITS CHECKLIST (Ultra-neat & clean UI) */}
               {activeTab === 'today' && (
@@ -3593,7 +3599,7 @@ const handleDeleteHabitDb = async (id) => {
                   height: 'calc(100vh - 170px)',
                   maxHeight: 'calc(100vh - 130px)',
                   overflow: 'hidden',
-                  background: 'var(--bg-main)',
+                  background: 'var(--bg-card)',
                   borderRadius: '20px',
                   border: '1px solid var(--border-color)'
                 }}>
