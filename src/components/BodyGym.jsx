@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { safeStorage } from '../utils/safeStorage';
 import { Dumbbell, Target, Plus, Trash2, Activity, Flame, Clock, Check, Edit2, X } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { todayKey } from '../utils/date';
