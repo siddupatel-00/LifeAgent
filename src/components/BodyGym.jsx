@@ -137,34 +137,24 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
   const [statsHistoryFilter, setStatsHistoryFilter] = useState('7days');
 
   const fetchWorkouts = useCallback(async () => {
-    if (!token) return;
     try {
-      const res = await fetch(getApiUrl('/api/fitness?type=workouts'), {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setWorkouts(data);
-      }
+      const data = await db.workouts.where('is_deleted').notEqual(1).toArray();
+      const sortedData = data.sort((a, b) => new Date(b.date || b.updatedAt || 0) - new Date(a.date || a.updatedAt || 0));
+      setWorkouts(sortedData);
     } catch (e) {
       console.error(e);
     }
-  }, [token]);
+  }, []);
 
   const fetchStats = useCallback(async () => {
-    if (!token) return;
     try {
-      const res = await fetch(getApiUrl('/api/fitness?type=body-stats'), {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setBodyStats(data);
-      }
+      const data = await db.bodyStats.where('is_deleted').notEqual(1).toArray();
+      const sortedData = data.sort((a, b) => new Date(b.date || b.updatedAt || 0) - new Date(a.date || a.updatedAt || 0));
+      setBodyStats(sortedData);
     } catch (e) {
       console.error(e);
     }
-  }, [token, setBodyStats]);
+  }, [setBodyStats]);
 
   useEffect(() => {
     if (Array.isArray(initialWorkouts) && initialWorkouts.length > 0) {
@@ -227,34 +217,28 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
         date: todayStr
       };
       
-      const res = await fetch(getApiUrl('/api/fitness?type=workouts'), {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
+      const tempId = Date.now().toString();
+      const finalPayload = { ...payload, id: tempId };
+      await db.workouts.put(finalPayload);
+      await queueMutation('workouts', 'create', tempId, finalPayload);
       
-      if (res.ok) {
-        showToast(`🎉 ${typeof todayWorkoutTitle === 'string' ? todayWorkoutTitle : todayWorkoutTitle.name} Completed!`, 'success');
-        fetchWorkouts();
-        
-        // Save exercises to metrics
-        const currentSplit = splitList[todaySplitIdx];
-        if (currentSplit && currentSplit.exercises && currentSplit.exercises.length > 0) {
-          for (const ex of currentSplit.exercises) {
-            await fetch(getApiUrl('/api/analytics?type=metrics'), {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-              body: JSON.stringify({
-                date: todayStr,
-                metric_type: 'workout',
-                metric_name: ex.name,
-                metric_value: ex.sets
-              })
-            });
-          }
+      showToast(`🎉 ${typeof todayWorkoutTitle === 'string' ? todayWorkoutTitle : todayWorkoutTitle.name} Completed!`, 'success');
+      fetchWorkouts();
+      
+      // Save exercises to metrics offline
+      const currentSplit = splitList[todaySplitIdx];
+      if (currentSplit && currentSplit.exercises && currentSplit.exercises.length > 0) {
+        for (const ex of currentSplit.exercises) {
+          const metricId = Date.now().toString() + Math.random().toString(36).substring(7);
+          const metricPayload = {
+            id: metricId,
+            date: todayStr,
+            metric_type: 'workout',
+            metric_name: ex.name,
+            metric_value: ex.sets
+          };
+          await db.analytics.put(metricPayload);
+          await queueMutation('analytics', 'create', metricId, metricPayload);
         }
       }
     } catch (e) {
@@ -272,20 +256,14 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
         date: todayKey()
       };
       
-      const res = await fetch(getApiUrl('/api/fitness?type=workouts'), {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
+      const tempId = Date.now().toString();
+      const finalPayload = { ...payload, id: tempId };
+      await db.workouts.put(finalPayload);
+      await queueMutation('workouts', 'create', tempId, finalPayload);
       
-      if (res.ok) {
-        showToast('Workout Added', 'success');
-        closeWorkoutModal();
-        fetchWorkouts();
-      }
+      showToast('Workout Added', 'success');
+      closeWorkoutModal();
+      fetchWorkouts();
     } catch (e) {
       console.error(e);
       showToast('Error adding workout', 'error');
@@ -294,18 +272,10 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
 
   const handleDeleteWorkout = async (id) => {
     try {
-      const res = await fetch(getApiUrl('/api/fitness?type=workouts'), {
-        method: 'DELETE',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ id })
-      });
-      if (res.ok) {
-        showToast('Workout Deleted', 'success');
-        fetchWorkouts();
-      }
+      await db.workouts.put({ id, is_deleted: 1, updatedAt: new Date().toISOString() });
+      await queueMutation('workouts', 'delete', id.toString(), null);
+      showToast('Workout Deleted', 'success');
+      fetchWorkouts();
     } catch (e) {
       console.error(e);
     }
@@ -403,29 +373,21 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
         });
       }
 
-      const res = await fetch(getApiUrl('/api/fitness'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify(payload)
-      });
+      const tempId = todayStat?.id || Date.now().toString();
+      const finalPayload = { ...payload, id: tempId, weight: Number(todayStat?.weight) || 0, target_weight: Number(todayStat?.target_weight) || 0, hydration: Number(todayStat?.hydration) || 0 };
+      await db.bodyStats.put(finalPayload);
+      await queueMutation('bodyStats', todayStat?.id ? 'update' : 'create', tempId.toString(), finalPayload);
 
-      if (res.status === 200 || res.status === 201) {
-        const sign = delta >= 0 ? '+' : '';
-        const toastMsg = `Protein logged: ${sign}${delta}g`;
-        if (typeof showToast === 'function') {
-          showToast(toastMsg, 'success');
-        }
-        if (isLogProteinOpen) {
-          closeLogProteinModal();
-        }
-        if (typeof fetchStats === 'function') {
-          fetchStats();
-        }
-      } else {
-        console.error('Failed to log protein:', res.status, res.statusText);
+      const sign = delta >= 0 ? '+' : '';
+      const toastMsg = `Protein logged: ${sign}${delta}g`;
+      if (typeof showToast === 'function') {
+        showToast(toastMsg, 'success');
+      }
+      if (isLogProteinOpen) {
+        closeLogProteinModal();
+      }
+      if (typeof fetchStats === 'function') {
+        fetchStats();
       }
     } catch (err) {
       console.error('Error in handleLogProtein:', err);
@@ -441,45 +403,30 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
       const newHydration = Math.max(0, parseFloat((currentHydration + deltaLiters).toFixed(2)));
       const existingTodayStat = statsList.find(s => s && s.date === todayStr);
 
-      let res;
-      if (existingTodayStat && existingTodayStat.id) {
-        res = await fetch(getApiUrl('/api/fitness?type=body-stats'), {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({
-            id: existingTodayStat.id,
-            hydration: newHydration,
-            protein: currentProtein,
-            target_protein: targetProteinGoal,
-            weight: Number(existingTodayStat.weight) || 0
-          })
-        });
-      } else {
-        res = await fetch(getApiUrl('/api/fitness?type=body-stats'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({
-            date: todayStr,
-            hydration: newHydration,
-            protein: currentProtein,
-            target_protein: targetProteinGoal,
-            weight: Number(latestStat?.weight) || 0
-          })
-        });
-      }
+      const tempId = existingTodayStat?.id || Date.now().toString();
+      const finalPayload = {
+        id: tempId,
+        date: todayStr,
+        hydration: newHydration,
+        protein: currentProtein,
+        target_protein: targetProteinGoal,
+        weight: Number(existingTodayStat?.weight || latestStat?.weight || 0),
+        target_weight: Number(existingTodayStat?.target_weight || latestStat?.target_weight || 0)
+      };
 
-      if (res.ok) {
-        setBodyStats(prev => {
-          const list = Array.isArray(prev) ? prev : [];
-          const exists = list.some(s => s && s.date === todayStr);
-          if (exists) {
-            return list.map(s => (s && s.date === todayStr) ? { ...s, hydration: newHydration } : s);
-          } else {
-            return [{ date: todayStr, hydration: newHydration, protein: currentProtein, target_protein: targetProteinGoal }, ...list];
-          }
-        });
-        showToast(`Hydration updated: ${deltaLiters > 0 ? '+' : ''}${deltaLiters} L`, 'success');
-      }
+      await db.bodyStats.put(finalPayload);
+      await queueMutation('bodyStats', existingTodayStat?.id ? 'update' : 'create', tempId.toString(), finalPayload);
+
+      setBodyStats(prev => {
+        const list = Array.isArray(prev) ? prev : [];
+        const exists = list.some(s => s && s.date === todayStr);
+        if (exists) {
+          return list.map(s => (s && s.date === todayStr) ? { ...s, hydration: newHydration } : s);
+        } else {
+          return [finalPayload, ...list];
+        }
+      });
+      showToast(`Hydration updated: ${deltaLiters > 0 ? '+' : ''}${deltaLiters} L`, 'success');
     } catch (err) {
       console.error('Error updating hydration:', err);
     }
@@ -516,17 +463,11 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
       closeLogProteinModal();
       
       // 2. Background DB sync
-      const res = await fetch(getApiUrl('/api/fitness?type=body-stats'), {
-        method: isUpdating ? 'PUT' : 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
-      if (res.ok) {
-        fetchStats();
-      }
+      const tempId = payload.id || Date.now().toString();
+      const finalPayload = { ...payload, id: tempId };
+      await db.bodyStats.put(finalPayload);
+      await queueMutation('bodyStats', isUpdating ? 'update' : 'create', tempId.toString(), finalPayload);
+      fetchStats();
     } catch (e) {
       console.error('Error resetting protein:', e);
       showToast('Error resetting protein', 'error');
@@ -550,20 +491,14 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
         date: today
       };
       
-      const res = await fetch(getApiUrl('/api/fitness?type=body-stats'), {
-        method: isUpdating ? 'PUT' : 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
+      const tempId = payload.id || Date.now().toString();
+      const finalPayload = { ...payload, id: tempId };
+      await db.bodyStats.put(finalPayload);
+      await queueMutation('bodyStats', isUpdating ? 'update' : 'create', tempId.toString(), finalPayload);
       
-      if (res.ok) {
-        showToast('Saved successfully!', 'success');
-        closeEditMetricsModal();
-        fetchStats();
-      }
+      showToast('Saved successfully!', 'success');
+      closeEditMetricsModal();
+      fetchStats();
     } catch (e) {
       console.error(e);
       showToast('Error adding stats', 'error');
@@ -572,18 +507,10 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
 
   const handleDeleteStat = async (id) => {
     try {
-      const res = await fetch(getApiUrl('/api/fitness?type=body-stats'), {
-        method: 'DELETE',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ id })
-      });
-      if (res.ok) {
-        showToast('Stats Deleted', 'success');
-        fetchStats();
-      }
+      await db.bodyStats.put({ id, is_deleted: 1, updatedAt: new Date().toISOString() });
+      await queueMutation('bodyStats', 'delete', id.toString(), null);
+      showToast('Stats Deleted', 'success');
+      fetchStats();
     } catch (e) {
       console.error(e);
     }
