@@ -384,8 +384,9 @@ body {
   border-radius: 20px !important;
   border: 1px solid var(--border-color) !important;
   background: var(--bg-card);
-  height: 380px; /* consistent height */
-  overflow-y: auto; /* scroll if content exceeds */
+  height: auto !important;
+  min-height: 400px;
+  overflow: visible;
 }
 
 /* Blur overlay for modals and side panel */
