@@ -1045,29 +1045,38 @@ export default function App() {
   };
 
   const handleUpdateTodayDb = async (id, checked) => {
-    if (!token || !id) return;
+    if (!id) return;
     try {
-      await fetch(getApiUrl('/api/today'), {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ id, checked })
-      });
-    } catch(e) {}
+      const existing = await db.todayItems.get(id);
+      const record = { ...(existing || {}), id: id.toString(), checked: !!checked, updatedAt: new Date().toISOString() };
+      await db.todayItems.put(record);
+      await queueMutation('todayItems', 'update', id.toString(), record);
+    } catch(e) {
+      console.warn('Error updating todayItem in IndexedDB:', e);
+    }
   };
 
   const handleUpdateHabitDb = async (id, streak, checked_today, paused_until, archived, completed_at) => {
-      if (!token || !id) return;
-      try {
-        const payload = { id, streak, checked_today, paused_until };
-        if (archived !== undefined) payload.archived = archived;
-        if (completed_at !== undefined) payload.completed_at = completed_at;
-        await fetch(getApiUrl('/api/habits'), {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify(payload)
-        });
-      } catch(e) {}
-    };
+    if (!id) return;
+    try {
+      const existing = await db.habits.get(id);
+      const payload = {
+        ...(existing || {}),
+        id: id.toString(),
+        streak: streak !== undefined ? streak : existing?.streak || 0,
+        checked_today: checked_today !== undefined ? checked_today : existing?.checked_today || false,
+        paused_until: paused_until !== undefined ? paused_until : existing?.paused_until || null,
+        updatedAt: new Date().toISOString()
+      };
+      if (archived !== undefined) payload.archived = archived;
+      if (completed_at !== undefined) payload.completed_at = completed_at;
+
+      await db.habits.put(payload);
+      await queueMutation('habits', 'update', id.toString(), payload);
+    } catch(e) {
+      console.warn('Error updating habit in IndexedDB:', e);
+    }
+  };
 
   // Requirement 1: On initial login / app mount when isAuthenticated is true, fetch ONLY essential startup data
   useEffect(() => {
@@ -1299,22 +1308,17 @@ export default function App() {
     }));
   };
 
-  // Delete habit from DB and UI
-const handleDeleteHabitDb = async (id) => {
-      if (!token) return;
-      try {
-        await fetch(getApiUrl('/api/habits'), {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ id })
-        });
-        setHabits(prev => prev.filter(h => h.id !== id));
-        // Remove any linked today items
-        setTodayItems(prev => prev.filter(ti => ti.habitId !== id));
-      } catch (err) {
-        console.error('Failed to delete habit:', err);
-      }
-    };
+  // Delete habit from DB and UI (IndexedDB local first)
+  const handleDeleteHabitDb = async (id) => {
+    try {
+      await db.habits.delete(id);
+      await queueMutation('habits', 'delete', id.toString(), { is_deleted: true });
+      setHabits(prev => prev.filter(h => h.id !== id));
+      setTodayItems(prev => prev.filter(ti => ti.habitId !== id));
+    } catch (err) {
+      console.warn('Failed to delete habit locally:', err);
+    }
+  };
 
   // Handle PC/System vs explicit Dark/Light mode
   useEffect(() => {
