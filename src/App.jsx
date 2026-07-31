@@ -3105,7 +3105,7 @@ const handleDeleteHabitDb = async (id) => {
             )}
 
             {/* TAB CONTENT HOUSING BOX */}
-            <div className="glass-card tab-content-housing-box" style={{ padding: '32px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '20px', marginBottom: '24px', width: '100%', boxSizing: 'border-box' }}>
+            <div className="glass-card tab-content-housing-box">
               
               {/* 0) TODAY DAILY ROUTINE & HABITS CHECKLIST (Ultra-neat & clean UI) */}
               {activeTab === 'today' && (
