@@ -25,7 +25,7 @@ import { todayKey, localTimeZone, getWeekDays, isHabitScheduledOnDay, ALL_WEEK_D
 import WaterReminder from './components/WaterReminder';
 import TabErrorBoundary from './components/TabErrorBoundary';
 import db from './db/db';
-import { initSyncListeners, queueMutation, triggerSync } from './db/syncEngine';
+import { initSyncListeners, queueMutation, setSyncUser, triggerSync } from './db/syncEngine';
 import SyncStatusIndicator from './components/SyncStatusIndicator';
 
 const getFormattedDateTitle = (dateStr) => {
@@ -101,6 +101,15 @@ const safeStorage = {
         window.localStorage.clear();
       }
     } catch (e) {}
+  }
+};
+
+const getTokenUserId = (token) => {
+  try {
+    const payload = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(atob(payload)).userId;
+  } catch {
+    return null;
   }
 };
 
@@ -184,30 +193,67 @@ export default function App() {
 
   // Initialize Offline-First Sync Engine & Load Local Records from IndexedDB
   useEffect(() => {
-    initSyncListeners();
+    let stopSyncListeners;
 
     const loadLocalRecords = async () => {
       try {
         const localHabits = await db.habits.toArray();
-        if (localHabits.length > 0) setHabits(localHabits);
+        if (localHabits.length > 0) {
+          setHabits(localHabits.map(h => ({
+            ...h,
+            title: h.title || h.label,
+            checkedToday: h.checkedToday !== undefined ? h.checkedToday : !!h.checked_today,
+            customDays: h.customDays || h.custom_days,
+            intervalDays: h.intervalDays !== undefined ? h.intervalDays : h.interval_days,
+            startDate: h.startDate || h.start_date,
+            pausedUntil: h.pausedUntil || h.paused_until
+          })));
+        }
 
         const localTodayItems = await db.todayItems.toArray();
-        if (localTodayItems.length > 0) setTodayItems(localTodayItems);
+        if (localTodayItems.length > 0) {
+          setTodayItems(localTodayItems.map(ti => ({
+            ...ti,
+            habitId: ti.habitId || ti.habit_id,
+            completed: ti.completed !== undefined ? ti.completed : !!ti.completed
+          })));
+        }
 
         const localTransactions = await db.transactions.toArray();
         if (localTransactions.length > 0) setTransactions(localTransactions);
 
         const localWorkouts = await db.workouts.toArray();
-        if (localWorkouts.length > 0) setWorkouts(localWorkouts);
+        if (localWorkouts.length > 0) {
+          setWorkouts(localWorkouts.map(w => ({
+            ...w,
+            durationMins: w.durationMins !== undefined ? w.durationMins : w.duration_mins
+          })));
+        }
 
         const localBodyStats = await db.bodyStats.toArray();
-        if (localBodyStats.length > 0) setBodyStats(localBodyStats);
+        if (localBodyStats.length > 0) {
+          setBodyStats(localBodyStats.map(s => ({
+            ...s,
+            targetWeight: s.targetWeight !== undefined ? s.targetWeight : s.target_weight
+          })));
+        }
 
         const localSleepLogs = await db.sleepLogs.toArray();
-        if (localSleepLogs.length > 0) setSleepLogs(localSleepLogs);
+        if (localSleepLogs.length > 0) {
+          setSleepLogs(localSleepLogs.map(sl => ({
+            ...sl,
+            sleep_time: sl.sleep_time || sl.sleepTime,
+            wake_time: sl.wake_time || sl.wakeTime
+          })));
+        }
 
         const localNotes = await db.notes.toArray();
-        if (localNotes.length > 0) setNotesList(localNotes);
+        if (localNotes.length > 0) {
+          setNotesList(localNotes.map(n => ({
+            ...n,
+            shareWithAi: n.shareWithAi !== undefined ? n.shareWithAi : !!n.share_with_ai
+          })));
+        }
 
         const localEvents = await db.calendarEvents.toArray();
         if (localEvents.length > 0) setCalendarEvents(localEvents);
@@ -216,7 +262,11 @@ export default function App() {
       }
     };
 
-    loadLocalRecords();
+    // Do this before reading cache: a phone can have more than one account.
+    setSyncUser(getTokenUserId(safeStorage.getItem('token'))).then(() => {
+      loadLocalRecords();
+      stopSyncListeners = initSyncListeners();
+    });
 
     const handleSyncComplete = () => {
       loadLocalRecords();
@@ -225,6 +275,7 @@ export default function App() {
 
     return () => {
       window.removeEventListener('syncComplete', handleSyncComplete);
+      stopSyncListeners?.();
     };
   }, []);
 
@@ -409,10 +460,13 @@ export default function App() {
         if (savedThemeMode) safeStorage.setItem('themeMode', savedThemeMode);
         if (savedThemeColor) safeStorage.setItem('themeColor', savedThemeColor);
 
+        await setSyncUser(data.user?.id || getTokenUserId(data.token));
         resetLoadedTabs();
         safeStorage.setItem('token', data.token);
         setToken(data.token);
         setIsAuthenticated(true);
+        // Login is also the first chance for a new phone to download its data.
+        triggerSync(true);
         if (data.user && data.user.ai_name) setAiName(data.user.ai_name);
         setAuthForm({ name: '', handle: '', email: '', password: '', phone: '' });
         navigate('dashboard', '/dashboard');

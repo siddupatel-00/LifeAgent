@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, X, Trash2, Edit2, Moon, Clock, Calendar, Activity, Filter } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { format } from 'date-fns';
 import { db } from '../db/db';
 import { queueMutation } from '../db/syncEngine';
 import { todayKey } from '../utils/date';

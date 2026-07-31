@@ -4,6 +4,23 @@ import { getApiUrl } from '../utils/apiUrl';
 
 let isSyncing = false;
 const listeners = new Set();
+const USER_DATA_TABLES = ['habits', 'todayItems', 'transactions', 'workouts', 'bodyStats', 'sleepLogs', 'notes', 'calendarEvents', 'aiMessages'];
+
+// IndexedDB is shared by every account that signs in on this phone. Keep its
+// contents tied to the active account so one account can never see another
+// account's cached data.
+export const setSyncUser = async (userId) => {
+  const nextUserId = userId ? String(userId) : null;
+  const current = await db.metaState.get('activeUserId');
+  if (current?.value === nextUserId) return;
+
+  await db.transaction('rw', ...USER_DATA_TABLES.map(name => db[name]), db.syncQueue, db.metaState, async () => {
+    await Promise.all(USER_DATA_TABLES.map(name => db[name].clear()));
+    await db.syncQueue.clear();
+    await db.metaState.clear();
+    if (nextUserId) await db.metaState.put({ key: 'activeUserId', value: nextUserId });
+  });
+};
 
 export const getSyncStatus = async () => {
   if (typeof window !== 'undefined' && !navigator.onLine) {
@@ -171,22 +188,32 @@ export const triggerSync = async (forcePull = false) => {
 export const initSyncListeners = () => {
   if (typeof window === 'undefined') return;
 
-  window.addEventListener('online', () => {
+  const onOnline = () => {
     notifyStatusChange();
     checkDailySyncFlag().then(() => triggerSync(true));
-  });
-  window.addEventListener('offline', () => {
+  };
+  const onOffline = () => {
     notifyStatusChange();
-  });
-  window.addEventListener('focus', () => {
+  };
+  const onFocus = () => {
     checkDailySyncFlag().then(() => triggerSync(true));
-  });
+  };
+  window.addEventListener('online', onOnline);
+  window.addEventListener('offline', onOffline);
+  window.addEventListener('focus', onFocus);
 
   // Check every hour for midnight day rollover
-  setInterval(() => {
+  const interval = setInterval(() => {
     checkDailySyncFlag().then(() => triggerSync(true));
   }, 3600000);
 
   // Initial trigger on app launch
   checkDailySyncFlag().then(() => triggerSync(true));
+
+  return () => {
+    clearInterval(interval);
+    window.removeEventListener('online', onOnline);
+    window.removeEventListener('offline', onOffline);
+    window.removeEventListener('focus', onFocus);
+  };
 };
