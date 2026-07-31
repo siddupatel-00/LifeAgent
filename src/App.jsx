@@ -2936,7 +2936,7 @@ const handleDeleteHabitDb = async (id) => {
           {/* MAIN RIGHT AREA (MeraBaazar layout without Verified Pro, Live, or top Log Out) */}
           <section className={`main-layout-section ${activeTab === 'ai' ? 'ai-tab-active' : ''}`} style={{ flex: 1, height: '100vh', padding: '24px 16px', overflowY: activeTab === 'ai' ? 'hidden' : 'auto' }}>
             
-            <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px', position: 'relative', zIndex: 100000 }}>
+            <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px', position: 'relative', zIndex: 10000 }}>
               <div>
                 {activeTab === 'today' ? (
                   <>
@@ -2963,7 +2963,7 @@ const handleDeleteHabitDb = async (id) => {
               </div>
 
               {!isAiSidePanelOpen && (
-                <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end', position: 'relative', zIndex: 100001 }}>
+                <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                   {activeTab !== 'ai' && (
                     <button
                       onClick={() => setIsAiSidePanelOpen(!isAiSidePanelOpen)}
@@ -2982,10 +2982,10 @@ const handleDeleteHabitDb = async (id) => {
                     </button>
                   )}
 
-                  <div style={{ position: 'relative', zIndex: 100002 }} ref={themeDropdownRef}>
+                  <div ref={themeDropdownRef} style={{ position: 'relative', zIndex: 10001 }}>
                     <button 
                       className="theme-toggle-btn"
-                      style={{ padding: '8px 14px', borderRadius: '30px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', cursor: 'pointer' }}
+                      style={{ padding: '8px 14px', borderRadius: '30px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}
                       onClick={() => setIsThemeMenuOpen(!isThemeMenuOpen)}
                       title="Change Theme Mode"
                     >
@@ -2996,61 +2996,22 @@ const handleDeleteHabitDb = async (id) => {
                     </button>
 
                     {isThemeMenuOpen && (
-                      <div 
-                        className="theme-dropdown-menu glass-panel" 
-                        style={{ 
-                          position: 'absolute',
-                          top: 'calc(100% + 8px)',
-                          right: 0, 
-                          left: 'auto', 
-                          minWidth: '160px',
-                          zIndex: 9999999,
-                          background: 'var(--bg-card)',
-                          border: '1px solid var(--border-color)',
-                          borderRadius: '16px',
-                          boxShadow: '0 16px 40px rgba(0,0,0,0.5)',
-                          padding: '6px',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '4px'
-                        }}
-                      >
+                      <div className="theme-dropdown-menu" style={{ right: 0, left: 'auto', minWidth: '150px' }}>
                         <button 
                           className={`theme-dropdown-item ${themeMode === 'dark' ? 'active' : ''}`}
                           onClick={() => { setThemeMode('dark'); setIsThemeMenuOpen(false); }}
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: '10px',
-                            padding: '10px 14px', borderRadius: '10px', border: 'none',
-                            background: themeMode === 'dark' ? 'var(--accent-blue-dim)' : 'transparent',
-                            color: themeMode === 'dark' ? 'var(--accent-blue)' : 'var(--text-main)',
-                            fontSize: '0.88rem', fontWeight: themeMode === 'dark' ? 800 : 600, cursor: 'pointer', textAlign: 'left'
-                          }}
                         >
                           <Moon size={14} /> Dark Mode
                         </button>
                         <button 
                           className={`theme-dropdown-item ${themeMode === 'light' ? 'active' : ''}`}
                           onClick={() => { setThemeMode('light'); setIsThemeMenuOpen(false); }}
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: '10px',
-                            padding: '10px 14px', borderRadius: '10px', border: 'none',
-                            background: themeMode === 'light' ? 'var(--accent-blue-dim)' : 'transparent',
-                            color: themeMode === 'light' ? 'var(--accent-blue)' : 'var(--text-main)',
-                            fontSize: '0.88rem', fontWeight: themeMode === 'light' ? 800 : 600, cursor: 'pointer', textAlign: 'left'
-                          }}
                         >
                           <Sun size={14} /> Light Mode
                         </button>
                         <button 
                           className={`theme-dropdown-item ${themeMode === 'pc' ? 'active' : ''}`}
                           onClick={() => { setThemeMode('pc'); setIsThemeMenuOpen(false); }}
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: '10px',
-                            padding: '10px 14px', borderRadius: '10px', border: 'none',
-                            background: themeMode === 'pc' ? 'var(--accent-blue-dim)' : 'transparent',
-                            color: themeMode === 'pc' ? 'var(--accent-blue)' : 'var(--text-main)',
-                            fontSize: '0.88rem', fontWeight: themeMode === 'pc' ? 800 : 600, cursor: 'pointer', textAlign: 'left'
-                          }}
                         >
                           <Monitor size={14} /> PC / System
                         </button>

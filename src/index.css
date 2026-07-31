@@ -323,17 +323,22 @@ body {
   background: var(--bg-card-hover);
 }
 
+.dashboard-header {
+  position: relative;
+  z-index: 10000;
+}
+
 .theme-dropdown-menu {
   position: absolute;
-  top: 120%;
+  top: calc(100% + 8px);
   right: 0;
-  background: var(--bg-main);
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: 14px;
-  padding: 6px;
-  min-width: 160px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-  z-index: 200;
+  border-radius: 16px;
+  padding: 8px;
+  min-width: 170px;
+  box-shadow: 0 16px 44px rgba(0,0,0,0.45);
+  z-index: 999999;
   display: flex;
   flex-direction: column;
   gap: 4px;
