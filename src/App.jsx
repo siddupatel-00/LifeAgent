@@ -4132,7 +4132,6 @@ export default function App() {
                                 setNewHabitData({ title: '', category: '', target: '', challengeMode: false, challengeDays: 30, durationMode: 'preset', frequency: 'daily', customDays: ['Mon', 'Wed', 'Fri'] });
                                 setCustomPillarInput('');
                                 setIsAddHabitModalOpen(false);
-                              }
                             } catch (err) {
                               console.error(err);
                             }
