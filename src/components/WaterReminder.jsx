@@ -15,7 +15,7 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
   const [hydrationLiters, setHydrationLiters] = useState(Number(statObj?.hydration || 0));
   const [targetGoal, setTargetGoal] = useState(() => {
     const saved = safeStorage.getItem('water_target_goal');
-    return saved && Number(saved) > 0 ? Number(saved) : null;
+    return saved && Number(saved) > 0 ? Number(saved) : 2.5;
   });
 
   const [waterTimeframe, setWaterTimeframe] = useState('7d');
@@ -56,7 +56,7 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
   const [goalInputError, setGoalInputError] = useState('');
 
   const [isEditingTarget, setIsEditingTarget] = useState(false);
-  const [targetGoalInput, setTargetGoalInput] = useState(targetGoal != null ? targetGoal.toString() : '');
+  const [targetGoalInput, setTargetGoalInput] = useState(targetGoal != null ? targetGoal.toString() : '2.5');
 
   // Custom Quick Presets
   const [presets, setPresets] = useState(DEFAULT_PRESETS);
@@ -69,7 +69,7 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
   const [reminderIntervalMinutes, setReminderIntervalMinutes] = useState(60);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [modalTargetGoal, setModalTargetGoal] = useState(targetGoal != null ? targetGoal.toString() : '');
+  const [modalTargetGoal, setModalTargetGoal] = useState(targetGoal != null ? targetGoal.toString() : '2.5');
   const [modalReminderInterval, setModalReminderInterval] = useState(reminderIntervalMinutes.toString());
   const [modalCustomInterval, setModalCustomInterval] = useState('');
 
@@ -87,7 +87,7 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
   };
 
   const handleSaveAllSettings = async () => {
-    const newTarget = parseFloat(modalTargetGoal) || 3.0;
+    const newTarget = parseFloat(modalTargetGoal) || 2.5;
     const newInterval = parseInt(modalReminderInterval, 10) || 60;
     
     setTargetGoal(newTarget);
@@ -127,7 +127,7 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
     if (saved && Number(saved) > 0) {
       setTargetGoal(Number(saved));
     } else {
-      setTargetGoal(null);
+      setTargetGoal(prev => (prev && prev > 0) ? prev : 2.5);
     }
   }, [todayStat, userProfile?.timezone]);
 
