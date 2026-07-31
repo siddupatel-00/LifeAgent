@@ -4131,56 +4131,65 @@ export default function App() {
                             const iDays = freq === 'custom' ? Number(newHabitData.intervalDays || newHabitData.interval_days || 0) : 0;
 
                             try {
-                              const res = await fetch(getApiUrl('/api/habits'), {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                body: JSON.stringify({ 
-                                  label: newHabitData.title.trim(), 
-                                  category: finalCategory, 
-                                  target: newHabitData.target.trim() || 'Daily',
-                                  frequency: freq,
-                                  custom_days: cDays,
-                                  interval_days: iDays
-                                })
-                              });
+                              const newId = Date.now() + Math.floor(Math.random() * 1000);
+                              const nowIso = new Date().toISOString();
+                              const dateStr = nowIso.split('T')[0];
 
-                              if (res.ok) {
-                                const saved = await res.json();
-                                setHabits(prev => [...prev, {
-                                  id: saved.id,
-                                  title: saved.label,
-                                  category: saved.category,
-                                  streak: saved.streak || 0,
-                                  target: saved.target || 'Daily',
-                                  checkedToday: false,
-                                  startDate: saved.start_date || new Date().toISOString().split('T')[0],
-                                  start_date: saved.start_date || new Date().toISOString().split('T')[0],
-                                  frequency: saved.frequency || freq,
-                                  customDays: saved.custom_days || cDays,
-                                  custom_days: saved.custom_days || cDays,
-                                  intervalDays: saved.interval_days || iDays,
-                                  interval_days: saved.interval_days || iDays
-                                }]);
+                              const habitRecord = {
+                                id: newId,
+                                title: newHabitData.title.trim(),
+                                category: finalCategory,
+                                target: newHabitData.target.trim() || 'Daily',
+                                frequency: freq,
+                                custom_days: cDays,
+                                interval_days: iDays,
+                                streak: 0,
+                                start_date: dateStr,
+                                is_deleted: 0,
+                                updatedAt: nowIso
+                              };
 
-                                try {
-                                  const todayRes = await fetch(getApiUrl('/api/today'), {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                    body: JSON.stringify({
-                                      label: newHabitData.title.trim(),
-                                      category: finalCategory,
-                                      time: '',
-                                      habit_id: saved.id,
-                                      date: todayKey(userProfile.timezone)
-                                    })
-                                  });
-                                  if (todayRes.ok) {
-                                    const todayData = await todayRes.json();
-                                    setTodayItems(prev => [...prev, { id: todayData.id, title: todayData.label, category: todayData.category, time: todayData.time, checked: false, habitId: saved.id }]);
-                                  }
-                                } catch (linkErr) {
-                                  console.error('Failed to create linked today item:', linkErr);
-                                }
+                              await db.habits.put(habitRecord);
+                              await queueMutation('habits', 'create', newId.toString(), habitRecord);
+
+                              const newTodayId = Date.now() + Math.floor(Math.random() * 1000) + 1;
+                              const todayRecord = {
+                                id: newTodayId,
+                                title: habitRecord.title,
+                                category: habitRecord.category,
+                                habit_id: newId,
+                                time: '',
+                                date: todayKey(userProfile.timezone),
+                                is_deleted: 0,
+                                updatedAt: nowIso
+                              };
+                              await db.todayItems.put(todayRecord);
+                              await queueMutation('todayItems', 'create', newTodayId.toString(), todayRecord);
+
+                              setHabits(prev => [...prev, {
+                                id: newId,
+                                title: habitRecord.title,
+                                category: habitRecord.category,
+                                streak: 0,
+                                target: habitRecord.target,
+                                checkedToday: false,
+                                startDate: dateStr,
+                                start_date: dateStr,
+                                frequency: freq,
+                                customDays: cDays,
+                                custom_days: cDays,
+                                intervalDays: iDays,
+                                interval_days: iDays
+                              }]);
+
+                              setTodayItems(prev => [...prev, { 
+                                id: newTodayId, 
+                                title: todayRecord.title, 
+                                category: todayRecord.category, 
+                                time: todayRecord.time, 
+                                checked: false, 
+                                habitId: newId 
+                              }]);
 
                                 setNewHabitData({ title: '', category: '', target: '', challengeMode: false, challengeDays: 30, durationMode: 'preset', frequency: 'daily', customDays: ['Mon', 'Wed', 'Fri'] });
                                 setCustomPillarInput('');
@@ -4732,26 +4741,28 @@ export default function App() {
                               const iDays = freq === 'custom' ? Number(editingHabitData.intervalDays || editingHabitData.interval_days || 0) : 0;
 
                               try {
-                                if (token) {
-                                  const res = await fetch(getApiUrl('/api/habits'), {
-                                    method: 'PUT',
-                                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                    body: JSON.stringify({
-                                      id: editingHabitData.id,
-                                      label: editingHabitData.title,
-                                      category: finalCategory,
-                                      target: editingHabitData.target,
-                                      challenge_days: challengeDays,
-                                      frequency: freq,
-                                      custom_days: cDays,
-                                      interval_days: iDays
-                                    })
-                                  });
-                                  if (!res.ok) {
-                                    const errData = await res.json().catch(() => ({}));
-                                    throw new Error(errData.error || 'Failed to update habit');
-                                  }
+                                const payload = {
+                                  id: editingHabitData.id,
+                                  title: editingHabitData.title,
+                                  category: finalCategory,
+                                  target: editingHabitData.target,
+                                  challenge_days: challengeDays,
+                                  frequency: freq,
+                                  custom_days: cDays,
+                                  interval_days: iDays,
+                                  updatedAt: new Date().toISOString()
+                                };
+
+                                // Update IndexedDB first
+                                const existingHabit = await db.habits.get(editingHabitData.id);
+                                if (existingHabit) {
+                                  await db.habits.update(editingHabitData.id, payload);
+                                } else {
+                                  await db.habits.put(payload);
                                 }
+
+                                // Queue mutation for server sync
+                                await queueMutation('habits', 'update', editingHabitData.id.toString(), payload);
 
                                 // Optimistically update local React state
                                 setHabits(prev => prev.map(h => h.id === editingHabitData.id ? {
