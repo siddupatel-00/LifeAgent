@@ -111,8 +111,11 @@ export default function App() {
     const token = safeStorage.getItem('token');
     const isAuth = !!token;
     
-    if (path.includes('/dashboard') || SLUG_TO_TAB[path]) return isAuth ? 'dashboard' : 'auth';
-    if (path.includes('/auth') || path.includes('/login')) return isAuth ? 'dashboard' : 'auth';
+    // Logged in users bypass landing page and land directly on dashboard (Today tab)
+    if (isAuth) return 'dashboard';
+
+    if (path.includes('/dashboard') || SLUG_TO_TAB[path]) return 'auth';
+    if (path.includes('/auth') || path.includes('/login')) return 'auth';
     if (path.includes('/waitlist')) return 'waitlist';
     if (path.includes('/contact')) return 'contact';
     
@@ -150,7 +153,7 @@ export default function App() {
       } else if (path.includes('/contact')) {
         setCurrentPage('contact');
       } else {
-        setCurrentPage('landing');
+        setCurrentPage(isAuth ? 'dashboard' : 'landing');
       }
     };
     window.addEventListener('popstate', handlePopState);
