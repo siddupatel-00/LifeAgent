@@ -1059,20 +1059,33 @@ input[type="checkbox"]:checked::after {
 
   /* Full screen mobile AI Chat & Section styling */
   section.ai-tab-active {
-    height: calc(100dvh - 75px) !important;
-    height: calc(100vh - 75px) !important;
-    max-height: calc(100dvh - 75px) !important;
+    height: 100dvh !important;
+    height: 100vh !important;
+    max-height: 100dvh !important;
+    max-height: 100vh !important;
     overflow: hidden !important;
     overflow-y: hidden !important;
-    padding-bottom: 0 !important;
+    padding-top: 12px !important;
+    padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px)) !important;
+    margin-bottom: 0 !important;
+    box-sizing: border-box !important;
     display: flex !important;
     flex-direction: column !important;
   }
 
+  .ai-tab-housing-container {
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    min-height: 0 !important;
+    height: 100% !important;
+  }
+
   .ai-chat-view {
     flex: 1 !important;
-    height: calc(100dvh - 85px) !important;
-    height: calc(100vh - 85px) !important;
+    height: 100% !important;
+    max-height: 100% !important;
     display: flex !important;
     flex-direction: column !important;
     overflow: hidden !important;
