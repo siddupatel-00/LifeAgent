@@ -3596,8 +3596,7 @@ const handleDeleteHabitDb = async (id) => {
                 <div className="ai-chat-view animate-entrance" style={{
                   display: 'flex',
                   flexDirection: 'column',
-                  height: 'calc(100vh - 170px)',
-                  maxHeight: 'calc(100vh - 130px)',
+                  height: 'calc(100vh - 118px)',
                   overflow: 'hidden',
                   background: 'var(--bg-card)',
                   borderRadius: '20px',

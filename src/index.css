@@ -1071,10 +1071,8 @@ input[type="checkbox"]:checked::after {
 
   .ai-chat-view {
     flex: 1 !important;
-    height: calc(100dvh - 140px) !important;
-    height: calc(100vh - 140px) !important;
-    max-height: calc(100dvh - 130px) !important;
-    max-height: calc(100vh - 130px) !important;
+    height: calc(100dvh - 85px) !important;
+    height: calc(100vh - 85px) !important;
     display: flex !important;
     flex-direction: column !important;
     overflow: hidden !important;
