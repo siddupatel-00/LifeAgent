@@ -2,6 +2,7 @@ import { safeStorage } from '../utils/safeStorage';
 import React, { useState, useEffect, useMemo } from 'react';
 import { Droplet, Bell, BellOff, Plus, RotateCcw, Clock, X, Edit2, Check, MoreVertical, Calendar } from 'lucide-react';
 import Modal from './Modal';
+import CustomSelect from './CustomSelect';
 import { todayKey } from '../utils/date';
 import { getApiUrl } from '../utils/apiConfig';
 
@@ -424,14 +425,6 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
         </div>
       </div>
 
-      {hydrationLiters === 0 && (
-        <div className="glass-card" style={{ textAlign: 'center', padding: '24px 20px', background: 'var(--bg-card)', borderRadius: '16px', border: '1px dashed var(--border-color)', marginBottom: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-          <Droplet size={32} style={{ color: 'var(--accent-blue)', opacity: 0.5 }} />
-          <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)' }}>No items logged yet</div>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', margin: 0 }}>No items logged yet. Click + to add your first entry</p>
-        </div>
-      )}
-
       {/* Quick Log Buttons Section */}
       <div style={{ marginBottom: '16px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
@@ -527,32 +520,19 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
           <h4 style={{ fontSize: '1.15rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
             <Calendar size={18} color="var(--accent-blue)" /> Hydration History
           </h4>
-          <div style={{ display: 'flex', gap: '6px', background: 'var(--bg-main)', padding: '4px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-            {[
-              { id: 'today', label: 'Today' },
-              { id: '7d', label: '7 Days' },
-              { id: '30d', label: '30 Days' },
-              { id: 'all', label: 'All Time' }
-            ].map(tf => (
-              <button
-                key={tf.id}
-                type="button"
-                onClick={() => setWaterTimeframe(tf.id)}
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  background: waterTimeframe === tf.id ? 'var(--accent-blue)' : 'transparent',
-                  color: waterTimeframe === tf.id ? 'var(--accent-text)' : 'var(--text-muted)',
-                  fontWeight: 700,
-                  fontSize: '0.8rem',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
-                }}
-              >
-                {tf.label}
-              </button>
-            ))}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-muted)' }}>Timeframe:</span>
+            <CustomSelect
+              value={waterTimeframe}
+              onChange={(e) => setWaterTimeframe(e.target.value)}
+              options={[
+                { value: 'today', label: 'Today' },
+                { value: '7d', label: 'Last 7 Days' },
+                { value: '30d', label: 'Last 30 Days' },
+                { value: 'all', label: 'All Time' }
+              ]}
+              style={{ minWidth: '150px', padding: '6px 14px', borderRadius: '30px' }}
+            />
           </div>
         </div>
 
