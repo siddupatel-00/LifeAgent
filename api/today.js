@@ -10,45 +10,62 @@ export default async function handler(req, res) {
   
   try {
     if (req.method === 'GET') {
-      // The client supplies its calendar date so a new day starts in its timezone.
       const clientDate = /^\d{4}-\d{2}-\d{2}$/.test(req.query?.client_date || '') ? req.query.client_date : null;
-      // Delete any today_items that belong to archived or deleted habits
-      await db.execute({
-        sql: `DELETE FROM today_items WHERE user_id = ? AND habit_id IS NOT NULL AND habit_id NOT IN (
-          SELECT id FROM habits WHERE user_id = ? AND (archived IS NULL OR archived = 0) AND (completed_at IS NULL OR completed_at = "")
-        )`,
-        args: [userId, userId]
+      const targetDate = clientDate || new Date().toISOString().split('T')[0];
+
+      // Fetch all habits for this user
+      const habitsRes = await db.execute({
+        sql: 'SELECT * FROM habits WHERE user_id = ?',
+        args: [userId]
       });
 
-      let items;
-      if (clientDate) {
-        items = await db.execute({ sql: 'SELECT * FROM today_items WHERE user_id = ? AND date = ?', args: [userId, clientDate] });
-      } else {
-        items = await db.execute({ sql: 'SELECT * FROM today_items WHERE user_id = ? AND date = date("now")', args: [userId] });
-      }
-      
-      const targetDate = clientDate || new Date().toISOString().split('T')[0];
-      const habits = await db.execute({ sql: 'SELECT * FROM habits WHERE user_id = ? AND (archived IS NULL OR archived = 0) AND (completed_at IS NULL OR completed_at = "")', args: [userId] });
-      const existingHabitIds = items.rows.filter(t => t.habit_id).map(t => t.habit_id);
-      
-      let needsRefetch = false;
-      for (const habit of habits.rows) {
-        if (habit.paused_until) continue;
-        if (existingHabitIds.includes(habit.id)) continue;
-        
+      const activeHabits = habitsRes.rows.filter(h => {
+        const isArchived = h.archived === 1 || h.archived === '1' || h.archived === true || h.archived === 'true';
+        const isCompleted = !!(h.completed_at && h.completed_at !== '' && h.completed_at !== 'null');
+        return !isArchived && !isCompleted;
+      });
+
+      const activeHabitIdStrings = activeHabits.map(h => String(h.id));
+
+      // Purge orphaned today_items that belong to archived or deleted habits
+      if (activeHabitIdStrings.length > 0) {
+        const placeholders = activeHabitIdStrings.map(() => '?').join(',');
         await db.execute({
-          sql: 'INSERT INTO today_items (user_id, label, category, time, habit_id, date) VALUES (?, ?, ?, ?, ?, ?)',
-          args: [userId, habit.label, habit.category, '', habit.id, targetDate]
+          sql: `DELETE FROM today_items WHERE user_id = ? AND habit_id IS NOT NULL AND habit_id NOT IN (${placeholders})`,
+          args: [userId, ...activeHabitIdStrings]
+        });
+      } else {
+        await db.execute({
+          sql: 'DELETE FROM today_items WHERE user_id = ? AND habit_id IS NOT NULL',
+          args: [userId]
+        });
+      }
+
+      // Fetch today_items for targetDate
+      let items = await db.execute({
+        sql: 'SELECT * FROM today_items WHERE user_id = ? AND date = ?',
+        args: [userId, targetDate]
+      });
+
+      const existingHabitIdSet = new Set(items.rows.filter(t => t.habit_id).map(t => String(t.habit_id)));
+      let needsRefetch = false;
+
+      for (const habit of activeHabits) {
+        if (habit.paused_until) continue;
+        if (existingHabitIdSet.has(String(habit.id))) continue;
+
+        await db.execute({
+          sql: 'INSERT INTO today_items (user_id, label, category, time, habit_id, date, checked) VALUES (?, ?, ?, ?, ?, ?, 0)',
+          args: [userId, habit.label, habit.category || '', '', habit.id, targetDate]
         });
         needsRefetch = true;
       }
-      
+
       if (needsRefetch) {
-        if (clientDate) {
-          items = await db.execute({ sql: 'SELECT * FROM today_items WHERE user_id = ? AND date = ?', args: [userId, clientDate] });
-        } else {
-          items = await db.execute({ sql: 'SELECT * FROM today_items WHERE user_id = ? AND date = date("now")', args: [userId] });
-        }
+        items = await db.execute({
+          sql: 'SELECT * FROM today_items WHERE user_id = ? AND date = ?',
+          args: [userId, targetDate]
+        });
       }
 
       return res.status(200).json(items.rows);

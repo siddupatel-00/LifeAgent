@@ -3109,11 +3109,27 @@ const handleDeleteHabitDb = async (id) => {
               
               {/* 0) TODAY DAILY ROUTINE & HABITS CHECKLIST (Ultra-neat & clean UI) */}
               {activeTab === 'today' && (() => {
-                const activeHabitIdMap = new Set((Array.isArray(habits) ? habits : []).filter(h => !h.archived && !h.completedAt).map(h => String(h.id)));
-                const activeTodayItems = (Array.isArray(todayItems) ? todayItems : []).filter(item => {
+                const activeHabits = (Array.isArray(habits) ? habits : []).filter(h => !h.archived && !h.completedAt);
+                const activeHabitIdMap = new Set(activeHabits.map(h => String(h.id)));
+                
+                const existingItems = (Array.isArray(todayItems) ? todayItems : []).filter(item => {
                   if (!item.habitId) return true;
                   return activeHabitIdMap.has(String(item.habitId));
                 });
+
+                const existingHabitIdSet = new Set(existingItems.filter(i => i.habitId).map(i => String(i.habitId)));
+                
+                const missingItems = activeHabits
+                  .filter(h => !h.pausedUntil && !existingHabitIdSet.has(String(h.id)))
+                  .map(h => ({
+                    id: `synced-${h.id}`,
+                    title: h.title,
+                    category: h.category || '',
+                    checked: !!h.checkedToday,
+                    habitId: h.id
+                  }));
+
+                const activeTodayItems = [...existingItems, ...missingItems];
                 return (
                 <TabErrorBoundary tabName="Today's Routine">
                 <div className="animate-entrance">
