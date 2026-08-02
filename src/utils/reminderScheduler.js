@@ -3,12 +3,39 @@
 // Works when app is killed or after reboot on native devices.
 
 import { LocalNotifications } from '@capacitor/local-notifications';
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
+
+const NativeAlarmScheduler = registerPlugin('NativeAlarmScheduler');
 
 const LAST_SCHEDULED_DAY_KEY = 'reminder_last_scheduled_day';
 
 // Web timer storage
 const webTimers = [];
+
+async function dispatchNotifications(notifications) {
+  if (!notifications || notifications.length === 0 || Capacitor.getPlatform() === 'web') return;
+
+  if (Capacitor.getPlatform() === 'android') {
+    for (const n of notifications) {
+      try {
+        await NativeAlarmScheduler.scheduleAlarm({
+          id: n.id,
+          title: n.title,
+          body: n.body,
+          timestamp: n.schedule.at.getTime(),
+        });
+      } catch (err) {
+        console.warn('[reminderScheduler] NativeAlarmScheduler error:', err);
+      }
+    }
+  }
+
+  try {
+    await LocalNotifications.schedule({ notifications });
+  } catch (err) {
+    console.warn('[reminderScheduler] LocalNotifications schedule error:', err);
+  }
+}
 
 function clearWebTimers(type) {
   if (type) {
@@ -240,8 +267,8 @@ export async function scheduleEventReminders(events, globalEnabled = true) {
     }
   }
 
-  if (notifications.length > 0 && Capacitor.getPlatform() !== 'web') {
-    await LocalNotifications.schedule({ notifications });
+  if (notifications.length > 0) {
+    await dispatchNotifications(notifications);
   }
 }
 
@@ -329,8 +356,8 @@ export async function scheduleHabitReminders(habitsOrObj, globalEnabled = true) 
     }
   }
 
-  if (notifications.length > 0 && Capacitor.getPlatform() !== 'web') {
-    await LocalNotifications.schedule({ notifications });
+  if (notifications.length > 0) {
+    await dispatchNotifications(notifications);
   }
 }
 
@@ -382,8 +409,8 @@ export async function scheduleWaterReminders({ enabled, startTime, endTime, inte
     }
   }
 
-  if (notifications.length > 0 && Capacitor.getPlatform() !== 'web') {
-    await LocalNotifications.schedule({ notifications });
+  if (notifications.length > 0) {
+    await dispatchNotifications(notifications);
   }
 }
 
@@ -422,8 +449,8 @@ export async function scheduleSleepReminders({ enabled, reminderTime }, globalEn
     }
   }
 
-  if (notifications.length > 0 && Capacitor.getPlatform() !== 'web') {
-    await LocalNotifications.schedule({ notifications });
+  if (notifications.length > 0) {
+    await dispatchNotifications(notifications);
   }
 }
 
@@ -464,8 +491,8 @@ export async function scheduleWorkoutReminders({ enabled, reminderTime, repeatRu
     }
   }
 
-  if (notifications.length > 0 && Capacitor.getPlatform() !== 'web') {
-    await LocalNotifications.schedule({ notifications });
+  if (notifications.length > 0) {
+    await dispatchNotifications(notifications);
   }
 }
 
@@ -518,8 +545,8 @@ export async function scheduleMorningSummaryReminders({ enabled, reminderTime, u
     }
   }
 
-  if (notifications.length > 0 && Capacitor.getPlatform() !== 'web') {
-    await LocalNotifications.schedule({ notifications });
+  if (notifications.length > 0) {
+    await dispatchNotifications(notifications);
   }
 }
 
