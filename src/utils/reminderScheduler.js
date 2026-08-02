@@ -1,11 +1,19 @@
 // src/utils/reminderScheduler.js
-// Uses Capacitor LocalNotifications exclusively (no setTimeout).
-// Works when app is killed or after reboot.
+// Uses Capacitor LocalNotifications on native mobile + Web Notification API fallback on web.
+// Works when app is killed or after reboot on native devices.
 
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Capacitor } from '@capacitor/core';
 
 const LAST_SCHEDULED_DAY_KEY = 'reminder_last_scheduled_day';
+
+// Web timer storage
+const webTimers = [];
+
+function clearWebTimers() {
+  webTimers.forEach(id => clearTimeout(id));
+  webTimers.length = 0;
+}
 
 // ─── Ensure Notification Channel on Android ─────────────────────────────────
 export async function ensureNotificationChannel() {
@@ -26,7 +34,14 @@ export async function ensureNotificationChannel() {
 
 // ─── Permission ──────────────────────────────────────────────────────────────
 export async function requestNotificationPermission() {
-  if (Capacitor.getPlatform() === 'web') return true;
+  if (Capacitor.getPlatform() === 'web') {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'granted') return true;
+      const perm = await Notification.requestPermission();
+      return perm === 'granted';
+    }
+    return false;
+  }
   try {
     await ensureNotificationChannel();
     const status = await LocalNotifications.checkPermissions();
@@ -39,12 +54,50 @@ export async function requestNotificationPermission() {
   }
 }
 
+// ─── Test Instant Notification ───────────────────────────────────────────────
+export async function testNotificationNow() {
+  const title = "🔔 LifeAgent Notification Test";
+  const body = "Success! Reminders & alarms are working correctly on your device.";
+
+  if (Capacitor.getPlatform() === 'web') {
+    if (!('Notification' in window)) {
+      alert("Browser notifications are not supported.");
+      return false;
+    }
+    if (Notification.permission !== 'granted') {
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') {
+        alert("Please enable notification permissions in your browser settings.");
+        return false;
+      }
+    }
+    setTimeout(() => {
+      new Notification(title, { body });
+    }, 3000);
+    return true;
+  }
+
+  // Native Android / iOS
+  const hasPermission = await requestNotificationPermission();
+  if (!hasPermission) return false;
+
+  const fireDate = new Date(Date.now() + 4000); // 4 seconds in future
+  await LocalNotifications.schedule({
+    notifications: [{
+      id: 999999,
+      title,
+      body,
+      schedule: { at: fireDate, allowWhileIdle: true },
+      channelId: 'default',
+    }]
+  });
+  return true;
+}
+
 // ─── Deterministic integer ID ─────────────────────────────────────────────────
-// Must fit in a 32-bit signed integer for Capacitor.
 export function makeNotifId(entityType, entityId, reminderId, dayOffset) {
   const typeMap = { event: 1, habit: 2, water: 3, sleep: 4, workout: 5, summary: 6 };
   const t = typeMap[entityType] || 7;
-  // Pack: (dayOffset 0-6) * 10_000_000 + t * 1_000_000 + (entityId % 1000) * 1000 + (reminderId % 1000)
   return (dayOffset * 10_000_000 + t * 1_000_000 + (Number(entityId) % 1000) * 1000 + (Number(reminderId) % 1000)) % 2_147_483_647;
 }
 
@@ -66,7 +119,6 @@ function parseTime(timeStr) {
 
 // ─── Build fire Date from event date + offset_minutes ────────────────────────
 function buildEventFireDate(eventDateStr, offsetMinutes) {
-  // eventDateStr: "YYYY-MM-DD"
   const parts = eventDateStr.split('-').map(Number);
   const d = new Date(parts[0], parts[1] - 1, parts[2], 0, 0, 0, 0);
   d.setMinutes(d.getMinutes() - offsetMinutes);
@@ -79,6 +131,19 @@ function buildDailyFireDate(dayOffset, hour, minute) {
   d.setDate(d.getDate() + dayOffset);
   d.setHours(hour, minute, 0, 0);
   return d;
+}
+
+// Helper: schedule web fallback
+function scheduleWebFallback(title, body, fireDate) {
+  if (Capacitor.getPlatform() !== 'web') return;
+  const delay = fireDate.getTime() - Date.now();
+  if (delay <= 0 || delay > 86400000) return; // max 24h for web timeout
+  const timerId = setTimeout(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+      new Notification(title, { body });
+    }
+  }, delay);
+  webTimers.push(timerId);
 }
 
 // ─── Cancel all notifications for an entity ──────────────────────────────────
@@ -102,7 +167,10 @@ export async function cancelEntityReminders(entityType, entityId) {
 
 // ─── Cancel all reminders of a given type (e.g., water, sleep) ───────────────
 export async function cancelAllOfType(entityType) {
-  if (Capacitor.getPlatform() === 'web') return;
+  if (Capacitor.getPlatform() === 'web') {
+    clearWebTimers();
+    return;
+  }
   try {
     const pending = await LocalNotifications.getPending();
     const toCancel = [];
@@ -122,7 +190,7 @@ export async function cancelAllOfType(entityType) {
 // ─── Schedule event reminders for next 7 days ────────────────────────────────
 export async function scheduleEventReminders(events, globalEnabled = true) {
   await cancelAllOfType('event');
-  if (!globalEnabled || Capacitor.getPlatform() === 'web') return;
+  if (!globalEnabled) return;
   const hasPermission = await requestNotificationPermission();
   if (!hasPermission) return;
 
@@ -139,19 +207,26 @@ export async function scheduleEventReminders(events, globalEnabled = true) {
       const diffDays = Math.floor((fireDate.getTime() - now) / 86400000);
       if (diffDays > 7) continue;
 
-      const id = makeNotifId('event', event.id, rem.id, 0);
-      notifications.push({
-        id,
-        title: `📅 ${event.title || 'Upcoming Event'}`,
-        body: rem.offset_minutes === 0 ? 'Event starting now!' : `Event in ${rem.offset_minutes} minutes`,
-        schedule: { at: fireDate, allowWhileIdle: true },
-        channelId: 'default',
-        extra: { entityType: 'event', entityId: event.id, reminderId: rem.id }
-      });
+      const title = `📅 ${event.title || 'Upcoming Event'}`;
+      const body = rem.offset_minutes === 0 ? 'Event starting now!' : `Event in ${rem.offset_minutes} minutes`;
+
+      if (Capacitor.getPlatform() === 'web') {
+        scheduleWebFallback(title, body, fireDate);
+      } else {
+        const id = makeNotifId('event', event.id, rem.id, 0);
+        notifications.push({
+          id,
+          title,
+          body,
+          schedule: { at: fireDate, allowWhileIdle: true },
+          channelId: 'default',
+          extra: { entityType: 'event', entityId: event.id, reminderId: rem.id }
+        });
+      }
     }
   }
 
-  if (notifications.length > 0) {
+  if (notifications.length > 0 && Capacitor.getPlatform() !== 'web') {
     await LocalNotifications.schedule({ notifications });
   }
 }
@@ -159,7 +234,7 @@ export async function scheduleEventReminders(events, globalEnabled = true) {
 // ─── Schedule habit reminders for next 7 days ─────────────────────────────────
 export async function scheduleHabitReminders(habits, globalEnabled = true) {
   await cancelAllOfType('habit');
-  if (!globalEnabled || Capacitor.getPlatform() === 'web') return;
+  if (!globalEnabled) return;
   const hasPermission = await requestNotificationPermission();
   if (!hasPermission) return;
 
@@ -174,26 +249,33 @@ export async function scheduleHabitReminders(habits, globalEnabled = true) {
       const t = parseTime(rem.reminder_time);
       if (!t) continue;
 
-      // Determine which days (next 7) this reminder fires
       const repeatRule = rem.repeat_rule ? (typeof rem.repeat_rule === 'string' ? JSON.parse(rem.repeat_rule) : rem.repeat_rule) : { type: 'daily' };
       for (let day = 0; day < 7; day++) {
         const fireDate = buildDailyFireDate(day, t.hour, t.minute);
         if (fireDate.getTime() <= now) continue;
         if (!isRepeatDayMatch(repeatRule, fireDate)) continue;
-        const id = makeNotifId('habit', habit.id, rem.id, day);
-        notifications.push({
-          id,
-          title: `✅ ${habit.title || habit.label || 'Habit Reminder'}`,
-          body: `Don't forget to complete your habit today!`,
-          schedule: { at: fireDate, allowWhileIdle: true },
-          channelId: 'default',
-          extra: { entityType: 'habit', entityId: habit.id, reminderId: rem.id }
-        });
+
+        const title = `✅ ${habit.title || habit.label || 'Habit Reminder'}`;
+        const body = "Don't forget to complete your habit today!";
+
+        if (Capacitor.getPlatform() === 'web') {
+          scheduleWebFallback(title, body, fireDate);
+        } else {
+          const id = makeNotifId('habit', habit.id, rem.id, day);
+          notifications.push({
+            id,
+            title,
+            body,
+            schedule: { at: fireDate, allowWhileIdle: true },
+            channelId: 'default',
+            extra: { entityType: 'habit', entityId: habit.id, reminderId: rem.id }
+          });
+        }
       }
     }
   }
 
-  if (notifications.length > 0) {
+  if (notifications.length > 0 && Capacitor.getPlatform() !== 'web') {
     await LocalNotifications.schedule({ notifications });
   }
 }
@@ -201,13 +283,13 @@ export async function scheduleHabitReminders(habits, globalEnabled = true) {
 // ─── Schedule water reminders ─────────────────────────────────────────────────
 export async function scheduleWaterReminders({ enabled, startTime, endTime, intervalMinutes }, globalEnabled = true) {
   await cancelAllOfType('water');
-  if (!enabled || !globalEnabled || Capacitor.getPlatform() === 'web') return;
+  if (!enabled || !globalEnabled) return;
   const hasPermission = await requestNotificationPermission();
   if (!hasPermission) return;
 
   const sTime = parseTime(startTime || '08:00');
   const eTime = parseTime(endTime || '22:00');
-  const interval = intervalMinutes || 60;
+  const interval = Number(intervalMinutes) || 60;
   if (!sTime || !eTime) return;
 
   const notifications = [];
@@ -221,15 +303,21 @@ export async function scheduleWaterReminders({ enabled, startTime, endTime, inte
     while (hour < eTime.hour || (hour === eTime.hour && minute <= eTime.minute)) {
       const fireDate = buildDailyFireDate(day, hour, minute);
       if (fireDate.getTime() > now) {
-        const id = makeNotifId('water', 1, slotId, day);
-        notifications.push({
-          id,
-          title: '💧 Hydration Reminder',
-          body: "Time to drink some water! Stay hydrated.",
-          schedule: { at: fireDate, allowWhileIdle: true },
-          channelId: 'default',
-          extra: { entityType: 'water', entityId: 1, reminderId: slotId }
-        });
+        const title = '💧 Hydration Reminder';
+        const body = "Time to drink some water! Stay hydrated.";
+        if (Capacitor.getPlatform() === 'web') {
+          scheduleWebFallback(title, body, fireDate);
+        } else {
+          const id = makeNotifId('water', 1, slotId, day);
+          notifications.push({
+            id,
+            title,
+            body,
+            schedule: { at: fireDate, allowWhileIdle: true },
+            channelId: 'default',
+            extra: { entityType: 'water', entityId: 1, reminderId: slotId }
+          });
+        }
       }
       slotId++;
       const totalMinutes = hour * 60 + minute + interval;
@@ -239,7 +327,7 @@ export async function scheduleWaterReminders({ enabled, startTime, endTime, inte
     }
   }
 
-  if (notifications.length > 0) {
+  if (notifications.length > 0 && Capacitor.getPlatform() !== 'web') {
     await LocalNotifications.schedule({ notifications });
   }
 }
@@ -247,7 +335,7 @@ export async function scheduleWaterReminders({ enabled, startTime, endTime, inte
 // ─── Schedule sleep reminder ──────────────────────────────────────────────────
 export async function scheduleSleepReminders({ enabled, reminderTime }, globalEnabled = true) {
   await cancelAllOfType('sleep');
-  if (!enabled || !globalEnabled || Capacitor.getPlatform() === 'web') return;
+  if (!enabled || !globalEnabled) return;
   const hasPermission = await requestNotificationPermission();
   if (!hasPermission) return;
 
@@ -260,18 +348,25 @@ export async function scheduleSleepReminders({ enabled, reminderTime }, globalEn
   for (let day = 0; day < 7; day++) {
     const fireDate = buildDailyFireDate(day, t.hour, t.minute);
     if (fireDate.getTime() <= now) continue;
-    const id = makeNotifId('sleep', 1, 1, day);
-    notifications.push({
-      id,
-      title: '😴 Bedtime Reminder',
-      body: "Time to wind down and get ready for bed!",
-      schedule: { at: fireDate, allowWhileIdle: true },
-      channelId: 'default',
-      extra: { entityType: 'sleep', entityId: 1, reminderId: 1 }
-    });
+
+    const title = '😴 Bedtime Reminder';
+    const body = "Time to wind down and get ready for bed!";
+    if (Capacitor.getPlatform() === 'web') {
+      scheduleWebFallback(title, body, fireDate);
+    } else {
+      const id = makeNotifId('sleep', 1, 1, day);
+      notifications.push({
+        id,
+        title,
+        body,
+        schedule: { at: fireDate, allowWhileIdle: true },
+        channelId: 'default',
+        extra: { entityType: 'sleep', entityId: 1, reminderId: 1 }
+      });
+    }
   }
 
-  if (notifications.length > 0) {
+  if (notifications.length > 0 && Capacitor.getPlatform() !== 'web') {
     await LocalNotifications.schedule({ notifications });
   }
 }
@@ -279,7 +374,7 @@ export async function scheduleSleepReminders({ enabled, reminderTime }, globalEn
 // ─── Schedule workout reminders ───────────────────────────────────────────────
 export async function scheduleWorkoutReminders({ enabled, reminderTime, repeatRule }, globalEnabled = true) {
   await cancelAllOfType('workout');
-  if (!enabled || !globalEnabled || Capacitor.getPlatform() === 'web') return;
+  if (!enabled || !globalEnabled) return;
   const hasPermission = await requestNotificationPermission();
   if (!hasPermission) return;
 
@@ -294,18 +389,25 @@ export async function scheduleWorkoutReminders({ enabled, reminderTime, repeatRu
     const fireDate = buildDailyFireDate(day, t.hour, t.minute);
     if (fireDate.getTime() <= now) continue;
     if (!isRepeatDayMatch(rule, fireDate)) continue;
-    const id = makeNotifId('workout', 1, 1, day);
-    notifications.push({
-      id,
-      title: '💪 Workout Reminder',
-      body: "Time to hit the gym! Don't skip today's workout.",
-      schedule: { at: fireDate, allowWhileIdle: true },
-      channelId: 'default',
-      extra: { entityType: 'workout', entityId: 1, reminderId: 1 }
-    });
+
+    const title = '💪 Workout Reminder';
+    const body = "Time to hit the gym! Don't skip today's workout.";
+    if (Capacitor.getPlatform() === 'web') {
+      scheduleWebFallback(title, body, fireDate);
+    } else {
+      const id = makeNotifId('workout', 1, 1, day);
+      notifications.push({
+        id,
+        title,
+        body,
+        schedule: { at: fireDate, allowWhileIdle: true },
+        channelId: 'default',
+        extra: { entityType: 'workout', entityId: 1, reminderId: 1 }
+      });
+    }
   }
 
-  if (notifications.length > 0) {
+  if (notifications.length > 0 && Capacitor.getPlatform() !== 'web') {
     await LocalNotifications.schedule({ notifications });
   }
 }
@@ -313,7 +415,7 @@ export async function scheduleWorkoutReminders({ enabled, reminderTime, repeatRu
 // ─── Schedule morning summary notifications ───────────────────────────────────
 export async function scheduleMorningSummaryReminders({ enabled, reminderTime, userName, calendarEvents }, globalEnabled = true) {
   await cancelAllOfType('summary');
-  if (!enabled || !globalEnabled || Capacitor.getPlatform() === 'web') return;
+  if (!enabled || !globalEnabled) return;
   const hasPermission = await requestNotificationPermission();
   if (!hasPermission) return;
 
@@ -341,18 +443,24 @@ export async function scheduleMorningSummaryReminders({ enabled, reminderTime, u
     } else {
       body = `Good morning ${name}! ${todaysEvents.length} events today, starting with ${todaysEvents[0].title}.`;
     }
-    const id = makeNotifId('summary', 1, 1, day);
-    notifications.push({
-      id,
-      title: '🌅 Morning Summary',
-      body,
-      schedule: { at: fireDate, allowWhileIdle: true },
-      channelId: 'default',
-      extra: { entityType: 'summary', entityId: 1, reminderId: 1 }
-    });
+
+    const title = '🌅 Morning Summary';
+    if (Capacitor.getPlatform() === 'web') {
+      scheduleWebFallback(title, body, fireDate);
+    } else {
+      const id = makeNotifId('summary', 1, 1, day);
+      notifications.push({
+        id,
+        title,
+        body,
+        schedule: { at: fireDate, allowWhileIdle: true },
+        channelId: 'default',
+        extra: { entityType: 'summary', entityId: 1, reminderId: 1 }
+      });
+    }
   }
 
-  if (notifications.length > 0) {
+  if (notifications.length > 0 && Capacitor.getPlatform() !== 'web') {
     await LocalNotifications.schedule({ notifications });
   }
 }

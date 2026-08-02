@@ -1790,107 +1790,131 @@ input[type="checkbox"]:checked::after {
 }
 
 .reminder-item {
-  background: rgba(255,255,255,0.04);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+  transition: border-color 0.2s ease;
+}
+.reminder-item:hover {
+  border-color: rgba(59, 130, 246, 0.3);
 }
 
 .reminder-item-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 10px;
+  flex-wrap: nowrap;
 }
 
 .reminder-toggle {
-  width: 36px;
-  height: 20px;
-  border-radius: 10px;
-  border: none;
+  width: 44px !important;
+  height: 24px !important;
+  min-width: 44px !important;
+  min-height: 24px !important;
+  border-radius: 12px !important;
+  border: none !important;
   cursor: pointer;
   position: relative;
   flex-shrink: 0;
-  transition: background 0.2s;
+  padding: 0 !important;
+  transition: background 0.25s ease, box-shadow 0.25s ease;
+  box-sizing: border-box;
 }
 .reminder-toggle::after {
   content: '';
   position: absolute;
-  width: 14px;
-  height: 14px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
-  background: #fff;
+  background: #ffffff;
   top: 3px;
-  transition: left 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  transition: left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .reminder-toggle.on {
-  background: var(--accent-blue);
+  background: #3b82f6 !important;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.35);
 }
-.reminder-toggle.on::after { left: 19px; }
+.reminder-toggle.on::after {
+  left: 23px !important;
+}
 .reminder-toggle.off {
-  background: var(--border-color);
+  background: rgba(255, 255, 255, 0.15) !important;
 }
-.reminder-toggle.off::after { left: 3px; }
+.reminder-toggle.off::after {
+  left: 3px !important;
+}
 
 .reminder-select,
 .reminder-time-input {
-  background: var(--bg-main);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  color: var(--text-main);
-  font-size: 13px;
-  padding: 4px 8px;
+  background: rgba(15, 23, 42, 0.8) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 10px !important;
+  color: #f8fafc !important;
+  font-size: 0.88rem !important;
+  font-weight: 600 !important;
+  padding: 8px 12px !important;
+  height: 40px !important;
   cursor: pointer;
   outline: none;
   flex: 1;
   min-width: 0;
+  color-scheme: dark;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 .reminder-select:focus,
 .reminder-time-input:focus {
-  border-color: var(--accent-blue);
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25) !important;
 }
 
 .reminder-delete-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 4px;
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
+  width: 36px;
+  height: 36px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #ef4444;
   cursor: pointer;
-  border-radius: 6px;
-  transition: color 0.2s, background 0.2s;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 .reminder-delete-btn:hover {
-  color: #ef4444;
-  background: rgba(239,68,68,0.1);
+  background: rgba(239, 68, 68, 0.25);
+  border-color: #ef4444;
+  transform: scale(1.05);
 }
 
 .reminder-day-chips {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
+  padding-top: 4px;
 }
 
 .reminder-day-chip {
-  padding: 3px 10px;
+  padding: 4px 12px;
   border-radius: 20px;
-  font-size: 11px;
+  font-size: 0.75rem;
   font-weight: 600;
-  border: 1px solid var(--border-color);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.15s ease;
 }
 .reminder-day-chip.selected {
-  background: var(--accent-blue);
-  border-color: var(--accent-blue);
+  background: #3b82f6;
+  border-color: #3b82f6;
   color: #fff;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
 }
 
 /* ─── Reminder Settings Row (used in Water/Sleep/Workout panels) ─── */

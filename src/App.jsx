@@ -5749,8 +5749,20 @@ const handleDeleteHabitDb = async (id) => {
             label="Reminders"
           />
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
-            <button className="secondary-btn" onClick={() => setEditHabitReminderId(null)}>Cancel</button>
-            <button className="blue-btn" onClick={() => handleSaveHabitReminders(editHabitReminderId)}>Save Reminders</button>
+            <button 
+              type="button"
+              onClick={() => setEditHabitReminderId(null)}
+              style={{ padding: '10px 18px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', color: 'var(--text-main)', fontSize: '0.88rem', fontWeight: 600, cursor: 'pointer' }}
+            >
+              Cancel
+            </button>
+            <button 
+              type="button"
+              onClick={() => handleSaveHabitReminders(editHabitReminderId)}
+              style={{ padding: '10px 20px', background: '#3b82f6', border: 'none', borderRadius: '10px', color: '#fff', fontSize: '0.88rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 14px rgba(59, 130, 246, 0.4)' }}
+            >
+              Save Reminders
+            </button>
           </div>
         </Modal>
       )}

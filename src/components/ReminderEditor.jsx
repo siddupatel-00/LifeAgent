@@ -11,6 +11,8 @@
 
 import React, { useState } from 'react';
 import { Plus, Trash2, Bell } from 'lucide-react';
+import { testNotificationNow } from '../utils/reminderScheduler';
+
 
 const OFFSET_OPTIONS = [
   { label: 'At event time', value: 0 },
@@ -87,9 +89,19 @@ export default function ReminderEditor({ reminders = [], onChange, mode = 'offse
 
   return (
     <div className="reminder-editor">
-      <div className="reminder-editor-header">
+      <div className="reminder-editor-header" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         <Bell size={16} />
-        <span className="reminder-editor-label">{label}</span>
+        <span className="reminder-editor-label" style={{ flex: 1 }}>{label}</span>
+        <button
+          type="button"
+          onClick={async () => {
+            const ok = await testNotificationNow();
+            if (ok) alert("⚡ Test alarm scheduled! Notification will fire in 4 seconds.");
+          }}
+          style={{ background: 'var(--accent-blue-dim, rgba(59, 130, 246, 0.12))', color: 'var(--accent-blue, #3b82f6)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '8px', padding: '5px 10px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+        >
+          ⚡ Test Alarm
+        </button>
         {(!maxReminders || list.length < maxReminders) && (
           <button className="reminder-add-btn" onClick={addReminder} type="button">
             <Plus size={14} /> Add
