@@ -1097,8 +1097,6 @@ export default function App() {
   // ─── Regenerate ALL Capacitor reminders (on data load + daily rollover) ─────
   useEffect(() => {
     if (!isAuthenticated) return;
-    // Only run when we have loaded data (avoid running on empty state)
-    if (!habits.length && !calendarEvents.length) return;
 
     const globalEnabled = userProfile?.remindersGlobalEnabled !== false;
     regenerateAllReminders({
@@ -1141,7 +1139,8 @@ export default function App() {
   // ─── Save habit reminders ──────────────────────────────────────────────────
   const handleSaveHabitReminders = async (habitId) => {
     const updatedReminders = editHabitReminderList;
-    setHabits(prev => prev.map(h => h.id === habitId ? { ...h, reminders: updatedReminders } : h));
+    const nextHabits = habits.map(h => h.id === habitId ? { ...h, reminders: updatedReminders } : h);
+    setHabits(nextHabits);
     setEditHabitReminderId(null);
     // Persist to API via existing PUT /api/habits endpoint
     try {
@@ -1156,12 +1155,12 @@ export default function App() {
     } catch (e) {
       console.error('Failed to save habit reminders:', e);
     }
-    // Reschedule just habit notifications
+    // Reschedule habit notifications
     const globalEnabled = userProfile?.remindersGlobalEnabled !== false;
-    const allHabits = habits.map(h => h.id === habitId ? { ...h, reminders: updatedReminders } : h);
-    scheduleHabitReminders(allHabits, globalEnabled).catch(console.error);
+    await scheduleHabitReminders(nextHabits, globalEnabled).catch(console.error);
     showToast?.('Habit reminders saved!', 'success');
   };
+
 
 
   // Universal sync helpers between Today routine and Daily Works (habits)
