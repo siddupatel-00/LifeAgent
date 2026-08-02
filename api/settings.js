@@ -48,7 +48,7 @@ export default async function handler(req, res) {
       
       let userSettings = { timezone: 'UTC', chat_reset_time: '00:00', last_chat_reset: null, workout_split_type: 'weekly', workout_templates: null, week_start_day: 'Monday' };
       try {
-        const settingsResult = await db.execute({ sql: 'SELECT timezone, chat_reset_time, last_chat_reset, workout_split_type, workout_templates, week_start_day FROM user_settings WHERE user_id = ?', args: [userId] });
+        const settingsResult = await db.execute({ sql: 'SELECT timezone, chat_reset_time, last_chat_reset, workout_split_type, workout_templates, week_start_day, water_target_goal, water_reminder_interval, water_reminder_enabled FROM user_settings WHERE user_id = ?', args: [userId] });
         if (settingsResult.rows.length > 0) {
           userSettings = { ...userSettings, ...settingsResult.rows[0] };
         }
@@ -105,6 +105,9 @@ export default async function handler(req, res) {
       
       const workout_split_type = body.workout_split_type;
       const workout_templates = body.workout_templates;
+      const water_target_goal = body.water_target_goal;
+      const water_reminder_interval = body.water_reminder_interval;
+      const water_reminder_enabled = body.water_reminder_enabled !== undefined ? (body.water_reminder_enabled ? 1 : 0) : undefined;
       
       const currentUserReq = await db.execute({ sql: 'SELECT * FROM users WHERE id = ?', args: [userId] });
       const current = currentUserReq.rows[0] || {};
@@ -146,18 +149,21 @@ export default async function handler(req, res) {
         ]
       });
 
-      const currentSetReq = await db.execute({ sql: 'SELECT timezone, chat_reset_time, workout_split_type, workout_templates, week_start_day FROM user_settings WHERE user_id = ?', args: [userId] });
+      const currentSetReq = await db.execute({ sql: 'SELECT timezone, chat_reset_time, workout_split_type, workout_templates, week_start_day, water_target_goal, water_reminder_interval, water_reminder_enabled FROM user_settings WHERE user_id = ?', args: [userId] });
       const currentSet = currentSetReq.rows.length > 0 ? currentSetReq.rows[0] : { timezone: 'UTC', chat_reset_time: '00:00', workout_split_type: 'weekly', workout_templates: null, week_start_day: 'Monday' };
 
       await db.execute({
-        sql: 'INSERT INTO user_settings (user_id, timezone, chat_reset_time, workout_split_type, workout_templates, week_start_day) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (user_id) DO UPDATE SET timezone = excluded.timezone, chat_reset_time = excluded.chat_reset_time, workout_split_type = excluded.workout_split_type, workout_templates = excluded.workout_templates, week_start_day = excluded.week_start_day',
+        sql: 'INSERT INTO user_settings (user_id, timezone, chat_reset_time, workout_split_type, workout_templates, week_start_day, water_target_goal, water_reminder_interval, water_reminder_enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (user_id) DO UPDATE SET timezone = excluded.timezone, chat_reset_time = excluded.chat_reset_time, workout_split_type = excluded.workout_split_type, workout_templates = excluded.workout_templates, week_start_day = excluded.week_start_day, water_target_goal = excluded.water_target_goal, water_reminder_interval = excluded.water_reminder_interval, water_reminder_enabled = excluded.water_reminder_enabled',
         args: [
           userId, 
           timezone !== undefined ? timezone : currentSet.timezone, 
           chat_reset_time !== undefined ? chat_reset_time : currentSet.chat_reset_time,
           workout_split_type !== undefined ? workout_split_type : currentSet.workout_split_type,
           workout_templates !== undefined ? workout_templates : currentSet.workout_templates,
-          week_start_day !== undefined ? week_start_day : (currentSet.week_start_day || 'Monday')
+          week_start_day !== undefined ? week_start_day : (currentSet.week_start_day || 'Monday'),
+          water_target_goal !== undefined ? water_target_goal : (currentSet.water_target_goal !== undefined ? currentSet.water_target_goal : 2.5),
+          water_reminder_interval !== undefined ? water_reminder_interval : (currentSet.water_reminder_interval !== undefined ? currentSet.water_reminder_interval : 60),
+          water_reminder_enabled !== undefined ? water_reminder_enabled : (currentSet.water_reminder_enabled !== undefined ? currentSet.water_reminder_enabled : 0)
         ]
       });
       return res.status(200).json({ success: true });

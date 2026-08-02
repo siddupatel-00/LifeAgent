@@ -124,13 +124,28 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
       : (todayStat?.date ? (todayStat.date === todayStr ? todayStat : null) : todayStat);
     setHydrationLiters(Number(currentStat?.hydration || 0));
 
-    const saved = safeStorage.getItem('water_target_goal');
-    if (saved && Number(saved) > 0) {
-      setTargetGoal(Number(saved));
+    if (userProfile?.water_target_goal) {
+      setTargetGoal(userProfile.water_target_goal);
+      setModalTargetGoal(userProfile.water_target_goal.toString());
     } else {
-      setTargetGoal(prev => (prev && prev > 0) ? prev : 2.5);
+      const saved = safeStorage.getItem('water_target_goal');
+      if (saved && Number(saved) > 0) {
+        setTargetGoal(Number(saved));
+        setModalTargetGoal(saved);
+      } else {
+        setTargetGoal(prev => (prev && prev > 0) ? prev : 2.5);
+      }
     }
-  }, [todayStat, userProfile?.timezone]);
+
+    if (userProfile?.water_reminder_interval) {
+      setReminderIntervalMinutes(userProfile.water_reminder_interval);
+      setModalReminderInterval(userProfile.water_reminder_interval.toString());
+    }
+    
+    if (userProfile?.water_reminder_enabled !== undefined) {
+      setIsReminderEnabled(!!userProfile.water_reminder_enabled);
+    }
+  }, [todayStat, userProfile]);
 
   // Handle Reminder Timer
   useEffect(() => {
