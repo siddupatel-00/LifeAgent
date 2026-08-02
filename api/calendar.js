@@ -36,10 +36,10 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      const { title, date, end_date, color, reminders } = req.body;
+      const { title, date, time, end_date, color, reminders } = req.body;
       const result = await db.execute({
-        sql: 'INSERT INTO calendar_events (user_id, title, date, end_date, color, status) VALUES (?, ?, ?, ?, ?, ?)',
-        args: [userId, title, date, end_date || null, color || '#3b82f6', 'upcoming']
+        sql: 'INSERT INTO calendar_events (user_id, title, date, time, end_date, color, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        args: [userId, title, date, time || '', end_date || null, color || '#3b82f6', 'upcoming']
       });
       const newEventId = Number(result.lastInsertRowid);
 
@@ -52,16 +52,31 @@ export default async function handler(req, res) {
         }
       }
 
-      return res.status(201).json({ id: newEventId, title, date, end_date, color, status: 'upcoming' });
+      return res.status(201).json({ id: newEventId, title, date, time: time || '', end_date, color, status: 'upcoming' });
     }
 
     if (req.method === 'PUT') {
-      const { id, status, reminders } = req.body;
+      const { id, title, date, time, status, reminders } = req.body;
       if (status !== undefined) {
         await db.execute({
           sql: 'UPDATE calendar_events SET status = ? WHERE id = ? AND user_id = ?',
           args: [status, id, userId]
         });
+      }
+
+      if (time !== undefined || title !== undefined || date !== undefined) {
+        let updateFields = [];
+        let updateArgs = [];
+        if (title !== undefined) { updateFields.push('title = ?'); updateArgs.push(title); }
+        if (date !== undefined) { updateFields.push('date = ?'); updateArgs.push(date); }
+        if (time !== undefined) { updateFields.push('time = ?'); updateArgs.push(time); }
+        if (updateFields.length > 0) {
+          updateArgs.push(id, userId);
+          await db.execute({
+            sql: `UPDATE calendar_events SET ${updateFields.join(', ')} WHERE id = ? AND user_id = ?`,
+            args: updateArgs
+          });
+        }
       }
 
       if (Array.isArray(reminders)) {

@@ -24,12 +24,27 @@ export default function CalendarPanel({
   const [isAddEventFormOpen, setIsAddEventFormOpen] = useState(false);
   const [newEventTitle, setNewEventTitle] = useState('');
   const [newEventDate, setNewEventDate] = useState(() => todayKey(userProfile?.timezone));
+  const [newEventTime, setNewEventTime] = useState('');
   const [newEventReminders, setNewEventReminders] = useState([]);
   const [calendarMonth, setCalendarMonth] = useState({ year: new Date().getFullYear(), month: new Date().getMonth() });
   const [openStatusDropdown, setOpenStatusDropdown] = useState(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [editReminderEventId, setEditReminderEventId] = useState(null);
   const [editReminderList, setEditReminderList] = useState([]);
+
+  // Format HH:MM to 12-hour AM/PM string
+  const formatTime12h = (timeStr) => {
+    if (!timeStr) return '12:00 AM';
+    const str = String(timeStr).trim().toUpperCase();
+    if (str.includes('AM') || str.includes('PM')) return str;
+    const parts = str.split(':');
+    let h = parseInt(parts[0], 10);
+    let m = parseInt(parts[1], 10);
+    if (isNaN(h) || isNaN(m)) return '12:00 AM';
+    const period = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')} ${period}`;
+  };
 
   // Filters state
   const [showExpired, setShowExpired] = useState(false);
@@ -45,6 +60,7 @@ export default function CalendarPanel({
         body: JSON.stringify({
           title: newEventTitle.trim(),
           date: newEventDate,
+          time: newEventTime,
           color: 'var(--accent-blue)',
           reminders: newEventReminders
         })
@@ -60,6 +76,7 @@ export default function CalendarPanel({
         });
 
         setNewEventTitle('');
+        setNewEventTime('');
         setNewEventReminders([]);
         setIsAddEventFormOpen(false);
         showToast?.('Event saved successfully!', 'success');
@@ -297,18 +314,36 @@ export default function CalendarPanel({
               }}
             />
           </div>
-          <div>
-            <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Date</label>
-            <input
-              type="date"
-              value={newEventDate}
-              onChange={(e) => setNewEventDate(e.target.value)}
-              style={{
-                width: '100%', padding: '12px 14px', borderRadius: '12px',
-                border: '1px solid var(--border-color)', background: 'var(--bg-main)',
-                color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none'
-              }}
-            />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Date</label>
+              <input
+                type="date"
+                value={newEventDate}
+                onChange={(e) => setNewEventDate(e.target.value)}
+                style={{
+                  width: '100%', padding: '12px 14px', borderRadius: '12px',
+                  border: '1px solid var(--border-color)', background: 'var(--bg-main)',
+                  color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none'
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                Event Time <span style={{ fontSize: '0.72rem', opacity: 0.7 }}>(Default 12 AM)</span>
+              </label>
+              <input
+                type="time"
+                value={newEventTime}
+                onChange={(e) => setNewEventTime(e.target.value)}
+                style={{
+                  width: '100%', padding: '12px 14px', borderRadius: '12px',
+                  border: '1px solid var(--border-color)', background: 'var(--bg-main)',
+                  color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none',
+                  colorScheme: 'dark'
+                }}
+              />
+            </div>
           </div>
           <ReminderEditor
             reminders={newEventReminders}
@@ -533,7 +568,7 @@ export default function CalendarPanel({
                         >
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                             <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <CalendarIcon size={14} /> {e.date}
+                              <CalendarIcon size={14} /> {e.date} <span style={{ opacity: 0.85, color: 'var(--text-main)', fontSize: '0.8rem' }}>• ⏰ {formatTime12h(e.time)}</span>
                             </div>
                             
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>

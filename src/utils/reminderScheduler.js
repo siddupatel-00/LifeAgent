@@ -10,9 +10,18 @@ const LAST_SCHEDULED_DAY_KEY = 'reminder_last_scheduled_day';
 // Web timer storage
 const webTimers = [];
 
-function clearWebTimers() {
-  webTimers.forEach(id => clearTimeout(id));
-  webTimers.length = 0;
+function clearWebTimers(type) {
+  if (type) {
+    for (let i = webTimers.length - 1; i >= 0; i--) {
+      if (webTimers[i].type === type) {
+        clearTimeout(webTimers[i].id);
+        webTimers.splice(i, 1);
+      }
+    }
+  } else {
+    webTimers.forEach(t => clearTimeout(t.id));
+    webTimers.length = 0;
+  }
 }
 
 // ─── Ensure Notification Channel on Android ─────────────────────────────────
@@ -117,10 +126,11 @@ function parseTime(timeStr) {
   return { hour: h, minute: m };
 }
 
-// ─── Build fire Date from event date + offset_minutes ────────────────────────
-function buildEventFireDate(eventDateStr, offsetMinutes) {
+// ─── Build fire Date from event date + event time + offset_minutes ──────────
+function buildEventFireDate(eventDateStr, eventTimeStr, offsetMinutes) {
   const parts = eventDateStr.split('-').map(Number);
-  const d = new Date(parts[0], parts[1] - 1, parts[2], 0, 0, 0, 0);
+  const t = parseTime(eventTimeStr) || { hour: 0, minute: 0 }; // Default to 12:00 AM (00:00) if no time specified
+  const d = new Date(parts[0], parts[1] - 1, parts[2], t.hour, t.minute, 0, 0);
   d.setMinutes(d.getMinutes() - offsetMinutes);
   return d;
 }
@@ -134,7 +144,7 @@ function buildDailyFireDate(dayOffset, hour, minute) {
 }
 
 // Helper: schedule web fallback
-function scheduleWebFallback(title, body, fireDate) {
+function scheduleWebFallback(title, body, fireDate, entityType = 'general') {
   if (Capacitor.getPlatform() !== 'web') return;
   const delay = fireDate.getTime() - Date.now();
   if (delay <= 0 || delay > 86400000) return; // max 24h for web timeout
@@ -143,7 +153,7 @@ function scheduleWebFallback(title, body, fireDate) {
       new Notification(title, { body });
     }
   }, delay);
-  webTimers.push(timerId);
+  webTimers.push({ id: timerId, type: entityType });
 }
 
 // ─── Cancel all notifications for an entity ──────────────────────────────────
@@ -168,7 +178,7 @@ export async function cancelEntityReminders(entityType, entityId) {
 // ─── Cancel all reminders of a given type (e.g., water, sleep) ───────────────
 export async function cancelAllOfType(entityType) {
   if (Capacitor.getPlatform() === 'web') {
-    clearWebTimers();
+    clearWebTimers(entityType);
     return;
   }
   try {
@@ -202,7 +212,7 @@ export async function scheduleEventReminders(events, globalEnabled = true) {
     for (const rem of event.reminders) {
       const isEnabled = rem.enabled !== false && rem.enabled !== 0 && rem.enabled !== '0';
       if (!isEnabled) continue;
-      const fireDate = buildEventFireDate(event.date, rem.offset_minutes || 0);
+      const fireDate = buildEventFireDate(event.date, event.time, rem.offset_minutes || 0);
       if (fireDate.getTime() <= now) continue;
       const diffDays = Math.floor((fireDate.getTime() - now) / 86400000);
       if (diffDays > 7) continue;
@@ -211,7 +221,7 @@ export async function scheduleEventReminders(events, globalEnabled = true) {
       const body = rem.offset_minutes === 0 ? 'Event starting now!' : `Event in ${rem.offset_minutes} minutes`;
 
       if (Capacitor.getPlatform() === 'web') {
-        scheduleWebFallback(title, body, fireDate);
+        scheduleWebFallback(title, body, fireDate, 'event');
       } else {
         const id = makeNotifId('event', event.id, rem.id, 0);
         notifications.push({
@@ -259,7 +269,7 @@ export async function scheduleHabitReminders(habits, globalEnabled = true) {
         const body = "Don't forget to complete your habit today!";
 
         if (Capacitor.getPlatform() === 'web') {
-          scheduleWebFallback(title, body, fireDate);
+          scheduleWebFallback(title, body, fireDate, 'habit');
         } else {
           const id = makeNotifId('habit', habit.id, rem.id, day);
           notifications.push({
@@ -306,7 +316,7 @@ export async function scheduleWaterReminders({ enabled, startTime, endTime, inte
         const title = '💧 Hydration Reminder';
         const body = "Time to drink some water! Stay hydrated.";
         if (Capacitor.getPlatform() === 'web') {
-          scheduleWebFallback(title, body, fireDate);
+          scheduleWebFallback(title, body, fireDate, 'water');
         } else {
           const id = makeNotifId('water', 1, slotId, day);
           notifications.push({
@@ -352,7 +362,7 @@ export async function scheduleSleepReminders({ enabled, reminderTime }, globalEn
     const title = '😴 Bedtime Reminder';
     const body = "Time to wind down and get ready for bed!";
     if (Capacitor.getPlatform() === 'web') {
-      scheduleWebFallback(title, body, fireDate);
+      scheduleWebFallback(title, body, fireDate, 'sleep');
     } else {
       const id = makeNotifId('sleep', 1, 1, day);
       notifications.push({
@@ -393,7 +403,7 @@ export async function scheduleWorkoutReminders({ enabled, reminderTime, repeatRu
     const title = '💪 Workout Reminder';
     const body = "Time to hit the gym! Don't skip today's workout.";
     if (Capacitor.getPlatform() === 'web') {
-      scheduleWebFallback(title, body, fireDate);
+      scheduleWebFallback(title, body, fireDate, 'workout');
     } else {
       const id = makeNotifId('workout', 1, 1, day);
       notifications.push({
@@ -446,7 +456,7 @@ export async function scheduleMorningSummaryReminders({ enabled, reminderTime, u
 
     const title = '🌅 Morning Summary';
     if (Capacitor.getPlatform() === 'web') {
-      scheduleWebFallback(title, body, fireDate);
+      scheduleWebFallback(title, body, fireDate, 'summary');
     } else {
       const id = makeNotifId('summary', 1, 1, day);
       notifications.push({
