@@ -212,7 +212,14 @@ export default function App() {
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
 
-  const [todayWidgetsConfig, setTodayWidgetsConfig] = useState({ showWorkout: true, showProtein: true, showHydration: true });
+  const [todayWidgetsConfig, setTodayWidgetsConfig] = useState(() => {
+    const cached = safeStorage.getItem('cache_todayWidgetsConfig');
+    return cached ? JSON.parse(cached) : { showWorkout: true, showProtein: true, showHydration: true };
+  });
+
+  useEffect(() => {
+    safeStorage.setItem('cache_todayWidgetsConfig', JSON.stringify(todayWidgetsConfig));
+  }, [todayWidgetsConfig]);
   const [isTodayConfigMenuOpen, setIsTodayConfigMenuOpen] = useState(false);
   const todayConfigDropdownRef = useRef(null);
   const PREVIEW_TABS = ['Money', 'Sleep', 'Calendar', 'Notes', 'Gym', 'AI', 'Habits', 'Analytics'];
@@ -357,9 +364,11 @@ export default function App() {
       if (res.ok && data && data.token) {
         const savedThemeMode = safeStorage.getItem('themeMode');
         const savedThemeColor = safeStorage.getItem('themeColor');
+        const savedWidgetsConfig = safeStorage.getItem('cache_todayWidgetsConfig');
         safeStorage.clear();
         if (savedThemeMode) safeStorage.setItem('themeMode', savedThemeMode);
         if (savedThemeColor) safeStorage.setItem('themeColor', savedThemeColor);
+        if (savedWidgetsConfig) safeStorage.setItem('cache_todayWidgetsConfig', savedWidgetsConfig);
 
         resetLoadedTabs();
         safeStorage.setItem('token', data.token);
@@ -483,9 +492,11 @@ export default function App() {
     resetLoadedTabs();
     const savedThemeMode = safeStorage.getItem('themeMode');
     const savedThemeColor = safeStorage.getItem('themeColor');
+    const savedWidgetsConfig = safeStorage.getItem('cache_todayWidgetsConfig');
     safeStorage.clear();
     if (savedThemeMode) safeStorage.setItem('themeMode', savedThemeMode);
     if (savedThemeColor) safeStorage.setItem('themeColor', savedThemeColor);
+    if (savedWidgetsConfig) safeStorage.setItem('cache_todayWidgetsConfig', savedWidgetsConfig);
     setToken('');
     setIsAuthenticated(false);
     setUserProfile({ name: '', handle: '', email: '', aiTone: 'Analytical & Direct', morningAudit: false, smartAlerts: false, currency: '$', timezone: localTimeZone() });
@@ -939,11 +950,13 @@ export default function App() {
         const savedThemeMode = safeStorage.getItem('themeMode');
         const savedThemeColor = safeStorage.getItem('themeColor');
         const savedUserProfile = safeStorage.getItem('cache_userProfile');
+        const savedWidgetsConfig = safeStorage.getItem('cache_todayWidgetsConfig');
         safeStorage.clear();
         if (savedToken) safeStorage.setItem('token', savedToken);
         if (savedThemeMode) safeStorage.setItem('themeMode', savedThemeMode);
         if (savedThemeColor) safeStorage.setItem('themeColor', savedThemeColor);
         if (savedUserProfile) safeStorage.setItem('cache_userProfile', savedUserProfile);
+        if (savedWidgetsConfig) safeStorage.setItem('cache_todayWidgetsConfig', savedWidgetsConfig);
         safeStorage.removeItem('water_target_goal');
 
         // Call showToast('Account reset to fresh start!', 'info')
