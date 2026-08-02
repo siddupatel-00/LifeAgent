@@ -738,11 +738,12 @@ export default function App() {
       const timezone = userProfile?.timezone || localTimeZone();
       const clientDate = todayKey(timezone);
 
-      const [settingsRes, todayRes, habitsRes, statsRes] = await Promise.all([
+      const [settingsRes, todayRes, habitsRes, statsRes, calendarRes] = await Promise.all([
         fetch(getApiUrl('/api/settings'), { headers }).catch(e => null),
         fetch(getApiUrl(`/api/today?client_date=${clientDate}`), { headers }).catch(e => null),
         fetch(getApiUrl('/api/habits'), { headers }).catch(e => null),
-        fetch(getApiUrl('/api/fitness?type=body-stats'), { headers }).catch(e => null)
+        fetch(getApiUrl('/api/fitness?type=body-stats'), { headers }).catch(e => null),
+        fetch(getApiUrl('/api/calendar'), { headers }).catch(e => null)
       ]);
 
       if (settingsRes && settingsRes.ok) {
@@ -792,6 +793,22 @@ export default function App() {
         const sData = await statsRes.json();
         setBodyStats(sData);
         safeStorage.setItem('cache_bodyStats', JSON.stringify(sData));
+      }
+
+      if (calendarRes && calendarRes.ok) {
+        const calData = await calendarRes.json();
+        const mappedCal = calData.map(c => ({
+          id: c.id,
+          title: c.title,
+          date: c.date,
+          time: c.time || '',
+          reminders: Array.isArray(c.reminders) ? c.reminders : (c.reminders ? (typeof c.reminders === 'string' ? JSON.parse(c.reminders) : c.reminders) : []),
+          color: c.color,
+          status: c.status,
+          endDate: c.end_date
+        }));
+        setCalendarEvents(mappedCal);
+        safeStorage.setItem('cache_calendarEvents', JSON.stringify(mappedCal));
       }
 
       loadedTabsRef.current.startup = true;
@@ -902,7 +919,16 @@ export default function App() {
       const calRes = await fetch(getApiUrl('/api/calendar'), { headers }).catch(e => null);
       if (calRes && calRes.ok) {
         const calData = await calRes.json();
-        const mappedCal = calData.map(c => ({ id: c.id, title: c.title, date: c.date, color: c.color, status: c.status, endDate: c.end_date }));
+        const mappedCal = calData.map(c => ({
+          id: c.id,
+          title: c.title,
+          date: c.date,
+          time: c.time || '',
+          reminders: Array.isArray(c.reminders) ? c.reminders : (c.reminders ? (typeof c.reminders === 'string' ? JSON.parse(c.reminders) : c.reminders) : []),
+          color: c.color,
+          status: c.status,
+          endDate: c.end_date
+        }));
         setCalendarEvents(mappedCal);
         safeStorage.setItem('cache_calendarEvents', JSON.stringify(mappedCal));
       }
