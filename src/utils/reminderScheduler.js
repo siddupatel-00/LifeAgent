@@ -35,6 +35,9 @@ export async function ensureNotificationChannel() {
       importance: 5, // MAX importance (plays sound and shows banner)
       visibility: 1, // PUBLIC (shows on lock screen)
       vibration: true,
+      sound: 'default',
+      lights: true,
+      lightColor: '#4F46E5',
     });
   } catch (e) {
     console.warn('[reminderScheduler] createChannel error:', e);
@@ -230,6 +233,7 @@ export async function scheduleEventReminders(events, globalEnabled = true) {
           body,
           schedule: { at: fireDate, allowWhileIdle: true },
           channelId: 'default',
+          sound: 'default',
           extra: { entityType: 'event', entityId: event.id, reminderId: rem.id }
         });
       }
@@ -291,6 +295,7 @@ export async function scheduleHabitReminders(habitsOrObj, globalEnabled = true) 
             body,
             schedule: { at: fireDate, allowWhileIdle: true },
             channelId: 'default',
+            sound: 'default',
             extra: { entityType: 'habit', entityId: habit.id, reminderId: rem.id }
           });
         }
@@ -317,6 +322,7 @@ export async function scheduleHabitReminders(habitsOrObj, globalEnabled = true) 
           body,
           schedule: { at: fireDate, allowWhileIdle: true },
           channelId: 'default',
+          sound: 'default',
           extra: { entityType: 'habit', entityId: 9999, reminderId: 7000 }
         });
       }
@@ -363,6 +369,7 @@ export async function scheduleWaterReminders({ enabled, startTime, endTime, inte
             body,
             schedule: { at: fireDate, allowWhileIdle: true },
             channelId: 'default',
+            sound: 'default',
             extra: { entityType: 'water', entityId: 1, reminderId: slotId }
           });
         }
@@ -409,6 +416,7 @@ export async function scheduleSleepReminders({ enabled, reminderTime }, globalEn
         body,
         schedule: { at: fireDate, allowWhileIdle: true },
         channelId: 'default',
+        sound: 'default',
         extra: { entityType: 'sleep', entityId: 1, reminderId: 1 }
       });
     }
@@ -450,6 +458,7 @@ export async function scheduleWorkoutReminders({ enabled, reminderTime, repeatRu
         body,
         schedule: { at: fireDate, allowWhileIdle: true },
         channelId: 'default',
+        sound: 'default',
         extra: { entityType: 'workout', entityId: 1, reminderId: 1 }
       });
     }
@@ -503,6 +512,7 @@ export async function scheduleMorningSummaryReminders({ enabled, reminderTime, u
         body,
         schedule: { at: fireDate, allowWhileIdle: true },
         channelId: 'default',
+        sound: 'default',
         extra: { entityType: 'summary', entityId: 1, reminderId: 1 }
       });
     }
