@@ -5438,7 +5438,8 @@ const handleDeleteHabitDb = async (id) => {
               )}
 
             </div>
-
+            </div>
+          </PullToRefresh>
           </section>
 
           {/* PERSISTENT SIDE-BY-SIDE AI COACH PANEL (Always accessible across any tab) */}
