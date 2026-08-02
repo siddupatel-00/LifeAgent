@@ -158,10 +158,15 @@ function parseTime(timeStr) {
 
 // ─── Build fire Date from event date + event time + offset_minutes ──────────
 function buildEventFireDate(eventDateStr, eventTimeStr, offsetMinutes) {
-  const parts = eventDateStr.split('-').map(Number);
-  const t = parseTime(eventTimeStr) || { hour: 0, minute: 0 }; // Default to 12:00 AM (00:00) if no time specified
+  if (!eventDateStr) return new Date(0);
+  const cleanDateStr = String(eventDateStr).split('T')[0];
+  const parts = cleanDateStr.split('-').map(Number);
+  if (parts.length < 3 || isNaN(parts[0]) || isNaN(parts[1]) || isNaN(parts[2])) {
+    return new Date(0);
+  }
+  const t = parseTime(eventTimeStr) || { hour: 0, minute: 0 };
   const d = new Date(parts[0], parts[1] - 1, parts[2], t.hour, t.minute, 0, 0);
-  d.setMinutes(d.getMinutes() - offsetMinutes);
+  d.setMinutes(d.getMinutes() - (offsetMinutes || 0));
   return d;
 }
 
@@ -195,6 +200,9 @@ export async function cancelEntityReminders(entityType, entityId) {
     for (const n of (pending?.notifications || [])) {
       if (n.extra && n.extra.entityType === entityType && String(n.extra.entityId) === String(entityId)) {
         toCancel.push({ id: n.id });
+        if (Capacitor.getPlatform() === 'android') {
+          NativeAlarmScheduler.cancelAlarm({ id: n.id }).catch(() => {});
+        }
       }
     }
     if (toCancel.length > 0) {
@@ -217,6 +225,9 @@ export async function cancelAllOfType(entityType) {
     for (const n of (pending?.notifications || [])) {
       if (n.extra && n.extra.entityType === entityType) {
         toCancel.push({ id: n.id });
+        if (Capacitor.getPlatform() === 'android') {
+          NativeAlarmScheduler.cancelAlarm({ id: n.id }).catch(() => {});
+        }
       }
     }
     if (toCancel.length > 0) {
@@ -237,23 +248,27 @@ export async function scheduleEventReminders(events, globalEnabled = true) {
   const notifications = [];
   const now = Date.now();
 
-  for (const event of events) {
-    if (!event.date || !Array.isArray(event.reminders) || event.reminders.length === 0) continue;
-    for (const rem of event.reminders) {
+  for (const event of (events || [])) {
+    if (!event.date) continue;
+    const reminders = Array.isArray(event.reminders) && event.reminders.length > 0
+      ? event.reminders
+      : [{ id: 1, offset_minutes: 0, enabled: true }];
+
+    for (const rem of reminders) {
       const isEnabled = rem.enabled !== false && rem.enabled !== 0 && rem.enabled !== '0';
       if (!isEnabled) continue;
       const fireDate = buildEventFireDate(event.date, event.time, rem.offset_minutes || 0);
-      if (fireDate.getTime() <= now) continue;
+      if (isNaN(fireDate.getTime()) || fireDate.getTime() <= now) continue;
       const diffDays = Math.floor((fireDate.getTime() - now) / 86400000);
       if (diffDays > 7) continue;
 
       const title = `📅 ${event.title || 'Upcoming Event'}`;
-      const body = rem.offset_minutes === 0 ? 'Event starting now!' : `Event in ${rem.offset_minutes} minutes`;
+      const body = (rem.offset_minutes || 0) === 0 ? 'Event starting now!' : `Event in ${rem.offset_minutes} minutes`;
 
       if (Capacitor.getPlatform() === 'web') {
         scheduleWebFallback(title, body, fireDate, 'event');
       } else {
-        const id = makeNotifId('event', event.id, rem.id, 0);
+        const id = makeNotifId('event', event.id || 1, rem.id || 1, 0);
         notifications.push({
           id,
           title,
@@ -300,7 +315,8 @@ export async function scheduleHabitReminders(habitsOrObj, globalEnabled = true) 
     for (const rem of habit.reminders) {
       const isEnabled = rem.enabled !== false && rem.enabled !== 0 && rem.enabled !== '0';
       if (!isEnabled) continue;
-      const t = parseTime(rem.reminder_time);
+      const timeStr = rem.time || rem.reminder_time || rem.reminderTime;
+      const t = parseTime(timeStr);
       if (!t) continue;
 
       const repeatRule = rem.repeat_rule ? (typeof rem.repeat_rule === 'string' ? JSON.parse(rem.repeat_rule) : rem.repeat_rule) : { type: 'daily' };
@@ -315,7 +331,7 @@ export async function scheduleHabitReminders(habitsOrObj, globalEnabled = true) 
         if (Capacitor.getPlatform() === 'web') {
           scheduleWebFallback(title, body, fireDate, 'habit');
         } else {
-          const id = makeNotifId('habit', habit.id, rem.id, day);
+          const id = makeNotifId('habit', habit.id, rem.id || 1, day);
           notifications.push({
             id,
             title,
