@@ -118,7 +118,7 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
     }
 
     // Reschedule Capacitor notifications
-    const globalEnabled = userProfile?.remindersGlobalEnabled !== false;
+    const globalEnabled = userProfile?.remindersGlobalEnabled !== false && userProfile?.reminders_global_enabled !== 0;
     await scheduleWaterReminders({
       enabled: isReminderEnabled,
       startTime: reminderStartTime,
@@ -171,7 +171,7 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
     const newState = !isReminderEnabled;
     setIsReminderEnabled(newState);
 
-    const globalEnabled = userProfile?.remindersGlobalEnabled !== false;
+    const globalEnabled = userProfile?.remindersGlobalEnabled !== false && userProfile?.reminders_global_enabled !== 0;
     if (newState) {
       await scheduleWaterReminders({
         enabled: true,

@@ -56,7 +56,12 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
   }, [workouts]);
 
   // Workout Split Rotation State
-  const [workoutSettings, setWorkoutSettings] = useState({ split_type: 'weekly', templates: null });
+  const [workoutSettings, setWorkoutSettings] = useState({
+    split_type: 'weekly',
+    templates: null,
+    workout_start_count: 0,
+    manual_day_offset: 0
+  });
   const [hasCustomSplit, setHasCustomSplit] = useState(false);
   const [splitList, setSplitList] = useState([]);
   const [internalIsEditSplitOpen, setInternalIsEditSplitOpen] = useState(false);
@@ -89,14 +94,29 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
     dayOfWeek = (new Date().getDay() + 6) % 7;
   }
 
+  const splitStartCount = Number(workoutSettings.workout_start_count || 0);
+  const manualDayOffset = Number(workoutSettings.manual_day_offset || 0);
+  const workoutsCompletedSinceSplit = Math.max(0, totalWorkoutsCount - splitStartCount);
+
   let todaySplitIdx = 0;
   if (splitList.length > 0) {
     if (!isWeekly) {
-      todaySplitIdx = totalWorkoutsCount % splitList.length;
+      todaySplitIdx = (workoutsCompletedSinceSplit + manualDayOffset) % splitList.length;
     } else {
       todaySplitIdx = dayOfWeek % splitList.length;
     }
   }
+
+  const handleSetDayActive = (targetIdx) => {
+    if (isWeekly || splitList.length === 0) return;
+    const newOffset = ((targetIdx - (workoutsCompletedSinceSplit % splitList.length)) % splitList.length + splitList.length) % splitList.length;
+    setWorkoutSettings(prev => ({ ...prev, manual_day_offset: newOffset }));
+    fetch(getApiUrl('/api/settings'), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ manual_day_offset: newOffset })
+    }).catch(err => console.error('Failed to update manual day offset:', err));
+  };
 
   const getSplitTitle = (idx) => {
     if (splitList.length === 0) return 'Workout';
@@ -182,7 +202,12 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
       fetch(getApiUrl('/api/settings'), { headers: { 'Authorization': `Bearer ${token}` } })
         .then(r => r.json())
         .then(data => {
-          setWorkoutSettings({ split_type: data.workout_split_type || 'weekly', templates: data.workout_templates });
+          setWorkoutSettings({
+            split_type: data.workout_split_type || 'weekly',
+            templates: data.workout_templates,
+            workout_start_count: data.workout_start_count !== undefined ? data.workout_start_count : 0,
+            manual_day_offset: data.manual_day_offset !== undefined ? data.manual_day_offset : 0
+          });
           if (data.workout_templates) {
             try {
               const parsed = JSON.parse(data.workout_templates);
@@ -799,11 +824,15 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
                 return (
                   <div 
                     key={idx} 
+                    onClick={() => !isWeekly && !isCurrentToday && handleSetDayActive(idx)}
                     style={{ 
                       flex: 1, minWidth: '130px', padding: '14px 16px', borderRadius: '14px',
                       background: isCurrentToday ? 'var(--accent-blue-dim)' : 'var(--bg-main)',
-                      border: `1px solid ${isCurrentToday ? 'var(--accent-blue)' : 'var(--border-color)'}`
+                      border: `1px solid ${isCurrentToday ? 'var(--accent-blue)' : 'var(--border-color)'}`,
+                      cursor: !isWeekly && !isCurrentToday ? 'pointer' : 'default',
+                      transition: 'all 0.2s ease'
                     }}
+                    title={!isWeekly && !isCurrentToday ? "Click to set as Today's workout" : ""}
                   >
                     <div style={{ fontSize: '0.7rem', fontWeight: 800, color: isCurrentToday ? 'var(--accent-blue)' : 'var(--text-muted)', textTransform: 'uppercase' }}>
                       {isCurrentToday ? `🎯 TODAY (${dayHeader})` : dayHeader}
@@ -811,7 +840,11 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
                     <div style={{ fontSize: '0.92rem', fontWeight: 700, marginTop: '4px', color: 'var(--text-main)' }}>
                       {dayName}
                     </div>
-
+                    {!isWeekly && !isCurrentToday && (
+                      <div style={{ fontSize: '0.68rem', color: 'var(--accent-blue)', marginTop: '6px', fontWeight: 600, opacity: 0.85 }}>
+                        👉 Set as Today
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -1483,10 +1516,17 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
             <button type="button" className="blue-btn" style={{ padding: '10px 24px', borderRadius: '12px' }} onClick={() => {
               setIsEditSplitOpen(false);
               setHasCustomSplit(true);
+              const updatedStartCount = workouts.length;
+              const updatedOffset = 0;
+              setWorkoutSettings(prev => ({ ...prev, workout_start_count: updatedStartCount, manual_day_offset: updatedOffset }));
               fetch(getApiUrl('/api/settings'), {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ workout_templates: JSON.stringify(splitList) })
+                body: JSON.stringify({
+                  workout_templates: JSON.stringify(splitList),
+                  workout_start_count: updatedStartCount,
+                  manual_day_offset: updatedOffset
+                })
               }).catch(err => console.error('Failed to update templates:', err));
             }}>Done</button>
           </div>

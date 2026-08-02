@@ -1094,31 +1094,36 @@ export default function App() {
   // Morning Audit & Summary scheduling is handled by the regenerateAllReminders effect below.
 
 
-  // ─── Regenerate ALL Capacitor reminders (on data load + daily rollover) ─────
+  // ─── Regenerate ALL Capacitor reminders (on data load + daily rollover + settings change) ─────
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    const globalEnabled = userProfile?.remindersGlobalEnabled !== false;
+    const globalEnabled = userProfile?.remindersGlobalEnabled !== false && userProfile?.reminders_global_enabled !== 0;
+    const isWaterEnabled = userProfile?.waterReminderEnabled !== undefined ? !!userProfile.waterReminderEnabled : (userProfile?.water_reminder_enabled !== 0 && userProfile?.water_reminder_enabled !== false);
+    const isSleepEnabled = userProfile?.sleepReminderEnabled !== undefined ? !!userProfile.sleepReminderEnabled : (userProfile?.sleep_reminder_enabled !== 0 && userProfile?.sleep_reminder_enabled !== false);
+    const isWorkoutEnabled = userProfile?.workoutReminderEnabled !== undefined ? !!userProfile.workoutReminderEnabled : (userProfile?.workout_reminder_enabled !== 0 && userProfile?.workout_reminder_enabled !== false);
+    const isSummaryEnabled = userProfile?.summaryReminderEnabled !== undefined ? !!userProfile.summaryReminderEnabled : (userProfile?.summary_reminder_enabled !== 0 && userProfile?.summary_reminder_enabled !== false);
+
     regenerateAllReminders({
       habits: Array.isArray(habits) ? habits : [],
       events: Array.isArray(calendarEvents) ? calendarEvents : [],
       waterSettings: {
-        enabled: !!userProfile?.water_reminder_enabled,
+        enabled: isWaterEnabled,
         startTime: userProfile?.water_reminder_start || '08:00',
         endTime: userProfile?.water_reminder_end || '22:00',
         intervalMinutes: userProfile?.water_reminder_interval || 60,
       },
       sleepSettings: {
-        enabled: !!userProfile?.sleepReminderEnabled,
+        enabled: isSleepEnabled,
         reminderTime: userProfile?.sleepReminderTime || userProfile?.sleep_reminder_time || '22:00',
       },
       workoutSettings: {
-        enabled: !!userProfile?.workoutReminderEnabled,
+        enabled: isWorkoutEnabled,
         reminderTime: userProfile?.workoutReminderTime || userProfile?.workout_reminder_time || '07:00',
-        repeatRule: userProfile?.workoutReminderRepeat || { type: 'daily' },
+        repeatRule: userProfile?.workoutReminderRepeat || userProfile?.workout_reminder_repeat || { type: 'daily' },
       },
       summarySettings: {
-        enabled: !!userProfile?.summaryReminderEnabled,
+        enabled: isSummaryEnabled,
         reminderTime: userProfile?.summaryReminderTime || userProfile?.summary_reminder_time || '07:00',
         userName: userProfile?.name || 'User',
         calendarEvents: Array.isArray(calendarEvents) ? calendarEvents : [],
@@ -1130,10 +1135,27 @@ export default function App() {
     habits,
     calendarEvents,
     userProfile?.remindersGlobalEnabled,
+    userProfile?.reminders_global_enabled,
     userProfile?.sleepReminderEnabled,
+    userProfile?.sleep_reminder_enabled,
+    userProfile?.sleepReminderTime,
+    userProfile?.sleep_reminder_time,
     userProfile?.workoutReminderEnabled,
+    userProfile?.workout_reminder_enabled,
+    userProfile?.workoutReminderTime,
+    userProfile?.workout_reminder_time,
+    userProfile?.workoutReminderRepeat,
+    userProfile?.workout_reminder_repeat,
     userProfile?.summaryReminderEnabled,
+    userProfile?.summary_reminder_enabled,
+    userProfile?.summaryReminderTime,
+    userProfile?.summary_reminder_time,
+    userProfile?.waterReminderEnabled,
     userProfile?.water_reminder_enabled,
+    userProfile?.water_reminder_start,
+    userProfile?.water_reminder_end,
+    userProfile?.water_reminder_interval,
+    userProfile?.name
   ]);
 
   // ─── Save habit reminders ──────────────────────────────────────────────────
@@ -1206,9 +1228,14 @@ export default function App() {
 
     // 2. Mark Today's Gym Workout Split Complete
     if (targetState) {
-      const splitList = [];
-      const daysEpoch = Math.floor(new Date(todayStr).getTime() / (1000 * 60 * 60 * 24));
-      const todaySplitIdx = splitList.length > 0 ? Math.abs(daysEpoch) % splitList.length : 0;
+      let splitList = [];
+      try {
+        if (userProfile?.workout_templates) splitList = JSON.parse(userProfile.workout_templates);
+      } catch (e) {}
+      const startCount = Number(userProfile?.workout_start_count || 0);
+      const manualOffset = Number(userProfile?.manual_day_offset || 0);
+      const workoutsDone = Math.max(0, (Array.isArray(workouts) ? workouts.length : 0) - startCount);
+      const todaySplitIdx = splitList.length > 0 ? (workoutsDone + manualOffset) % splitList.length : 0;
       const currentTitle = (splitList.length > 0 && splitList[todaySplitIdx]) ? (typeof splitList[todaySplitIdx] === 'string' ? splitList[todaySplitIdx] : splitList[todaySplitIdx]?.name) : 'Workout';
       
       const isAlreadyCompleted = (Array.isArray(workouts) ? workouts : []).some(w => w.date === todayStr);
@@ -3480,9 +3507,15 @@ const handleDeleteHabitDb = async (id) => {
                           const todayKeyStr = todayKey(userProfile?.timezone);
                           const isDone = Array.isArray(workouts) && workouts.some(w => w.date === todayKeyStr);
                           if (!isDone) return null;
-                          const daysEpoch = Math.floor(new Date(todayKeyStr).getTime() / (1000 * 60 * 60 * 24));
-                          const splitList = [];
-                          const currentTitle = (splitList.length > 0) ? (typeof splitList[Math.abs(daysEpoch) % splitList.length] === 'string' ? splitList[Math.abs(daysEpoch) % splitList.length] : splitList[Math.abs(daysEpoch) % splitList.length]?.name) : 'Workout';
+                          let splitList = [];
+                          try {
+                            if (userProfile?.workout_templates) splitList = JSON.parse(userProfile.workout_templates);
+                          } catch (e) {}
+                          const startCount = Number(userProfile?.workout_start_count || 0);
+                          const manualOffset = Number(userProfile?.manual_day_offset || 0);
+                          const workoutsDone = Math.max(0, (Array.isArray(workouts) ? workouts.length : 0) - startCount);
+                          const todaySplitIdx = splitList.length > 0 ? (workoutsDone + manualOffset) % splitList.length : 0;
+                          const currentTitle = (splitList.length > 0 && splitList[todaySplitIdx]) ? (typeof splitList[todaySplitIdx] === 'string' ? splitList[todaySplitIdx] : splitList[todaySplitIdx]?.name) : 'Workout';
 
                           return (
                             <div style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '14px' }}>
@@ -5561,6 +5594,8 @@ const handleDeleteHabitDb = async (id) => {
                     chatResetTime={userProfile.chat_reset_time || '00:00'}
                     setChatResetTime={(val) => setUserProfile({ ...userProfile, chat_reset_time: val })}
                     onResetAllAccountData={handleResetAllAccountData}
+                    habits={habits}
+                    calendarEvents={calendarEvents}
                   />
                 </TabErrorBoundary>
               </div>

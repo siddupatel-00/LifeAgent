@@ -55,7 +55,7 @@ export default async function handler(req, res) {
         workout_templates: null,
         week_start_day: 'Monday',
         // Reminder defaults
-        reminders_global_enabled: 0,
+        reminders_global_enabled: 1,
         water_target_goal: 2.5,
         water_reminder_interval: 60,
         water_reminder_enabled: 0,
@@ -78,7 +78,8 @@ export default async function handler(req, res) {
                 reminders_global_enabled,
                 sleep_reminder_enabled, sleep_reminder_time,
                 workout_reminder_enabled, workout_reminder_time, workout_reminder_repeat,
-                summary_reminder_enabled, summary_reminder_time
+                summary_reminder_enabled, summary_reminder_time,
+                workout_start_count, manual_day_offset
                 FROM user_settings WHERE user_id = ?`,
           args: [userId]
         });
@@ -114,7 +115,7 @@ export default async function handler(req, res) {
         syncToCloud: (row.sync_to_cloud !== undefined && row.sync_to_cloud !== null) ? row.sync_to_cloud !== 0 : true,
         ...userSettings,
         // Boolean convenience aliases for frontend
-        remindersGlobalEnabled: userSettings.reminders_global_enabled !== 0,
+        remindersGlobalEnabled: userSettings.reminders_global_enabled !== undefined && userSettings.reminders_global_enabled !== null ? userSettings.reminders_global_enabled !== 0 : true,
         waterReminderEnabled: userSettings.water_reminder_enabled !== 0,
         sleepReminderEnabled: userSettings.sleep_reminder_enabled !== 0,
         workoutReminderEnabled: userSettings.workout_reminder_enabled !== 0,
@@ -129,53 +130,48 @@ export default async function handler(req, res) {
       const phone = body.phone;
       const handle = body.handle;
       const theme = body.theme;
-      const ai_name = body.ai_name || body.aiName;
-      const gemini_api_key = body.gemini_api_key !== undefined ? body.gemini_api_key : body.geminiApiKey;
-      const groq_api_key = body.groq_api_key !== undefined ? body.groq_api_key : body.groqApiKey;
-      const ai_provider = body.ai_provider || body.aiProvider;
+      const ai_name = body.ai_name;
+      const gemini_api_key = body.gemini_api_key;
+      const groq_api_key = body.groq_api_key;
+      const ai_provider = body.ai_provider;
       const currency = body.currency;
-      const ai_tone = body.aiTone !== undefined ? body.aiTone : body.ai_tone;
-      const morning_audit = body.morningAudit !== undefined ? (body.morningAudit ? 1 : 0) : (body.morning_audit !== undefined ? (body.morning_audit ? 1 : 0) : undefined);
-      const smart_alerts = body.smartAlerts !== undefined ? (body.smartAlerts ? 1 : 0) : (body.smart_alerts !== undefined ? (body.smart_alerts ? 1 : 0) : undefined);
       const timezone = body.timezone;
-      const chat_reset_time = body.chat_reset_time || body.chatResetTime;
+      const chat_reset_time = body.chat_reset_time;
+      const ai_tone = body.ai_tone || body.aiTone;
+      const morning_audit = body.morning_audit !== undefined ? (body.morning_audit ? 1 : 0) : (body.morningAudit !== undefined ? (body.morningAudit ? 1 : 0) : undefined);
+      const smart_alerts = body.smart_alerts !== undefined ? (body.smart_alerts ? 1 : 0) : (body.smartAlerts !== undefined ? (body.smartAlerts ? 1 : 0) : undefined);
       const week_start_day = body.week_start_day || body.weekStartDay;
-      const sync_to_cloud = body.syncToCloud !== undefined ? (body.syncToCloud ? 1 : 0) : (body.sync_to_cloud !== undefined ? (body.sync_to_cloud ? 1 : 0) : undefined);
-
+      const sync_to_cloud = body.sync_to_cloud !== undefined ? (body.sync_to_cloud ? 1 : 0) : (body.syncToCloud !== undefined ? (body.syncToCloud ? 1 : 0) : undefined);
+      
       const workout_split_type = body.workout_split_type;
       const workout_templates = body.workout_templates;
-
-      // Water reminder settings
+      const workout_start_count = body.workout_start_count;
+      const manual_day_offset = body.manual_day_offset;
       const water_target_goal = body.water_target_goal;
       const water_reminder_interval = body.water_reminder_interval;
-      const water_reminder_enabled = body.water_reminder_enabled !== undefined ? (body.water_reminder_enabled ? 1 : 0) : undefined;
+      const water_reminder_enabled = body.water_reminder_enabled !== undefined ? (body.water_reminder_enabled ? 1 : 0) : (body.waterReminderEnabled !== undefined ? (body.waterReminderEnabled ? 1 : 0) : undefined);
       const water_reminder_start = body.water_reminder_start;
       const water_reminder_end = body.water_reminder_end;
 
-      // Global reminders switch
       const reminders_global_enabled = body.remindersGlobalEnabled !== undefined
         ? (body.remindersGlobalEnabled ? 1 : 0)
         : (body.reminders_global_enabled !== undefined ? (body.reminders_global_enabled ? 1 : 0) : undefined);
 
-      // Sleep reminder
       const sleep_reminder_enabled = body.sleepReminderEnabled !== undefined ? (body.sleepReminderEnabled ? 1 : 0) : (body.sleep_reminder_enabled !== undefined ? (body.sleep_reminder_enabled ? 1 : 0) : undefined);
       const sleep_reminder_time = body.sleepReminderTime || body.sleep_reminder_time;
 
-      // Workout reminder
       const workout_reminder_enabled = body.workoutReminderEnabled !== undefined ? (body.workoutReminderEnabled ? 1 : 0) : (body.workout_reminder_enabled !== undefined ? (body.workout_reminder_enabled ? 1 : 0) : undefined);
       const workout_reminder_time = body.workoutReminderTime || body.workout_reminder_time;
       const workout_reminder_repeat = body.workoutReminderRepeat !== undefined
         ? (typeof body.workoutReminderRepeat === 'string' ? body.workoutReminderRepeat : JSON.stringify(body.workoutReminderRepeat))
         : (body.workout_reminder_repeat !== undefined ? (typeof body.workout_reminder_repeat === 'string' ? body.workout_reminder_repeat : JSON.stringify(body.workout_reminder_repeat)) : undefined);
 
-      // Summary reminder
       const summary_reminder_enabled = body.summaryReminderEnabled !== undefined ? (body.summaryReminderEnabled ? 1 : 0) : (body.summary_reminder_enabled !== undefined ? (body.summary_reminder_enabled ? 1 : 0) : undefined);
       const summary_reminder_time = body.summaryReminderTime || body.summary_reminder_time;
 
-      const currentUserReq = await db.execute({ sql: 'SELECT * FROM users WHERE id = ?', args: [userId] });
-      const current = currentUserReq.rows[0] || {};
+      const currentRes = await db.execute({ sql: 'SELECT * FROM users WHERE id = ?', args: [userId] });
+      const current = currentRes.rows[0] || {};
 
-      // Handle uniqueness validation if handle is being changed
       let finalHandle = current.handle;
       if (handle !== undefined && typeof handle === 'string' && handle.trim()) {
         const cleanNewHandle = handle.trim().startsWith('@') ? handle.trim() : `@${handle.trim()}`;
@@ -191,18 +187,23 @@ export default async function handler(req, res) {
       }
 
       await db.execute({
-        sql: 'UPDATE users SET name = ?, email = ?, phone = ?, handle = ?, theme = ?, ai_name = ?, gemini_api_key = ?, groq_api_key = ?, ai_provider = ?, currency = ?, ai_tone = ?, morning_audit = ?, smart_alerts = ?, week_start_day = ?, sync_to_cloud = ? WHERE id = ?',
+        sql: `UPDATE users SET
+                name = ?, email = ?, phone = ?, handle = ?, theme = ?, ai_name = ?,
+                gemini_api_key = ?, groq_api_key = ?, ai_provider = ?, currency = ?,
+                ai_tone = ?, morning_audit = ?, smart_alerts = ?, week_start_day = ?,
+                sync_to_cloud = ?
+              WHERE id = ?`,
         args: [
-          name !== undefined ? name : current.name,
-          email !== undefined ? email : current.email,
-          phone !== undefined ? phone : current.phone,
+          name !== undefined ? name : (current.name || ''),
+          email !== undefined ? email : (current.email || ''),
+          phone !== undefined ? phone : (current.phone || ''),
           finalHandle,
-          theme !== undefined ? theme : current.theme,
-          ai_name !== undefined ? ai_name : current.ai_name,
-          gemini_api_key !== undefined ? gemini_api_key : current.gemini_api_key,
-          groq_api_key !== undefined ? groq_api_key : current.groq_api_key,
-          ai_provider !== undefined ? ai_provider : current.ai_provider,
-          currency !== undefined ? currency : current.currency,
+          theme !== undefined ? theme : (current.theme || 'light'),
+          ai_name !== undefined ? ai_name : (current.ai_name || 'AI'),
+          gemini_api_key !== undefined ? gemini_api_key : (current.gemini_api_key || ''),
+          groq_api_key !== undefined ? groq_api_key : (current.groq_api_key || ''),
+          ai_provider !== undefined ? ai_provider : (current.ai_provider || 'gemini'),
+          currency !== undefined ? currency : (current.currency || '$'),
           ai_tone !== undefined ? ai_tone : (current.ai_tone || 'Analytical & Direct'),
           morning_audit !== undefined ? morning_audit : (current.morning_audit !== undefined && current.morning_audit !== null ? current.morning_audit : 1),
           smart_alerts !== undefined ? smart_alerts : (current.smart_alerts !== undefined && current.smart_alerts !== null ? current.smart_alerts : 1),
@@ -218,7 +219,8 @@ export default async function handler(req, res) {
               reminders_global_enabled,
               sleep_reminder_enabled, sleep_reminder_time,
               workout_reminder_enabled, workout_reminder_time, workout_reminder_repeat,
-              summary_reminder_enabled, summary_reminder_time
+              summary_reminder_enabled, summary_reminder_time,
+              workout_start_count, manual_day_offset
               FROM user_settings WHERE user_id = ?`,
         args: [userId]
       });
@@ -227,10 +229,11 @@ export default async function handler(req, res) {
         workout_templates: null, week_start_day: 'Monday',
         water_target_goal: 2.5, water_reminder_interval: 60, water_reminder_enabled: 0,
         water_reminder_start: '08:00', water_reminder_end: '22:00',
-        reminders_global_enabled: 0,
+        reminders_global_enabled: 1,
         sleep_reminder_enabled: 0, sleep_reminder_time: '22:00',
         workout_reminder_enabled: 0, workout_reminder_time: '07:00', workout_reminder_repeat: '{"type":"daily"}',
         summary_reminder_enabled: 0, summary_reminder_time: '07:00',
+        workout_start_count: 0, manual_day_offset: 0
       };
 
       await db.execute({
@@ -240,8 +243,9 @@ export default async function handler(req, res) {
                 reminders_global_enabled,
                 sleep_reminder_enabled, sleep_reminder_time,
                 workout_reminder_enabled, workout_reminder_time, workout_reminder_repeat,
-                summary_reminder_enabled, summary_reminder_time
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                summary_reminder_enabled, summary_reminder_time,
+                workout_start_count, manual_day_offset
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
               ON CONFLICT (user_id) DO UPDATE SET
                 timezone = excluded.timezone, chat_reset_time = excluded.chat_reset_time,
                 workout_split_type = excluded.workout_split_type, workout_templates = excluded.workout_templates,
@@ -253,7 +257,8 @@ export default async function handler(req, res) {
                 sleep_reminder_enabled = excluded.sleep_reminder_enabled, sleep_reminder_time = excluded.sleep_reminder_time,
                 workout_reminder_enabled = excluded.workout_reminder_enabled, workout_reminder_time = excluded.workout_reminder_time,
                 workout_reminder_repeat = excluded.workout_reminder_repeat,
-                summary_reminder_enabled = excluded.summary_reminder_enabled, summary_reminder_time = excluded.summary_reminder_time`,
+                summary_reminder_enabled = excluded.summary_reminder_enabled, summary_reminder_time = excluded.summary_reminder_time,
+                workout_start_count = excluded.workout_start_count, manual_day_offset = excluded.manual_day_offset`,
         args: [
           userId,
           timezone !== undefined ? timezone : currentSet.timezone,
@@ -266,7 +271,7 @@ export default async function handler(req, res) {
           water_reminder_enabled !== undefined ? water_reminder_enabled : (currentSet.water_reminder_enabled !== undefined ? currentSet.water_reminder_enabled : 0),
           water_reminder_start !== undefined ? water_reminder_start : (currentSet.water_reminder_start || '08:00'),
           water_reminder_end !== undefined ? water_reminder_end : (currentSet.water_reminder_end || '22:00'),
-          reminders_global_enabled !== undefined ? reminders_global_enabled : (currentSet.reminders_global_enabled !== undefined ? currentSet.reminders_global_enabled : 0),
+          reminders_global_enabled !== undefined ? reminders_global_enabled : (currentSet.reminders_global_enabled !== undefined ? currentSet.reminders_global_enabled : 1),
           sleep_reminder_enabled !== undefined ? sleep_reminder_enabled : (currentSet.sleep_reminder_enabled !== undefined ? currentSet.sleep_reminder_enabled : 0),
           sleep_reminder_time !== undefined ? sleep_reminder_time : (currentSet.sleep_reminder_time || '22:00'),
           workout_reminder_enabled !== undefined ? workout_reminder_enabled : (currentSet.workout_reminder_enabled !== undefined ? currentSet.workout_reminder_enabled : 0),
@@ -274,6 +279,8 @@ export default async function handler(req, res) {
           workout_reminder_repeat !== undefined ? workout_reminder_repeat : (currentSet.workout_reminder_repeat || '{"type":"daily"}'),
           summary_reminder_enabled !== undefined ? summary_reminder_enabled : (currentSet.summary_reminder_enabled !== undefined ? currentSet.summary_reminder_enabled : 0),
           summary_reminder_time !== undefined ? summary_reminder_time : (currentSet.summary_reminder_time || '07:00'),
+          workout_start_count !== undefined ? workout_start_count : (currentSet.workout_start_count !== undefined ? currentSet.workout_start_count : 0),
+          manual_day_offset !== undefined ? manual_day_offset : (currentSet.manual_day_offset !== undefined ? currentSet.manual_day_offset : 0),
         ]
       });
       return res.status(200).json({ success: true });
