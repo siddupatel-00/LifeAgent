@@ -432,6 +432,42 @@ export async function scheduleHabitReminders(habitsOrObj, globalEnabled = true) 
   if (notifications.length > 0) {
     await dispatchNotifications(notifications);
   }
+
+  // 3. Configure Native Android Habit Receiver (works even when app is killed/closed or screen locked)
+  if (Capacitor.getPlatform() === 'android') {
+    try {
+      const NativeHabitScheduler = registerPlugin('NativeHabitScheduler');
+      const habitPayloads = [];
+      for (let i = 0; i < habits.length; i++) {
+        const h = habits[i];
+        if (!h || h.archived) continue;
+        let rems = [];
+        if (Array.isArray(h.reminders)) rems = h.reminders;
+        else if (typeof h.reminders === 'string') {
+          try { rems = JSON.parse(h.reminders); } catch (e) { rems = []; }
+        }
+        const singleTime = h.reminder_time || h.reminderTime || h.time;
+        if (rems.length === 0 && singleTime) {
+          rems = [{ id: 1, reminder_time: singleTime, enabled: true }];
+        }
+        for (const r of rems) {
+          if (r.enabled === false || r.enabled === 0 || r.enabled === '0') continue;
+          const timeVal = r.reminder_time || r.time || r.reminderTime;
+          if (timeVal) {
+            habitPayloads.push({
+              id: safeInt(h.id || i + 1),
+              title: h.title || h.label || 'Habit Reminder',
+              time: timeVal,
+              enabled: true
+            });
+          }
+        }
+      }
+      NativeHabitScheduler.configure({ habits: habitPayloads }).catch(e => console.warn('[reminderScheduler] NativeHabitScheduler configure error:', e));
+    } catch (err) {
+      console.warn('[reminderScheduler] NativeHabitScheduler plugin error:', err);
+    }
+  }
 }
 
 // ─── Schedule water reminders ─────────────────────────────────────────────────
