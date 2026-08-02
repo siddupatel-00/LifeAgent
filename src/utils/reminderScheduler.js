@@ -241,16 +241,29 @@ export async function scheduleEventReminders(events, globalEnabled = true) {
   }
 }
 
-// ─── Schedule habit reminders for next 7 days ─────────────────────────────────
-export async function scheduleHabitReminders(habits, globalEnabled = true) {
+// ─── Schedule habit reminders ──────────────────────────────────────────────────
+export async function scheduleHabitReminders(habitsOrObj, globalEnabled = true) {
   await cancelAllOfType('habit');
   if (!globalEnabled) return;
   const hasPermission = await requestNotificationPermission();
   if (!hasPermission) return;
 
+  let habits = [];
+  let daily7pmEnabled = false;
+  let userName = 'User';
+
+  if (Array.isArray(habitsOrObj)) {
+    habits = habitsOrObj;
+  } else if (habitsOrObj && typeof habitsOrObj === 'object') {
+    habits = Array.isArray(habitsOrObj.habits) ? habitsOrObj.habits : [];
+    daily7pmEnabled = !!habitsOrObj.daily7pmEnabled;
+    userName = habitsOrObj.userName || 'User';
+  }
+
   const notifications = [];
   const now = Date.now();
 
+  // 1. Individual per-habit reminders
   for (const habit of habits) {
     if (!Array.isArray(habit.reminders) || habit.reminders.length === 0) continue;
     for (const rem of habit.reminders) {
@@ -281,6 +294,31 @@ export async function scheduleHabitReminders(habits, globalEnabled = true) {
             extra: { entityType: 'habit', entityId: habit.id, reminderId: rem.id }
           });
         }
+      }
+    }
+  }
+
+  // 2. Global Daily 7 PM Check-in reminder
+  if (daily7pmEnabled) {
+    for (let day = 0; day < 7; day++) {
+      const fireDate = buildDailyFireDate(day, 19, 0); // 7:00 PM
+      if (fireDate.getTime() <= now) continue;
+
+      const title = '🔥 Daily Habit Check-in';
+      const body = `Hey ${userName}! Time to check off your habits for today.`;
+
+      if (Capacitor.getPlatform() === 'web') {
+        scheduleWebFallback(title, body, fireDate, 'habit');
+      } else {
+        const id = makeNotifId('habit', 9999, 7000, day);
+        notifications.push({
+          id,
+          title,
+          body,
+          schedule: { at: fireDate, allowWhileIdle: true },
+          channelId: 'default',
+          extra: { entityType: 'habit', entityId: 9999, reminderId: 7000 }
+        });
       }
     }
   }

@@ -1105,7 +1105,11 @@ export default function App() {
     const isSummaryEnabled = userProfile?.summaryReminderEnabled !== undefined ? !!userProfile.summaryReminderEnabled : (userProfile?.summary_reminder_enabled !== 0 && userProfile?.summary_reminder_enabled !== false);
 
     regenerateAllReminders({
-      habits: Array.isArray(habits) ? habits : [],
+      habits: {
+        habits: Array.isArray(habits) ? habits : [],
+        daily7pmEnabled: habitNotificationsEnabled,
+        userName: userProfile?.name || 'User',
+      },
       events: Array.isArray(calendarEvents) ? calendarEvents : [],
       waterSettings: {
         enabled: isWaterEnabled,
@@ -1134,6 +1138,8 @@ export default function App() {
     isAuthenticated,
     habits,
     calendarEvents,
+    habitNotificationsEnabled,
+    userProfile?.name,
     userProfile?.remindersGlobalEnabled,
     userProfile?.reminders_global_enabled,
     userProfile?.sleepReminderEnabled,
@@ -1155,7 +1161,6 @@ export default function App() {
     userProfile?.water_reminder_start,
     userProfile?.water_reminder_end,
     userProfile?.water_reminder_interval,
-    userProfile?.name
   ]);
 
   // ─── Save habit reminders ──────────────────────────────────────────────────
@@ -3939,7 +3944,19 @@ const handleDeleteHabitDb = async (id) => {
                       Receive an automatic push reminder for incomplete habits.
                     </div>
                     <div
-                      onClick={() => setHabitNotificationsEnabled(!habitNotificationsEnabled)}
+                      onClick={() => {
+                        const nextVal = !habitNotificationsEnabled;
+                        setHabitNotificationsEnabled(nextVal);
+                        safeStorage.setItem('habitNotifications_enabled', String(nextVal));
+                        showToast?.(nextVal ? '🔔 Daily 7 PM Habit Check-in Enabled!' : '🔕 Daily 7 PM Check-in Disabled', nextVal ? 'success' : 'info');
+                        if (token) {
+                          fetch(getApiUrl('/api/settings'), {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                            body: JSON.stringify({ habit_7pm_reminder_enabled: nextVal ? 1 : 0 })
+                          }).catch(err => console.error('Failed to update 7pm checkin setting:', err));
+                        }
+                      }}
                       style={{
                         width: '42px', height: '24px', borderRadius: '12px', cursor: 'pointer', flexShrink: 0,
                         background: habitNotificationsEnabled ? 'var(--accent-blue)' : 'var(--border-color)',
