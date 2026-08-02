@@ -25,7 +25,8 @@ import Modal from './components/Modal';
 import { todayKey, localTimeZone, getWeekDays, isHabitScheduledOnDay, ALL_WEEK_DAYS } from './utils/date';
 import WaterReminder from './components/WaterReminder';
 import TabErrorBoundary from './components/TabErrorBoundary';
-import { scheduleFutureNotification, cancelNotification } from './utils/notifications';
+import { regenerateAllReminders, scheduleHabitReminders, scheduleEventReminders, cancelEntityReminders, isRegenNeeded, requestNotificationPermission } from './utils/reminderScheduler';
+import ReminderEditor from './components/ReminderEditor';
 
 const getFormattedDateTitle = (dateStr) => {
   let targetDate = new Date();
@@ -580,6 +581,9 @@ export default function App() {
   const [habitNotificationsEnabled, setHabitNotificationsEnabled] = useState(() => {
     return localStorage.getItem('habitNotifications_enabled') === 'true';
   });
+  // Habit reminder editing state
+  const [editHabitReminderId, setEditHabitReminderId] = useState(null); // habitId being edited
+  const [editHabitReminderList, setEditHabitReminderList] = useState([]);
 
   // 3) Finance state
   const [transactions, setTransactions] = useState(() => { const c = safeStorage.getItem('cache_transactions'); return c ? JSON.parse(c) : []; });
@@ -777,7 +781,8 @@ export default function App() {
           customDays: h.custom_days || '',
           custom_days: h.custom_days || '',
           intervalDays: h.interval_days || 0,
-          interval_days: h.interval_days || 0
+          interval_days: h.interval_days || 0,
+          reminders: Array.isArray(h.reminders) ? h.reminders : []
         }));
         setHabits(mappedHabits);
         safeStorage.setItem('cache_habits', JSON.stringify(mappedHabits));
@@ -1086,79 +1091,78 @@ export default function App() {
     return () => window.clearInterval(interval);
   }, [isAuthenticated, token, userProfile.timezone]);
 
-  // Schedule Morning Audit Summaries
+  // Morning Audit & Summary scheduling is handled by the regenerateAllReminders effect below.
+
+
+  // ─── Regenerate ALL Capacitor reminders (on data load + daily rollover) ─────
   useEffect(() => {
     if (!isAuthenticated) return;
-    const isAuditEnabled = userProfile.morningAudit !== undefined ? !!userProfile.morningAudit : (userProfile.morning_audit !== undefined ? userProfile.morning_audit !== 0 : false);
-    
-    const scheduleAudits = async () => {
-      if (!isAuditEnabled) {
-        // Cancel all morning audit notifications (IDs 100-106)
-        for (let i = 0; i < 7; i++) {
-          await cancelNotification(100 + i);
-        }
-        return;
-      }
+    // Only run when we have loaded data (avoid running on empty state)
+    if (!habits.length && !calendarEvents.length) return;
 
-      const name = userProfile.name || 'User';
-      
-      // Schedule for the next 7 days
-      for (let i = 0; i < 7; i++) {
-        const targetDate = new Date();
-        targetDate.setDate(targetDate.getDate() + i);
-        targetDate.setHours(7, 0, 0, 0); // 7:00 AM
+    const globalEnabled = userProfile?.remindersGlobalEnabled !== false;
+    regenerateAllReminders({
+      habits: Array.isArray(habits) ? habits : [],
+      events: Array.isArray(calendarEvents) ? calendarEvents : [],
+      waterSettings: {
+        enabled: !!userProfile?.water_reminder_enabled,
+        startTime: userProfile?.water_reminder_start || '08:00',
+        endTime: userProfile?.water_reminder_end || '22:00',
+        intervalMinutes: userProfile?.water_reminder_interval || 60,
+      },
+      sleepSettings: {
+        enabled: !!userProfile?.sleepReminderEnabled,
+        reminderTime: userProfile?.sleepReminderTime || userProfile?.sleep_reminder_time || '22:00',
+      },
+      workoutSettings: {
+        enabled: !!userProfile?.workoutReminderEnabled,
+        reminderTime: userProfile?.workoutReminderTime || userProfile?.workout_reminder_time || '07:00',
+        repeatRule: userProfile?.workoutReminderRepeat || { type: 'daily' },
+      },
+      summarySettings: {
+        enabled: !!userProfile?.summaryReminderEnabled,
+        reminderTime: userProfile?.summaryReminderTime || userProfile?.summary_reminder_time || '07:00',
+        userName: userProfile?.name || 'User',
+        calendarEvents: Array.isArray(calendarEvents) ? calendarEvents : [],
+      },
+      globalEnabled,
+    }).catch(err => console.warn('[App] regenerateAllReminders error:', err));
+  }, [
+    isAuthenticated,
+    habits,
+    calendarEvents,
+    userProfile?.remindersGlobalEnabled,
+    userProfile?.sleepReminderEnabled,
+    userProfile?.workoutReminderEnabled,
+    userProfile?.summaryReminderEnabled,
+    userProfile?.water_reminder_enabled,
+  ]);
 
-        // If it's already past 7 AM today, skip scheduling today's notification
-        if (targetDate.getTime() < Date.now()) {
-          continue;
-        }
-
-        const dateKey = targetDate.toISOString().split('T')[0];
-        
-        // Find events for this specific date
-        const todaysEvents = calendarEvents.filter(e => {
-          if (!e.date) return false;
-          const eDate = typeof e.date === 'string' ? e.date.split('T')[0] : new Date(e.date).toISOString().split('T')[0];
-          return eDate === dateKey;
+  // ─── Save habit reminders ──────────────────────────────────────────────────
+  const handleSaveHabitReminders = async (habitId) => {
+    const updatedReminders = editHabitReminderList;
+    setHabits(prev => prev.map(h => h.id === habitId ? { ...h, reminders: updatedReminders } : h));
+    setEditHabitReminderId(null);
+    // Persist to API via existing PUT /api/habits endpoint
+    try {
+      const t = safeStorage.getItem('token');
+      if (t) {
+        await fetch(getApiUrl('/api/habits'), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${t}` },
+          body: JSON.stringify({ id: habitId, reminders: updatedReminders })
         });
-
-        let body = '';
-        if (todaysEvents.length === 0) {
-          body = `Good morning ${name}, you have a completely free day today!`;
-        } else if (todaysEvents.length === 1) {
-          body = `Good morning ${name}, today you have: ${todaysEvents[0].title}.`;
-        } else {
-          body = `Good morning ${name}, you have ${todaysEvents.length} events today, including ${todaysEvents[0].title}.`;
-        }
-
-        await scheduleFutureNotification(100 + i, "Daily Morning Audit", body, targetDate);
       }
-    };
-    
-    scheduleAudits();
-  }, [userProfile.morningAudit, userProfile.morning_audit, userProfile.name, calendarEvents, isAuthenticated]);
-
-  // Schedule Daily Habit Reminders
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    if (habitNotificationsEnabled) {
-      const activeHabits = (Array.isArray(habits) ? habits : []).filter(h => !h.completedAt && !h.archived).map(h => h.title);
-      if (activeHabits.length > 0) {
-        const userName = userProfile?.name ? userProfile.name.split(' ')[0] : 'User';
-        const habitsStr = activeHabits.length > 2 
-          ? activeHabits.slice(0, 2).join(', ') + ` and ${activeHabits.length - 2} more`
-          : activeHabits.join(' and ');
-        const message = `Hey ${userName}, did you complete ${habitsStr} habits?`;
-        scheduleDailyNotification(2, "Habit Reminder", message, 19, 0); // 7:00 PM
-      } else {
-        cancelNotification(2);
-      }
-      localStorage.setItem('habitNotifications_enabled', 'true');
-    } else {
-      cancelNotification(2);
-      localStorage.setItem('habitNotifications_enabled', 'false');
+    } catch (e) {
+      console.error('Failed to save habit reminders:', e);
     }
-  }, [habits, habitNotificationsEnabled, userProfile?.name, isAuthenticated]);
+    // Reschedule just habit notifications
+    const globalEnabled = userProfile?.remindersGlobalEnabled !== false;
+    const allHabits = habits.map(h => h.id === habitId ? { ...h, reminders: updatedReminders } : h);
+    scheduleHabitReminders(allHabits, globalEnabled).catch(console.error);
+    showToast?.('Habit reminders saved!', 'success');
+  };
+
 
   // Universal sync helpers between Today routine and Daily Works (habits)
   // Sync is now 1:1 via habitId linkage
@@ -4413,6 +4417,17 @@ const handleDeleteHabitDb = async (id) => {
                               >
                                 Delete Habit
                               </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditHabitReminderId(item.id);
+                                  setEditHabitReminderList(Array.isArray(item.reminders) ? item.reminders : []);
+                                  setHabitMenuOpen(null);
+                                }}
+                                style={{ padding: '10px 16px', background: 'transparent', border: 'none', borderTop: '1px solid var(--border-color)', textAlign: 'left', cursor: 'pointer', color: 'var(--accent-blue)', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}
+                              >
+                                <Bell size={14} /> Set Reminders {(item.reminders?.length || 0) > 0 ? `(${item.reminders.length})` : ''}
+                              </button>
                             </div>
                           )}
                         </div>
@@ -5718,6 +5733,28 @@ const handleDeleteHabitDb = async (id) => {
         onConfirm={confirmModal.onConfirm}
         onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
       />
+
+      {/* Habit Reminder Edit Modal */}
+      {editHabitReminderId !== null && (
+        <Modal
+          isOpen={true}
+          onClose={() => setEditHabitReminderId(null)}
+          title="Habit Reminders"
+          icon={Bell}
+          maxWidth="440px"
+        >
+          <ReminderEditor
+            reminders={editHabitReminderList}
+            onChange={setEditHabitReminderList}
+            mode="time"
+            label="Reminders"
+          />
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
+            <button className="secondary-btn" onClick={() => setEditHabitReminderId(null)}>Cancel</button>
+            <button className="blue-btn" onClick={() => handleSaveHabitReminders(editHabitReminderId)}>Save Reminders</button>
+          </div>
+        </Modal>
+      )}
 
     </div>
   );

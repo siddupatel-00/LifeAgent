@@ -16,6 +16,7 @@ async function resetUserData(userId) {
     { sql: 'DELETE FROM sleep_logs WHERE user_id = ?', args: [userId] },
     { sql: 'DELETE FROM calendar_events WHERE user_id = ?', args: [userId] },
     { sql: 'DELETE FROM chat_history WHERE user_id = ?', args: [userId] },
+    { sql: 'DELETE FROM reminders WHERE user_id = ?', args: [userId] },
     { sql: 'DELETE FROM daily_metrics WHERE user_id = ? OR (user_email IS NOT NULL AND user_email = ?)', args: [userId, userEmail || ''] },
     { sql: "INSERT INTO user_settings (user_id, workout_templates, workout_split_type) VALUES (?, NULL, 'weekly') ON CONFLICT (user_id) DO UPDATE SET workout_templates = NULL, workout_split_type = 'weekly'", args: [userId] }
   ];
@@ -35,7 +36,7 @@ export default async function handler(req, res) {
   await ensureDbSchema();
   const userId = getUserId(req);
   if (!userId) return res.status(401).json({ error: 'Unauthorized' });
-  
+
   try {
     if (req.method === 'DELETE' || (req.method === 'POST' && (req.query?.action === 'reset-all' || req.body?.action === 'reset-all'))) {
       await resetUserData(userId);
@@ -45,10 +46,42 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       const result = await db.execute({ sql: 'SELECT name, email, phone, handle, theme, ai_name, gemini_api_key, groq_api_key, ai_provider, currency, ai_tone, morning_audit, smart_alerts, week_start_day, sync_to_cloud FROM users WHERE id = ?', args: [userId] });
       if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
-      
-      let userSettings = { timezone: 'UTC', chat_reset_time: '00:00', last_chat_reset: null, workout_split_type: 'weekly', workout_templates: null, week_start_day: 'Monday' };
+
+      let userSettings = {
+        timezone: 'UTC',
+        chat_reset_time: '00:00',
+        last_chat_reset: null,
+        workout_split_type: 'weekly',
+        workout_templates: null,
+        week_start_day: 'Monday',
+        // Reminder defaults
+        reminders_global_enabled: 0,
+        water_target_goal: 2.5,
+        water_reminder_interval: 60,
+        water_reminder_enabled: 0,
+        water_reminder_start: '08:00',
+        water_reminder_end: '22:00',
+        sleep_reminder_enabled: 0,
+        sleep_reminder_time: '22:00',
+        workout_reminder_enabled: 0,
+        workout_reminder_time: '07:00',
+        workout_reminder_repeat: '{"type":"daily"}',
+        summary_reminder_enabled: 0,
+        summary_reminder_time: '07:00',
+      };
+
       try {
-        const settingsResult = await db.execute({ sql: 'SELECT timezone, chat_reset_time, last_chat_reset, workout_split_type, workout_templates, week_start_day, water_target_goal, water_reminder_interval, water_reminder_enabled FROM user_settings WHERE user_id = ?', args: [userId] });
+        const settingsResult = await db.execute({
+          sql: `SELECT timezone, chat_reset_time, last_chat_reset, workout_split_type, workout_templates,
+                week_start_day, water_target_goal, water_reminder_interval, water_reminder_enabled,
+                water_reminder_start, water_reminder_end,
+                reminders_global_enabled,
+                sleep_reminder_enabled, sleep_reminder_time,
+                workout_reminder_enabled, workout_reminder_time, workout_reminder_repeat,
+                summary_reminder_enabled, summary_reminder_time
+                FROM user_settings WHERE user_id = ?`,
+          args: [userId]
+        });
         if (settingsResult.rows.length > 0) {
           userSettings = { ...userSettings, ...settingsResult.rows[0] };
         }
@@ -79,10 +112,16 @@ export default async function handler(req, res) {
         weekStartDay: weekStartDay,
         sync_to_cloud: row.sync_to_cloud !== undefined && row.sync_to_cloud !== null ? row.sync_to_cloud : 1,
         syncToCloud: (row.sync_to_cloud !== undefined && row.sync_to_cloud !== null) ? row.sync_to_cloud !== 0 : true,
-        ...userSettings
+        ...userSettings,
+        // Boolean convenience aliases for frontend
+        remindersGlobalEnabled: userSettings.reminders_global_enabled !== 0,
+        waterReminderEnabled: userSettings.water_reminder_enabled !== 0,
+        sleepReminderEnabled: userSettings.sleep_reminder_enabled !== 0,
+        workoutReminderEnabled: userSettings.workout_reminder_enabled !== 0,
+        summaryReminderEnabled: userSettings.summary_reminder_enabled !== 0,
       });
     }
-    
+
     if (req.method === 'PUT') {
       const body = req.body || {};
       const name = body.name;
@@ -102,16 +141,40 @@ export default async function handler(req, res) {
       const chat_reset_time = body.chat_reset_time || body.chatResetTime;
       const week_start_day = body.week_start_day || body.weekStartDay;
       const sync_to_cloud = body.syncToCloud !== undefined ? (body.syncToCloud ? 1 : 0) : (body.sync_to_cloud !== undefined ? (body.sync_to_cloud ? 1 : 0) : undefined);
-      
+
       const workout_split_type = body.workout_split_type;
       const workout_templates = body.workout_templates;
+
+      // Water reminder settings
       const water_target_goal = body.water_target_goal;
       const water_reminder_interval = body.water_reminder_interval;
       const water_reminder_enabled = body.water_reminder_enabled !== undefined ? (body.water_reminder_enabled ? 1 : 0) : undefined;
-      
+      const water_reminder_start = body.water_reminder_start;
+      const water_reminder_end = body.water_reminder_end;
+
+      // Global reminders switch
+      const reminders_global_enabled = body.remindersGlobalEnabled !== undefined
+        ? (body.remindersGlobalEnabled ? 1 : 0)
+        : (body.reminders_global_enabled !== undefined ? (body.reminders_global_enabled ? 1 : 0) : undefined);
+
+      // Sleep reminder
+      const sleep_reminder_enabled = body.sleepReminderEnabled !== undefined ? (body.sleepReminderEnabled ? 1 : 0) : (body.sleep_reminder_enabled !== undefined ? (body.sleep_reminder_enabled ? 1 : 0) : undefined);
+      const sleep_reminder_time = body.sleepReminderTime || body.sleep_reminder_time;
+
+      // Workout reminder
+      const workout_reminder_enabled = body.workoutReminderEnabled !== undefined ? (body.workoutReminderEnabled ? 1 : 0) : (body.workout_reminder_enabled !== undefined ? (body.workout_reminder_enabled ? 1 : 0) : undefined);
+      const workout_reminder_time = body.workoutReminderTime || body.workout_reminder_time;
+      const workout_reminder_repeat = body.workoutReminderRepeat !== undefined
+        ? (typeof body.workoutReminderRepeat === 'string' ? body.workoutReminderRepeat : JSON.stringify(body.workoutReminderRepeat))
+        : (body.workout_reminder_repeat !== undefined ? (typeof body.workout_reminder_repeat === 'string' ? body.workout_reminder_repeat : JSON.stringify(body.workout_reminder_repeat)) : undefined);
+
+      // Summary reminder
+      const summary_reminder_enabled = body.summaryReminderEnabled !== undefined ? (body.summaryReminderEnabled ? 1 : 0) : (body.summary_reminder_enabled !== undefined ? (body.summary_reminder_enabled ? 1 : 0) : undefined);
+      const summary_reminder_time = body.summaryReminderTime || body.summary_reminder_time;
+
       const currentUserReq = await db.execute({ sql: 'SELECT * FROM users WHERE id = ?', args: [userId] });
       const current = currentUserReq.rows[0] || {};
-      
+
       // Handle uniqueness validation if handle is being changed
       let finalHandle = current.handle;
       if (handle !== undefined && typeof handle === 'string' && handle.trim()) {
@@ -149,26 +212,73 @@ export default async function handler(req, res) {
         ]
       });
 
-      const currentSetReq = await db.execute({ sql: 'SELECT timezone, chat_reset_time, workout_split_type, workout_templates, week_start_day, water_target_goal, water_reminder_interval, water_reminder_enabled FROM user_settings WHERE user_id = ?', args: [userId] });
-      const currentSet = currentSetReq.rows.length > 0 ? currentSetReq.rows[0] : { timezone: 'UTC', chat_reset_time: '00:00', workout_split_type: 'weekly', workout_templates: null, week_start_day: 'Monday' };
+      const currentSetReq = await db.execute({
+        sql: `SELECT timezone, chat_reset_time, workout_split_type, workout_templates, week_start_day,
+              water_target_goal, water_reminder_interval, water_reminder_enabled, water_reminder_start, water_reminder_end,
+              reminders_global_enabled,
+              sleep_reminder_enabled, sleep_reminder_time,
+              workout_reminder_enabled, workout_reminder_time, workout_reminder_repeat,
+              summary_reminder_enabled, summary_reminder_time
+              FROM user_settings WHERE user_id = ?`,
+        args: [userId]
+      });
+      const currentSet = currentSetReq.rows.length > 0 ? currentSetReq.rows[0] : {
+        timezone: 'UTC', chat_reset_time: '00:00', workout_split_type: 'weekly',
+        workout_templates: null, week_start_day: 'Monday',
+        water_target_goal: 2.5, water_reminder_interval: 60, water_reminder_enabled: 0,
+        water_reminder_start: '08:00', water_reminder_end: '22:00',
+        reminders_global_enabled: 0,
+        sleep_reminder_enabled: 0, sleep_reminder_time: '22:00',
+        workout_reminder_enabled: 0, workout_reminder_time: '07:00', workout_reminder_repeat: '{"type":"daily"}',
+        summary_reminder_enabled: 0, summary_reminder_time: '07:00',
+      };
 
       await db.execute({
-        sql: 'INSERT INTO user_settings (user_id, timezone, chat_reset_time, workout_split_type, workout_templates, week_start_day, water_target_goal, water_reminder_interval, water_reminder_enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (user_id) DO UPDATE SET timezone = excluded.timezone, chat_reset_time = excluded.chat_reset_time, workout_split_type = excluded.workout_split_type, workout_templates = excluded.workout_templates, week_start_day = excluded.week_start_day, water_target_goal = excluded.water_target_goal, water_reminder_interval = excluded.water_reminder_interval, water_reminder_enabled = excluded.water_reminder_enabled',
+        sql: `INSERT INTO user_settings (
+                user_id, timezone, chat_reset_time, workout_split_type, workout_templates, week_start_day,
+                water_target_goal, water_reminder_interval, water_reminder_enabled, water_reminder_start, water_reminder_end,
+                reminders_global_enabled,
+                sleep_reminder_enabled, sleep_reminder_time,
+                workout_reminder_enabled, workout_reminder_time, workout_reminder_repeat,
+                summary_reminder_enabled, summary_reminder_time
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              ON CONFLICT (user_id) DO UPDATE SET
+                timezone = excluded.timezone, chat_reset_time = excluded.chat_reset_time,
+                workout_split_type = excluded.workout_split_type, workout_templates = excluded.workout_templates,
+                week_start_day = excluded.week_start_day,
+                water_target_goal = excluded.water_target_goal, water_reminder_interval = excluded.water_reminder_interval,
+                water_reminder_enabled = excluded.water_reminder_enabled, water_reminder_start = excluded.water_reminder_start,
+                water_reminder_end = excluded.water_reminder_end,
+                reminders_global_enabled = excluded.reminders_global_enabled,
+                sleep_reminder_enabled = excluded.sleep_reminder_enabled, sleep_reminder_time = excluded.sleep_reminder_time,
+                workout_reminder_enabled = excluded.workout_reminder_enabled, workout_reminder_time = excluded.workout_reminder_time,
+                workout_reminder_repeat = excluded.workout_reminder_repeat,
+                summary_reminder_enabled = excluded.summary_reminder_enabled, summary_reminder_time = excluded.summary_reminder_time`,
         args: [
-          userId, 
-          timezone !== undefined ? timezone : currentSet.timezone, 
+          userId,
+          timezone !== undefined ? timezone : currentSet.timezone,
           chat_reset_time !== undefined ? chat_reset_time : currentSet.chat_reset_time,
           workout_split_type !== undefined ? workout_split_type : currentSet.workout_split_type,
           workout_templates !== undefined ? workout_templates : currentSet.workout_templates,
           week_start_day !== undefined ? week_start_day : (currentSet.week_start_day || 'Monday'),
           water_target_goal !== undefined ? water_target_goal : (currentSet.water_target_goal !== undefined ? currentSet.water_target_goal : 2.5),
           water_reminder_interval !== undefined ? water_reminder_interval : (currentSet.water_reminder_interval !== undefined ? currentSet.water_reminder_interval : 60),
-          water_reminder_enabled !== undefined ? water_reminder_enabled : (currentSet.water_reminder_enabled !== undefined ? currentSet.water_reminder_enabled : 0)
+          water_reminder_enabled !== undefined ? water_reminder_enabled : (currentSet.water_reminder_enabled !== undefined ? currentSet.water_reminder_enabled : 0),
+          water_reminder_start !== undefined ? water_reminder_start : (currentSet.water_reminder_start || '08:00'),
+          water_reminder_end !== undefined ? water_reminder_end : (currentSet.water_reminder_end || '22:00'),
+          reminders_global_enabled !== undefined ? reminders_global_enabled : (currentSet.reminders_global_enabled !== undefined ? currentSet.reminders_global_enabled : 0),
+          sleep_reminder_enabled !== undefined ? sleep_reminder_enabled : (currentSet.sleep_reminder_enabled !== undefined ? currentSet.sleep_reminder_enabled : 0),
+          sleep_reminder_time !== undefined ? sleep_reminder_time : (currentSet.sleep_reminder_time || '22:00'),
+          workout_reminder_enabled !== undefined ? workout_reminder_enabled : (currentSet.workout_reminder_enabled !== undefined ? currentSet.workout_reminder_enabled : 0),
+          workout_reminder_time !== undefined ? workout_reminder_time : (currentSet.workout_reminder_time || '07:00'),
+          workout_reminder_repeat !== undefined ? workout_reminder_repeat : (currentSet.workout_reminder_repeat || '{"type":"daily"}'),
+          summary_reminder_enabled !== undefined ? summary_reminder_enabled : (currentSet.summary_reminder_enabled !== undefined ? currentSet.summary_reminder_enabled : 0),
+          summary_reminder_time !== undefined ? summary_reminder_time : (currentSet.summary_reminder_time || '07:00'),
         ]
       });
       return res.status(200).json({ success: true });
     }
-    
+
     res.status(405).json({ error: 'Method not allowed' });
   } catch (error) {
     res.status(500).json({ error: error.message });

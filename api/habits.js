@@ -13,8 +13,18 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       // Habits are persistent daily items — not filtered by date
       // They persist forever, only checked_today resets daily
-      const habits = await db.execute({ sql: 'SELECT * FROM habits WHERE user_id = ?', args: [userId] });
-      return res.status(200).json(habits.rows);
+      const habitResult = await db.execute({ sql: 'SELECT * FROM habits WHERE user_id = ?', args: [userId] });
+        const habitRows = habitResult.rows;
+        // Fetch reminders for each habit
+        const habitsWithReminders = await Promise.all(habitRows.map(async (habit) => {
+          const remindersRes = await db.execute({
+            sql: "SELECT * FROM reminders WHERE entity_type = 'habit' AND entity_id = ?",
+            args: [habit.id]
+          });
+          habit.reminders = remindersRes.rows;
+          return habit;
+        }));
+        return res.status(200).json(habitsWithReminders);
     }
     
     if (req.method === 'PUT') {
@@ -65,7 +75,18 @@ export default async function handler(req, res) {
       args.push(Number(id) || id, userId);
 
       await db.execute({ sql: updateSql, args });
-      return res.status(200).json({ success: true });
+        // Update reminders if provided
+        if (Array.isArray(req.body.reminders)) {
+          // Remove existing reminders for this habit
+          await db.execute({ sql: "DELETE FROM reminders WHERE entity_type = 'habit' AND entity_id = ?", args: [id] });
+          for (const rem of req.body.reminders) {
+            await db.execute({
+              sql: "INSERT INTO reminders (user_id, entity_type, entity_id, offset_minutes, repeat_rule, enabled, reminder_time) VALUES (?, 'habit', ?, ?, ?, ?, ?)",
+              args: [userId, id, rem.offset_minutes, rem.repeat_rule || null, rem.enabled !== undefined ? (rem.enabled ? 1 : 0) : 1, rem.reminder_time || null]
+            });
+          }
+        }
+        return res.status(200).json({ success: true });
     }
     
     if (req.method === 'POST') {
@@ -80,6 +101,16 @@ export default async function handler(req, res) {
       });
 
       const newHabitId = Number(result.lastInsertRowid);
+      // Insert reminders if provided
+      if (Array.isArray(req.body.reminders)) {
+        for (const rem of req.body.reminders) {
+          await db.execute({
+            sql: "INSERT INTO reminders (user_id, entity_type, entity_id, offset_minutes, repeat_rule, enabled, reminder_time) VALUES (?, 'habit', ?, ?, ?, ?, ?)",
+            args: [userId, newHabitId, rem.offset_minutes, rem.repeat_rule || null, rem.enabled !== undefined ? (rem.enabled ? 1 : 0) : 1, rem.reminder_time || null]
+          });
+        }
+      }
+
       const todayDate = /^\d{4}-\d{2}-\d{2}$/.test(client_date || '') ? client_date : new Date().toISOString().split('T')[0];
 
       try {

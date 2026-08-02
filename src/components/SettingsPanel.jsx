@@ -1,6 +1,6 @@
 import { safeStorage } from '../utils/safeStorage';
 import React, { useState } from 'react';
-import { Check, User, Bot, Save, LogOut, AlertTriangle } from 'lucide-react';
+import { Check, User, Bot, Save, LogOut, AlertTriangle, Bell } from 'lucide-react';
 import CustomSelect from './CustomSelect';
 import ConfirmModal from './ConfirmModal';
 import { getApiUrl } from '../utils/apiConfig';
@@ -71,7 +71,16 @@ const SettingsPanel = ({
             week_start_day: userProfile.weekStartDay || userProfile.week_start_day || 'Monday',
             weekStartDay: userProfile.weekStartDay || userProfile.week_start_day || 'Monday',
             sync_to_cloud: userProfile.syncToCloud !== false ? 1 : 0,
-            syncToCloud: userProfile.syncToCloud !== false
+            syncToCloud: userProfile.syncToCloud !== false,
+            // Reminder fields
+            remindersGlobalEnabled: !!userProfile.remindersGlobalEnabled,
+            sleepReminderEnabled: !!userProfile.sleepReminderEnabled,
+            sleepReminderTime: userProfile.sleepReminderTime || userProfile.sleep_reminder_time || '22:00',
+            workoutReminderEnabled: !!userProfile.workoutReminderEnabled,
+            workoutReminderTime: userProfile.workoutReminderTime || userProfile.workout_reminder_time || '07:00',
+            workoutReminderRepeat: userProfile.workoutReminderRepeat || userProfile.workout_reminder_repeat || '{"type":"daily"}',
+            summaryReminderEnabled: !!userProfile.summaryReminderEnabled,
+            summaryReminderTime: userProfile.summaryReminderTime || userProfile.summary_reminder_time || '07:00',
           })
         });
         if (res.ok) {
@@ -491,6 +500,154 @@ const SettingsPanel = ({
                   { value: "Minimalist Executive", label: "Minimalist Executive" }
                 ]}
               />
+            </div>
+
+          </div>
+        </div>
+
+        {/* SECTION 2.5: Reminders & Notifications */}
+        <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '24px' }}>
+          <h4 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-blue)' }}>
+            <Bell size={18} /> Reminders &amp; Notifications
+          </h4>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+
+            {/* Master switch */}
+            <div className="settings-row">
+              <div>
+                <div style={{ fontWeight: 700, fontSize: '1rem' }}>Enable All Reminders</div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Master switch for all Capacitor Local Notifications. Turning this OFF pauses all reminders without deleting them. Turning it back ON reschedules everything automatically.</div>
+              </div>
+              <div
+                onClick={() => {
+                  const val = !userProfile.remindersGlobalEnabled;
+                  setUserProfile({ ...userProfile, remindersGlobalEnabled: val });
+                }}
+                style={{
+                  width: '52px', height: '28px', borderRadius: '14px', cursor: 'pointer', flexShrink: 0,
+                  background: userProfile.remindersGlobalEnabled ? 'var(--accent-blue)' : 'var(--border-color)',
+                  position: 'relative', transition: 'background 0.25s'
+                }}
+              >
+                <div style={{
+                  position: 'absolute', top: '3px',
+                  left: userProfile.remindersGlobalEnabled ? '26px' : '3px',
+                  width: '22px', height: '22px', borderRadius: '50%',
+                  background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+                  transition: 'left 0.25s'
+                }} />
+              </div>
+            </div>
+
+            {/* Sleep Reminder */}
+            <div className="settings-row">
+              <div>
+                <div style={{ fontWeight: 700, fontSize: '1rem' }}>Bedtime Reminder</div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Daily notification to wind down and prepare for sleep.</div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <input
+                  type="time"
+                  value={userProfile.sleepReminderTime || userProfile.sleep_reminder_time || '22:00'}
+                  onChange={e => setUserProfile({ ...userProfile, sleepReminderTime: e.target.value })}
+                  disabled={!userProfile.sleepReminderEnabled}
+                  style={{
+                    background: 'var(--bg-main)', border: '1px solid var(--border-color)',
+                    borderRadius: '8px', color: 'var(--text-main)', padding: '6px 10px',
+                    fontSize: '0.9rem', opacity: userProfile.sleepReminderEnabled ? 1 : 0.4
+                  }}
+                />
+                <div
+                  onClick={() => setUserProfile({ ...userProfile, sleepReminderEnabled: !userProfile.sleepReminderEnabled })}
+                  style={{
+                    width: '52px', height: '28px', borderRadius: '14px', cursor: 'pointer', flexShrink: 0,
+                    background: userProfile.sleepReminderEnabled ? 'var(--accent-blue)' : 'var(--border-color)',
+                    position: 'relative', transition: 'background 0.25s'
+                  }}
+                >
+                  <div style={{
+                    position: 'absolute', top: '3px',
+                    left: userProfile.sleepReminderEnabled ? '26px' : '3px',
+                    width: '22px', height: '22px', borderRadius: '50%',
+                    background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+                    transition: 'left 0.25s'
+                  }} />
+                </div>
+              </div>
+            </div>
+
+            {/* Workout Reminder */}
+            <div className="settings-row">
+              <div>
+                <div style={{ fontWeight: 700, fontSize: '1rem' }}>Workout Reminder</div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Daily notification to complete your workout session.</div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <input
+                  type="time"
+                  value={userProfile.workoutReminderTime || userProfile.workout_reminder_time || '07:00'}
+                  onChange={e => setUserProfile({ ...userProfile, workoutReminderTime: e.target.value })}
+                  disabled={!userProfile.workoutReminderEnabled}
+                  style={{
+                    background: 'var(--bg-main)', border: '1px solid var(--border-color)',
+                    borderRadius: '8px', color: 'var(--text-main)', padding: '6px 10px',
+                    fontSize: '0.9rem', opacity: userProfile.workoutReminderEnabled ? 1 : 0.4
+                  }}
+                />
+                <div
+                  onClick={() => setUserProfile({ ...userProfile, workoutReminderEnabled: !userProfile.workoutReminderEnabled })}
+                  style={{
+                    width: '52px', height: '28px', borderRadius: '14px', cursor: 'pointer', flexShrink: 0,
+                    background: userProfile.workoutReminderEnabled ? 'var(--accent-blue)' : 'var(--border-color)',
+                    position: 'relative', transition: 'background 0.25s'
+                  }}
+                >
+                  <div style={{
+                    position: 'absolute', top: '3px',
+                    left: userProfile.workoutReminderEnabled ? '26px' : '3px',
+                    width: '22px', height: '22px', borderRadius: '50%',
+                    background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+                    transition: 'left 0.25s'
+                  }} />
+                </div>
+              </div>
+            </div>
+
+            {/* Morning Summary Reminder */}
+            <div className="settings-row">
+              <div>
+                <div style={{ fontWeight: 700, fontSize: '1rem' }}>Morning Summary Notification</div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Daily morning notification summarising today's calendar events.</div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <input
+                  type="time"
+                  value={userProfile.summaryReminderTime || userProfile.summary_reminder_time || '07:00'}
+                  onChange={e => setUserProfile({ ...userProfile, summaryReminderTime: e.target.value })}
+                  disabled={!userProfile.summaryReminderEnabled}
+                  style={{
+                    background: 'var(--bg-main)', border: '1px solid var(--border-color)',
+                    borderRadius: '8px', color: 'var(--text-main)', padding: '6px 10px',
+                    fontSize: '0.9rem', opacity: userProfile.summaryReminderEnabled ? 1 : 0.4
+                  }}
+                />
+                <div
+                  onClick={() => setUserProfile({ ...userProfile, summaryReminderEnabled: !userProfile.summaryReminderEnabled })}
+                  style={{
+                    width: '52px', height: '28px', borderRadius: '14px', cursor: 'pointer', flexShrink: 0,
+                    background: userProfile.summaryReminderEnabled ? 'var(--accent-blue)' : 'var(--border-color)',
+                    position: 'relative', transition: 'background 0.25s'
+                  }}
+                >
+                  <div style={{
+                    position: 'absolute', top: '3px',
+                    left: userProfile.summaryReminderEnabled ? '26px' : '3px',
+                    width: '22px', height: '22px', borderRadius: '50%',
+                    background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+                    transition: 'left 0.25s'
+                  }} />
+                </div>
+              </div>
             </div>
 
           </div>

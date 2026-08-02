@@ -5,6 +5,7 @@ import Modal from './Modal';
 import CustomSelect from './CustomSelect';
 import { todayKey } from '../utils/date';
 import { getApiUrl } from '../utils/apiConfig';
+import { scheduleWaterReminders, cancelAllOfType } from '../utils/reminderScheduler';
 
 const DEFAULT_PRESETS = [50, 150, 200];
 
@@ -73,6 +74,8 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
   const [modalTargetGoal, setModalTargetGoal] = useState(targetGoal != null ? targetGoal.toString() : '2.5');
   const [modalReminderInterval, setModalReminderInterval] = useState(reminderIntervalMinutes.toString());
   const [modalCustomInterval, setModalCustomInterval] = useState('');
+  const [reminderStartTime, setReminderStartTime] = useState(userProfile?.water_reminder_start || '08:00');
+  const [reminderEndTime, setReminderEndTime] = useState(userProfile?.water_reminder_end || '22:00');
 
   const handleSetGoal = () => {
     const val = parseFloat(goalInput);
@@ -104,13 +107,24 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
           body: JSON.stringify({ 
             water_target_goal: newTarget,
             water_reminder_interval: newInterval,
-            water_reminder_enabled: isReminderEnabled 
+            water_reminder_enabled: isReminderEnabled,
+            water_reminder_start: reminderStartTime,
+            water_reminder_end: reminderEndTime,
           })
         });
       }
     } catch (e) {
       console.error('Failed to save water settings', e);
     }
+
+    // Reschedule Capacitor notifications
+    const globalEnabled = userProfile?.remindersGlobalEnabled !== false;
+    await scheduleWaterReminders({
+      enabled: isReminderEnabled,
+      startTime: reminderStartTime,
+      endTime: reminderEndTime,
+      intervalMinutes: newInterval,
+    }, globalEnabled).catch(console.error);
     
     setIsSettingsOpen(false);
     showToast?.('Water settings saved successfully!', 'success');
@@ -147,43 +161,28 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
     }
   }, [todayStat, userProfile]);
 
-  // Handle Reminder Timer
+  // Sync start/end times from userProfile
   useEffect(() => {
-    if (!isReminderEnabled) return;
-
-    const intervalMs = reminderIntervalMinutes * 60 * 1000;
-
-    const timer = setInterval(() => {
-      if (typeof window !== 'undefined' && 'Notification' in window) {
-        if (Notification.permission === 'granted') {
-          new Notification('💧 Hydration Reminder!', {
-            body: 'Time to take a break and drink a glass of water to stay energized!',
-            icon: '/logo.svg'
-          });
-        }
-      }
-      showToast?.('💧 Hydration Alert: Time to drink a glass of water!', 'info');
-    }, intervalMs);
-
-    return () => clearInterval(timer);
-  }, [isReminderEnabled, reminderIntervalMinutes]);
+    if (userProfile?.water_reminder_start) setReminderStartTime(userProfile.water_reminder_start);
+    if (userProfile?.water_reminder_end) setReminderEndTime(userProfile.water_reminder_end);
+  }, [userProfile?.water_reminder_start, userProfile?.water_reminder_end]);
 
   const toggleReminder = async () => {
     const newState = !isReminderEnabled;
+    setIsReminderEnabled(newState);
+
+    const globalEnabled = userProfile?.remindersGlobalEnabled !== false;
     if (newState) {
-      if (typeof window !== 'undefined' && 'Notification' in window) {
-        if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
-          const perm = await Notification.requestPermission();
-          if (perm !== 'granted') {
-            showToast?.('Notification permission denied. Will show in-app reminders.', 'info');
-          }
-        }
-      }
-      setIsReminderEnabled(true);
-      showToast?.(`💧 Water reminder enabled! Every ${reminderIntervalMinutes} minutes.`, 'success');
+      await scheduleWaterReminders({
+        enabled: true,
+        startTime: reminderStartTime,
+        endTime: reminderEndTime,
+        intervalMinutes: reminderIntervalMinutes,
+      }, globalEnabled).catch(console.error);
+      showToast?.(`💧 Water reminders enabled! Every ${reminderIntervalMinutes} min, ${reminderStartTime}–${reminderEndTime}.`, 'success');
     } else {
-      setIsReminderEnabled(false);
-      showToast?.('Water reminder disabled', 'info');
+      await cancelAllOfType('water').catch(console.error);
+      showToast?.('Water reminders disabled', 'info');
     }
 
     try {
@@ -666,6 +665,45 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
             </button>
           </div>
         </div>
+
+        {/* Reminder Window */}
+        <div style={{ marginBottom: '24px' }}>
+          <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px' }}>
+            Reminder Window
+          </label>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Start</div>
+              <input
+                type="time"
+                value={reminderStartTime}
+                onChange={e => setReminderStartTime(e.target.value)}
+                style={{
+                  width: '100%', padding: '10px 12px', borderRadius: '10px',
+                  border: '1px solid var(--border-color)', background: 'var(--bg-main)',
+                  color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none'
+                }}
+              />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>End</div>
+              <input
+                type="time"
+                value={reminderEndTime}
+                onChange={e => setReminderEndTime(e.target.value)}
+                style={{
+                  width: '100%', padding: '10px 12px', borderRadius: '10px',
+                  border: '1px solid var(--border-color)', background: 'var(--bg-main)',
+                  color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none'
+                }}
+              />
+            </div>
+          </div>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '6px' }}>
+            Reminders will only fire between these times each day.
+          </p>
+        </div>
+
         
         <button
           onClick={handleSaveAllSettings}

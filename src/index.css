@@ -1738,3 +1738,204 @@ input[type="checkbox"]:checked::after {
 }
 
 
+/* ═══════════════════════════════════════════════════════
+   REMINDER EDITOR COMPONENT
+═══════════════════════════════════════════════════════ */
+.reminder-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.reminder-editor-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.reminder-editor-label {
+  flex: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.reminder-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: var(--accent-blue-dim);
+  color: var(--accent-blue-light);
+  border: 1px solid var(--accent-blue);
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.reminder-add-btn:hover {
+  background: rgba(59,130,246,0.25);
+}
+
+.reminder-empty-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+  margin: 0;
+  padding: 8px 0;
+}
+
+.reminder-item {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.reminder-item-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.reminder-toggle {
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+.reminder-toggle::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  top: 3px;
+  transition: left 0.2s;
+}
+.reminder-toggle.on {
+  background: var(--accent-blue);
+}
+.reminder-toggle.on::after { left: 19px; }
+.reminder-toggle.off {
+  background: var(--border-color);
+}
+.reminder-toggle.off::after { left: 3px; }
+
+.reminder-select,
+.reminder-time-input {
+  background: var(--bg-main);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-main);
+  font-size: 13px;
+  padding: 4px 8px;
+  cursor: pointer;
+  outline: none;
+  flex: 1;
+  min-width: 0;
+}
+.reminder-select:focus,
+.reminder-time-input:focus {
+  border-color: var(--accent-blue);
+}
+
+.reminder-delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: color 0.2s, background 0.2s;
+}
+.reminder-delete-btn:hover {
+  color: #ef4444;
+  background: rgba(239,68,68,0.1);
+}
+
+.reminder-day-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.reminder-day-chip {
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.reminder-day-chip.selected {
+  background: var(--accent-blue);
+  border-color: var(--accent-blue);
+  color: #fff;
+}
+
+/* ─── Reminder Settings Row (used in Water/Sleep/Workout panels) ─── */
+.reminder-settings-section {
+  border-top: 1px solid var(--border-color);
+  padding-top: 16px;
+  margin-top: 16px;
+}
+
+.reminder-settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.reminder-settings-label {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.reminder-settings-value {
+  font-size: 13px;
+  color: var(--text-main);
+  font-weight: 500;
+}
+
+/* ─── Global Reminders Toggle (in Settings panel) ─── */
+.global-reminder-switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.global-reminder-switch-info h4 {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 2px 0;
+  color: var(--text-main);
+}
+.global-reminder-switch-info p {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0;
+}

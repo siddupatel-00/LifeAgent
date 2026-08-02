@@ -50,7 +50,6 @@ export default async function handler(req, res) {
         const { id, weight, target_weight, protein, target_protein, hydration, date } = req.body;
         const targetDate = date || new Date().toISOString().split('T')[0];
 
-        // Find existing record by id or date
         let existing = null;
         if (id) {
           const exRes = await db.execute({ sql: 'SELECT * FROM body_stats WHERE id = ? AND user_id = ?', args: [id, userId] });
@@ -67,7 +66,6 @@ export default async function handler(req, res) {
           const newProtein = protein !== undefined && protein !== null ? Number(protein) : existing.protein;
           const newTargetProtein = target_protein !== undefined && target_protein !== null ? Number(target_protein) : existing.target_protein;
           const newHydration = hydration !== undefined && hydration !== null ? Number(hydration) : existing.hydration;
-
           await db.execute({
             sql: 'UPDATE body_stats SET weight = ?, target_weight = ?, protein = ?, target_protein = ?, hydration = ? WHERE id = ? AND user_id = ?',
             args: [newWeight, newTargetWeight, newProtein, newTargetProtein, newHydration, existing.id, userId]
@@ -79,7 +77,6 @@ export default async function handler(req, res) {
           const newProtein = protein !== undefined && protein !== null ? Number(protein) : 0;
           const newTargetProtein = target_protein !== undefined && target_protein !== null ? Number(target_protein) : 0;
           const newHydration = hydration !== undefined && hydration !== null ? Number(hydration) : 0;
-
           const result = await db.execute({
             sql: 'INSERT INTO body_stats (user_id, weight, target_weight, protein, target_protein, hydration, date) VALUES (?, ?, ?, ?, ?, ?, ?)',
             args: [userId, newWeight, newTargetWeight, newProtein, newTargetProtein, newHydration, targetDate]

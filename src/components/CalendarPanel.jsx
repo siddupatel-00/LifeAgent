@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { todayKey } from '../utils/date';
 import { getApiUrl } from '../utils/apiConfig';
-import { Calendar as CalendarIcon, Plus, Trash2, ChevronDown, Filter, AlertCircle, CheckCircle, Clock, X } from 'lucide-react';
+import { Calendar as CalendarIcon, Plus, Trash2, ChevronDown, Filter, AlertCircle, CheckCircle, Clock, X, Bell } from 'lucide-react';
 import ConfirmModal from './ConfirmModal';
 import Modal from './Modal';
 import CustomSelect from './CustomSelect';
-import { scheduleFutureNotification, cancelNotification } from '../utils/notifications';
+import ReminderEditor from './ReminderEditor';
+import { cancelEntityReminders, scheduleEventReminders } from '../utils/reminderScheduler';
 
 const formatDateStr = (d) => {
   const y = d.getFullYear();
@@ -23,9 +24,12 @@ export default function CalendarPanel({
   const [isAddEventFormOpen, setIsAddEventFormOpen] = useState(false);
   const [newEventTitle, setNewEventTitle] = useState('');
   const [newEventDate, setNewEventDate] = useState(() => todayKey(userProfile?.timezone));
+  const [newEventReminders, setNewEventReminders] = useState([]);
   const [calendarMonth, setCalendarMonth] = useState({ year: new Date().getFullYear(), month: new Date().getMonth() });
   const [openStatusDropdown, setOpenStatusDropdown] = useState(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const [editReminderEventId, setEditReminderEventId] = useState(null);
+  const [editReminderList, setEditReminderList] = useState([]);
 
   // Filters state
   const [showExpired, setShowExpired] = useState(false);
@@ -38,32 +42,25 @@ export default function CalendarPanel({
       const res = await fetch(getApiUrl('/api/calendar'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ title: newEventTitle.trim(), date: newEventDate, color: 'var(--accent-blue)' })
+        body: JSON.stringify({
+          title: newEventTitle.trim(),
+          date: newEventDate,
+          color: 'var(--accent-blue)',
+          reminders: newEventReminders
+        })
       });
       if (res.ok) {
         const ev = await res.json();
-        setCalendarEvents(prev => [...prev.filter(e => e.id !== ev.id), ev]);
-        
-        // Schedule notification 15 days before event at 9:00 AM
-        try {
-          const eventDate = new Date(newEventDate);
-          eventDate.setDate(eventDate.getDate() - 15);
-          eventDate.setHours(9, 0, 0, 0);
-          
-          if (eventDate.getTime() > Date.now()) {
-            const userName = userProfile?.name || 'User';
-            scheduleFutureNotification(
-              ev.id, 
-              "Upcoming Event Reminder", 
-              `Hey ${userName}, in 15 days you have ${ev.title}, are you preparing for it?`, 
-              eventDate
-            );
-          }
-        } catch (e) {
-          console.error("Failed to schedule event notification:", e);
-        }
+        ev.reminders = newEventReminders;
+        setCalendarEvents(prev => {
+          const updated = [...prev.filter(e => e.id !== ev.id), ev];
+          // Reschedule event reminders with full updated list
+          scheduleEventReminders(updated).catch(console.error);
+          return updated;
+        });
 
         setNewEventTitle('');
+        setNewEventReminders([]);
         setIsAddEventFormOpen(false);
         showToast?.('Event saved successfully!', 'success');
       } else {
@@ -76,6 +73,26 @@ export default function CalendarPanel({
     }
   };
 
+  const handleSaveEventReminders = async (eventId) => {
+    try {
+      await fetch(getApiUrl('/api/calendar'), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ id: eventId, reminders: editReminderList })
+      });
+      setCalendarEvents(prev => {
+        const updated = prev.map(ev => ev.id === eventId ? { ...ev, reminders: editReminderList } : ev);
+        scheduleEventReminders(updated).catch(console.error);
+        return updated;
+      });
+      setEditReminderEventId(null);
+      showToast?.('Reminders updated', 'success');
+    } catch (err) {
+      console.error('Failed to update reminders:', err);
+      showToast?.('Error updating reminders', 'error');
+    }
+  };
+
   const performDeleteEvent = async (id) => {
     if (!id) return;
     try {
@@ -85,8 +102,12 @@ export default function CalendarPanel({
         body: JSON.stringify({ id })
       });
       if (res.ok) {
-        setCalendarEvents(prev => prev.filter(ev => ev.id !== id));
-        cancelNotification(id).catch(console.error);
+        setCalendarEvents(prev => {
+          const updated = prev.filter(ev => ev.id !== id);
+          cancelEntityReminders('event', id).catch(console.error);
+          scheduleEventReminders(updated).catch(console.error);
+          return updated;
+        });
         showToast?.('Event deleted successfully', 'success');
       } else {
         showToast?.('Failed to delete event', 'error');
@@ -289,6 +310,12 @@ export default function CalendarPanel({
               }}
             />
           </div>
+          <ReminderEditor
+            reminders={newEventReminders}
+            onChange={setNewEventReminders}
+            mode="offset"
+            label="Reminders"
+          />
         </div>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
           <button className="secondary-btn" onClick={() => setIsAddEventFormOpen(false)}>Cancel</button>
@@ -553,6 +580,31 @@ export default function CalendarPanel({
                                 )}
                               </div>
 
+                              {/* Reminder Button */}
+                              <button
+                                onClick={() => {
+                                  setEditReminderEventId(e.id);
+                                  setEditReminderList(Array.isArray(e.reminders) ? e.reminders : []);
+                                }}
+                                style={{
+                                  background: 'rgba(59,130,246,0.08)',
+                                  border: '1px solid rgba(59,130,246,0.2)',
+                                  color: 'var(--accent-blue)',
+                                  borderRadius: '8px',
+                                  padding: '4px 10px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  transition: 'all 0.2s'
+                                }}
+                                title="Edit Reminders"
+                              >
+                                <Bell size={13} /> {(e.reminders?.length || 0) > 0 ? `${e.reminders.length} reminder${e.reminders.length > 1 ? 's' : ''}` : 'Remind'}
+                              </button>
+
                               {/* Delete Button */}
                               <button 
                                 onClick={() => setDeleteConfirmId(e.id)}
@@ -644,6 +696,26 @@ export default function CalendarPanel({
         }}
         onCancel={() => setDeleteConfirmId(null)}
       />
+
+      {/* Reminder Edit Modal */}
+      <Modal
+        isOpen={editReminderEventId !== null}
+        onClose={() => setEditReminderEventId(null)}
+        title="Event Reminders"
+        icon={Bell}
+        maxWidth="420px"
+      >
+        <ReminderEditor
+          reminders={editReminderList}
+          onChange={setEditReminderList}
+          mode="offset"
+          label="Reminders"
+        />
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
+          <button className="secondary-btn" onClick={() => setEditReminderEventId(null)}>Cancel</button>
+          <button className="blue-btn" onClick={() => handleSaveEventReminders(editReminderEventId)}>Save Reminders</button>
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { Plus, X, Trash2, Edit2, Moon, Clock, Calendar, Activity, Filter } from 
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { todayKey } from '../utils/date';
 import { getApiUrl } from '../utils/apiConfig';
-import { scheduleDailyNotification, cancelNotification } from '../utils/notifications';
+
 import ConfirmModal from './ConfirmModal';
 import Modal from './Modal';
 import CustomSelect from './CustomSelect';
@@ -31,20 +31,6 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
   // Chart type: 'bar' | 'line'
   const [chartType, setChartType] = useState('bar');
 
-  const [sleepNotificationsEnabled, setSleepNotificationsEnabled] = useState(() => {
-    return localStorage.getItem('sleepNotifications_enabled') === 'true';
-  });
-
-  useEffect(() => {
-    if (sleepNotificationsEnabled) {
-      const userName = userProfile?.name ? userProfile.name.split(' ')[0] : 'User';
-      scheduleDailyNotification(1, "Sleep Check", `Hey ${userName}. Are you awake? Are you asleep? Just checking.`, 20, 0);
-      localStorage.setItem('sleepNotifications_enabled', 'true');
-    } else {
-      cancelNotification(1);
-      localStorage.setItem('sleepNotifications_enabled', 'false');
-    }
-  }, [sleepNotificationsEnabled, userProfile?.name]);
 
   useEffect(() => {
     if (Array.isArray(sleepLogs)) {
@@ -386,15 +372,9 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-            <input 
-              type="checkbox" 
-              checked={sleepNotificationsEnabled} 
-              onChange={e => setSleepNotificationsEnabled(e.target.checked)}
-              style={{ cursor: 'pointer' }}
-            />
-            Daily 8 PM Check-in
-          </label>
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '5px' }}>
+            🔔 Sleep reminders → <strong>Settings</strong>
+          </span>
           <button 
             onClick={handleOpenAddModal}
             className="blue-btn"
