@@ -192,6 +192,7 @@ export async function cancelEntityReminders(entityType, entityId) {
     }
     if (toCancel.length > 0) {
       await LocalNotifications.cancel({ notifications: toCancel });
+      console.log(`[reminderScheduler] Cancelled ${toCancel.length} ${entityType} reminders for entity ${entityId}.`);
     }
   } catch (e) {
     console.warn('[reminderScheduler] cancelEntityReminders error:', e);
@@ -202,6 +203,7 @@ export async function cancelEntityReminders(entityType, entityId) {
 export async function cancelAllOfType(entityType) {
   if (Capacitor.getPlatform() === 'web') {
     clearWebTimers(entityType);
+    console.log(`[reminderScheduler] Cleared web timers for ${entityType}.`);
     return;
   }
   try {
@@ -215,6 +217,7 @@ export async function cancelAllOfType(entityType) {
     }
     if (toCancel.length > 0) {
       await LocalNotifications.cancel({ notifications: toCancel });
+      console.log(`[reminderScheduler] Cancelled ${toCancel.length} ${entityType} native reminders.`);
     }
   } catch (e) {
     console.warn('[reminderScheduler] cancelAllOfType error:', e);
@@ -558,7 +561,7 @@ export async function regenerateAllReminders({
   workoutSettings = {},
   summarySettings = {},
   globalEnabled = true,
-}) {
+} = {}) {
   console.log('[reminderScheduler] Regenerating all reminders...');
   await Promise.all([
     scheduleHabitReminders(habits, globalEnabled),
@@ -571,7 +574,6 @@ export async function regenerateAllReminders({
   localStorage.setItem(LAST_SCHEDULED_DAY_KEY, new Date().toISOString().split('T')[0]);
   console.log('[reminderScheduler] Done regenerating reminders.');
 }
-
 // ─── Check whether regeneration is needed on app launch ──────────────────────
 export function isRegenNeeded() {
   const last = localStorage.getItem(LAST_SCHEDULED_DAY_KEY);
