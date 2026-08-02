@@ -821,18 +821,7 @@ input[type="checkbox"]:checked::after {
   --active-border: rgba(255, 255, 255, 0.25);
 }
 
-[data-theme="night"] .blue-btn {
-  background: var(--bg-card);
-  color: #ffffff;
-  border: 1px solid var(--border-color);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
 
-[data-theme="night"] .blue-btn:hover {
-  background: var(--bg-card-hover);
-  border-color: rgba(255, 255, 255, 0.25);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
-}
 
 /* Hide mobile specific elements on desktop */
 .mobile-bottom-nav,

@@ -5,6 +5,7 @@ import { Calendar as CalendarIcon, Plus, Trash2, ChevronDown, Filter, AlertCircl
 import ConfirmModal from './ConfirmModal';
 import Modal from './Modal';
 import CustomSelect from './CustomSelect';
+import { scheduleFutureNotification, cancelNotification } from '../utils/notifications';
 
 const formatDateStr = (d) => {
   const y = d.getFullYear();
@@ -42,6 +43,26 @@ export default function CalendarPanel({
       if (res.ok) {
         const ev = await res.json();
         setCalendarEvents(prev => [...prev.filter(e => e.id !== ev.id), ev]);
+        
+        // Schedule notification 15 days before event at 9:00 AM
+        try {
+          const eventDate = new Date(newEventDate);
+          eventDate.setDate(eventDate.getDate() - 15);
+          eventDate.setHours(9, 0, 0, 0);
+          
+          if (eventDate.getTime() > Date.now()) {
+            const userName = userProfile?.name || 'User';
+            scheduleFutureNotification(
+              ev.id, 
+              "Upcoming Event Reminder", 
+              `Hey ${userName}, in 15 days you have ${ev.title}, are you preparing for it?`, 
+              eventDate
+            );
+          }
+        } catch (e) {
+          console.error("Failed to schedule event notification:", e);
+        }
+
         setNewEventTitle('');
         setIsAddEventFormOpen(false);
         showToast?.('Event saved successfully!', 'success');
@@ -65,6 +86,7 @@ export default function CalendarPanel({
       });
       if (res.ok) {
         setCalendarEvents(prev => prev.filter(ev => ev.id !== id));
+        cancelNotification(id).catch(console.error);
         showToast?.('Event deleted successfully', 'success');
       } else {
         showToast?.('Failed to delete event', 'error');

@@ -25,6 +25,7 @@ import Modal from './components/Modal';
 import { todayKey, localTimeZone, getWeekDays, isHabitScheduledOnDay, ALL_WEEK_DAYS } from './utils/date';
 import WaterReminder from './components/WaterReminder';
 import TabErrorBoundary from './components/TabErrorBoundary';
+import { scheduleFutureNotification, cancelNotification } from './utils/notifications';
 
 const getFormattedDateTitle = (dateStr) => {
   let targetDate = new Date();
@@ -576,6 +577,9 @@ export default function App() {
   const [todayItems, setTodayItems] = useState(() => { const c = safeStorage.getItem('cache_todayItems'); return c ? JSON.parse(c) : []; });
   const [habitCardViews, setHabitCardViews] = useState({}); // { habitId: 'progress' | 'heatmap' }
   const [habitMenuOpen, setHabitMenuOpen] = useState(null); // habitId
+  const [habitNotificationsEnabled, setHabitNotificationsEnabled] = useState(() => {
+    return localStorage.getItem('habitNotifications_enabled') === 'true';
+  });
 
   // 3) Finance state
   const [transactions, setTransactions] = useState(() => { const c = safeStorage.getItem('cache_transactions'); return c ? JSON.parse(c) : []; });
@@ -1081,6 +1085,80 @@ export default function App() {
     }, 60_000);
     return () => window.clearInterval(interval);
   }, [isAuthenticated, token, userProfile.timezone]);
+
+  // Schedule Morning Audit Summaries
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const isAuditEnabled = userProfile.morningAudit !== undefined ? !!userProfile.morningAudit : (userProfile.morning_audit !== undefined ? userProfile.morning_audit !== 0 : false);
+    
+    const scheduleAudits = async () => {
+      if (!isAuditEnabled) {
+        // Cancel all morning audit notifications (IDs 100-106)
+        for (let i = 0; i < 7; i++) {
+          await cancelNotification(100 + i);
+        }
+        return;
+      }
+
+      const name = userProfile.name || 'User';
+      
+      // Schedule for the next 7 days
+      for (let i = 0; i < 7; i++) {
+        const targetDate = new Date();
+        targetDate.setDate(targetDate.getDate() + i);
+        targetDate.setHours(7, 0, 0, 0); // 7:00 AM
+
+        // If it's already past 7 AM today, skip scheduling today's notification
+        if (targetDate.getTime() < Date.now()) {
+          continue;
+        }
+
+        const dateKey = targetDate.toISOString().split('T')[0];
+        
+        // Find events for this specific date
+        const todaysEvents = calendarEvents.filter(e => {
+          if (!e.date) return false;
+          const eDate = typeof e.date === 'string' ? e.date.split('T')[0] : new Date(e.date).toISOString().split('T')[0];
+          return eDate === dateKey;
+        });
+
+        let body = '';
+        if (todaysEvents.length === 0) {
+          body = `Good morning ${name}, you have a completely free day today!`;
+        } else if (todaysEvents.length === 1) {
+          body = `Good morning ${name}, today you have: ${todaysEvents[0].title}.`;
+        } else {
+          body = `Good morning ${name}, you have ${todaysEvents.length} events today, including ${todaysEvents[0].title}.`;
+        }
+
+        await scheduleFutureNotification(100 + i, "Daily Morning Audit", body, targetDate);
+      }
+    };
+    
+    scheduleAudits();
+  }, [userProfile.morningAudit, userProfile.morning_audit, userProfile.name, calendarEvents, isAuthenticated]);
+
+  // Schedule Daily Habit Reminders
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    if (habitNotificationsEnabled) {
+      const activeHabits = (Array.isArray(habits) ? habits : []).filter(h => !h.completedAt && !h.archived).map(h => h.title);
+      if (activeHabits.length > 0) {
+        const userName = userProfile?.name ? userProfile.name.split(' ')[0] : 'User';
+        const habitsStr = activeHabits.length > 2 
+          ? activeHabits.slice(0, 2).join(', ') + ` and ${activeHabits.length - 2} more`
+          : activeHabits.join(' and ');
+        const message = `Hey ${userName}, did you complete ${habitsStr} habits?`;
+        scheduleDailyNotification(2, "Habit Reminder", message, 19, 0); // 7:00 PM
+      } else {
+        cancelNotification(2);
+      }
+      localStorage.setItem('habitNotifications_enabled', 'true');
+    } else {
+      cancelNotification(2);
+      localStorage.setItem('habitNotifications_enabled', 'false');
+    }
+  }, [habits, habitNotificationsEnabled, userProfile?.name, isAuthenticated]);
 
   // Universal sync helpers between Today routine and Daily Works (habits)
   // Sync is now 1:1 via habitId linkage
@@ -3815,6 +3893,30 @@ const handleDeleteHabitDb = async (id) => {
                       >
                         <Plus size={18} /> {isAddHabitModalOpen ? 'Close Form' : 'Add Habit / Daily Item'}
                       </button>
+                    </div>
+                  </div>
+                  
+                  {/* HABITS NOTIFICATIONS TOGGLE */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginBottom: '20px', gap: '12px' }}>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                      <strong style={{ color: 'var(--text-main)' }}>Daily 7 PM Check-in</strong><br/>
+                      Receive an automatic push reminder for incomplete habits.
+                    </div>
+                    <div
+                      onClick={() => setHabitNotificationsEnabled(!habitNotificationsEnabled)}
+                      style={{
+                        width: '42px', height: '24px', borderRadius: '12px', cursor: 'pointer', flexShrink: 0,
+                        background: habitNotificationsEnabled ? 'var(--accent-blue)' : 'var(--border-color)',
+                        position: 'relative', transition: 'background 0.25s'
+                      }}
+                    >
+                      <div style={{
+                        position: 'absolute', top: '2px',
+                        left: habitNotificationsEnabled ? '20px' : '2px',
+                        width: '20px', height: '20px', borderRadius: '50%',
+                        background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+                        transition: 'left 0.25s'
+                      }} />
                     </div>
                   </div>
 
