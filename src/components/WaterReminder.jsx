@@ -98,15 +98,12 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
     try {
       const token = safeStorage.getItem('token');
       if (token) {
-        await fetch(getApiUrl('/api/settings'), {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ 
+        await queueMutation('settings', 'update', 'water', { 
             water_target_goal: newTarget,
             water_reminder_interval: newInterval,
             water_reminder_enabled: isReminderEnabled 
-          })
-        });
+          });
+          triggerSync();
       }
     } catch (e) {
       console.error('Failed to save water settings', e);
@@ -174,11 +171,7 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
     try {
       const token = safeStorage.getItem('token');
       if (token) {
-        fetch(getApiUrl('/api/settings'), {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ water_reminder_enabled: newState })
-        }).catch(err => console.error('Failed to update water reminder state:', err));
+        queueMutation('settings', 'update', 'water_enabled', { water_reminder_enabled: newState }).then(() => triggerSync()).catch(console.error);
       }
     } catch (e) {}
   };
@@ -193,11 +186,7 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
     try {
       const token = safeStorage.getItem('token');
       if (token) {
-        fetch(getApiUrl('/api/settings'), {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ water_reminder_interval: mins })
-        }).catch(err => console.error('Failed to update water reminder interval:', err));
+        queueMutation('settings', 'update', 'water_interval', { water_reminder_interval: mins }).then(() => triggerSync()).catch(console.error);
       }
     } catch (e) {}
   };

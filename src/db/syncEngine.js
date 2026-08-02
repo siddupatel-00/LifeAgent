@@ -148,15 +148,16 @@ export const triggerSync = async (forcePull = false) => {
         for (const tableName of tableNames) {
           const remoteRecords = remoteData[tableName] || [];
           for (const remoteRec of remoteRecords) {
-            const localRec = await db[tableName].get(remoteRec.id);
+            const localRec = await db[tableName].get(String(remoteRec.id)) || await db[tableName].get(remoteRec.id);
             const remoteTime = new Date(remoteRec.updatedAt || remoteRec.updated_at || 0).getTime();
             const localTime = localRec ? new Date(localRec.updatedAt || localRec.updated_at || 0).getTime() : 0;
 
             if (!localRec || remoteTime >= localTime) {
               if (remoteRec.is_deleted) {
+                await db[tableName].delete(String(remoteRec.id));
                 await db[tableName].delete(remoteRec.id);
               } else {
-                await db[tableName].put({ ...remoteRec, lastSyncedAt: new Date().toISOString() });
+                await db[tableName].put({ ...remoteRec, id: String(remoteRec.id), lastSyncedAt: new Date().toISOString() });
               }
             }
           }

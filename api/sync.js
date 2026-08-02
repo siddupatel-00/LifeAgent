@@ -137,6 +137,15 @@ export default async function handler(req, res) {
               args: [recordId, userId, payload.sender || 'user', payload.text || '', payload.time || nowIso, nowIso]
             });
           }
+        } else if (table === 'settings') {
+          await db.execute({
+            sql: 'UPDATE users SET theme = COALESCE(?, theme), ai_name = COALESCE(?, ai_name), gemini_api_key = COALESCE(?, gemini_api_key), groq_api_key = COALESCE(?, groq_api_key), ai_provider = COALESCE(?, ai_provider), currency = COALESCE(?, currency), ai_tone = COALESCE(?, ai_tone), morning_audit = COALESCE(?, morning_audit), smart_alerts = COALESCE(?, smart_alerts), week_start_day = COALESCE(?, week_start_day), sync_to_cloud = COALESCE(?, sync_to_cloud) WHERE id = ?',
+            args: [payload.theme, payload.ai_name, payload.gemini_api_key, payload.groq_api_key, payload.ai_provider, payload.currency, payload.ai_tone, payload.morning_audit, payload.smart_alerts, payload.week_start_day, payload.sync_to_cloud, userId]
+          });
+          await db.execute({
+            sql: 'INSERT INTO user_settings (user_id, timezone, chat_reset_time, workout_split_type, workout_templates, week_start_day) VALUES (?, COALESCE(?, "UTC"), COALESCE(?, "00:00"), COALESCE(?, "weekly"), ?, COALESCE(?, "Monday")) ON CONFLICT (user_id) DO UPDATE SET timezone = COALESCE(excluded.timezone, user_settings.timezone), chat_reset_time = COALESCE(excluded.chat_reset_time, user_settings.chat_reset_time), workout_split_type = COALESCE(excluded.workout_split_type, user_settings.workout_split_type), workout_templates = COALESCE(excluded.workout_templates, user_settings.workout_templates), week_start_day = COALESCE(excluded.week_start_day, user_settings.week_start_day)',
+            args: [userId, payload.timezone, payload.chat_reset_time, payload.workout_split_type, payload.workout_templates, payload.week_start_day]
+          });
         }
       }
 

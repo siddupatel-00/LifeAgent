@@ -1223,11 +1223,7 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
               onChange={(e) => {
                 const newType = e.target.value;
                 setWorkoutSettings(prev => ({...prev, split_type: newType}));
-                fetch(getApiUrl('/api/settings'), {
-                  method: 'PUT',
-                  headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                  body: JSON.stringify({ workout_split_type: newType })
-                }).catch(err => console.error('Failed to update split type:', err));
+                queueMutation('settings', 'update', 'workout_split_type', { workout_split_type: newType }).then(() => triggerSync()).catch(console.error);
               }}
               options={[
                 { value: "weekly", label: "Weekly Schedule (Mon - Sun)" },
@@ -1412,11 +1408,7 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
             <button type="button" className="blue-btn" style={{ padding: '10px 24px', borderRadius: '12px' }} onClick={() => {
               setIsEditSplitOpen(false);
               setHasCustomSplit(true);
-              fetch(getApiUrl('/api/settings'), {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ workout_templates: JSON.stringify(splitList) })
-              }).catch(err => console.error('Failed to update templates:', err));
+              queueMutation('settings', 'update', 'workout_templates', { workout_templates: JSON.stringify(splitList) }).then(() => triggerSync()).catch(console.error);
             }}>Done</button>
           </div>
         </div>

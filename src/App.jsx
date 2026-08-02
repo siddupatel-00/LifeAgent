@@ -1309,11 +1309,8 @@ export default function App() {
         if (nextChecked) {
           const newTodayItem = { id: Date.now(), habitId: targetHabitId, title: h.title, category: h.category, checked: true, time: 'Daily' };
           if (token) {
-            fetch(getApiUrl('/api/today'), {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-              body: JSON.stringify({ label: h.title, category: h.category, checked: 1, habit_id: targetHabitId, time: 'Daily', client_date: todayKey(userProfile?.timezone) })
-            }).catch(console.error);
+            const newTodayItemPayload = { id: Date.now().toString(), title: h.title, category: h.category, checked: true, habit_id: targetHabitId, time: 'Daily', date: todayKey(userProfile?.timezone) };
+            db.todayItems.put(newTodayItemPayload).then(() => queueMutation('todayItems', 'create', newTodayItemPayload.id, newTodayItemPayload)).then(() => triggerSync()).catch(console.error);
           }
           return [...prevToday, newTodayItem];
         }
@@ -1475,11 +1472,7 @@ export default function App() {
     setUserProfile(updatedProfile);
 
     if (token) {
-      fetch(getApiUrl('/api/settings'), {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(updatedProfile)
-      }).catch(err => console.error('Background settings save failed:', err));
+      queueMutation('settings', 'update', 'profile', updatedProfile).then(() => triggerSync()).catch(console.error);
     }
   };
 
@@ -1488,10 +1481,12 @@ export default function App() {
     showToast?.('AI Chat history cleared', 'info');
     try {
       if (token) {
-        await fetch(getApiUrl('/api/chat'), {
-          method: 'DELETE',
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
+        const messages = await db.aiMessages.toArray();
+        await db.aiMessages.clear();
+        for (const m of messages) {
+          await queueMutation('aiMessages', 'delete', m.id.toString(), { is_deleted: true });
+        }
+        triggerSync();
       }
     } catch (err) {
       console.error("Failed to clear chat history", err);
@@ -1519,7 +1514,7 @@ export default function App() {
       const fallbackReply = "Please provide your Gemini or Groq API key in the settings to use the AI Assistant.";
       const aiMsg = { id: Date.now() + 1, sender: 'ai', text: fallbackReply, time: nowTime };
       setAiMessages(prev => [...prev, aiMsg]);
-      fetch(getApiUrl('/api/chat'), { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify([newMsg, aiMsg]) }).catch(err => console.error(err));
+      [newMsg, aiMsg].forEach(async m => { await db.aiMessages.put({ ...m, id: String(m.id) }); await queueMutation('aiMessages', 'create', String(m.id), m); }); triggerSync();
       return;
     }
 
@@ -1656,19 +1651,19 @@ export default function App() {
         for (const match of habitMatches) {
           try {
             const data = JSON.parse(match[1]);
-            const res = await fetch(getApiUrl('/api/habits'), {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-              body: JSON.stringify({
+            const idStr = Date.now().toString();
+            const saved = {
+                id: idStr,
                 label: data.label || 'New Habit',
+                title: data.label || 'New Habit',
                 category: data.category || 'General',
-                target: data.target || 'Daily'
-              })
-            });
-            if (res.ok) {
-              const saved = await res.json();
-              addedHabits.push(saved);
-            }
+                target: data.target || 'Daily',
+                streak: 0
+            };
+            await db.habits.put(saved);
+            await queueMutation('habits', 'create', idStr, saved);
+            triggerSync();
+            addedHabits.push(saved);
             finalReply = finalReply.replace(match[0], '').trim();
           } catch (err) {
             console.error("Failed to parse habit JSON", err);
@@ -1810,11 +1805,7 @@ export default function App() {
       const aiMsg = { id: Date.now() + 1, sender: 'ai', text: finalReply, time: nowTime };
       setAiMessages(prev => prev.map(m => m.id === 'loading' ? aiMsg : m));
       
-      fetch(getApiUrl('/api/chat'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify([newMsg, aiMsg])
-      }).catch(err => console.error(err));
+      [newMsg, aiMsg].forEach(async m => { await db.aiMessages.put({ ...m, id: String(m.id) }); await queueMutation('aiMessages', 'create', String(m.id), m); }); triggerSync();
       
     } catch (error) {
       console.error("AI API Error:", error);
