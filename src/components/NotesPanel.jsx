@@ -433,12 +433,11 @@ export default function NotesPanel({
                         onClick={async () => {
                           setTrashNotes(trashNotes.filter(n => n.id !== currentNote.id));
                           try {
-                            await fetch(getApiUrl('/api/notes'), {
-                              method: 'DELETE',
-                              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                              body: JSON.stringify({ id: currentNote.id })
-                            });
-                          } catch(e){}
+                            await db.notes.delete(currentNote.id);
+                            await queueMutation('notes', 'delete', currentNote.id);
+                          } catch(e) {
+                            console.error(e);
+                          }
                         }}
                         style={{ padding: '8px 16px', borderRadius: '20px', background: '#ef4444', color: '#fff', border: 'none', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}
                       >

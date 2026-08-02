@@ -63,7 +63,7 @@ export default async function handler(req, res) {
                     ON CONFLICT(id) DO UPDATE SET
                       title=excluded.title, content=excluded.content, is_pinned=excluded.is_pinned,
                       is_archived=excluded.is_archived, is_trash=excluded.is_trash, updated_at=excluded.updated_at`,
-              args: [recordId, userId, payload.title || '', payload.content || '', payload.is_pinned ? 1 : 0, payload.is_archived ? 1 : 0, payload.is_trash ? 1 : 0, nowIso, nowIso]
+              args: [recordId, userId, payload.title || '', payload.content || '', payload.is_pinned ? 1 : 0, payload.is_archived ? 1 : 0, (payload.is_trash || payload.is_trashed) ? 1 : 0, nowIso, nowIso]
             });
           }
         } else if (table === 'calendarEvents') {
