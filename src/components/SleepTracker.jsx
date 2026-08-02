@@ -291,7 +291,7 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
     // Safety cap max 90 days to prevent rendering overflow
     let daysCount = 0;
     while (curr <= endDate && daysCount < 90) {
-      const dateStr = curr.toISOString().split('T')[0];
+      const dateStr = `${curr.getFullYear()}-${String(curr.getMonth()+1).padStart(2,'0')}-${String(curr.getDate()).padStart(2,'0')}`;
       const log = logs.find(l => l.date === dateStr);
       data.push({
         date: dateStr,
@@ -631,7 +631,7 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
 
           return (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {displayedLogs.map(log => (
+              {[...displayedLogs].sort((a, b) => new Date(b.date) - new Date(a.date)).map(log => (
                 <div key={log.id} style={{
                   background: 'var(--bg-main)', padding: '16px 20px', borderRadius: '14px',
                   border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px'
@@ -642,7 +642,8 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
                         {new Date(log.date).toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
                       </span>
                       <span style={{
-                        fontSize: '0.75rem', padding: '3px 10px', borderRadius: '12px', fontWeight: 700, color: '#fff',
+                        fontSize: '0.75rem', padding: '3px 10px', borderRadius: '12px', fontWeight: 700, 
+                        color: (log.quality === 'Good' || !log.quality) ? 'var(--accent-text, #ffffff)' : '#ffffff',
                         background: getQualityColor(log.quality)
                       }}>
                         {log.quality}
