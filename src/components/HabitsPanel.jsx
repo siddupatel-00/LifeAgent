@@ -103,7 +103,7 @@ export default function HabitsPanel({
                     flex: 1, padding: '8px', borderRadius: '8px',
                     border: `1px solid ${newHabitData.frequency !== 'custom' ? 'var(--accent-blue)' : 'var(--border-color)'}`,
                     background: newHabitData.frequency !== 'custom' ? 'var(--accent-blue)' : 'var(--bg-card)',
-                    color: newHabitData.frequency !== 'custom' ? '#fff' : 'var(--text-main)',
+                    color: newHabitData.frequency !== 'custom'  ? 'var(--accent-text, #ffffff)' : 'var(--text-main)',
                     fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer'
                   }}
                 >
@@ -116,7 +116,7 @@ export default function HabitsPanel({
                     flex: 1, padding: '8px', borderRadius: '8px',
                     border: `1px solid ${newHabitData.frequency === 'custom' ? 'var(--accent-blue)' : 'var(--border-color)'}`,
                     background: newHabitData.frequency === 'custom' ? 'var(--accent-blue)' : 'var(--bg-card)',
-                    color: newHabitData.frequency === 'custom' ? '#fff' : 'var(--text-main)',
+                    color: newHabitData.frequency === 'custom'  ? 'var(--accent-text, #ffffff)' : 'var(--text-main)',
                     fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer'
                   }}
                 >
@@ -300,7 +300,7 @@ export default function HabitsPanel({
                   width: '100%', padding: '12px', borderRadius: '12px',
                   border: `1px solid ${h.checkedToday ? 'var(--accent-blue)' : 'var(--border-color)'}`,
                   background: h.checkedToday ? 'var(--accent-blue)' : 'var(--bg-card)',
-                  color: h.checkedToday ? '#fff' : 'var(--text-main)',
+                  color: h.checkedToday  ? 'var(--accent-text, #ffffff)' : 'var(--text-main)',
                   fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer', transition: 'all 0.2s',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: 'auto'
                 }}
@@ -381,7 +381,7 @@ export default function HabitsPanel({
                   flex: 1, padding: '8px', borderRadius: '8px',
                   border: `1px solid ${newHabitData.frequency !== 'custom' ? 'var(--accent-blue)' : 'var(--border-color)'}`,
                   background: newHabitData.frequency !== 'custom' ? 'var(--accent-blue)' : 'var(--bg-card)',
-                  color: newHabitData.frequency !== 'custom' ? '#fff' : 'var(--text-main)',
+                  color: newHabitData.frequency !== 'custom'  ? 'var(--accent-text, #ffffff)' : 'var(--text-main)',
                   fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer'
                 }}
               >
@@ -394,7 +394,7 @@ export default function HabitsPanel({
                   flex: 1, padding: '8px', borderRadius: '8px',
                   border: `1px solid ${newHabitData.frequency === 'custom' ? 'var(--accent-blue)' : 'var(--border-color)'}`,
                   background: newHabitData.frequency === 'custom' ? 'var(--accent-blue)' : 'var(--bg-card)',
-                  color: newHabitData.frequency === 'custom' ? '#fff' : 'var(--text-main)',
+                  color: newHabitData.frequency === 'custom'  ? 'var(--accent-text, #ffffff)' : 'var(--text-main)',
                   fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer'
                 }}
               >

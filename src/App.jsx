@@ -720,7 +720,7 @@ export default function App() {
 
       const [settingsRes, todayRes, habitsRes, statsRes] = await Promise.all([
         fetch(getApiUrl('/api/settings'), { headers }).catch(e => null),
-        fetch(`/api/today?client_date=${clientDate}`, { headers }).catch(e => null),
+        fetch(getApiUrl(`/api/today?client_date=${clientDate}`), { headers }).catch(e => null),
         fetch(getApiUrl('/api/habits'), { headers }).catch(e => null),
         fetch(getApiUrl('/api/fitness?type=body-stats'), { headers }).catch(e => null)
       ]);
