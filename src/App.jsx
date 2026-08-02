@@ -1,5 +1,6 @@
 import { getApiUrl } from './utils/apiUrl';
 import React, { useState, useEffect, useRef } from 'react';
+import PullToRefresh from 'react-simple-pull-to-refresh';
 import ReactDOM from 'react-dom';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { 
@@ -2978,7 +2979,9 @@ const handleDeleteHabitDb = async (id) => {
           </aside>
 
           {/* MAIN RIGHT AREA (MeraBaazar layout without Verified Pro, Live, or top Log Out) */}
-          <section className={`main-layout-section ${activeTab === 'ai' ? 'ai-tab-active' : ''}`} style={{ flex: 1, height: '100vh', padding: '24px 16px', overflowY: activeTab === 'ai' ? 'hidden' : 'auto' }}>
+          <section className={`main-layout-section ${activeTab === 'ai' ? 'ai-tab-active' : ''}`} style={{ flex: 1, height: '100vh', overflowY: activeTab === 'ai' ? 'hidden' : 'auto' }}>
+            <PullToRefresh onRefresh={() => fetchStartupData(true)} pullingContent="" refreshingContent={<div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)' }}>Refreshing...</div>} disabled={activeTab === 'ai'}>
+              <div style={{ padding: '24px 16px', minHeight: '100vh' }}>
             
             <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px', position: 'relative', zIndex: 10000 }}>
               <div>
