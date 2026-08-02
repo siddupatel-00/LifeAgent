@@ -501,7 +501,7 @@ export default function App() {
   ];
 
   // 1) AI Chat state with Autonomous Executive Engine
-  const [aiMessages, setAiMessages] = useState([]);
+  const [aiMessages, setAiMessages] = useState(() => { const c = safeStorage.getItem('cache_aiMessages'); return c ? JSON.parse(c) : []; });
   const [inputMessage, setInputMessage] = useState('');
   const [aiName, setAiName] = useState('AI');
   const mainAiChatScrollRef = useRef(null);
@@ -553,7 +553,7 @@ export default function App() {
   // 2) Habit Tracker state
   // Habits state with exact daily tracking items: Gym, Study, Code, Reading
   const [showHabitHistory, setShowHabitHistory] = useState(false);
-  const [habits, setHabits] = useState([]);
+  const [habits, setHabits] = useState(() => { const c = safeStorage.getItem('cache_habits'); return c ? JSON.parse(c) : []; });
   const [isAddHabitModalOpen, setIsAddHabitModalOpen] = useState(false);
   const [isEditHabitModalOpen, setIsEditHabitModalOpen] = useState(false);
   const [editingHabitData, setEditingHabitData] = useState(null);
@@ -561,19 +561,19 @@ export default function App() {
   const [customPillarInput, setCustomPillarInput] = useState('');
   const [newTodayItemData, setNewTodayItemData] = useState({ title: '', category: 'Coding', time: '10:00 AM' });
   const [isAddTodayItemOpen, setIsAddTodayItemOpen] = useState(false);
-  const [todayItems, setTodayItems] = useState([]);
+  const [todayItems, setTodayItems] = useState(() => { const c = safeStorage.getItem('cache_todayItems'); return c ? JSON.parse(c) : []; });
   const [habitCardViews, setHabitCardViews] = useState({}); // { habitId: 'progress' | 'heatmap' }
   const [habitMenuOpen, setHabitMenuOpen] = useState(null); // habitId
 
   // 3) Finance state
-  const [transactions, setTransactions] = useState([]);
+  const [transactions, setTransactions] = useState(() => { const c = safeStorage.getItem('cache_transactions'); return c ? JSON.parse(c) : []; });
   const [newTitle, setNewTitle] = useState('');
   const [newAmount, setNewAmount] = useState('');
   const [newType, setNewType] = useState('spend');
 
   // 4) Body & Gym state
-  const [workouts, setWorkouts] = useState([]);
-  const [bodyStats, setBodyStats] = useState([]);
+  const [workouts, setWorkouts] = useState(() => { const c = safeStorage.getItem('cache_workouts'); return c ? JSON.parse(c) : []; });
+  const [bodyStats, setBodyStats] = useState(() => { const c = safeStorage.getItem('cache_bodyStats'); return c ? JSON.parse(c) : []; });
 
   const handleSaveBodyStat = async (updated) => {
     const todayStr = todayKey(userProfile?.timezone);
@@ -611,16 +611,16 @@ export default function App() {
   };
 
   // 5) Sleep state
-  const [sleepLogs, setSleepLogs] = useState([]);
+  const [sleepLogs, setSleepLogs] = useState(() => { const c = safeStorage.getItem('cache_sleepLogs'); return c ? JSON.parse(c) : []; });
 
   // 6) Notes & Diary state
-  const [notesList, setNotesList] = useState([]);
+  const [notesList, setNotesList] = useState(() => { const c = safeStorage.getItem('cache_notesList'); return c ? JSON.parse(c) : []; });
   const [activeNoteId, setActiveNoteId] = useState(null);
   const [expandedNoteId, setExpandedNoteId] = useState(null);
   const [isFloatingDiaryOpen, setIsFloatingDiaryOpen] = useState(false);
   const [floatingDiaryContent, setFloatingDiaryContent] = useState("");
   const [floatingDiaryShare, setFloatingDiaryShare] = useState(true);
-  const [trashNotes, setTrashNotes] = useState([]);
+  const [trashNotes, setTrashNotes] = useState(() => { const c = safeStorage.getItem('cache_trashNotes'); return c ? JSON.parse(c) : []; });
   const [notesViewMode, setNotesViewMode] = useState('active'); // 'active' | 'trash'
 
   // Auto-clean trash: if note deleted from trash -> permanently deleted; else in 49 days automatically purged
@@ -660,7 +660,7 @@ export default function App() {
   }, [activeTab, userProfile.auto_open_ai_sidechat]);
 
   // 8) Calendar state
-  const [calendarEvents, setCalendarEvents] = useState([]);
+  const [calendarEvents, setCalendarEvents] = useState(() => { const c = safeStorage.getItem('cache_calendarEvents'); return c ? JSON.parse(c) : []; });
   const [calendarSubTab, setCalendarSubTab] = useState('today');
   const [selectedCalendarDate, setSelectedCalendarDate] = useState(null);
   const [calendarMonth, setCalendarMonth] = useState(() => {
