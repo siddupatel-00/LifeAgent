@@ -2026,7 +2026,7 @@ const handleDeleteHabitDb = async (id) => {
                           borderRadius: '10px',
                           fontSize: '0.85rem',
                           fontWeight: isActive ? 700 : 500,
-                          color: isActive ? '#ffffff' : 'var(--text-muted)',
+                          color: isActive  ? 'var(--accent-text, #ffffff)' : 'var(--text-muted)',
                           background: isActive ? 'var(--accent-blue)' : 'transparent',
                           boxShadow: isActive ? '0 4px 18px rgba(59, 130, 246, 0.45)' : 'none',
                           border: 'none',
@@ -3747,7 +3747,7 @@ const handleDeleteHabitDb = async (id) => {
                       </div>
                     )}
                     {(Array.isArray(aiMessages) ? aiMessages : []).map(msg => (
-                      <div key={msg.id} style={{ alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start', maxWidth: '85%', background: msg.sender === 'user' ? 'var(--accent-blue)' : 'var(--bg-card)', color: msg.sender === 'user' ? '#fff' : 'var(--text-main)', padding: '12px 16px', borderRadius: msg.sender === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px', fontSize: '0.88rem', lineHeight: '1.5', whiteSpace: 'pre-line', border: msg.sender === 'ai' ? '1px solid var(--border-color)' : 'none' }}>
+                      <div key={msg.id} style={{ alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start', maxWidth: '85%', background: msg.sender === 'user' ? 'var(--accent-blue)' : 'var(--bg-card)', color: msg.sender === 'user'  ? 'var(--accent-text, #ffffff)' : 'var(--text-main)', padding: '12px 16px', borderRadius: msg.sender === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px', fontSize: '0.88rem', lineHeight: '1.5', whiteSpace: 'pre-line', border: msg.sender === 'ai' ? '1px solid var(--border-color)' : 'none' }}>
                         {msg.text}
                       </div>
                     ))}
@@ -3893,7 +3893,7 @@ const handleDeleteHabitDb = async (id) => {
                               flex: 1, padding: '10px', borderRadius: '10px',
                               border: `1px solid ${newHabitData.frequency !== 'custom' ? 'var(--accent-blue)' : 'var(--border-color)'}`,
                               background: newHabitData.frequency !== 'custom' ? 'var(--accent-blue)' : 'var(--bg-card)',
-                              color: newHabitData.frequency !== 'custom' ? '#fff' : 'var(--text-main)',
+                              color: newHabitData.frequency !== 'custom'  ? 'var(--accent-text, #ffffff)' : 'var(--text-main)',
                               fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer', transition: 'all 0.2s'
                             }}
                           >
@@ -3906,7 +3906,7 @@ const handleDeleteHabitDb = async (id) => {
                               flex: 1, padding: '10px', borderRadius: '10px',
                               border: `1px solid ${newHabitData.frequency === 'custom' ? 'var(--accent-blue)' : 'var(--border-color)'}`,
                               background: newHabitData.frequency === 'custom' ? 'var(--accent-blue)' : 'var(--bg-card)',
-                              color: newHabitData.frequency === 'custom' ? '#fff' : 'var(--text-main)',
+                              color: newHabitData.frequency === 'custom'  ? 'var(--accent-text, #ffffff)' : 'var(--text-main)',
                               fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer', transition: 'all 0.2s'
                             }}
                           >
@@ -4507,7 +4507,7 @@ const handleDeleteHabitDb = async (id) => {
                                 flex: 1, padding: '8px', borderRadius: '8px',
                                 border: `1px solid ${editingHabitData.frequency !== 'custom' ? 'var(--accent-blue)' : 'var(--border-color)'}`,
                                 background: editingHabitData.frequency !== 'custom' ? 'var(--accent-blue)' : 'var(--bg-card)',
-                                color: editingHabitData.frequency !== 'custom' ? '#fff' : 'var(--text-main)',
+                                color: editingHabitData.frequency !== 'custom'  ? 'var(--accent-text, #ffffff)' : 'var(--text-main)',
                                 fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer'
                               }}
                             >
@@ -4520,7 +4520,7 @@ const handleDeleteHabitDb = async (id) => {
                                 flex: 1, padding: '8px', borderRadius: '8px',
                                 border: `1px solid ${editingHabitData.frequency === 'custom' ? 'var(--accent-blue)' : 'var(--border-color)'}`,
                                 background: editingHabitData.frequency === 'custom' ? 'var(--accent-blue)' : 'var(--bg-card)',
-                                color: editingHabitData.frequency === 'custom' ? '#fff' : 'var(--text-main)',
+                                color: editingHabitData.frequency === 'custom'  ? 'var(--accent-text, #ffffff)' : 'var(--text-main)',
                                 fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer'
                               }}
                             >
