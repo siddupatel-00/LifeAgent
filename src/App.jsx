@@ -783,7 +783,7 @@ export default function App() {
           custom_days: h.custom_days || '',
           intervalDays: h.interval_days || 0,
           interval_days: h.interval_days || 0,
-          reminders: Array.isArray(h.reminders) ? h.reminders : []
+          reminders: Array.isArray(h.reminders) ? h.reminders : (typeof h.reminders === 'string' ? (JSON.parse(h.reminders) || []) : [])
         }));
         setHabits(mappedHabits);
         safeStorage.setItem('cache_habits', JSON.stringify(mappedHabits));

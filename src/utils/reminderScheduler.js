@@ -5,7 +5,7 @@
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 
-// NativeAlarmScheduler removed; using LocalNotifications only
+const NativeAlarmScheduler = registerPlugin('NativeAlarmScheduler');
 
 const LAST_SCHEDULED_DAY_KEY = 'reminder_last_scheduled_day';
 
@@ -15,12 +15,30 @@ const webTimers = [];
 async function dispatchNotifications(notifications) {
   if (!notifications || notifications.length === 0 || Capacitor.getPlatform() === 'web') return;
 
-  // Android native alarm scheduling removed; using LocalNotifications only
-
   try {
     await LocalNotifications.schedule({ notifications });
+    console.log(`[reminderScheduler] Scheduled ${notifications.length} LocalNotifications.`);
   } catch (err) {
     console.warn('[reminderScheduler] LocalNotifications schedule error:', err);
+  }
+
+  // Dual-scheduling: Also schedule via Android System Alarm Clock for 100% exact lockscreen/killed-app delivery
+  if (Capacitor.getPlatform() === 'android' && NativeAlarmScheduler) {
+    for (const n of notifications) {
+      try {
+        const fireAt = n.schedule?.at ? new Date(n.schedule.at).getTime() : null;
+        if (fireAt && fireAt > Date.now()) {
+          await NativeAlarmScheduler.scheduleAlarm({
+            id: n.id,
+            title: n.title,
+            body: n.body,
+            timestamp: fireAt
+          });
+        }
+      } catch (nativeErr) {
+        console.warn('[reminderScheduler] NativeAlarmScheduler error:', nativeErr);
+      }
+    }
   }
 }
 
@@ -107,24 +125,40 @@ export async function testNotificationNow() {
   const hasPermission = await requestNotificationPermission();
   if (!hasPermission) return false;
 
+  const testId = 999999;
   const fireDate = new Date(Date.now() + 4000); // 4 seconds in future
-  await LocalNotifications.schedule({
-    notifications: [{
-      id: 999999,
-      title,
-      body,
-      schedule: { at: fireDate, allowWhileIdle: true },
-      channelId: 'default',
-    }]
-  });
+  await dispatchNotifications([{
+    id: testId,
+    title,
+    body,
+    schedule: { at: fireDate, allowWhileIdle: true },
+    channelId: 'default',
+    sound: 'default',
+  }]);
   return true;
 }
 
-// ─── Deterministic integer ID ─────────────────────────────────────────────────
+// ─── Deterministic integer ID (never returns NaN) ────────────────────────────
+function safeInt(val) {
+  if (typeof val === 'number' && !isNaN(val)) return Math.abs(Math.floor(val)) % 10000;
+  const str = String(val !== undefined && val !== null ? val : '');
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash) % 10000;
+}
+
 export function makeNotifId(entityType, entityId, reminderId, dayOffset) {
   const typeMap = { event: 1, habit: 2, water: 3, sleep: 4, workout: 5, summary: 6 };
   const t = typeMap[entityType] || 7;
-  return (dayOffset * 10_000_000 + t * 1_000_000 + (Number(entityId) % 1000) * 1000 + (Number(reminderId) % 1000)) % 2_147_483_647;
+  const eId = safeInt(entityId);
+  const rId = safeInt(reminderId);
+  const dOff = Math.abs(Number(dayOffset) || 0) % 100;
+
+  const id = (dOff * 10_000_000 + t * 1_000_000 + eId * 100 + rId) % 2_147_483_647;
+  return id || 100000;
 }
 
 // ─── Parse time string ("HH:MM", "HH:MM:SS", "08:00 AM", "8:00 PM") ──────────
@@ -187,7 +221,9 @@ export async function cancelEntityReminders(entityType, entityId) {
     for (const n of (pending?.notifications || [])) {
       if (n.extra && n.extra.entityType === entityType && String(n.extra.entityId) === String(entityId)) {
         toCancel.push({ id: n.id });
-
+        if (Capacitor.getPlatform() === 'android' && NativeAlarmScheduler) {
+          NativeAlarmScheduler.cancelAlarm({ id: n.id }).catch(() => {});
+        }
       }
     }
     if (toCancel.length > 0) {
@@ -212,7 +248,9 @@ export async function cancelAllOfType(entityType) {
     for (const n of (pending?.notifications || [])) {
       if (n.extra && n.extra.entityType === entityType) {
         toCancel.push({ id: n.id });
-
+        if (Capacitor.getPlatform() === 'android' && NativeAlarmScheduler) {
+          NativeAlarmScheduler.cancelAlarm({ id: n.id }).catch(() => {});
+        }
       }
     }
     if (toCancel.length > 0) {
@@ -262,7 +300,7 @@ export async function scheduleEventReminders(events, globalEnabled = true) {
           schedule: { at: fireDate, allowWhileIdle: true },
           channelId: 'default',
           sound: 'default',
-          extra: { entityType: 'event', entityId: event.id, reminderId: rem.id }
+          extra: { entityType: 'event', entityId: String(event.id || 1), reminderId: String(rem.id || 1) }
         });
       }
     }
@@ -296,28 +334,61 @@ export async function scheduleHabitReminders(habitsOrObj, globalEnabled = true) 
   const now = Date.now();
 
   // 1. Individual per-habit reminders
-  for (const habit of habits) {
-    if (!Array.isArray(habit.reminders) || habit.reminders.length === 0) continue;
-    for (const rem of habit.reminders) {
+  for (let i = 0; i < habits.length; i++) {
+    const habit = habits[i];
+    if (!habit || habit.archived) continue;
+
+    let rems = [];
+    if (Array.isArray(habit.reminders)) {
+      rems = habit.reminders;
+    } else if (typeof habit.reminders === 'string') {
+      try {
+        rems = JSON.parse(habit.reminders);
+      } catch (e) {
+        rems = [];
+      }
+    }
+
+    // Fallback: If no explicit reminders array, check for single habit reminder time
+    const singleTime = habit.reminder_time || habit.reminderTime || habit.time;
+    if ((!Array.isArray(rems) || rems.length === 0) && singleTime) {
+      rems = [{ id: 1, reminder_time: singleTime, enabled: true }];
+    }
+
+    if (!Array.isArray(rems) || rems.length === 0) continue;
+
+    for (const rem of rems) {
       const isEnabled = rem.enabled !== false && rem.enabled !== 0 && rem.enabled !== '0';
       if (!isEnabled) continue;
-      const timeStr = rem.time || rem.reminder_time || rem.reminderTime;
+
+      const timeStr = rem.reminder_time || rem.time || rem.reminderTime;
       const t = parseTime(timeStr);
       if (!t) continue;
 
-      const repeatRule = rem.repeat_rule ? (typeof rem.repeat_rule === 'string' ? JSON.parse(rem.repeat_rule) : rem.repeat_rule) : { type: 'daily' };
+      let repeatRule = { type: 'daily' };
+      if (rem.repeat_rule) {
+        try {
+          repeatRule = typeof rem.repeat_rule === 'string' ? JSON.parse(rem.repeat_rule) : rem.repeat_rule;
+        } catch {
+          repeatRule = { type: 'daily' };
+        }
+      } else if (habit.frequency) {
+        repeatRule = { type: habit.frequency, customDays: habit.custom_days ? String(habit.custom_days).split(',') : [] };
+      }
+
       for (let day = 0; day < 7; day++) {
         const fireDate = buildDailyFireDate(day, t.hour, t.minute);
         if (fireDate.getTime() <= now) continue;
         if (!isRepeatDayMatch(repeatRule, fireDate)) continue;
 
-        const title = `✅ ${habit.title || habit.label || 'Habit Reminder'}`;
-        const body = "Don't forget to complete your habit today!";
+        const habitName = habit.title || habit.label || 'Habit';
+        const title = `✅ ${habitName}`;
+        const body = `Reminder to complete your habit: ${habitName}`;
 
         if (Capacitor.getPlatform() === 'web') {
           scheduleWebFallback(title, body, fireDate, 'habit');
         } else {
-          const id = makeNotifId('habit', habit.id, rem.id || 1, day);
+          const id = makeNotifId('habit', habit.id || i, rem.id || 1, day);
           notifications.push({
             id,
             title,
@@ -325,7 +396,7 @@ export async function scheduleHabitReminders(habitsOrObj, globalEnabled = true) 
             schedule: { at: fireDate, allowWhileIdle: true },
             channelId: 'default',
             sound: 'default',
-            extra: { entityType: 'habit', entityId: habit.id, reminderId: rem.id }
+            extra: { entityType: 'habit', entityId: String(habit.id || i), reminderId: String(rem.id || 1) }
           });
         }
       }
@@ -352,7 +423,7 @@ export async function scheduleHabitReminders(habitsOrObj, globalEnabled = true) 
           schedule: { at: fireDate, allowWhileIdle: true },
           channelId: 'default',
           sound: 'default',
-          extra: { entityType: 'habit', entityId: 9999, reminderId: 7000 }
+          extra: { entityType: 'habit', entityId: '9999', reminderId: '7000' }
         });
       }
     }
@@ -399,7 +470,7 @@ export async function scheduleWaterReminders({ enabled, startTime, endTime, inte
             schedule: { at: fireDate, allowWhileIdle: true },
             channelId: 'default',
             sound: 'default',
-            extra: { entityType: 'water', entityId: 1, reminderId: slotId }
+            extra: { entityType: 'water', entityId: '1', reminderId: String(slotId) }
           });
         }
       }
@@ -446,7 +517,7 @@ export async function scheduleSleepReminders({ enabled, reminderTime }, globalEn
         schedule: { at: fireDate, allowWhileIdle: true },
         channelId: 'default',
         sound: 'default',
-        extra: { entityType: 'sleep', entityId: 1, reminderId: 1 }
+        extra: { entityType: 'sleep', entityId: '1', reminderId: '1' }
       });
     }
   }
@@ -488,7 +559,7 @@ export async function scheduleWorkoutReminders({ enabled, reminderTime, repeatRu
         schedule: { at: fireDate, allowWhileIdle: true },
         channelId: 'default',
         sound: 'default',
-        extra: { entityType: 'workout', entityId: 1, reminderId: 1 }
+        extra: { entityType: 'workout', entityId: '1', reminderId: '1' }
       });
     }
   }
@@ -542,7 +613,7 @@ export async function scheduleMorningSummaryReminders({ enabled, reminderTime, u
         schedule: { at: fireDate, allowWhileIdle: true },
         channelId: 'default',
         sound: 'default',
-        extra: { entityType: 'summary', entityId: 1, reminderId: 1 }
+        extra: { entityType: 'summary', entityId: '1', reminderId: '1' }
       });
     }
   }
@@ -574,6 +645,7 @@ export async function regenerateAllReminders({
   localStorage.setItem(LAST_SCHEDULED_DAY_KEY, new Date().toISOString().split('T')[0]);
   console.log('[reminderScheduler] Done regenerating reminders.');
 }
+
 // ─── Check whether regeneration is needed on app launch ──────────────────────
 export function isRegenNeeded() {
   const last = localStorage.getItem(LAST_SCHEDULED_DAY_KEY);
@@ -604,3 +676,4 @@ function isRepeatDayMatch(rule, date) {
   }
   return true;
 }
+
