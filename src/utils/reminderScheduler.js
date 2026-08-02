@@ -5,7 +5,7 @@
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 
-const NativeAlarmScheduler = registerPlugin('NativeAlarmScheduler');
+// NativeAlarmScheduler removed; using LocalNotifications only
 
 const LAST_SCHEDULED_DAY_KEY = 'reminder_last_scheduled_day';
 
@@ -15,20 +15,7 @@ const webTimers = [];
 async function dispatchNotifications(notifications) {
   if (!notifications || notifications.length === 0 || Capacitor.getPlatform() === 'web') return;
 
-  if (Capacitor.getPlatform() === 'android') {
-    for (const n of notifications) {
-      try {
-        await NativeAlarmScheduler.scheduleAlarm({
-          id: n.id,
-          title: n.title,
-          body: n.body,
-          timestamp: n.schedule.at.getTime(),
-        });
-      } catch (err) {
-        console.warn('[reminderScheduler] NativeAlarmScheduler error:', err);
-      }
-    }
-  }
+  // Android native alarm scheduling removed; using LocalNotifications only
 
   try {
     await LocalNotifications.schedule({ notifications });
@@ -200,9 +187,7 @@ export async function cancelEntityReminders(entityType, entityId) {
     for (const n of (pending?.notifications || [])) {
       if (n.extra && n.extra.entityType === entityType && String(n.extra.entityId) === String(entityId)) {
         toCancel.push({ id: n.id });
-        if (Capacitor.getPlatform() === 'android') {
-          NativeAlarmScheduler.cancelAlarm({ id: n.id }).catch(() => {});
-        }
+
       }
     }
     if (toCancel.length > 0) {
@@ -225,9 +210,7 @@ export async function cancelAllOfType(entityType) {
     for (const n of (pending?.notifications || [])) {
       if (n.extra && n.extra.entityType === entityType) {
         toCancel.push({ id: n.id });
-        if (Capacitor.getPlatform() === 'android') {
-          NativeAlarmScheduler.cancelAlarm({ id: n.id }).catch(() => {});
-        }
+
       }
     }
     if (toCancel.length > 0) {

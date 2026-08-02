@@ -21,7 +21,11 @@ export default async function handler(req, res) {
             sql: "SELECT * FROM reminders WHERE entity_type = 'habit' AND entity_id = ?",
             args: [habit.id]
           });
-          habit.reminders = remindersRes.rows;
+          habit.reminders = (remindersRes.rows || []).map(r => ({
+            ...r,
+            reminder_time: r.reminder_time || r.time || '08:00',
+            time: r.reminder_time || r.time || '08:00'
+          }));
           return habit;
         }));
         return res.status(200).json(habitsWithReminders);
@@ -80,9 +84,10 @@ export default async function handler(req, res) {
           // Remove existing reminders for this habit
           await db.execute({ sql: "DELETE FROM reminders WHERE entity_type = 'habit' AND entity_id = ?", args: [id] });
           for (const rem of req.body.reminders) {
+            const timeVal = rem.reminder_time || rem.time || rem.reminderTime || '08:00';
             await db.execute({
               sql: "INSERT INTO reminders (user_id, entity_type, entity_id, offset_minutes, repeat_rule, enabled, reminder_time) VALUES (?, 'habit', ?, ?, ?, ?, ?)",
-              args: [userId, id, rem.offset_minutes, rem.repeat_rule || null, rem.enabled !== undefined ? (rem.enabled ? 1 : 0) : 1, rem.reminder_time || null]
+              args: [userId, id, rem.offset_minutes, rem.repeat_rule || null, rem.enabled !== undefined ? (rem.enabled ? 1 : 0) : 1, timeVal]
             });
           }
         }
@@ -104,9 +109,10 @@ export default async function handler(req, res) {
       // Insert reminders if provided
       if (Array.isArray(req.body.reminders)) {
         for (const rem of req.body.reminders) {
+          const timeVal = rem.reminder_time || rem.time || rem.reminderTime || '08:00';
           await db.execute({
             sql: "INSERT INTO reminders (user_id, entity_type, entity_id, offset_minutes, repeat_rule, enabled, reminder_time) VALUES (?, 'habit', ?, ?, ?, ?, ?)",
-            args: [userId, newHabitId, rem.offset_minutes, rem.repeat_rule || null, rem.enabled !== undefined ? (rem.enabled ? 1 : 0) : 1, rem.reminder_time || null]
+            args: [userId, newHabitId, rem.offset_minutes, rem.repeat_rule || null, rem.enabled !== undefined ? (rem.enabled ? 1 : 0) : 1, timeVal]
           });
         }
       }

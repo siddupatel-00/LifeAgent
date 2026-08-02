@@ -28,7 +28,11 @@ export default async function handler(req, res) {
           sql: "SELECT * FROM reminders WHERE entity_type = 'event' AND entity_id = ?",
           args: [event.id]
         });
-        event.reminders = remRes.rows;
+        event.reminders = (remRes.rows || []).map(r => ({
+          ...r,
+          reminder_time: r.reminder_time || r.time || '',
+          time: r.reminder_time || r.time || ''
+        }));
         return event;
       }));
 
@@ -45,9 +49,10 @@ export default async function handler(req, res) {
 
       if (Array.isArray(reminders)) {
         for (const rem of reminders) {
+          const timeVal = rem.reminder_time || rem.time || rem.reminderTime || null;
           await db.execute({
             sql: "INSERT INTO reminders (user_id, entity_type, entity_id, offset_minutes, repeat_rule, enabled, reminder_time) VALUES (?, 'event', ?, ?, ?, ?, ?)",
-            args: [userId, newEventId, rem.offset_minutes, rem.repeat_rule || null, rem.enabled !== undefined ? (rem.enabled ? 1 : 0) : 1, rem.reminder_time || null]
+            args: [userId, newEventId, rem.offset_minutes || 0, rem.repeat_rule || null, rem.enabled !== undefined ? (rem.enabled ? 1 : 0) : 1, timeVal]
           });
         }
       }
@@ -82,9 +87,10 @@ export default async function handler(req, res) {
       if (Array.isArray(reminders)) {
         await db.execute({ sql: "DELETE FROM reminders WHERE entity_type = 'event' AND entity_id = ?", args: [id] });
         for (const rem of reminders) {
+          const timeVal = rem.reminder_time || rem.time || rem.reminderTime || null;
           await db.execute({
             sql: "INSERT INTO reminders (user_id, entity_type, entity_id, offset_minutes, repeat_rule, enabled, reminder_time) VALUES (?, 'event', ?, ?, ?, ?, ?)",
-            args: [userId, id, rem.offset_minutes, rem.repeat_rule || null, rem.enabled !== undefined ? (rem.enabled ? 1 : 0) : 1, rem.reminder_time || null]
+            args: [userId, id, rem.offset_minutes || 0, rem.repeat_rule || null, rem.enabled !== undefined ? (rem.enabled ? 1 : 0) : 1, timeVal]
           });
         }
       }
