@@ -391,7 +391,7 @@ export default function CalendarPanel({
                     onClick={() => setSelectedCalendarDate(isSelected ? '' : dateStr)}
                     style={{ 
                       background: isSelected ? 'var(--accent-blue)' : isToday ? 'var(--accent-blue-dim)' : 'var(--bg-main)', 
-                      color: isSelected ? '#fff' : 'var(--text-main)',
+                      color: isSelected ? 'var(--accent-text, #ffffff)' : 'var(--text-main)',
                       fontWeight: isSelected || isToday ? 800 : 500,
                       border: isToday && !isSelected ? '2px solid var(--accent-blue)' : '1px solid var(--border-color)'
                     }}

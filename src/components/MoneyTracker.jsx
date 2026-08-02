@@ -364,7 +364,7 @@ export default function MoneyTracker({ transactions = [], setTransactions, token
                     alignItems: 'center',
                     justifyContent: 'center',
                     background: isActive ? 'var(--accent-blue)' : 'var(--bg-main)', 
-                    color: isActive ? '#fff' : 'var(--text-muted)', 
+                    color: isActive ? 'var(--accent-text, #ffffff)' : 'var(--text-muted)', 
                     transition: 'all 0.2s' 
                   }}
                 >
