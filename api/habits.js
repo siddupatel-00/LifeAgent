@@ -1,4 +1,4 @@
-import { handleCors } from '../lib/cors.js';
+import { handleCors } from './_cors.js';
 import db, { ensureDbSchema } from '../lib/db.js';
 import { getUserId } from '../lib/auth.js';
 

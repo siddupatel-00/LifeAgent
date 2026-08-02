@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { BookOpen, Plus, Trash2, Search } from 'lucide-react';
 import { getFormattedDateTitle } from '../utils/date';
 import { getApiUrl } from '../utils/apiConfig';
-import { db } from '../db/db';
-import { queueMutation } from '../db/syncEngine';
 
 export default function NotesPanel({
   notesList = [],
@@ -33,9 +31,11 @@ export default function NotesPanel({
   const handleUpdateNoteDb = async (note) => {
     if (!token || !note.id) return;
     try {
-      const payload = { id: note.id, title: note.title, content: note.content, share_with_ai: note.shareWithAi, is_trashed: note.is_trashed, deleted_at: note.deletedAt, updatedAt: new Date().toISOString() };
-      await db.notes.put(payload);
-      await queueMutation('notes', 'update', note.id, payload);
+      await fetch(getApiUrl('/api/notes'), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ id: note.id, title: note.title, content: note.content, share_with_ai: note.shareWithAi, is_trashed: note.is_trashed, deleted_at: note.deletedAt })
+      });
     } catch (err) {
       console.error(err);
     }
@@ -44,11 +44,15 @@ export default function NotesPanel({
   const handleCreateNoteDb = async (title, content, shareWithAi, callback) => {
     if (!token) return;
     try {
-      const id = Date.now().toString();
-      const newNote = { id, title, content, share_with_ai: shareWithAi, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
-      await db.notes.put(newNote);
-      await queueMutation('notes', 'create', id, newNote);
-      callback({ ...newNote, shareWithAi: !!newNote.share_with_ai });
+      const res = await fetch(getApiUrl('/api/notes'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ title, content, share_with_ai: shareWithAi })
+      });
+      if (res.ok) {
+        const newNote = await res.json();
+        callback({ ...newNote, shareWithAi: !!newNote.share_with_ai });
+      }
     } catch (err) {
       console.error(err);
     }
@@ -433,11 +437,12 @@ export default function NotesPanel({
                         onClick={async () => {
                           setTrashNotes(trashNotes.filter(n => n.id !== currentNote.id));
                           try {
-                            await db.notes.delete(currentNote.id);
-                            await queueMutation('notes', 'delete', currentNote.id);
-                          } catch(e) {
-                            console.error(e);
-                          }
+                            await fetch(getApiUrl('/api/notes'), {
+                              method: 'DELETE',
+                              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                              body: JSON.stringify({ id: currentNote.id })
+                            });
+                          } catch(e){}
                         }}
                         style={{ padding: '8px 16px', borderRadius: '20px', background: '#ef4444', color: '#fff', border: 'none', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}
                       >

@@ -63,7 +63,7 @@ export default async function handler(req, res) {
                     ON CONFLICT(id) DO UPDATE SET
                       title=excluded.title, content=excluded.content, is_pinned=excluded.is_pinned,
                       is_archived=excluded.is_archived, is_trash=excluded.is_trash, updated_at=excluded.updated_at`,
-              args: [recordId, userId, payload.title || '', payload.content || '', payload.is_pinned ? 1 : 0, payload.is_archived ? 1 : 0, (payload.is_trash || payload.is_trashed) ? 1 : 0, nowIso, nowIso]
+              args: [recordId, userId, payload.title || '', payload.content || '', payload.is_pinned ? 1 : 0, payload.is_archived ? 1 : 0, payload.is_trash ? 1 : 0, nowIso, nowIso]
             });
           }
         } else if (table === 'calendarEvents') {
@@ -107,45 +107,13 @@ export default async function handler(req, res) {
             await db.execute({ sql: 'DELETE FROM today_items WHERE id = ? AND user_id = ?', args: [recordId, userId] });
           } else {
             await db.execute({
-              sql: `INSERT INTO today_items (id, user_id, title, category, date, habit_id, completed)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+              sql: `INSERT INTO today_items (id, user_id, title, category, date, habit_id, completed, is_deleted)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT(id) DO UPDATE SET
-                      title=excluded.title, category=excluded.category, date=excluded.date, habit_id=excluded.habit_id, completed=excluded.completed`,
-              args: [recordId, userId, payload.title || payload.label || '', payload.category || '', payload.date || nowIso.split('T')[0], payload.habit_id || payload.habitId || null, (payload.checked ?? payload.completed) ? 1 : 0]
+                      title=excluded.title, category=excluded.category, completed=excluded.completed, is_deleted=excluded.is_deleted`,
+              args: [recordId, userId, payload.title || '', payload.category || '', payload.date || nowIso.split('T')[0], payload.habit_id || null, payload.completed ? 1 : 0, payload.is_deleted ? 1 : 0]
             });
           }
-        } else if (table === 'workouts') {
-          if (op === 'delete' || payload?.is_deleted) {
-            await db.execute({ sql: 'DELETE FROM workouts WHERE id = ? AND user_id = ?', args: [recordId, userId] });
-          } else {
-            await db.execute({
-              sql: `INSERT INTO workouts (id, user_id, title, category, duration_mins, calories, date, notes, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ON CONFLICT(id) DO UPDATE SET
-                      title=excluded.title, category=excluded.category, duration_mins=excluded.duration_mins, calories=excluded.calories, notes=excluded.notes`,
-              args: [recordId, userId, payload.title || '', payload.category || '', payload.duration_mins || 0, payload.calories || 0, payload.date || nowIso.split('T')[0], payload.notes || '', nowIso]
-            });
-          }
-        } else if (table === 'aiMessages') {
-          if (op === 'delete' || payload?.is_deleted) {
-            await db.execute({ sql: 'DELETE FROM chat_history WHERE id = ? AND user_id = ?', args: [recordId, userId] });
-          } else {
-            await db.execute({
-              sql: `INSERT INTO chat_history (id, user_id, sender, text, time, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                    ON CONFLICT(id) DO UPDATE SET text=excluded.text`,
-              args: [recordId, userId, payload.sender || 'user', payload.text || '', payload.time || nowIso, nowIso]
-            });
-          }
-        } else if (table === 'settings') {
-          await db.execute({
-            sql: 'UPDATE users SET theme = COALESCE(?, theme), ai_name = COALESCE(?, ai_name), gemini_api_key = COALESCE(?, gemini_api_key), groq_api_key = COALESCE(?, groq_api_key), ai_provider = COALESCE(?, ai_provider), currency = COALESCE(?, currency), ai_tone = COALESCE(?, ai_tone), morning_audit = COALESCE(?, morning_audit), smart_alerts = COALESCE(?, smart_alerts), week_start_day = COALESCE(?, week_start_day), sync_to_cloud = COALESCE(?, sync_to_cloud) WHERE id = ?',
-            args: [payload.theme, payload.ai_name, payload.gemini_api_key, payload.groq_api_key, payload.ai_provider, payload.currency, payload.ai_tone, payload.morning_audit, payload.smart_alerts, payload.week_start_day, payload.sync_to_cloud, userId]
-          });
-          await db.execute({
-            sql: 'INSERT INTO user_settings (user_id, timezone, chat_reset_time, workout_split_type, workout_templates, week_start_day) VALUES (?, COALESCE(?, "UTC"), COALESCE(?, "00:00"), COALESCE(?, "weekly"), ?, COALESCE(?, "Monday")) ON CONFLICT (user_id) DO UPDATE SET timezone = COALESCE(excluded.timezone, user_settings.timezone), chat_reset_time = COALESCE(excluded.chat_reset_time, user_settings.chat_reset_time), workout_split_type = COALESCE(excluded.workout_split_type, user_settings.workout_split_type), workout_templates = COALESCE(excluded.workout_templates, user_settings.workout_templates), week_start_day = COALESCE(excluded.week_start_day, user_settings.week_start_day)',
-            args: [userId, payload.timezone, payload.chat_reset_time, payload.workout_split_type, payload.workout_templates, payload.week_start_day]
-          });
         }
       }
 
@@ -161,8 +129,6 @@ export default async function handler(req, res) {
       const calendarEvents = await db.execute({ sql: 'SELECT * FROM calendar_events WHERE user_id = ?', args: [userId] });
       const bodyStats = await db.execute({ sql: 'SELECT * FROM body_stats WHERE user_id = ?', args: [userId] });
       const sleepLogs = await db.execute({ sql: 'SELECT * FROM sleep_logs WHERE user_id = ?', args: [userId] });
-      const workouts = await db.execute({ sql: 'SELECT * FROM workouts WHERE user_id = ?', args: [userId] });
-      const aiMessages = await db.execute({ sql: 'SELECT * FROM chat_history WHERE user_id = ?', args: [userId] });
 
       return res.status(200).json({
         habits: habits.rows || [],
@@ -172,8 +138,7 @@ export default async function handler(req, res) {
         calendarEvents: calendarEvents.rows || [],
         bodyStats: bodyStats.rows || [],
         sleepLogs: sleepLogs.rows || [],
-        workouts: workouts.rows || [],
-        aiMessages: aiMessages.rows || []
+        aiMessages: []
       });
     }
 

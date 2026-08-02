@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, X, Trash2, Edit2, Moon, Clock, Calendar, Activity, Filter } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { db } from '../db/db';
-import { queueMutation } from '../db/syncEngine';
 import { todayKey } from '../utils/date';
 import { getApiUrl } from '../utils/apiConfig';
 import ConfirmModal from './ConfirmModal';
@@ -109,11 +107,29 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
   };
 
   useEffect(() => {
-    if (sleepLogs && sleepLogs.length > 0) {
-      setLogs(sleepLogs);
+    if ((!sleepLogs || sleepLogs.length === 0) && token) {
+      fetchLogs();
+    } else {
+      setIsLoading(false);
     }
-    setIsLoading(false);
-  }, [sleepLogs]);
+  }, []);
+
+  const fetchLogs = async () => {
+    try {
+      const res = await fetch(getApiUrl('/api/sleep'), {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setLogs(data);
+        setSleepLogs?.(data);
+      }
+    } catch (error) {
+      // quiet background error handling
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleAddLog = async (e) => {
     e.preventDefault();
@@ -126,57 +142,71 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
 
       if (editingLogId) {
         payload.id = editingLogId;
-        payload.updatedAt = new Date().toISOString();
-        
-        await db.sleepLogs.put(payload);
-        await queueMutation('sleepLogs', 'update', payload.id, payload);
-        
-        setLogs(prev => {
-          const next = prev.map(l => l.id === editingLogId ? { ...l, ...payload } : l).sort((a, b) => new Date(b.date) - new Date(a.date));
-          setSleepLogs?.(next);
-          return next;
+        const res = await fetch(getApiUrl('/api/sleep'), {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
         });
-        setShowModal(false);
-        setEditingLogId(null);
-        showToast?.('Sleep Log Updated', 'success');
-        setFormData({
-          date: todayKey(userProfile?.timezone),
-          hours: 7,
-          minutes: 30,
-          sleep_time: '23:00',
-          wake_time: '06:30',
-          quality: 'Good',
-          notes: ''
-        });
+        
+        if (res.ok) {
+          setLogs(prev => {
+            const next = prev.map(l => l.id === editingLogId ? { ...l, ...payload } : l).sort((a, b) => new Date(b.date) - new Date(a.date));
+            setSleepLogs?.(next);
+            return next;
+          });
+          setShowModal(false);
+          setEditingLogId(null);
+          showToast?.('Sleep Log Updated', 'success');
+          setFormData({
+            date: todayKey(userProfile?.timezone),
+            hours: 7,
+            minutes: 30,
+            sleep_time: '23:00',
+            wake_time: '06:30',
+            quality: 'Good',
+            notes: ''
+          });
+        } else {
+          showToast?.('Failed to update log', 'error');
+        }
       } else {
-        payload.id = Date.now().toString();
-        payload.createdAt = new Date().toISOString();
-        payload.updatedAt = new Date().toISOString();
-        
-        await db.sleepLogs.put(payload);
-        await queueMutation('sleepLogs', 'create', payload.id, payload);
-        
-        setLogs(prev => {
-          const next = [payload, ...prev.filter(l => l.id !== payload.id)].sort((a, b) => new Date(b.date) - new Date(a.date));
-          setSleepLogs?.(next);
-          return next;
+        const res = await fetch(getApiUrl('/api/sleep'), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
         });
-        setShowModal(false);
-        setEditingLogId(null);
-        showToast?.('Sleep Log Added', 'success');
-        setFormData({
-          date: todayKey(userProfile?.timezone),
-          hours: 7,
-          minutes: 30,
-          sleep_time: '23:00',
-          wake_time: '06:30',
-          quality: 'Good',
-          notes: ''
-        });
+        
+        if (res.ok) {
+          const newLog = await res.json();
+          setLogs(prev => {
+            const next = [newLog, ...prev.filter(l => l.id !== newLog.id)].sort((a, b) => new Date(b.date) - new Date(a.date));
+            setSleepLogs?.(next);
+            return next;
+          });
+          setShowModal(false);
+          setEditingLogId(null);
+          showToast?.('Sleep Log Added', 'success');
+          setFormData({
+            date: todayKey(userProfile?.timezone),
+            hours: 7,
+            minutes: 30,
+            sleep_time: '23:00',
+            wake_time: '06:30',
+            quality: 'Good',
+            notes: ''
+          });
+        } else {
+          showToast?.('Failed to add log', 'error');
+        }
       }
     } catch (error) {
-      console.error(error);
-      showToast?.('Error saving sleep log', 'error');
+      showToast?.('Network error', 'error');
     }
   };
 
@@ -187,18 +217,27 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
     const id = deleteConfirmId;
     setDeleteConfirmId(null);
     try {
-      await db.sleepLogs.delete(id);
-      await queueMutation('sleepLogs', 'delete', id);
-      
-      setLogs(prev => {
-        const next = prev.filter(log => log.id !== id);
-        setSleepLogs?.(next);
-        return next;
+      const res = await fetch(getApiUrl('/api/sleep'), {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ id })
       });
-      showToast?.('Sleep log deleted', 'info');
+      
+      if (res.ok) {
+        setLogs(prev => {
+          const next = prev.filter(log => log.id !== id);
+          setSleepLogs?.(next);
+          return next;
+        });
+        showToast?.('Sleep log deleted', 'info');
+      } else {
+        showToast?.('Failed to delete log', 'error');
+      }
     } catch (error) {
-      console.error(error);
-      showToast?.('Error deleting sleep log', 'error');
+      showToast?.('Network error', 'error');
     }
   };
 

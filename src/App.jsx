@@ -24,9 +24,6 @@ import Modal from './components/Modal';
 import { todayKey, localTimeZone, getWeekDays, isHabitScheduledOnDay, ALL_WEEK_DAYS } from './utils/date';
 import WaterReminder from './components/WaterReminder';
 import TabErrorBoundary from './components/TabErrorBoundary';
-import db from './db/db';
-import { initSyncListeners, queueMutation, setSyncUser, triggerSync } from './db/syncEngine';
-import SyncStatusIndicator from './components/SyncStatusIndicator';
 
 const getFormattedDateTitle = (dateStr) => {
   let targetDate = new Date();
@@ -101,15 +98,6 @@ const safeStorage = {
         window.localStorage.clear();
       }
     } catch (e) {}
-  }
-};
-
-const getTokenUserId = (token) => {
-  try {
-    const payload = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-    return JSON.parse(atob(payload)).userId;
-  } catch {
-    return null;
   }
 };
 
@@ -189,95 +177,6 @@ export default function App() {
     if (window.hideSplash) {
       window.hideSplash();
     }
-  }, []);
-
-  // Initialize Offline-First Sync Engine & Load Local Records from IndexedDB
-  useEffect(() => {
-    let stopSyncListeners;
-
-    const loadLocalRecords = async () => {
-      try {
-        const localHabits = await db.habits.toArray();
-        if (localHabits.length > 0) {
-          setHabits(localHabits.map(h => ({
-            ...h,
-            title: h.title || h.label,
-            checkedToday: h.checked_today !== undefined ? !!h.checked_today : !!h.checkedToday,
-            customDays: h.customDays || h.custom_days,
-            intervalDays: h.intervalDays !== undefined ? h.intervalDays : h.interval_days,
-            startDate: h.startDate || h.start_date,
-            pausedUntil: h.pausedUntil || h.paused_until
-          })));
-        }
-
-        const localTodayItems = await db.todayItems.toArray();
-        if (localTodayItems.length > 0) {
-          setTodayItems(localTodayItems.map(ti => ({
-            ...ti,
-            habitId: ti.habitId || ti.habit_id,
-            checked: ti.checked !== undefined ? !!ti.checked : !!ti.completed,
-            completed: ti.completed !== undefined ? !!ti.completed : !!ti.checked
-          })));
-        }
-
-        const localTransactions = await db.transactions.toArray();
-        if (localTransactions.length > 0) setTransactions(localTransactions);
-
-        const localWorkouts = await db.workouts.toArray();
-        if (localWorkouts.length > 0) {
-          setWorkouts(localWorkouts.map(w => ({
-            ...w,
-            durationMins: w.durationMins !== undefined ? w.durationMins : w.duration_mins
-          })));
-        }
-
-        const localBodyStats = await db.bodyStats.toArray();
-        if (localBodyStats.length > 0) {
-          setBodyStats(localBodyStats.map(s => ({
-            ...s,
-            targetWeight: s.targetWeight !== undefined ? s.targetWeight : s.target_weight
-          })));
-        }
-
-        const localSleepLogs = await db.sleepLogs.toArray();
-        if (localSleepLogs.length > 0) {
-          setSleepLogs(localSleepLogs.map(sl => ({
-            ...sl,
-            sleep_time: sl.sleep_time || sl.sleepTime,
-            wake_time: sl.wake_time || sl.wakeTime
-          })));
-        }
-
-        const localNotes = await db.notes.toArray();
-        if (localNotes.length > 0) {
-          setNotesList(localNotes.map(n => ({
-            ...n,
-            shareWithAi: n.shareWithAi !== undefined ? n.shareWithAi : !!n.share_with_ai
-          })));
-        }
-
-        const localEvents = await db.calendarEvents.toArray();
-        if (localEvents.length > 0) setCalendarEvents(localEvents);
-      } catch (err) {
-        console.warn('Error loading offline IndexedDB data:', err);
-      }
-    };
-
-    // Do this before reading cache: a phone can have more than one account.
-    setSyncUser(getTokenUserId(safeStorage.getItem('token'))).then(() => {
-      loadLocalRecords();
-      stopSyncListeners = initSyncListeners();
-    });
-
-    const handleSyncComplete = () => {
-      loadLocalRecords();
-    };
-    window.addEventListener('syncComplete', handleSyncComplete);
-
-    return () => {
-      window.removeEventListener('syncComplete', handleSyncComplete);
-      stopSyncListeners?.();
-    };
   }, []);
 
   // Form state for Waitlist Only
@@ -461,13 +360,10 @@ export default function App() {
         if (savedThemeMode) safeStorage.setItem('themeMode', savedThemeMode);
         if (savedThemeColor) safeStorage.setItem('themeColor', savedThemeColor);
 
-        await setSyncUser(data.user?.id || getTokenUserId(data.token));
         resetLoadedTabs();
         safeStorage.setItem('token', data.token);
         setToken(data.token);
         setIsAuthenticated(true);
-        // Login is also the first chance for a new phone to download its data.
-        triggerSync(true);
         if (data.user && data.user.ai_name) setAiName(data.user.ai_name);
         setAuthForm({ name: '', handle: '', email: '', password: '', phone: '' });
         navigate('dashboard', '/dashboard');
@@ -681,42 +577,37 @@ export default function App() {
 
   const handleSaveBodyStat = async (updated) => {
     const todayStr = todayKey(userProfile?.timezone);
-    const arr = Array.isArray(bodyStats) ? bodyStats : (bodyStats ? [bodyStats] : []);
-    const existingObj = arr.find(s => s.date === (updated.date || todayStr)) || {};
-    
-    const recordId = existingObj.id || updated.id || Date.now().toString();
+    const isToday = updated.date === todayStr;
     const payload = {
-      ...existingObj,
-      ...updated,
-      id: recordId,
-      weight: updated.weight !== undefined ? Number(updated.weight) : (Number(existingObj.weight) || 0),
-      target_weight: updated.target_weight !== undefined ? Number(updated.target_weight) : (Number(existingObj.target_weight) || 0),
-      protein: updated.protein !== undefined ? Number(updated.protein) : (Number(existingObj.protein) || 0),
-      hydration: updated.hydration !== undefined ? Number(updated.hydration) : (Number(existingObj.hydration) || 0),
-      date: updated.date || todayStr,
-      updatedAt: new Date().toISOString()
+      weight: Number(updated.weight) || 0,
+      target_weight: Number(updated.target_weight) || 0,
+      protein: isToday ? (Number(updated.protein) || 0) : 0,
+      hydration: Number(updated.hydration) || 0,
+      date: todayStr
     };
-    
-    try {
-      await db.bodyStats.put(payload);
-      await queueMutation('bodyStats', 'update', recordId, payload);
-    } catch (e) {
-      console.warn('Error saving bodyStat to IndexedDB:', e);
+    if (isToday && updated.id) {
+       payload.id = updated.id;
     }
-
+    
+    if (token) {
+      fetch(getApiUrl('/api/fitness?type=body-stats'), {
+        method: payload.id ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(payload)
+      }).catch(console.error);
+    }
+    
     setBodyStats(prev => {
-       const prevArr = Array.isArray(prev) ? prev : (prev ? [prev] : []);
-       const existingIdx = prevArr.findIndex(s => s.date === payload.date);
+       const arr = Array.isArray(prev) ? prev : (prev ? [prev] : []);
+       const existingIdx = arr.findIndex(s => s.date === todayStr);
        if (existingIdx >= 0) {
-          const next = [...prevArr];
-          next[existingIdx] = payload;
+          const next = [...arr];
+          next[existingIdx] = { ...next[existingIdx], ...payload };
           return next;
        } else {
-          return [payload, ...prevArr];
+          return [{ ...payload, id: payload.id || Date.now() }, ...arr];
        }
     });
-
-    triggerSync();
   };
 
   // 5) Sleep state
@@ -741,9 +632,11 @@ export default function App() {
       if (expired.length > 0) {
         // Permanently delete expired notes from DB
         expired.forEach(note => {
-          db.notes.delete(note.id)
-            .then(() => queueMutation('notes', 'delete', note.id, { id: note.id }))
-            .catch(err => console.error('Failed to auto-delete expired trash note:', err));
+          fetch(getApiUrl('/api/notes'), {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ id: note.id })
+          }).catch(err => console.error('Failed to auto-delete expired trash note:', err));
         });
         const validNotes = trashNotes.filter(note => (now - (note.deletedAt || now)) <= fortyNineDaysMs);
         setTrashNotes(validNotes);
@@ -827,7 +720,7 @@ export default function App() {
 
       const [settingsRes, todayRes, habitsRes, statsRes] = await Promise.all([
         fetch(getApiUrl('/api/settings'), { headers }).catch(e => null),
-        fetch(getApiUrl(`/api/today?client_date=${clientDate}`), { headers }).catch(e => null),
+        fetch(`/api/today?client_date=${clientDate}`, { headers }).catch(e => null),
         fetch(getApiUrl('/api/habits'), { headers }).catch(e => null),
         fetch(getApiUrl('/api/fitness?type=body-stats'), { headers }).catch(e => null)
       ]);
@@ -945,14 +838,18 @@ export default function App() {
     if (!token) return;
     if (!force && loadedTabsRef.current.notes) return;
     try {
-      const localNotes = await db.notes.toArray();
-      let activeNotes = localNotes.filter(n => !n.is_trashed).map(n => ({ id: n.id, title: n.title, content: n.content, category: n.category, date: n.date, shareWithAi: !!n.share_with_ai }));
-      const trashedNotes = localNotes.filter(n => !!n.is_trashed).map(n => ({ id: n.id, title: n.title, content: n.content, category: n.category, date: n.date, shareWithAi: !!n.share_with_ai, deletedAt: n.deleted_at ? new Date(n.deleted_at).getTime() : Date.now() }));
+      const headers = { 'Authorization': `Bearer ${token}` };
+      const notesRes = await fetch(getApiUrl('/api/notes'), { headers }).catch(e => null);
+      if (notesRes && notesRes.ok) {
+        const notesData = await notesRes.json();
+        let activeNotes = notesData.filter(n => !n.is_trashed).map(n => ({ id: n.id, title: n.title, content: n.content, category: n.category, date: n.date, shareWithAi: !!n.share_with_ai }));
+        const trashedNotes = notesData.filter(n => !!n.is_trashed).map(n => ({ id: n.id, title: n.title, content: n.content, category: n.category, date: n.date, shareWithAi: !!n.share_with_ai, deletedAt: n.deleted_at ? new Date(n.deleted_at).getTime() : Date.now() }));
 
-      setTrashNotes(trashedNotes);
-      safeStorage.setItem('cache_trashNotes', JSON.stringify(trashedNotes));
-      setNotesList(activeNotes);
-      safeStorage.setItem('cache_notesList', JSON.stringify(activeNotes));
+        setTrashNotes(trashedNotes);
+        safeStorage.setItem('cache_trashNotes', JSON.stringify(trashedNotes));
+        setNotesList(activeNotes);
+        safeStorage.setItem('cache_notesList', JSON.stringify(activeNotes));
+      }
       loadedTabsRef.current.notes = true;
     } catch (err) {
       console.error('Failed to fetch notes data:', err);
@@ -963,9 +860,13 @@ export default function App() {
     if (!token) return;
     if (!force && loadedTabsRef.current.sleep) return;
     try {
-      const sLogs = await db.sleepLogs.toArray();
-      setSleepLogs(sLogs);
-      safeStorage.setItem('cache_sleepLogs', JSON.stringify(sLogs));
+      const headers = { 'Authorization': `Bearer ${token}` };
+      const sleepRes = await fetch(getApiUrl('/api/sleep'), { headers }).catch(e => null);
+      if (sleepRes && sleepRes.ok) {
+        const sLogs = await sleepRes.json();
+        setSleepLogs(sLogs);
+        safeStorage.setItem('cache_sleepLogs', JSON.stringify(sLogs));
+      }
       loadedTabsRef.current.sleep = true;
     } catch (err) {
       console.error('Failed to fetch sleep data:', err);
@@ -1064,20 +965,18 @@ export default function App() {
       const isTrashed = note.is_trashed !== undefined ? (note.is_trashed ? 1 : 0) : (note.deletedAt ? 1 : 0);
       const deletedAt = isTrashed === 0 ? null : (note.deletedAt ? new Date(note.deletedAt).toISOString() : (note.deleted_at || new Date().toISOString()));
 
-      const existing = await db.notes.get(note.id);
-      const payload = {
-        ...(existing || {}),
-        id: note.id.toString(),
-        title: note.title,
-        content: note.content,
-        share_with_ai: note.shareWithAi !== undefined ? (note.shareWithAi ? 1 : 0) : (note.share_with_ai ? 1 : 0),
-        is_trashed: isTrashed,
-        deleted_at: deletedAt,
-        updatedAt: new Date().toISOString()
-      };
-      
-      await db.notes.put(payload);
-      await queueMutation('notes', 'update', note.id.toString(), payload);
+      await fetch(getApiUrl('/api/notes'), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({
+          id: note.id,
+          title: note.title,
+          content: note.content,
+          share_with_ai: note.shareWithAi !== undefined ? note.shareWithAi : note.share_with_ai,
+          is_trashed: isTrashed,
+          deleted_at: deletedAt
+        })
+      });
     } catch (err) {
       console.error(err);
     }
@@ -1086,61 +985,44 @@ export default function App() {
   const handleCreateNoteDb = async (title, content, shareWithAi, callback) => {
     if (!token) return;
     try {
-      const id = Date.now().toString();
-      const payload = {
-        id,
-        title,
-        content,
-        share_with_ai: shareWithAi ? 1 : 0,
-        is_trashed: 0,
-        deleted_at: null,
-        date: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      
-      await db.notes.put(payload);
-      await queueMutation('notes', 'create', id, payload);
-      
-      callback({ ...payload, shareWithAi: !!payload.share_with_ai });
+      const res = await fetch(getApiUrl('/api/notes'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ title, content, share_with_ai: shareWithAi })
+      });
+      if (res.ok) {
+        const newNote = await res.json();
+        callback({ ...newNote, shareWithAi: !!newNote.share_with_ai });
+      }
     } catch (err) {
       console.error(err);
     }
   };
 
   const handleUpdateTodayDb = async (id, checked) => {
-    if (!id) return;
+    if (!token || !id) return;
     try {
-      const existing = await db.todayItems.get(id);
-      const record = { ...(existing || {}), id: id.toString(), checked: !!checked, completed: !!checked, updatedAt: new Date().toISOString() };
-      await db.todayItems.put(record);
-      await queueMutation('todayItems', 'update', id.toString(), record);
-    } catch(e) {
-      console.warn('Error updating todayItem in IndexedDB:', e);
-    }
+      await fetch(getApiUrl('/api/today'), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ id, checked })
+      });
+    } catch(e) {}
   };
 
   const handleUpdateHabitDb = async (id, streak, checked_today, paused_until, archived, completed_at) => {
-    if (!id) return;
-    try {
-      const existing = await db.habits.get(id);
-      const payload = {
-        ...(existing || {}),
-        id: id.toString(),
-        streak: streak !== undefined ? streak : existing?.streak || 0,
-        checked_today: checked_today !== undefined ? checked_today : existing?.checked_today || false,
-        checkedToday: checked_today !== undefined ? !!checked_today : !!existing?.checked_today,
-        paused_until: paused_until !== undefined ? paused_until : existing?.paused_until || null,
-        updatedAt: new Date().toISOString()
-      };
-      if (archived !== undefined) payload.archived = archived;
-      if (completed_at !== undefined) payload.completed_at = completed_at;
-
-      await db.habits.put(payload);
-      await queueMutation('habits', 'update', id.toString(), payload);
-    } catch(e) {
-      console.warn('Error updating habit in IndexedDB:', e);
-    }
-  };
+      if (!token || !id) return;
+      try {
+        const payload = { id, streak, checked_today, paused_until };
+        if (archived !== undefined) payload.archived = archived;
+        if (completed_at !== undefined) payload.completed_at = completed_at;
+        await fetch(getApiUrl('/api/habits'), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify(payload)
+        });
+      } catch(e) {}
+    };
 
   // Requirement 1: On initial login / app mount when isAuthenticated is true, fetch ONLY essential startup data
   useEffect(() => {
@@ -1245,7 +1127,13 @@ export default function App() {
           date: todayStr,
           id: Date.now()
         };
-        db.workouts.put(newWorkout).then(() => queueMutation('workouts', 'create', newWorkout.id, newWorkout)).then(() => triggerSync()).catch(console.error);
+        if (token) {
+          fetch(getApiUrl('/api/fitness?type=workouts'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(newWorkout)
+          }).catch(console.error);
+        }
         setWorkouts(prev => [newWorkout, ...(Array.isArray(prev) ? prev : [])]);
       }
     }
@@ -1271,9 +1159,13 @@ export default function App() {
         payload.id = latestStat.id;
       }
 
-      const tempId = payload.id || Date.now().toString();
-      const finalPayload = { ...payload, id: tempId };
-      db.bodyStats.put(finalPayload).then(() => queueMutation('bodyStats', payload.id ? 'update' : 'create', tempId, finalPayload)).then(() => triggerSync()).catch(console.error);
+      if (token) {
+        fetch(getApiUrl('/api/fitness?type=body-stats'), {
+          method: payload.id ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify(payload)
+        }).catch(console.error);
+      }
 
       setBodyStats(prev => {
         if (Array.isArray(prev)) {
@@ -1309,8 +1201,11 @@ export default function App() {
         if (nextChecked) {
           const newTodayItem = { id: Date.now(), habitId: targetHabitId, title: h.title, category: h.category, checked: true, time: 'Daily' };
           if (token) {
-            const newTodayItemPayload = { id: Date.now().toString(), title: h.title, category: h.category, checked: true, habit_id: targetHabitId, time: 'Daily', date: todayKey(userProfile?.timezone) };
-            db.todayItems.put(newTodayItemPayload).then(() => queueMutation('todayItems', 'create', newTodayItemPayload.id, newTodayItemPayload)).then(() => triggerSync()).catch(console.error);
+            fetch(getApiUrl('/api/today'), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              body: JSON.stringify({ label: h.title, category: h.category, checked: 1, habit_id: targetHabitId, time: 'Daily', client_date: todayKey(userProfile?.timezone) })
+            }).catch(console.error);
           }
           return [...prevToday, newTodayItem];
         }
@@ -1359,17 +1254,22 @@ export default function App() {
     }));
   };
 
-  // Delete habit from DB and UI (IndexedDB local first)
-  const handleDeleteHabitDb = async (id) => {
-    try {
-      await db.habits.delete(id);
-      await queueMutation('habits', 'delete', id.toString(), { is_deleted: true });
-      setHabits(prev => prev.filter(h => h.id !== id));
-      setTodayItems(prev => prev.filter(ti => ti.habitId !== id));
-    } catch (err) {
-      console.warn('Failed to delete habit locally:', err);
-    }
-  };
+  // Delete habit from DB and UI
+const handleDeleteHabitDb = async (id) => {
+      if (!token) return;
+      try {
+        await fetch(getApiUrl('/api/habits'), {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ id })
+        });
+        setHabits(prev => prev.filter(h => h.id !== id));
+        // Remove any linked today items
+        setTodayItems(prev => prev.filter(ti => ti.habitId !== id));
+      } catch (err) {
+        console.error('Failed to delete habit:', err);
+      }
+    };
 
   // Handle PC/System vs explicit Dark/Light mode
   useEffect(() => {
@@ -1434,7 +1334,7 @@ export default function App() {
     if (!waitlistEmail.trim() || !waitlistName.trim()) return;
     
     try {
-      const response = await fetch(getApiUrl('/api/auth?action=waitlist'), {
+      const response = await fetch(getApiUrl('/api/waitlist'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: waitlistName, email: waitlistEmail })
@@ -1472,7 +1372,11 @@ export default function App() {
     setUserProfile(updatedProfile);
 
     if (token) {
-      queueMutation('settings', 'update', 'profile', updatedProfile).then(() => triggerSync()).catch(console.error);
+      fetch(getApiUrl('/api/settings'), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(updatedProfile)
+      }).catch(err => console.error('Background settings save failed:', err));
     }
   };
 
@@ -1481,12 +1385,10 @@ export default function App() {
     showToast?.('AI Chat history cleared', 'info');
     try {
       if (token) {
-        const messages = await db.aiMessages.toArray();
-        await db.aiMessages.clear();
-        for (const m of messages) {
-          await queueMutation('aiMessages', 'delete', m.id.toString(), { is_deleted: true });
-        }
-        triggerSync();
+        await fetch(getApiUrl('/api/chat'), {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
       }
     } catch (err) {
       console.error("Failed to clear chat history", err);
@@ -1514,7 +1416,7 @@ export default function App() {
       const fallbackReply = "Please provide your Gemini or Groq API key in the settings to use the AI Assistant.";
       const aiMsg = { id: Date.now() + 1, sender: 'ai', text: fallbackReply, time: nowTime };
       setAiMessages(prev => [...prev, aiMsg]);
-      [newMsg, aiMsg].forEach(async m => { await db.aiMessages.put({ ...m, id: String(m.id) }); await queueMutation('aiMessages', 'create', String(m.id), m); }); triggerSync();
+      fetch(getApiUrl('/api/chat'), { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify([newMsg, aiMsg]) }).catch(err => console.error(err));
       return;
     }
 
@@ -1622,18 +1524,21 @@ export default function App() {
         for (const match of calendarMatches) {
           try {
             const data = JSON.parse(match[1]);
-            const newRecord = {
-              id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
-              title: data.title || 'AI Event',
-              date: data.date || todayStr,
-              end_date: data.endDate || null,
-              color: data.color || '#3b82f6',
-              status: 'upcoming',
-              createdAt: new Date().toISOString()
-            };
-            await db.calendarEvents.put(newRecord);
-            await queueMutation('calendarEvents', 'create', newRecord.id, newRecord);
-            newEvents.push(newRecord);
+            const res = await fetch(getApiUrl('/api/calendar'), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              body: JSON.stringify({
+                title: data.title || 'AI Event',
+                date: data.date || todayStr,
+                end_date: data.endDate || null,
+                color: data.color || '#3b82f6',
+                status: 'upcoming'
+              })
+            });
+            if (res.ok) {
+              const saved = await res.json();
+              newEvents.push(saved);
+            }
             finalReply = finalReply.replace(match[0], '').trim();
           } catch (err) {
             console.error("Failed to parse calendar event JSON", err);
@@ -1651,19 +1556,19 @@ export default function App() {
         for (const match of habitMatches) {
           try {
             const data = JSON.parse(match[1]);
-            const idStr = Date.now().toString();
-            const saved = {
-                id: idStr,
+            const res = await fetch(getApiUrl('/api/habits'), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              body: JSON.stringify({
                 label: data.label || 'New Habit',
-                title: data.label || 'New Habit',
                 category: data.category || 'General',
-                target: data.target || 'Daily',
-                streak: 0
-            };
-            await db.habits.put(saved);
-            await queueMutation('habits', 'create', idStr, saved);
-            triggerSync();
-            addedHabits.push(saved);
+                target: data.target || 'Daily'
+              })
+            });
+            if (res.ok) {
+              const saved = await res.json();
+              addedHabits.push(saved);
+            }
             finalReply = finalReply.replace(match[0], '').trim();
           } catch (err) {
             console.error("Failed to parse habit JSON", err);
@@ -1682,18 +1587,21 @@ export default function App() {
         for (const match of txMatches) {
           try {
             const data = JSON.parse(match[1]);
-            const newRecord = {
-              id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
-              title: data.title || 'Transaction',
-              amount: Number(data.amount) || 0,
-              type: data.type || 'spend',
-              category: data.category || 'General',
-              date: data.date || todayStr,
-              createdAt: new Date().toISOString()
-            };
-            await db.transactions.put(newRecord);
-            await queueMutation('transactions', 'create', newRecord.id, newRecord);
-            setTransactions(prev => [newRecord, ...prev]);
+            const res = await fetch(getApiUrl('/api/transactions'), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              body: JSON.stringify({
+                title: data.title || 'Transaction',
+                amount: Number(data.amount) || 0,
+                type: data.type || 'spend',
+                category: data.category || 'General',
+                date: data.date || todayStr
+              })
+            });
+            if (res.ok) {
+              const saved = await res.json();
+              setTransactions(prev => [saved, ...prev]);
+            }
             finalReply = finalReply.replace(match[0], '').trim();
           } catch (err) {
             console.error("Failed to parse transaction JSON", err);
@@ -1707,21 +1615,20 @@ export default function App() {
         for (const match of noteMatches) {
           try {
             const data = JSON.parse(match[1]);
-            const id = Date.now().toString();
-            const payload = {
-              id,
-              title: data.title || 'AI Note',
-              content: data.content || '',
-              category: data.category || 'General',
-              share_with_ai: 1,
-              is_trashed: 0,
-              deleted_at: null,
-              date: new Date().toISOString(),
-              updatedAt: new Date().toISOString()
-            };
-            await db.notes.put(payload);
-            await queueMutation('notes', 'create', id, payload);
-            setNotesList(prev => [{ ...payload, shareWithAi: true }, ...prev]);
+            const res = await fetch(getApiUrl('/api/notes'), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              body: JSON.stringify({
+                title: data.title || 'AI Note',
+                content: data.content || '',
+                category: data.category || 'General',
+                share_with_ai: true
+              })
+            });
+            if (res.ok) {
+              const saved = await res.json();
+              setNotesList(prev => [saved, ...prev]);
+            }
             finalReply = finalReply.replace(match[0], '').trim();
           } catch (err) {
             console.error("Failed to parse note JSON", err);
@@ -1735,21 +1642,19 @@ export default function App() {
         for (const match of sleepMatches) {
           try {
             const data = JSON.parse(match[1]);
-            const id = Date.now().toString();
-            const payload = {
-              id,
-              date: data.date || todayStr,
-              hours: Number(data.hours) || 8,
-              minutes: Number(data.minutes) || 0,
-              sleep_time: data.sleep_time || '23:00',
-              wake_time: data.wake_time || '07:00',
-              quality: data.quality || 'Good',
-              notes: data.notes || '',
-              updatedAt: new Date().toISOString()
-            };
-            await db.sleepLogs.put(payload);
-            await queueMutation('sleepLogs', 'create', id, payload);
-            setSleepLogs(prev => [payload, ...prev]);
+            await fetch(getApiUrl('/api/sleep'), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              body: JSON.stringify({
+                date: data.date || todayStr,
+                hours: Number(data.hours) || 8,
+                minutes: Number(data.minutes) || 0,
+                sleep_time: data.sleep_time || '23:00',
+                wake_time: data.wake_time || '07:00',
+                quality: data.quality || 'Good',
+                notes: data.notes || ''
+              })
+            });
             finalReply = finalReply.replace(match[0], '').trim();
           } catch (err) {
             console.error("Failed to parse sleep JSON", err);
@@ -1763,11 +1668,18 @@ export default function App() {
         for (const match of workoutMatches) {
           try {
             const data = JSON.parse(match[1]);
-            const newWorkout = { title: data.title || 'Workout', category: data.category || 'General', duration_mins: Number(data.duration_mins) || 30, calories: Number(data.calories) || 200, notes: data.notes || '', date: todayStr, id: Date.now().toString() };
-            await db.workouts.put(newWorkout);
-            await queueMutation('workouts', 'create', newWorkout.id, newWorkout);
-            triggerSync();
-            setWorkouts(prev => [newWorkout, ...(Array.isArray(prev) ? prev : [])]);
+            await fetch(getApiUrl('/api/fitness?type=workouts'), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              body: JSON.stringify({
+                title: data.title || 'Workout',
+                category: data.category || 'General',
+                duration_mins: Number(data.duration_mins) || 30,
+                calories: Number(data.calories) || 200,
+                notes: data.notes || '',
+                date: todayStr
+              })
+            });
             finalReply = finalReply.replace(match[0], '').trim();
           } catch (err) {
             console.error("Failed to parse workout JSON", err);
@@ -1781,8 +1693,17 @@ export default function App() {
         for (const match of bodyMatches) {
           try {
             const data = JSON.parse(match[1]);
-            const newStats = { weight: Number(data.weight) || 0, target_weight: Number(data.target_weight) || 0, protein: Number(data.protein) || 0, hydration: Number(data.hydration) || 0, date: todayStr };
-            await handleSaveBodyStat(newStats);
+            await fetch(getApiUrl('/api/fitness?type=body-stats'), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              body: JSON.stringify({
+                weight: Number(data.weight) || 0,
+                target_weight: Number(data.target_weight) || 0,
+                protein: Number(data.protein) || 0,
+                hydration: Number(data.hydration) || 0,
+                date: todayStr
+              })
+            });
             finalReply = finalReply.replace(match[0], '').trim();
           } catch (err) {
             console.error("Failed to parse body stats JSON", err);
@@ -1805,7 +1726,11 @@ export default function App() {
       const aiMsg = { id: Date.now() + 1, sender: 'ai', text: finalReply, time: nowTime };
       setAiMessages(prev => prev.map(m => m.id === 'loading' ? aiMsg : m));
       
-      [newMsg, aiMsg].forEach(async m => { await db.aiMessages.put({ ...m, id: String(m.id) }); await queueMutation('aiMessages', 'create', String(m.id), m); }); triggerSync();
+      fetch(getApiUrl('/api/chat'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify([newMsg, aiMsg])
+      }).catch(err => console.error(err));
       
     } catch (error) {
       console.error("AI API Error:", error);
@@ -1832,21 +1757,27 @@ export default function App() {
     if (!newTitle || !newAmount) return;
     
     try {
-      const newRecord = {
-        id: Date.now().toString(),
-        title: newTitle,
-        amount: parseFloat(newAmount),
-        type: newType,
-        category: newType === 'spend' ? 'Personal' : 'Income',
-        date: todayKey(userProfile.timezone),
-        createdAt: new Date().toISOString()
-      };
-      await db.transactions.put(newRecord);
-      await queueMutation('transactions', 'create', newRecord.id, newRecord);
-      
-      setTransactions(prev => [newRecord, ...prev]);
-      setNewTitle('');
-      setNewAmount('');
+      const res = await fetch(getApiUrl('/api/transactions'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ title: newTitle, amount: parseFloat(newAmount), type: newType })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setTransactions(prev => [
+          {
+            id: data.id,
+            title: data.title,
+            amount: data.amount,
+            type: data.type,
+            category: data.type === 'spend' ? 'Personal' : 'Income',
+            date: todayKey(userProfile.timezone)
+          },
+          ...prev
+        ]);
+        setNewTitle('');
+        setNewAmount('');
+      }
     } catch(err) {
       console.error(err);
     }
@@ -3077,7 +3008,6 @@ export default function App() {
 
               {!isAiSidePanelOpen && (
                 <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                  <SyncStatusIndicator />
                   {activeTab !== 'ai' && (
                     <button
                       onClick={() => setIsAiSidePanelOpen(!isAiSidePanelOpen)}
@@ -3476,14 +3406,22 @@ export default function App() {
                                   <button 
                                     onClick={async () => {
                                       try {
-                                        const newW = { title: currentTitle, category: 'Strength', duration_mins: 45, calories: 320, notes: `Completed scheduled ${currentTitle}`, date: todayKeyStr, id: Date.now().toString() };
-                                        await db.workouts.put(newW);
-                                        await queueMutation('workouts', 'create', newW.id, newW);
-                                        triggerSync();
-                                        setWorkouts(prev => [newW, ...(Array.isArray(prev) ? prev : [])]);
-                                        showToast(`🎉 ${currentTitle} Completed!`, 'success');
+                                        const res = await fetch(getApiUrl('/api/fitness?type=workouts'), {
+                                          method: 'POST',
+                                          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                          body: JSON.stringify({ title: currentTitle, category: 'Strength', duration_mins: 45, calories: 320, notes: `Completed scheduled ${currentTitle}`, date: todayKeyStr })
+                                        });
+                                        if (res.ok) {
+                                          const newW = await res.json();
+                                          setWorkouts(prev => [newW, ...(Array.isArray(prev) ? prev : [])]);
+                                          showToast(`🎉 ${currentTitle} Completed!`, 'success');
+                                        } else {
+                                          setWorkouts(prev => [{ title: currentTitle, category: 'Strength', duration_mins: 45, calories: 320, notes: `Completed scheduled ${currentTitle}`, date: todayKeyStr, id: Date.now() }, ...(Array.isArray(prev) ? prev : [])]);
+                                          showToast(`🎉 ${currentTitle} Completed!`, 'success');
+                                        }
                                       } catch(e) {
-                                        console.error(e);
+                                        setWorkouts(prev => [{ title: currentTitle, category: 'Strength', duration_mins: 45, calories: 320, notes: `Completed scheduled ${currentTitle}`, date: todayKeyStr, id: Date.now() }, ...(Array.isArray(prev) ? prev : [])]);
+                                        showToast(`🎉 ${currentTitle} Completed!`, 'success');
                                       }
                                     }}
                                     className="blue-btn"
@@ -3537,12 +3475,21 @@ export default function App() {
                                 return [{ ...payload, id: tempId, weight: Number(latestStat?.weight) || 0, target_weight: targetW }, ...list];
                               });
 
-                              const finalPayload = { ...payload, id: tempId.toString(), weight: Number(latestStat?.weight) || 0, target_weight: targetW };
-                              await db.bodyStats.put(finalPayload);
-                              await queueMutation('bodyStats', todayStat?.id ? 'update' : 'create', tempId.toString(), finalPayload);
-                              triggerSync();
-                              const sign = amount >= 0 ? '+' : '';
-                              showToast(`Protein logged: ${sign}${amount}g`, 'success');
+                              const res = await fetch(getApiUrl('/api/fitness'), {
+                                method: 'POST',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                  ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                                },
+                                body: JSON.stringify(payload)
+                              });
+
+                              if (res.status === 200 || res.status === 201) {
+                                const sign = amount >= 0 ? '+' : '';
+                                showToast(`Protein logged: ${sign}${amount}g`, 'success');
+                              } else {
+                                console.error('Failed to log protein in App.jsx:', res.status, res.statusText);
+                              }
                             } catch (e) {
                               console.error('Error logging protein in App.jsx:', e);
                             }
@@ -3628,10 +3575,19 @@ export default function App() {
                             });
 
                             try {
-                              const finalPayload = { ...payload, id: tempId.toString() };
-                              await db.bodyStats.put(finalPayload);
-                              await queueMutation('bodyStats', isExistingToday ? 'update' : 'create', tempId.toString(), finalPayload);
-                              triggerSync();
+                              if (token) {
+                                const res = await fetch(getApiUrl('/api/fitness?type=body-stats'), {
+                                  method: isExistingToday ? 'PUT' : 'POST',
+                                  headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                  body: JSON.stringify(payload)
+                                });
+                                if (res.ok) {
+                                  if (!isExistingToday) {
+                                    const data = await res.json();
+                                    setBodyStats(prev => prev.map(s => s.id === tempId ? data : s));
+                                  }
+                                }
+                              }
                             } catch (e) {
                               console.error(e);
                             }
@@ -4125,69 +4081,61 @@ export default function App() {
                             const iDays = freq === 'custom' ? Number(newHabitData.intervalDays || newHabitData.interval_days || 0) : 0;
 
                             try {
-                              const newId = Date.now() + Math.floor(Math.random() * 1000);
-                              const nowIso = new Date().toISOString();
-                              const dateStr = nowIso.split('T')[0];
+                              const res = await fetch(getApiUrl('/api/habits'), {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                body: JSON.stringify({ 
+                                  label: newHabitData.title.trim(), 
+                                  category: finalCategory, 
+                                  target: newHabitData.target.trim() || 'Daily',
+                                  frequency: freq,
+                                  custom_days: cDays,
+                                  interval_days: iDays
+                                })
+                              });
 
-                              const habitRecord = {
-                                id: newId,
-                                title: newHabitData.title.trim(),
-                                category: finalCategory,
-                                target: newHabitData.target.trim() || 'Daily',
-                                frequency: freq,
-                                custom_days: cDays,
-                                interval_days: iDays,
-                                streak: 0,
-                                start_date: dateStr,
-                                is_deleted: 0,
-                                updatedAt: nowIso
-                              };
+                              if (res.ok) {
+                                const saved = await res.json();
+                                setHabits(prev => [...prev, {
+                                  id: saved.id,
+                                  title: saved.label,
+                                  category: saved.category,
+                                  streak: saved.streak || 0,
+                                  target: saved.target || 'Daily',
+                                  checkedToday: false,
+                                  startDate: saved.start_date || new Date().toISOString().split('T')[0],
+                                  start_date: saved.start_date || new Date().toISOString().split('T')[0],
+                                  frequency: saved.frequency || freq,
+                                  customDays: saved.custom_days || cDays,
+                                  custom_days: saved.custom_days || cDays,
+                                  intervalDays: saved.interval_days || iDays,
+                                  interval_days: saved.interval_days || iDays
+                                }]);
 
-                              await db.habits.put(habitRecord);
-                              await queueMutation('habits', 'create', newId.toString(), habitRecord);
-
-                              const newTodayId = Date.now() + Math.floor(Math.random() * 1000) + 1;
-                              const todayRecord = {
-                                id: newTodayId,
-                                title: habitRecord.title,
-                                category: habitRecord.category,
-                                habit_id: newId,
-                                time: '',
-                                date: todayKey(userProfile.timezone),
-                                is_deleted: 0,
-                                updatedAt: nowIso
-                              };
-                              await db.todayItems.put(todayRecord);
-                              await queueMutation('todayItems', 'create', newTodayId.toString(), todayRecord);
-
-                              setHabits(prev => [...prev, {
-                                id: newId,
-                                title: habitRecord.title,
-                                category: habitRecord.category,
-                                streak: 0,
-                                target: habitRecord.target,
-                                checkedToday: false,
-                                startDate: dateStr,
-                                start_date: dateStr,
-                                frequency: freq,
-                                customDays: cDays,
-                                custom_days: cDays,
-                                intervalDays: iDays,
-                                interval_days: iDays
-                              }]);
-
-                              setTodayItems(prev => [...prev, { 
-                                id: newTodayId, 
-                                title: todayRecord.title, 
-                                category: todayRecord.category, 
-                                time: todayRecord.time, 
-                                checked: false, 
-                                habitId: newId 
-                              }]);
+                                try {
+                                  const todayRes = await fetch(getApiUrl('/api/today'), {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                    body: JSON.stringify({
+                                      label: newHabitData.title.trim(),
+                                      category: finalCategory,
+                                      time: '',
+                                      habit_id: saved.id,
+                                      date: todayKey(userProfile.timezone)
+                                    })
+                                  });
+                                  if (todayRes.ok) {
+                                    const todayData = await todayRes.json();
+                                    setTodayItems(prev => [...prev, { id: todayData.id, title: todayData.label, category: todayData.category, time: todayData.time, checked: false, habitId: saved.id }]);
+                                  }
+                                } catch (linkErr) {
+                                  console.error('Failed to create linked today item:', linkErr);
+                                }
 
                                 setNewHabitData({ title: '', category: '', target: '', challengeMode: false, challengeDays: 30, durationMode: 'preset', frequency: 'daily', customDays: ['Mon', 'Wed', 'Fri'] });
                                 setCustomPillarInput('');
                                 setIsAddHabitModalOpen(false);
+                              }
                             } catch (err) {
                               console.error(err);
                             }
@@ -4734,28 +4682,26 @@ export default function App() {
                               const iDays = freq === 'custom' ? Number(editingHabitData.intervalDays || editingHabitData.interval_days || 0) : 0;
 
                               try {
-                                const payload = {
-                                  id: editingHabitData.id,
-                                  title: editingHabitData.title,
-                                  category: finalCategory,
-                                  target: editingHabitData.target,
-                                  challenge_days: challengeDays,
-                                  frequency: freq,
-                                  custom_days: cDays,
-                                  interval_days: iDays,
-                                  updatedAt: new Date().toISOString()
-                                };
-
-                                // Update IndexedDB first
-                                const existingHabit = await db.habits.get(editingHabitData.id);
-                                if (existingHabit) {
-                                  await db.habits.update(editingHabitData.id, payload);
-                                } else {
-                                  await db.habits.put(payload);
+                                if (token) {
+                                  const res = await fetch(getApiUrl('/api/habits'), {
+                                    method: 'PUT',
+                                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                    body: JSON.stringify({
+                                      id: editingHabitData.id,
+                                      label: editingHabitData.title,
+                                      category: finalCategory,
+                                      target: editingHabitData.target,
+                                      challenge_days: challengeDays,
+                                      frequency: freq,
+                                      custom_days: cDays,
+                                      interval_days: iDays
+                                    })
+                                  });
+                                  if (!res.ok) {
+                                    const errData = await res.json().catch(() => ({}));
+                                    throw new Error(errData.error || 'Failed to update habit');
+                                  }
                                 }
-
-                                // Queue mutation for server sync
-                                await queueMutation('habits', 'update', editingHabitData.id.toString(), payload);
 
                                 // Optimistically update local React state
                                 setHabits(prev => prev.map(h => h.id === editingHabitData.id ? {
@@ -5130,9 +5076,16 @@ export default function App() {
                                               setExpandedNoteId(remainingTrash.length > 0 ? remainingTrash[0].id : null);
                                             }
                                             try {
-                                              await db.notes.delete(tNote.id);
-                                              await queueMutation('notes', 'delete', tNote.id, { id: tNote.id });
-                                              showToast('Note permanently deleted', 'success');
+                                              const delRes = await fetch(getApiUrl('/api/notes'), {
+                                                method: 'DELETE',
+                                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                                body: JSON.stringify({ id: tNote.id })
+                                              });
+                                              if (delRes.ok) {
+                                                showToast('Note permanently deleted', 'success');
+                                              } else {
+                                                showToast('Failed to delete note', 'error');
+                                              }
                                             } catch (err) {
                                               console.error(err);
                                               showToast('Failed to delete note', 'error');
@@ -5305,9 +5258,16 @@ export default function App() {
                                       // Select next trash note or clear selection
                                       setActiveNoteId(remainingTrash.length > 0 ? remainingTrash[0].id : null);
                                       try {
-                                        await db.notes.delete(noteId);
-                                        await queueMutation('notes', 'delete', noteId, { id: noteId });
-                                        showToast('Note permanently deleted', 'success');
+                                        const delRes = await fetch(getApiUrl('/api/notes'), {
+                                          method: 'DELETE',
+                                          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                          body: JSON.stringify({ id: noteId })
+                                        });
+                                        if (delRes.ok) {
+                                          showToast('Note permanently deleted', 'success');
+                                        } else {
+                                          showToast('Failed to delete note', 'error');
+                                        }
                                       } catch(e){
                                         console.error(e);
                                         showToast('Failed to delete note', 'error');

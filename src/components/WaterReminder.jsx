@@ -98,12 +98,15 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
     try {
       const token = safeStorage.getItem('token');
       if (token) {
-        await queueMutation('settings', 'update', 'water', { 
+        await fetch(getApiUrl('/api/settings'), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ 
             water_target_goal: newTarget,
             water_reminder_interval: newInterval,
             water_reminder_enabled: isReminderEnabled 
-          });
-          triggerSync();
+          })
+        });
       }
     } catch (e) {
       console.error('Failed to save water settings', e);
@@ -171,7 +174,11 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
     try {
       const token = safeStorage.getItem('token');
       if (token) {
-        queueMutation('settings', 'update', 'water_enabled', { water_reminder_enabled: newState }).then(() => triggerSync()).catch(console.error);
+        fetch(getApiUrl('/api/settings'), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ water_reminder_enabled: newState })
+        }).catch(err => console.error('Failed to update water reminder state:', err));
       }
     } catch (e) {}
   };
@@ -186,7 +193,11 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
     try {
       const token = safeStorage.getItem('token');
       if (token) {
-        queueMutation('settings', 'update', 'water_interval', { water_reminder_interval: mins }).then(() => triggerSync()).catch(console.error);
+        fetch(getApiUrl('/api/settings'), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ water_reminder_interval: mins })
+        }).catch(err => console.error('Failed to update water reminder interval:', err));
       }
     } catch (e) {}
   };

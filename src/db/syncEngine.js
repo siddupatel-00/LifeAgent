@@ -4,23 +4,6 @@ import { getApiUrl } from '../utils/apiUrl';
 
 let isSyncing = false;
 const listeners = new Set();
-const USER_DATA_TABLES = ['habits', 'todayItems', 'transactions', 'workouts', 'bodyStats', 'sleepLogs', 'notes', 'calendarEvents', 'aiMessages'];
-
-// IndexedDB is shared by every account that signs in on this phone. Keep its
-// contents tied to the active account so one account can never see another
-// account's cached data.
-export const setSyncUser = async (userId) => {
-  const nextUserId = userId ? String(userId) : null;
-  const current = await db.metaState.get('activeUserId');
-  if (current?.value === nextUserId) return;
-
-  await db.transaction('rw', ...USER_DATA_TABLES.map(name => db[name]), db.syncQueue, db.metaState, async () => {
-    await Promise.all(USER_DATA_TABLES.map(name => db[name].clear()));
-    await db.syncQueue.clear();
-    await db.metaState.clear();
-    if (nextUserId) await db.metaState.put({ key: 'activeUserId', value: nextUserId });
-  });
-};
 
 export const getSyncStatus = async () => {
   if (typeof window !== 'undefined' && !navigator.onLine) {
@@ -78,7 +61,7 @@ export const queueMutation = async (table, op, recordId, payload) => {
 };
 
 // Main Background Sync Process
-export const triggerSync = async (forcePull = false) => {
+export const triggerSync = async () => {
   if (isSyncing) return;
   if (typeof window !== 'undefined' && !navigator.onLine) {
     notifyStatusChange();
@@ -91,15 +74,13 @@ export const triggerSync = async (forcePull = false) => {
     return;
   }
 
-  const pendingCount = await db.syncQueue.where('status').equals('pending').count();
-
   await checkDailySyncFlag();
+
   const shouldSyncState = await db.metaState.get('shouldSyncToday');
   const shouldSync = shouldSyncState ? shouldSyncState.value : true;
-  
-  const needsPull = forcePull || shouldSync;
+  const pendingCount = await db.syncQueue.where('status').equals('pending').count();
 
-  if (pendingCount === 0 && !needsPull) {
+  if (!shouldSync && pendingCount === 0) {
     notifyStatusChange();
     return;
   }
@@ -130,48 +111,45 @@ export const triggerSync = async (forcePull = false) => {
     }
 
     // 2. Fetch remote changes and merge using Last-Write-Wins (LWW)
-    if (needsPull) {
-      const lastSyncedState = await db.metaState.get('lastSyncedAt');
-      const since = lastSyncedState?.value || '1970-01-01T00:00:00.000Z';
+    const lastSyncedState = await db.metaState.get('lastSyncedAt');
+    const since = lastSyncedState?.value || '1970-01-01T00:00:00.000Z';
 
-      const pullRes = await fetch(getApiUrl(`/api/sync?since=${encodeURIComponent(since)}`), {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+    const pullRes = await fetch(getApiUrl(`/api/sync?since=${encodeURIComponent(since)}`), {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
 
-      if (pullRes.ok) {
-        const remoteData = await pullRes.json();
+    if (pullRes.ok) {
+      const remoteData = await pullRes.json();
 
-        // Merge remote tables using LWW conflict resolution based on updatedAt timestamp
-        const tableNames = ['habits', 'todayItems', 'transactions', 'workouts', 'bodyStats', 'sleepLogs', 'notes', 'calendarEvents', 'aiMessages'];
-        for (const tableName of tableNames) {
-          const remoteRecords = remoteData[tableName] || [];
-          for (const remoteRec of remoteRecords) {
-            const localRec = await db[tableName].get(String(remoteRec.id)) || await db[tableName].get(remoteRec.id);
-            const remoteTime = new Date(remoteRec.updatedAt || remoteRec.updated_at || 0).getTime();
-            const localTime = localRec ? new Date(localRec.updatedAt || localRec.updated_at || 0).getTime() : 0;
+      // Merge remote tables using LWW conflict resolution based on updatedAt timestamp
+      const tableNames = ['habits', 'todayItems', 'transactions', 'workouts', 'bodyStats', 'sleepLogs', 'notes', 'calendarEvents', 'aiMessages'];
+      for (const tableName of tableNames) {
+        const remoteRecords = remoteData[tableName] || [];
+        for (const remoteRec of remoteRecords) {
+          const localRec = await db[tableName].get(remoteRec.id);
+          const remoteTime = new Date(remoteRec.updatedAt || remoteRec.updated_at || 0).getTime();
+          const localTime = localRec ? new Date(localRec.updatedAt || localRec.updated_at || 0).getTime() : 0;
 
-            if (!localRec || remoteTime >= localTime) {
-              if (remoteRec.is_deleted) {
-                await db[tableName].delete(String(remoteRec.id));
-                await db[tableName].delete(remoteRec.id);
-              } else {
-                await db[tableName].put({ ...remoteRec, id: String(remoteRec.id), lastSyncedAt: new Date().toISOString() });
-              }
+          if (!localRec || remoteTime >= localTime) {
+            if (remoteRec.is_deleted) {
+              await db[tableName].delete(remoteRec.id);
+            } else {
+              await db[tableName].put({ ...remoteRec, lastSyncedAt: new Date().toISOString() });
             }
           }
         }
-
-        const nowStr = new Date().toISOString();
-        const todayStr = nowStr.split('T')[0];
-
-        await db.metaState.put({ key: 'lastSyncedAt', value: nowStr });
-        await db.metaState.put({ key: 'lastSyncDate', value: todayStr });
-        await db.metaState.put({ key: 'shouldSyncToday', value: false });
-      } else {
-        throw new Error('Failed to fetch remote changes');
       }
+
+      const nowStr = new Date().toISOString();
+      const todayStr = nowStr.split('T')[0];
+
+      await db.metaState.put({ key: 'lastSyncedAt', value: nowStr });
+      await db.metaState.put({ key: 'lastSyncDate', value: todayStr });
+      await db.metaState.put({ key: 'shouldSyncToday', value: false });
+    } else {
+      throw new Error('Failed to fetch remote changes');
     }
   } catch (error) {
     console.warn('Sync engine background synchronization delayed:', error.message);
@@ -179,9 +157,6 @@ export const triggerSync = async (forcePull = false) => {
   } finally {
     isSyncing = false;
     notifyStatusChange();
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new Event('syncComplete'));
-    }
   }
 };
 
@@ -189,32 +164,22 @@ export const triggerSync = async (forcePull = false) => {
 export const initSyncListeners = () => {
   if (typeof window === 'undefined') return;
 
-  const onOnline = () => {
+  window.addEventListener('online', () => {
     notifyStatusChange();
-    checkDailySyncFlag().then(() => triggerSync(true));
-  };
-  const onOffline = () => {
+    triggerSync();
+  });
+  window.addEventListener('offline', () => {
     notifyStatusChange();
-  };
-  const onFocus = () => {
-    checkDailySyncFlag().then(() => triggerSync(true));
-  };
-  window.addEventListener('online', onOnline);
-  window.addEventListener('offline', onOffline);
-  window.addEventListener('focus', onFocus);
+  });
+  window.addEventListener('focus', () => {
+    triggerSync();
+  });
 
   // Check every hour for midnight day rollover
-  const interval = setInterval(() => {
-    checkDailySyncFlag().then(() => triggerSync(true));
+  setInterval(() => {
+    checkDailySyncFlag().then(() => triggerSync());
   }, 3600000);
 
   // Initial trigger on app launch
-  checkDailySyncFlag().then(() => triggerSync(true));
-
-  return () => {
-    clearInterval(interval);
-    window.removeEventListener('online', onOnline);
-    window.removeEventListener('offline', onOffline);
-    window.removeEventListener('focus', onFocus);
-  };
+  checkDailySyncFlag().then(() => triggerSync());
 };

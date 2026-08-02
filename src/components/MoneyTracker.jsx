@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, X, Check, BarChart2, BarChart3, TrendingUp, PieChart, List, DollarSign } from 'lucide-react';
 import { todayKey } from '../utils/date';
 import { getApiUrl } from '../utils/apiConfig';
-import db from '../db/db';
-import { queueMutation } from '../db/syncEngine';
 import MoneyCharts from './MoneyCharts';
 import CustomSelect from './CustomSelect';
 import Modal from './Modal';
@@ -26,7 +24,30 @@ export default function MoneyTracker({ transactions = [], setTransactions, token
       setRightPanelView('add');
     }
   }, [showForm]);
-
+  // Fetch initial transactions
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      if (!token) return;
+      setLoading(true);
+      try {
+        const res = await fetch(getApiUrl('/api/transactions'), {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setTransactions(data);
+        } else {
+          showToast?.('Failed to load transactions', 'error');
+        }
+      } catch (e) {
+        showToast?.('Network error loading transactions', 'error');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTransactions();
+  }, []);
+  
   const [chartType, setChartType] = useState('bar');
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
@@ -141,26 +162,28 @@ export default function MoneyTracker({ transactions = [], setTransactions, token
     }
     
     try {
-      const newRecord = {
-        id: Date.now().toString(),
-        title: newTitle,
-        amount: parseFloat(evaluatedAmount),
-        type: newType,
-        category: newCategory,
-        notes: newNotes,
-        date: newDate,
-        createdAt: new Date().toISOString()
-      };
-      await db.transactions.put(newRecord);
-      await queueMutation('transactions', 'create', newRecord.id, newRecord);
-
-      setTransactions(prev => [newRecord, ...prev]);
-      setNewTitle('');
-      setNewAmount('');
-      setNewNotes('');
-      showToast('Transaction Added', 'success');
-      setRightPanelView('charts');
-      setShowForm?.(false);
+      const res = await fetch(getApiUrl('/api/transactions'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ 
+          title: newTitle, 
+          amount: parseFloat(evaluatedAmount), 
+          type: newType,
+          category: newCategory,
+          notes: newNotes,
+          date: newDate
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setTransactions(prev => [data, ...prev]);
+        setNewTitle('');
+        setNewAmount('');
+        setNewNotes('');
+        showToast('Transaction Added', 'success');
+        setRightPanelView('charts');
+        setShowForm?.(false);
+      }
     } catch (err) {
       console.error(err);
       showToast('Error adding transaction', 'error');
@@ -169,10 +192,15 @@ export default function MoneyTracker({ transactions = [], setTransactions, token
 
   const deleteTransaction = async (id) => {
     try {
-      await db.transactions.delete(id);
-      await queueMutation('transactions', 'delete', id);
-      setTransactions(prev => prev.filter(t => t.id !== id));
-      showToast('Transaction Deleted', 'success');
+      const res = await fetch(getApiUrl('/api/transactions'), {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ id })
+      });
+      if (res.ok) {
+        setTransactions(prev => prev.filter(t => t.id !== id));
+        showToast('Transaction Deleted', 'success');
+      }
     } catch (err) {
       console.error(err);
       showToast('Error deleting transaction', 'error');
@@ -202,14 +230,19 @@ export default function MoneyTracker({ transactions = [], setTransactions, token
       return;
     }
     
-    const finalForm = { ...editForm, amount: parseFloat(evaluatedAmount), updatedAt: new Date().toISOString() };
+    const finalForm = { ...editForm, amount: parseFloat(evaluatedAmount) };
     
     try {
-      await db.transactions.put(finalForm);
-      await queueMutation('transactions', 'update', finalForm.id, finalForm);
-      setTransactions(prev => prev.map(t => t.id === editingId ? { ...t, ...finalForm } : t));
-      showToast('Transaction Updated', 'success');
-      setEditingId(null);
+      const res = await fetch(getApiUrl('/api/transactions'), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(finalForm)
+      });
+      if (res.ok) {
+        setTransactions(prev => prev.map(t => t.id === editingId ? { ...t, ...editForm } : t));
+        showToast('Transaction Updated', 'success');
+        setEditingId(null);
+      }
     } catch (err) {
       console.error(err);
       showToast('Error updating transaction', 'error');
@@ -331,11 +364,11 @@ export default function MoneyTracker({ transactions = [], setTransactions, token
                     alignItems: 'center',
                     justifyContent: 'center',
                     background: isActive ? 'var(--accent-blue)' : 'var(--bg-main)', 
-                    color: isActive ? 'var(--accent-text)' : 'var(--text-muted)', 
+                    color: isActive ? '#fff' : 'var(--text-muted)', 
                     transition: 'all 0.2s' 
                   }}
                 >
-                  <IconComp size={18} color={isActive ? 'var(--accent-text)' : 'var(--text-muted)'} />
+                  <IconComp size={18} />
                 </button>
               );
             })}
@@ -396,7 +429,7 @@ export default function MoneyTracker({ transactions = [], setTransactions, token
                       fontWeight: isSelected ? 600 : 500,
                       border: isSelected ? '1px solid var(--accent-blue)' : '1px solid var(--border-color)',
                       background: isSelected ? 'var(--accent-blue)' : 'var(--bg-card)',
-                      color: isSelected ? '#ffffff' : 'var(--text-main)',
+                      color: isSelected ? 'var(--accent-text, #ffffff)' : 'var(--text-main)',
                       cursor: 'pointer',
                       transition: 'all 0.2s ease',
                       whiteSpace: 'nowrap'
@@ -472,7 +505,7 @@ export default function MoneyTracker({ transactions = [], setTransactions, token
                       fontWeight: isSelected ? 600 : 500,
                       border: isSelected ? '1px solid var(--accent-blue)' : '1px solid var(--border-color)',
                       background: isSelected ? 'var(--accent-blue)' : 'var(--bg-card)',
-                      color: isSelected ? '#ffffff' : 'var(--text-main)',
+                      color: isSelected ? 'var(--accent-text, #ffffff)' : 'var(--text-main)',
                       cursor: 'pointer',
                       transition: 'all 0.2s ease',
                       whiteSpace: 'nowrap'
