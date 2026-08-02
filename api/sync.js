@@ -107,10 +107,10 @@ export default async function handler(req, res) {
             await db.execute({ sql: 'DELETE FROM today_items WHERE id = ? AND user_id = ?', args: [recordId, userId] });
           } else {
             await db.execute({
-              sql: `INSERT INTO today_items (id, user_id, label, category, date, habit_id, checked)
+              sql: `INSERT INTO today_items (id, user_id, title, category, date, habit_id, completed)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT(id) DO UPDATE SET
-                      label=excluded.label, category=excluded.category, date=excluded.date, habit_id=excluded.habit_id, checked=excluded.checked`,
+                      title=excluded.title, category=excluded.category, date=excluded.date, habit_id=excluded.habit_id, completed=excluded.completed`,
               args: [recordId, userId, payload.title || payload.label || '', payload.category || '', payload.date || nowIso.split('T')[0], payload.habit_id || payload.habitId || null, (payload.checked ?? payload.completed) ? 1 : 0]
             });
           }
