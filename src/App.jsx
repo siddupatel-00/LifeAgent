@@ -104,6 +104,28 @@ const safeStorage = {
   }
 };
 
+const readCachedJson = (key, fallback) => {
+  const value = safeStorage.getItem(key);
+  if (!value) return fallback;
+  try {
+    return JSON.parse(value);
+  } catch {
+    safeStorage.removeItem(key);
+    return fallback;
+  }
+};
+
+const parseReminders = (value) => {
+  if (Array.isArray(value)) return value;
+  if (typeof value !== 'string' || !value.trim()) return [];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
 export default function App() {
   const [themeMode, setThemeMode] = useState(() => safeStorage.getItem('themeMode') || 'pc'); // 'dark', 'light', 'pc'
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
@@ -215,8 +237,7 @@ export default function App() {
   const [customEndDate, setCustomEndDate] = useState('');
 
   const [todayWidgetsConfig, setTodayWidgetsConfig] = useState(() => {
-    const cached = safeStorage.getItem('cache_todayWidgetsConfig');
-    return cached ? JSON.parse(cached) : { showWorkout: true, showProtein: true, showHydration: true };
+    return readCachedJson('cache_todayWidgetsConfig', { showWorkout: true, showProtein: true, showHydration: true });
   });
 
   useEffect(() => {
@@ -515,7 +536,7 @@ export default function App() {
   ];
 
   // 1) AI Chat state with Autonomous Executive Engine
-  const [aiMessages, setAiMessages] = useState(() => { const c = safeStorage.getItem('cache_aiMessages'); return c ? JSON.parse(c) : []; });
+  const [aiMessages, setAiMessages] = useState(() => readCachedJson('cache_aiMessages', []));
   const [inputMessage, setInputMessage] = useState('');
   const [aiName, setAiName] = useState('AI');
   const mainAiChatScrollRef = useRef(null);
@@ -567,7 +588,7 @@ export default function App() {
   // 2) Habit Tracker state
   // Habits state with exact daily tracking items: Gym, Study, Code, Reading
   const [showHabitHistory, setShowHabitHistory] = useState(false);
-  const [habits, setHabits] = useState(() => { const c = safeStorage.getItem('cache_habits'); return c ? JSON.parse(c) : []; });
+  const [habits, setHabits] = useState(() => readCachedJson('cache_habits', []));
   const [isAddHabitModalOpen, setIsAddHabitModalOpen] = useState(false);
   const [isEditHabitModalOpen, setIsEditHabitModalOpen] = useState(false);
   const [editingHabitData, setEditingHabitData] = useState(null);
@@ -575,25 +596,25 @@ export default function App() {
   const [customPillarInput, setCustomPillarInput] = useState('');
   const [newTodayItemData, setNewTodayItemData] = useState({ title: '', category: 'Coding', time: '10:00 AM' });
   const [isAddTodayItemOpen, setIsAddTodayItemOpen] = useState(false);
-  const [todayItems, setTodayItems] = useState(() => { const c = safeStorage.getItem('cache_todayItems'); return c ? JSON.parse(c) : []; });
+  const [todayItems, setTodayItems] = useState(() => readCachedJson('cache_todayItems', []));
   const [habitCardViews, setHabitCardViews] = useState({}); // { habitId: 'progress' | 'heatmap' }
   const [habitMenuOpen, setHabitMenuOpen] = useState(null); // habitId
   const [habitNotificationsEnabled, setHabitNotificationsEnabled] = useState(() => {
-    return localStorage.getItem('habitNotifications_enabled') === 'true';
+    return safeStorage.getItem('habitNotifications_enabled') === 'true';
   });
   // Habit reminder editing state
   const [editHabitReminderId, setEditHabitReminderId] = useState(null); // habitId being edited
   const [editHabitReminderList, setEditHabitReminderList] = useState([]);
 
   // 3) Finance state
-  const [transactions, setTransactions] = useState(() => { const c = safeStorage.getItem('cache_transactions'); return c ? JSON.parse(c) : []; });
+  const [transactions, setTransactions] = useState(() => readCachedJson('cache_transactions', []));
   const [newTitle, setNewTitle] = useState('');
   const [newAmount, setNewAmount] = useState('');
   const [newType, setNewType] = useState('spend');
 
   // 4) Body & Gym state
-  const [workouts, setWorkouts] = useState(() => { const c = safeStorage.getItem('cache_workouts'); return c ? JSON.parse(c) : []; });
-  const [bodyStats, setBodyStats] = useState(() => { const c = safeStorage.getItem('cache_bodyStats'); return c ? JSON.parse(c) : []; });
+  const [workouts, setWorkouts] = useState(() => readCachedJson('cache_workouts', []));
+  const [bodyStats, setBodyStats] = useState(() => readCachedJson('cache_bodyStats', []));
 
   const handleSaveBodyStat = async (updated) => {
     const todayStr = todayKey(userProfile?.timezone);
@@ -631,16 +652,16 @@ export default function App() {
   };
 
   // 5) Sleep state
-  const [sleepLogs, setSleepLogs] = useState(() => { const c = safeStorage.getItem('cache_sleepLogs'); return c ? JSON.parse(c) : []; });
+  const [sleepLogs, setSleepLogs] = useState(() => readCachedJson('cache_sleepLogs', []));
 
   // 6) Notes & Diary state
-  const [notesList, setNotesList] = useState(() => { const c = safeStorage.getItem('cache_notesList'); return c ? JSON.parse(c) : []; });
+  const [notesList, setNotesList] = useState(() => readCachedJson('cache_notesList', []));
   const [activeNoteId, setActiveNoteId] = useState(null);
   const [expandedNoteId, setExpandedNoteId] = useState(null);
   const [isFloatingDiaryOpen, setIsFloatingDiaryOpen] = useState(false);
   const [floatingDiaryContent, setFloatingDiaryContent] = useState("");
   const [floatingDiaryShare, setFloatingDiaryShare] = useState(true);
-  const [trashNotes, setTrashNotes] = useState(() => { const c = safeStorage.getItem('cache_trashNotes'); return c ? JSON.parse(c) : []; });
+  const [trashNotes, setTrashNotes] = useState(() => readCachedJson('cache_trashNotes', []));
   const [notesViewMode, setNotesViewMode] = useState('active'); // 'active' | 'trash'
 
   // Auto-clean trash: if note deleted from trash -> permanently deleted; else in 49 days automatically purged
@@ -680,7 +701,7 @@ export default function App() {
   }, [activeTab, userProfile.auto_open_ai_sidechat]);
 
   // 8) Calendar state
-  const [calendarEvents, setCalendarEvents] = useState(() => { const c = safeStorage.getItem('cache_calendarEvents'); return c ? JSON.parse(c) : []; });
+  const [calendarEvents, setCalendarEvents] = useState(() => readCachedJson('cache_calendarEvents', []));
   const [calendarSubTab, setCalendarSubTab] = useState('today');
   const [selectedCalendarDate, setSelectedCalendarDate] = useState(null);
   const [calendarMonth, setCalendarMonth] = useState(() => {
@@ -783,7 +804,7 @@ export default function App() {
           custom_days: h.custom_days || '',
           intervalDays: h.interval_days || 0,
           interval_days: h.interval_days || 0,
-          reminders: Array.isArray(h.reminders) ? h.reminders : (typeof h.reminders === 'string' ? (JSON.parse(h.reminders) || []) : [])
+          reminders: parseReminders(h.reminders)
         }));
         setHabits(mappedHabits);
         safeStorage.setItem('cache_habits', JSON.stringify(mappedHabits));
@@ -802,7 +823,7 @@ export default function App() {
           title: c.title,
           date: c.date,
           time: c.time || '',
-          reminders: Array.isArray(c.reminders) ? c.reminders : (c.reminders ? (typeof c.reminders === 'string' ? JSON.parse(c.reminders) : c.reminders) : []),
+          reminders: parseReminders(c.reminders),
           color: c.color,
           status: c.status,
           endDate: c.end_date
@@ -924,7 +945,7 @@ export default function App() {
           title: c.title,
           date: c.date,
           time: c.time || '',
-          reminders: Array.isArray(c.reminders) ? c.reminders : (c.reminders ? (typeof c.reminders === 'string' ? JSON.parse(c.reminders) : c.reminders) : []),
+          reminders: parseReminders(c.reminders),
           color: c.color,
           status: c.status,
           endDate: c.end_date

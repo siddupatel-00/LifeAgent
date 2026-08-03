@@ -25,15 +25,17 @@ export default function ConfirmModal({
     const id = modalIdRef.current;
     registerModal(id, onCancel);
 
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onCancel?.();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
     return () => {
       unregisterModal(id);
+      window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (isOpen) {
-      updateModalCallback(modalIdRef.current, onCancel);
-    }
   }, [isOpen, onCancel]);
 
   if (!isOpen) return null;

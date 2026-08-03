@@ -23,15 +23,17 @@ export default function Modal({
     const id = modalIdRef.current;
     registerModal(id, onClose);
 
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose?.();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
     return () => {
       unregisterModal(id);
+      window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (isOpen) {
-      updateModalCallback(modalIdRef.current, onClose);
-    }
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;

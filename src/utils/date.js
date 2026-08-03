@@ -94,7 +94,7 @@ export const isHabitScheduledOnDay = (habit, day) => {
     }
 
     const elapsedDays = targetDayIndex - habitStartIndex;
-    return Math.abs(elapsedDays) % intervalDays === 0;
+    return elapsedDays >= 0 && elapsedDays % intervalDays === 0;
   }
 
   if (!habit.frequency || habit.frequency === 'daily') return true;
@@ -111,7 +111,13 @@ export const isHabitScheduledOnDay = (habit, day) => {
       }
     }
     const cleanDays = dayList.map(d => String(d).trim().slice(0, 3));
-    const dayCode = typeof day === 'string' ? day : (day?.code || day?.name || '');
+    let dayCode = typeof day === 'string' ? day : (day?.code || day?.name || '');
+    if (!dayCode && day instanceof Date) {
+      dayCode = ALL_WEEK_DAYS[day.getDay()].code;
+    } else if (!dayCode && day && typeof day === 'object' && (day.date || day.dateStr)) {
+      const date = new Date(`${day.dateStr || day.date}T00:00:00`);
+      if (!Number.isNaN(date.getTime())) dayCode = ALL_WEEK_DAYS[date.getDay()].code;
+    }
     return cleanDays.includes(dayCode);
   }
   return true;
@@ -212,5 +218,4 @@ export const getTimeRangeDates = (timeRange, timeZone) => {
     todayStr
   };
 };
-
 
