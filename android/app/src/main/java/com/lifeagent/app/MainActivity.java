@@ -9,11 +9,15 @@ import com.getcapacitor.BridgeActivity;
 public class MainActivity extends BridgeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-
+        // Capacitor builds its plugin bridge inside super.onCreate(). Custom
+        // plugins therefore must be registered first; otherwise calls made
+        // while the app is alive can fall back to web notifications, but the
+        // native habit-alarm path is not reliably configured for background use.
         registerPlugin(NativeWaterSchedulerPlugin.class);
         registerPlugin(NativeHabitSchedulerPlugin.class);
         registerPlugin(NativeAlarmSchedulerPlugin.class);
+
+        super.onCreate(savedInstanceState);
         
         Window window = getWindow();
         window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
