@@ -85,16 +85,20 @@ public class HabitAlarmReceiver extends BroadcastReceiver {
 
         PendingIntent pi = buildIntent(c, habitId, title, timeStr);
 
-        // setExactAndAllowWhileIdle fires at the precise requested time even during
-        // Doze mode, unlike setAndAllowWhileIdle which Android may batch and delay
-        // by 15 min–several hours. SecurityException fallback covers the rare case
-        // where the user manually revokes SCHEDULE_EXACT_ALARM in settings.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        // setAlarmClock is an OS-level Alarm Clock signal. Android OS NEVER defers
+        // or suppresses setAlarmClock, even when the app is closed/swiped away,
+        // screen is off, or the phone is in deep Doze mode.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             try {
-                am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, fire.getTimeInMillis(), pi);
-            } catch (SecurityException e) {
-                // Graceful fallback — alarm may be slightly delayed in Doze
-                am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, fire.getTimeInMillis(), pi);
+                AlarmManager.AlarmClockInfo clockInfo = new AlarmManager.AlarmClockInfo(fire.getTimeInMillis(), pi);
+                am.setAlarmClock(clockInfo, pi);
+            } catch (Exception e) {
+                // Fallback for unexpected security policies
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, fire.getTimeInMillis(), pi);
+                } else {
+                    am.set(AlarmManager.RTC_WAKEUP, fire.getTimeInMillis(), pi);
+                }
             }
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             am.setExact(AlarmManager.RTC_WAKEUP, fire.getTimeInMillis(), pi);
