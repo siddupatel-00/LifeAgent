@@ -467,9 +467,9 @@ export async function scheduleHabitReminders(habitsOrObj, globalEnabled = true) 
 
       if (Capacitor.getPlatform() === 'android') {
         habitPayloads.push({
-          id: habit.id || i,
+          slot: habitPayloads.length + 1,
           title: habit.title || habit.label || 'Habit Reminder',
-          time: timeStr,
+          time: `${String(t.hour).padStart(2, '0')}:${String(t.minute).padStart(2, '0')}`,
           enabled: true,
         });
       }
@@ -516,7 +516,7 @@ export async function scheduleHabitReminders(habitsOrObj, globalEnabled = true) 
   if (daily7pmEnabled) {
     if (Capacitor.getPlatform() === 'android') {
       habitPayloads.push({
-        id: 9999,
+        slot: habitPayloads.length + 1,
         title: 'Daily Habit Check-in',
         time: '19:00',
         enabled: true,
@@ -553,7 +553,7 @@ export async function scheduleHabitReminders(habitsOrObj, globalEnabled = true) 
   if (Capacitor.getPlatform() === 'android') {
     try {
       await NativeHabitScheduler.configure({
-        enabled: globalEnabled,
+        enabled: globalEnabled && habitPayloads.length > 0,
         habitsJson: JSON.stringify(habitPayloads),
       }).catch(e => console.warn('[reminderScheduler] NativeHabitScheduler configure error:', e));
 
@@ -672,24 +672,29 @@ async function configureNativeDailyReminders({
 } = {}) {
   if (Capacitor.getPlatform() !== 'android' || !NativeDailyScheduler) return;
 
+  const fmt = (timeStr, fallback) => {
+    const t = parseTime(timeStr || fallback);
+    return t ? `${String(t.hour).padStart(2, '0')}:${String(t.minute).padStart(2, '0')}` : fallback;
+  };
+
   const name = summarySettings.userName || 'User';
   const config = {
     sleep: {
       enabled: !!(sleepSettings.enabled && globalEnabled),
-      time: sleepSettings.reminderTime || '22:00',
-      title: '😴 Bedtime Reminder',
+      time: fmt(sleepSettings.reminderTime, '22:00'),
+      title: 'Bedtime Reminder',
       body: 'Time to wind down and get ready for bed!',
     },
     workout: {
       enabled: !!(workoutSettings.enabled && globalEnabled),
-      time: workoutSettings.reminderTime || '07:00',
-      title: '💪 Workout Reminder',
+      time: fmt(workoutSettings.reminderTime, '07:00'),
+      title: 'Workout Reminder',
       body: "Time to hit the gym! Don't skip today's workout.",
     },
     summary: {
       enabled: !!(summarySettings.enabled && globalEnabled),
-      time: summarySettings.reminderTime || '07:00',
-      title: '🌅 Morning Summary',
+      time: fmt(summarySettings.reminderTime, '07:00'),
+      title: 'Morning Summary',
       body: `Good morning ${name}!`,
     },
   };
@@ -712,13 +717,6 @@ export async function scheduleSleepReminders({ enabled, reminderTime }, globalEn
 
   const t = parseTime(reminderTime || '22:00');
   if (!t) return;
-
-  if (Capacitor.getPlatform() === 'android') {
-    await configureNativeDailyReminders({
-      sleepSettings: { enabled, reminderTime },
-      globalEnabled,
-    });
-  }
 
   const notifications = [];
   const now = Date.now();
@@ -768,13 +766,6 @@ export async function scheduleWorkoutReminders({ enabled, reminderTime, repeatRu
   if (!t) return;
   const rule = repeatRule ? (typeof repeatRule === 'string' ? JSON.parse(repeatRule) : repeatRule) : { type: 'daily' };
 
-  if (Capacitor.getPlatform() === 'android') {
-    await configureNativeDailyReminders({
-      workoutSettings: { enabled, reminderTime },
-      globalEnabled,
-    });
-  }
-
   const notifications = [];
   const now = Date.now();
 
@@ -822,13 +813,6 @@ export async function scheduleMorningSummaryReminders({ enabled, reminderTime, u
 
   const t = parseTime(reminderTime || '07:00');
   if (!t) return;
-
-  if (Capacitor.getPlatform() === 'android') {
-    await configureNativeDailyReminders({
-      summarySettings: { enabled, reminderTime, userName },
-      globalEnabled,
-    });
-  }
 
   const notifications = [];
   const now = Date.now();
