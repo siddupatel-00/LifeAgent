@@ -4,36 +4,36 @@
 //   reminders        – array of reminder objects (current value)
 //   onChange         – (newReminders) => void
 //   mode             – 'offset' | 'time'
-//     'offset' : used for events. Each reminder has offset_minutes + optional repeat_rule
+//     'offset' : used for events. Each reminder has offset_minutes (no repeat)
 //     'time'   : used for habits/other. Each reminder has reminder_time + repeat_rule + enabled
 //   maxReminders     – max allowed (default unlimited)
 //   label            – section heading text
 
-import React, { useState } from 'react';
-import { Plus, Trash2, Bell } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Plus, Trash2, Bell, ChevronDown, Check } from 'lucide-react';
 import { testNotificationNow } from '../utils/reminderScheduler';
 import TimePicker from './TimePicker';
 
 const OFFSET_OPTIONS = [
-  { label: 'At event time', value: 0 },
+  { label: 'At event time',    value: 0 },
   { label: '5 minutes before', value: 5 },
   { label: '10 minutes before', value: 10 },
   { label: '15 minutes before', value: 15 },
   { label: '30 minutes before', value: 30 },
-  { label: '1 hour before', value: 60 },
-  { label: '2 hours before', value: 120 },
-  { label: '1 day before', value: 1440 },
-  { label: '2 days before', value: 2880 },
-  { label: '1 week before', value: 10080 },
+  { label: '1 hour before',    value: 60 },
+  { label: '2 hours before',   value: 120 },
+  { label: '1 day before',     value: 1440 },
+  { label: '2 days before',    value: 2880 },
+  { label: '1 week before',    value: 10080 },
 ];
 
 const REPEAT_OPTIONS = [
-  { label: 'Never', value: 'never' },
-  { label: 'Daily', value: 'daily' },
-  { label: 'Weekdays', value: 'weekdays' },
-  { label: 'Weekly', value: 'weekly' },
-  { label: 'Monthly', value: 'monthly' },
-  { label: 'Yearly', value: 'yearly' },
+  { label: 'Never',       value: 'never' },
+  { label: 'Daily',       value: 'daily' },
+  { label: 'Weekdays',    value: 'weekdays' },
+  { label: 'Weekly',      value: 'weekly' },
+  { label: 'Monthly',     value: 'monthly' },
+  { label: 'Yearly',      value: 'yearly' },
   { label: 'Custom days', value: 'custom' },
 ];
 
@@ -56,7 +56,7 @@ function parseRule(rem) {
 
 function formatTimeDisplay(timeStr) {
   if (!timeStr) return '12:00 AM';
-  let [h, m] = timeStr.split(':');
+  const [h, m] = timeStr.split(':');
   let hNum = Number(h) || 0;
   const isAm = hNum < 12;
   if (hNum === 0) hNum = 12;
@@ -64,10 +64,130 @@ function formatTimeDisplay(timeStr) {
   return `${hNum}:${m} ${isAm ? 'AM' : 'PM'}`;
 }
 
+// ── Fully custom themed dropdown — no native <select> ──────────────────────
+function CustomDropdown({ options, value, onChange, minWidth = 130 }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  // Close when clicking outside
+  useEffect(() => {
+    if (!open) return;
+    function handleClick(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [open]);
+
+  const selected = options.find(o => o.value === value) || options[0];
+
+  return (
+    <div ref={ref} style={{ position: 'relative', display: 'inline-block', minWidth }}>
+      {/* Trigger button */}
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          width: '100%',
+          padding: '7px 10px',
+          background: 'var(--bg-card, #12141c)',
+          color: 'var(--text-main, #fff)',
+          border: '1px solid rgba(255,255,255,0.12)',
+          borderRadius: '8px',
+          fontSize: '0.82rem',
+          fontWeight: 500,
+          cursor: 'pointer',
+          whiteSpace: 'nowrap',
+          fontFamily: 'inherit',
+          transition: 'border-color 0.15s',
+        }}
+      >
+        <span style={{ flex: 1, textAlign: 'left' }}>{selected.label}</span>
+        <ChevronDown
+          size={13}
+          style={{
+            flexShrink: 0,
+            color: 'var(--text-muted, #94a3b8)',
+            transform: open ? 'rotate(180deg)' : 'none',
+            transition: 'transform 0.15s',
+          }}
+        />
+      </button>
+
+      {/* Dropdown list */}
+      {open && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 4px)',
+            left: 0,
+            zIndex: 9999,
+            minWidth: '100%',
+            background: 'var(--bg-card, #12141c)',
+            border: '1px solid rgba(255,255,255,0.15)',
+            borderRadius: '10px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.45)',
+            overflow: 'hidden',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+          }}
+        >
+          {options.map(o => {
+            const isActive = o.value === value;
+            return (
+              <button
+                key={o.value}
+                type="button"
+                onClick={() => { onChange(o.value); setOpen(false); }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  width: '100%',
+                  padding: '9px 14px',
+                  background: isActive
+                    ? 'var(--accent-blue-dim, rgba(59,130,246,0.15))'
+                    : 'transparent',
+                  color: isActive
+                    ? 'var(--accent-blue, #3b82f6)'
+                    : 'var(--text-main, #fff)',
+                  border: 'none',
+                  borderBottom: '1px solid rgba(255,255,255,0.05)',
+                  fontSize: '0.82rem',
+                  fontWeight: isActive ? 600 : 400,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  fontFamily: 'inherit',
+                  transition: 'background 0.1s',
+                  whiteSpace: 'nowrap',
+                }}
+                onMouseEnter={e => {
+                  if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+                }}
+                onMouseLeave={e => {
+                  if (!isActive) e.currentTarget.style.background = 'transparent';
+                }}
+              >
+                <span style={{ width: 14, flexShrink: 0 }}>
+                  {isActive && <Check size={13} />}
+                </span>
+                {o.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ReminderEditor({ reminders = [], onChange, mode = 'offset', maxReminders, label = 'Reminders' }) {
   const list = Array.isArray(reminders) ? reminders : [];
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [editingId, setEditingId] = useState(null); // null means "new reminder", else reminder ID
+  const [editingId, setEditingId] = useState(null);
   const [editingTime, setEditingTime] = useState('08:00');
 
   function addReminder() {
@@ -132,7 +252,7 @@ export default function ReminderEditor({ reminders = [], onChange, mode = 'offse
             type="button"
             onClick={async () => {
               const ok = await testNotificationNow();
-              if (ok) alert("⚡ Test alarm scheduled! Notification will fire in 4 seconds.");
+              if (ok) alert('⚡ Test alarm scheduled! Notification will fire in 4 seconds.');
             }}
             style={{ background: 'var(--accent-blue-dim, rgba(59, 130, 246, 0.12))', color: 'var(--accent-blue, #3b82f6)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '8px', padding: '5px 10px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
           >
@@ -156,7 +276,7 @@ export default function ReminderEditor({ reminders = [], onChange, mode = 'offse
           return (
             <div key={rem.id} className="reminder-item">
               <div className="reminder-item-row">
-                {/* Toggle */}
+                {/* Enable / disable toggle */}
                 <button
                   type="button"
                   className={`reminder-toggle ${rem.enabled ? 'on' : 'off'}`}
@@ -164,31 +284,29 @@ export default function ReminderEditor({ reminders = [], onChange, mode = 'offse
                   aria-label={rem.enabled ? 'Disable reminder' : 'Enable reminder'}
                 />
 
-                {/* Offset or Time */}
+                {/* Offset (events) or Time button (habits) */}
                 {mode === 'offset' ? (
-                  <select
-                    className="reminder-select"
+                  <CustomDropdown
+                    options={OFFSET_OPTIONS}
                     value={rem.offset_minutes}
-                    onChange={e => updateReminder(rem.id, { offset_minutes: Number(e.target.value) })}
-                  >
-                    {OFFSET_OPTIONS.map(o => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
-                  </select>
+                    onChange={val => updateReminder(rem.id, { offset_minutes: val })}
+                    minWidth={150}
+                  />
                 ) : (
                   <button
                     type="button"
                     className="reminder-time-input"
-                    style={{ 
-                      cursor: 'pointer', 
-                      background: 'var(--glass-bg, rgba(255,255,255,0.05))',
+                    style={{
+                      cursor: 'pointer',
+                      background: 'var(--bg-card, rgba(255,255,255,0.05))',
                       color: 'var(--text-main, #ffffff)',
-                      border: '1px solid var(--glass-border, rgba(255,255,255,0.1))',
-                      padding: '8px 12px',
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      padding: '7px 12px',
                       borderRadius: '8px',
-                      fontSize: '0.9rem',
+                      fontSize: '0.85rem',
                       fontWeight: 500,
-                      minWidth: '90px'
+                      minWidth: '90px',
+                      fontFamily: 'inherit',
                     }}
                     onClick={() => editReminderTime(rem.id, rem.reminder_time)}
                   >
@@ -196,16 +314,15 @@ export default function ReminderEditor({ reminders = [], onChange, mode = 'offse
                   </button>
                 )}
 
-                {/* Repeat */}
-                <select
-                  className="reminder-select"
-                  value={repeatType}
-                  onChange={e => handleRepeatChange(rem.id, e.target.value)}
-                >
-                  {REPEAT_OPTIONS.map(o => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
-                </select>
+                {/* Repeat — habits only, not calendar events */}
+                {mode !== 'offset' && (
+                  <CustomDropdown
+                    options={REPEAT_OPTIONS}
+                    value={repeatType}
+                    onChange={val => handleRepeatChange(rem.id, val)}
+                    minWidth={120}
+                  />
+                )}
 
                 {/* Delete */}
                 <button
