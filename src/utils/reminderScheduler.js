@@ -6,6 +6,8 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 
 const NativeAlarmScheduler = registerPlugin('NativeAlarmScheduler');
+const NativeHabitScheduler = registerPlugin('NativeHabitScheduler');
+const NativeWaterScheduler = registerPlugin('NativeWaterScheduler');
 
 const LAST_SCHEDULED_DAY_KEY = 'reminder_last_scheduled_day';
 
@@ -15,6 +17,11 @@ const webTimers = [];
 // Profile, habits, and settings load independently during startup. Only the
 // newest habit-scheduling run may update Android's saved alarm configuration.
 let habitScheduleGeneration = 0;
+
+// Collapse rapid regenerateAllReminders calls (startup + settings churn) so we
+// don't cancel alarms and get killed before the final schedule completes.
+let regenDebounceTimer = null;
+let regenPendingArgs = null;
 
 async function dispatchNotifications(notifications) {
   if (!notifications || notifications.length === 0 || Capacitor.getPlatform() === 'web') return;
@@ -298,12 +305,48 @@ export async function cancelAllOfType(entityType) {
   }
 }
 
+// Schedule new alarms first, then remove stale ones. Avoids a killed-app window
+// where everything was cancelled but nothing new was registered yet.
+async function replaceNotificationsOfType(entityType, notifications) {
+  if (Capacitor.getPlatform() === 'web') return;
+
+  const newIds = new Set((notifications || []).map(n => n.id));
+
+  if (notifications && notifications.length > 0) {
+    await dispatchNotifications(notifications);
+  }
+
+  try {
+    const pending = await LocalNotifications.getPending();
+    const toCancel = [];
+    for (const n of (pending?.notifications || [])) {
+      if (n.extra && n.extra.entityType === entityType && !newIds.has(n.id)) {
+        toCancel.push({ id: n.id });
+        if (Capacitor.getPlatform() === 'android' && NativeAlarmScheduler) {
+          NativeAlarmScheduler.cancelAlarm({ id: n.id }).catch(() => {});
+        }
+      }
+    }
+    if (toCancel.length > 0) {
+      await LocalNotifications.cancel({ notifications: toCancel });
+      console.log(`[reminderScheduler] Removed ${toCancel.length} stale ${entityType} reminders.`);
+    }
+  } catch (e) {
+    console.warn('[reminderScheduler] replaceNotificationsOfType error:', e);
+  }
+}
+
 // ─── Schedule event reminders for next 7 days ────────────────────────────────
 export async function scheduleEventReminders(events, globalEnabled = true) {
-  await cancelAllOfType('event');
-  if (!globalEnabled) return;
+  if (!globalEnabled) {
+    await cancelAllOfType('event');
+    return;
+  }
   const hasPermission = await requestNotificationPermission();
-  if (!hasPermission) return;
+  if (!hasPermission) {
+    await cancelAllOfType('event');
+    return;
+  }
 
   const notifications = [];
   const now = Date.now();
@@ -343,39 +386,36 @@ export async function scheduleEventReminders(events, globalEnabled = true) {
   }
 
   if (notifications.length > 0) {
-    await dispatchNotifications(notifications);
+    await replaceNotificationsOfType('event', notifications);
+  } else {
+    await cancelAllOfType('event');
   }
 }
 
 // ─── Schedule habit reminders ──────────────────────────────────────────────────
 export async function scheduleHabitReminders(habitsOrObj, globalEnabled = true) {
   const generation = ++habitScheduleGeneration;
-  await cancelAllOfType('habit');
-  if (generation !== habitScheduleGeneration) return;
 
   if (!globalEnabled) {
+    await cancelAllOfType('habit');
     if (Capacitor.getPlatform() === 'android') {
-      try {
-        const NativeHabitScheduler = registerPlugin('NativeHabitScheduler');
-        await NativeHabitScheduler.configure({ enabled: false, habitsJson: "[]" }).catch(() => {});
-      } catch (e) {}
+      await NativeHabitScheduler.configure({ enabled: false, habitsJson: '[]' }).catch(() => {});
     }
     return;
   }
 
   const hasPermission = await requestNotificationPermission();
-  if (generation !== habitScheduleGeneration || !hasPermission) {
+  if (generation !== habitScheduleGeneration) return;
+  if (!hasPermission) {
+    await cancelAllOfType('habit');
     if (Capacitor.getPlatform() === 'android') {
-      try {
-        const NativeHabitScheduler = registerPlugin('NativeHabitScheduler');
-        await NativeHabitScheduler.configure({ enabled: false, habitsJson: "[]" }).catch(() => {});
-      } catch (e) {}
+      await NativeHabitScheduler.configure({ enabled: false, habitsJson: '[]' }).catch(() => {});
     }
     return;
   }
 
-  const hasExactPermission = await ensureExactAlarmPermission();
-  if (generation !== habitScheduleGeneration || !hasExactPermission) return;
+  await ensureExactAlarmPermission();
+  if (generation !== habitScheduleGeneration) return;
 
   let habits = [];
   let daily7pmEnabled = false;
@@ -390,6 +430,7 @@ export async function scheduleHabitReminders(habitsOrObj, globalEnabled = true) 
   }
 
   const notifications = [];
+  const habitPayloads = [];
   const now = Date.now();
 
   // 1. Individual per-habit reminders
@@ -408,7 +449,6 @@ export async function scheduleHabitReminders(habitsOrObj, globalEnabled = true) 
       }
     }
 
-    // Fallback: If no explicit reminders array, check for single habit reminder time
     const singleTime = habit.reminder_time || habit.reminderTime || habit.time;
     if ((!Array.isArray(rems) || rems.length === 0) && singleTime) {
       rems = [{ id: 1, reminder_time: singleTime, enabled: true }];
@@ -423,6 +463,15 @@ export async function scheduleHabitReminders(habitsOrObj, globalEnabled = true) 
       const timeStr = rem.reminder_time || rem.time || rem.reminderTime;
       const t = parseTime(timeStr);
       if (!t) continue;
+
+      if (Capacitor.getPlatform() === 'android') {
+        habitPayloads.push({
+          id: habitPayloads.length + 1,
+          title: habit.title || habit.label || 'Habit Reminder',
+          time: timeStr,
+          enabled: true,
+        });
+      }
 
       let repeatRule = { type: 'daily' };
       if (rem.repeat_rule) {
@@ -447,9 +496,6 @@ export async function scheduleHabitReminders(habitsOrObj, globalEnabled = true) 
         if (Capacitor.getPlatform() === 'web') {
           scheduleWebFallback(title, body, fireDate, 'habit');
         } else {
-          // Schedule via LocalNotifications on ALL native platforms (including Android).
-          // On Android the NativeHabitScheduler (AlarmManager) also fires as a backup
-          // — see the configure() call below.
           const id = makeNotifId('habit', habit.id || i, rem.id || 1, day);
           notifications.push({
             id,
@@ -468,7 +514,7 @@ export async function scheduleHabitReminders(habitsOrObj, globalEnabled = true) 
   // 2. Global Daily 7 PM Check-in reminder
   if (daily7pmEnabled) {
     for (let day = 0; day < 7; day++) {
-      const fireDate = buildDailyFireDate(day, 19, 0); // 7:00 PM
+      const fireDate = buildDailyFireDate(day, 19, 0);
       if (fireDate.getTime() <= now) continue;
 
       const title = '🔥 Daily Habit Check-in';
@@ -492,94 +538,79 @@ export async function scheduleHabitReminders(habitsOrObj, globalEnabled = true) 
   }
 
   if (generation !== habitScheduleGeneration) return;
-  if (notifications.length > 0) {
-    await dispatchNotifications(notifications);
-  }
 
-  // 3. Native Android AlarmManager — one independent alarm per reminder time.
-  //    This fires even when the app is fully killed, Doze mode is on, or screen is locked.
-  //    Each entry gets a unique integer ID so alarms never overwrite each other.
+  // Register native rolling alarms FIRST so a swipe-kill during JS scheduling
+  // still leaves OS-level habit alarms active.
   if (Capacitor.getPlatform() === 'android') {
-    if (generation !== habitScheduleGeneration) return;
     try {
-      const NativeHabitScheduler = registerPlugin('NativeHabitScheduler');
-      const habitPayloads = [];
-
-      for (let i = 0; i < habits.length; i++) {
-        const h = habits[i];
-        if (!h || h.archived) continue;
-
-        let rems = [];
-        if (Array.isArray(h.reminders)) {
-          rems = h.reminders;
-        } else if (typeof h.reminders === 'string') {
-          try { rems = JSON.parse(h.reminders); } catch (e) { rems = []; }
-        }
-
-        // Fallback: legacy single reminder_time field
-        const singleTime = h.reminder_time || h.reminderTime || h.time;
-        if (rems.length === 0 && singleTime) {
-          rems = [{ id: 1, reminder_time: singleTime, enabled: true }];
-        }
-
-        for (const r of rems) {
-          if (r.enabled === false || r.enabled === 0 || r.enabled === '0') continue;
-          const timeVal = r.reminder_time || r.time || r.reminderTime;
-          if (!timeVal) continue;
-
-          // The Android receiver uses this value as a PendingIntent request code.
-          // A sequential value is intentionally used instead of `habitId * 100 +
-          // index`: the latter collides once enough reminders exist (for example,
-          // habit 1 / slot 100 and habit 2 / slot 0). The native plugin cancels
-          // the exact IDs saved by the prior configuration before applying this
-          // new list, so these IDs only need to be unique within one config.
-          const uniqueId = habitPayloads.length + 1;
-
-          habitPayloads.push({
-            id: uniqueId,
-            title: h.title || h.label || 'Habit Reminder',
-            time: timeVal,
-            enabled: true
-          });
-        }
-      }
-
-      if (generation !== habitScheduleGeneration) return;
       await NativeHabitScheduler.configure({
         enabled: globalEnabled,
-        habitsJson: JSON.stringify(habitPayloads)
+        habitsJson: JSON.stringify(habitPayloads),
       }).catch(e => console.warn('[reminderScheduler] NativeHabitScheduler configure error:', e));
 
       console.log(`[reminderScheduler] NativeHabitScheduler configured with ${habitPayloads.length} independent habit alarms.`);
 
-      // Check battery optimization exemption on first run
-      if (Capacitor.getPlatform() === 'android' && NativeAlarmScheduler) {
-        try {
-          const batResult = await NativeAlarmScheduler.checkBatteryOptimization();
-          if (!batResult.isIgnoring) {
-            // App is being battery-optimized — request exemption silently
-            // (the system dialog will pop up asking user to allow)
-            NativeAlarmScheduler.requestBatteryOptimizationExemption().catch(() => {});
-          }
-        } catch(e) { /* ignore */ }
-      }
+      try {
+        const batResult = await NativeAlarmScheduler.checkBatteryOptimization();
+        if (!batResult.isIgnoring) {
+          NativeAlarmScheduler.requestBatteryOptimizationExemption().catch(() => {});
+        }
+      } catch (e) { /* ignore */ }
     } catch (err) {
       console.warn('[reminderScheduler] NativeHabitScheduler plugin error:', err);
     }
   }
+
+  if (generation !== habitScheduleGeneration) return;
+
+  if (notifications.length > 0) {
+    await replaceNotificationsOfType('habit', notifications);
+  } else {
+    await cancelAllOfType('habit');
+  }
 }
 
 // ─── Schedule water reminders ─────────────────────────────────────────────────
-export async function scheduleWaterReminders({ enabled, startTime, endTime, intervalMinutes }, globalEnabled = true) {
-  await cancelAllOfType('water');
-  if (!enabled || !globalEnabled) return;
+export async function scheduleWaterReminders({ enabled, startTime, endTime, intervalMinutes, goal, hydration }, globalEnabled = true) {
+  const isActive = enabled && globalEnabled;
+
+  if (!isActive) {
+    await cancelAllOfType('water');
+    if (Capacitor.getPlatform() === 'android') {
+      await NativeWaterScheduler.configure({
+        enabled: false,
+        startTime: startTime || '08:00',
+        endTime: endTime || '22:00',
+        intervalMinutes: Number(intervalMinutes) || 60,
+        goal: Number(goal) || 2.5,
+        hydration: Number(hydration) || 0,
+      }).catch(() => {});
+    }
+    return;
+  }
+
   const hasPermission = await requestNotificationPermission();
-  if (!hasPermission) return;
+  if (!hasPermission) {
+    await cancelAllOfType('water');
+    return;
+  }
 
   const sTime = parseTime(startTime || '08:00');
   const eTime = parseTime(endTime || '22:00');
   const interval = Number(intervalMinutes) || 60;
   if (!sTime || !eTime) return;
+
+  // Native rolling alarm survives swipe-kill; register before batch scheduling.
+  if (Capacitor.getPlatform() === 'android') {
+    await NativeWaterScheduler.configure({
+      enabled: true,
+      startTime: startTime || '08:00',
+      endTime: endTime || '22:00',
+      intervalMinutes: interval,
+      goal: Number(goal) || 2.5,
+      hydration: Number(hydration) || 0,
+    }).catch(e => console.warn('[reminderScheduler] NativeWaterScheduler configure error:', e));
+  }
 
   const notifications = [];
   const now = Date.now();
@@ -618,16 +649,23 @@ export async function scheduleWaterReminders({ enabled, startTime, endTime, inte
   }
 
   if (notifications.length > 0) {
-    await dispatchNotifications(notifications);
+    await replaceNotificationsOfType('water', notifications);
+  } else {
+    await cancelAllOfType('water');
   }
 }
 
 // ─── Schedule sleep reminder ──────────────────────────────────────────────────
 export async function scheduleSleepReminders({ enabled, reminderTime }, globalEnabled = true) {
-  await cancelAllOfType('sleep');
-  if (!enabled || !globalEnabled) return;
+  if (!enabled || !globalEnabled) {
+    await cancelAllOfType('sleep');
+    return;
+  }
   const hasPermission = await requestNotificationPermission();
-  if (!hasPermission) return;
+  if (!hasPermission) {
+    await cancelAllOfType('sleep');
+    return;
+  }
 
   const t = parseTime(reminderTime || '22:00');
   if (!t) return;
@@ -658,16 +696,23 @@ export async function scheduleSleepReminders({ enabled, reminderTime }, globalEn
   }
 
   if (notifications.length > 0) {
-    await dispatchNotifications(notifications);
+    await replaceNotificationsOfType('sleep', notifications);
+  } else {
+    await cancelAllOfType('sleep');
   }
 }
 
 // ─── Schedule workout reminders ───────────────────────────────────────────────
 export async function scheduleWorkoutReminders({ enabled, reminderTime, repeatRule }, globalEnabled = true) {
-  await cancelAllOfType('workout');
-  if (!enabled || !globalEnabled) return;
+  if (!enabled || !globalEnabled) {
+    await cancelAllOfType('workout');
+    return;
+  }
   const hasPermission = await requestNotificationPermission();
-  if (!hasPermission) return;
+  if (!hasPermission) {
+    await cancelAllOfType('workout');
+    return;
+  }
 
   const t = parseTime(reminderTime || '07:00');
   if (!t) return;
@@ -700,16 +745,23 @@ export async function scheduleWorkoutReminders({ enabled, reminderTime, repeatRu
   }
 
   if (notifications.length > 0) {
-    await dispatchNotifications(notifications);
+    await replaceNotificationsOfType('workout', notifications);
+  } else {
+    await cancelAllOfType('workout');
   }
 }
 
 // ─── Schedule morning summary notifications ───────────────────────────────────
 export async function scheduleMorningSummaryReminders({ enabled, reminderTime, userName, calendarEvents }, globalEnabled = true) {
-  await cancelAllOfType('summary');
-  if (!enabled || !globalEnabled) return;
+  if (!enabled || !globalEnabled) {
+    await cancelAllOfType('summary');
+    return;
+  }
   const hasPermission = await requestNotificationPermission();
-  if (!hasPermission) return;
+  if (!hasPermission) {
+    await cancelAllOfType('summary');
+    return;
+  }
 
   const t = parseTime(reminderTime || '07:00');
   if (!t) return;
@@ -754,12 +806,13 @@ export async function scheduleMorningSummaryReminders({ enabled, reminderTime, u
   }
 
   if (notifications.length > 0) {
-    await dispatchNotifications(notifications);
+    await replaceNotificationsOfType('summary', notifications);
+  } else {
+    await cancelAllOfType('summary');
   }
 }
 
-// ─── Regenerate ALL reminders (called on app launch, edits, reboot) ───────────
-export async function regenerateAllReminders({
+async function regenerateAllRemindersNow({
   habits = [],
   events = [],
   waterSettings = {},
@@ -769,8 +822,9 @@ export async function regenerateAllReminders({
   globalEnabled = true,
 } = {}) {
   console.log('[reminderScheduler] Regenerating all reminders...');
+  // Habits first — native OS alarms are registered before JS batch scheduling.
+  await scheduleHabitReminders(habits, globalEnabled);
   await Promise.all([
-    scheduleHabitReminders(habits, globalEnabled),
     scheduleEventReminders(events, globalEnabled),
     scheduleWaterReminders(waterSettings, globalEnabled),
     scheduleSleepReminders(sleepSettings, globalEnabled),
@@ -779,6 +833,26 @@ export async function regenerateAllReminders({
   ]);
   localStorage.setItem(LAST_SCHEDULED_DAY_KEY, new Date().toISOString().split('T')[0]);
   console.log('[reminderScheduler] Done regenerating reminders.');
+}
+
+// ─── Regenerate ALL reminders (called on app launch, edits, reboot) ───────────
+export function regenerateAllReminders(args = {}) {
+  regenPendingArgs = args;
+  if (regenDebounceTimer) clearTimeout(regenDebounceTimer);
+
+  return new Promise((resolve, reject) => {
+    regenDebounceTimer = setTimeout(async () => {
+      regenDebounceTimer = null;
+      const pending = regenPendingArgs;
+      regenPendingArgs = null;
+      try {
+        await regenerateAllRemindersNow(pending || {});
+        resolve();
+      } catch (err) {
+        reject(err);
+      }
+    }, 400);
+  });
 }
 
 // ─── Check whether regeneration is needed on app launch ──────────────────────

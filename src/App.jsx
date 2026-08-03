@@ -1142,6 +1142,8 @@ export default function App() {
         startTime: userProfile?.water_reminder_start || '08:00',
         endTime: userProfile?.water_reminder_end || '22:00',
         intervalMinutes: userProfile?.water_reminder_interval || 60,
+        goal: userProfile?.water_target_goal || 2.5,
+        hydration: 0,
       },
       sleepSettings: {
         enabled: isSleepEnabled,
@@ -1204,7 +1206,11 @@ export default function App() {
     // swiped the app away from Recents; the JS task was stopped first.
     const globalEnabled = userProfile?.remindersGlobalEnabled !== false
       && userProfile?.reminders_global_enabled !== 0;
-    scheduleHabitReminders(nextHabits, globalEnabled).catch(console.error);
+    scheduleHabitReminders({
+      habits: nextHabits,
+      daily7pmEnabled: habitNotificationsEnabled,
+      userName: userProfile?.name || 'User',
+    }, globalEnabled).catch(console.error);
 
     // Persist the reminder in the background after the local alarm is safe.
     (async () => {
@@ -1451,10 +1457,20 @@ export default function App() {
       root.setAttribute('data-theme', isSystemDark ? 'dark' : 'light');
       
       if (window.matchMedia) {
-        const listener = (e) => root.setAttribute('data-theme', e.matches ? 'dark' : 'light');
         const media = window.matchMedia('(prefers-color-scheme: dark)');
-        media.addEventListener ? media.addEventListener('change', listener) : media.addListener(listener);
-        return () => media.removeEventListener ? media.removeEventListener('change', listener) : media.removeListener(listener);
+        const listener = (e) => root.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+        if (media.addEventListener) {
+          media.addEventListener('change', listener);
+        } else if (media.addListener) {
+          media.addListener(listener);
+        }
+        return () => {
+          if (media.removeEventListener) {
+            media.removeEventListener('change', listener);
+          } else if (media.removeListener) {
+            media.removeListener(listener);
+          }
+        };
       }
     } else {
       root.setAttribute('data-theme', themeMode);
@@ -1952,15 +1968,6 @@ export default function App() {
       console.error(err);
     }
   };
-
-  const fragmentedApps = [
-    { code: 'EX', name: 'Money Spending Tracker', sub: 'Expense & Budgeting tool', cost: '$4/mo' },
-    { code: 'PR', name: 'Progress & Habit App', sub: 'Daily streaks & logs', cost: '$2/mo' },
-    { code: 'AI', name: 'AI Chat Assistant', sub: 'Personal bot & tips', cost: '$15/mo' },
-    { code: 'PO', name: 'Pomodoro Focus Timer', sub: 'Study timer & goals', cost: '$3/mo' },
-    { code: 'CA', name: 'Separate Calendar Tool', sub: 'Schedule management', cost: '$5/mo' },
-    { code: 'AN', name: 'Personal Analytics App', sub: 'Graphs & reports', cost: '$4/mo' },
-  ];
 
   return (
     <div className={currentPage === 'dashboard' ? '' : 'container'} style={currentPage === 'dashboard' ? { minHeight: '100vh', background: 'var(--bg-main)' } : { paddingBottom: '60px' }}>

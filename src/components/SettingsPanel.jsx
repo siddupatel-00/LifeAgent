@@ -51,13 +51,20 @@ const SettingsPanel = ({
     e.preventDefault();
     // Regenerate OS alarms immediately before network call so swipe-kill doesn't drop alarm schedule updates
     regenerateAllReminders({
-      habits: Array.isArray(habits) ? habits : [],
+      habits: {
+        habits: Array.isArray(habits) ? habits : [],
+        daily7pmEnabled: userProfile?.habit_7pm_reminder_enabled !== 0
+          && userProfile?.habit_7pm_reminder_enabled !== false,
+        userName: userProfile?.name || 'User',
+      },
       events: Array.isArray(calendarEvents) ? calendarEvents : [],
       waterSettings: {
         enabled: userProfile.waterReminderEnabled !== undefined ? !!userProfile.waterReminderEnabled : (userProfile.water_reminder_enabled !== 0 && userProfile.water_reminder_enabled !== false),
         startTime: userProfile.water_reminder_start || '08:00',
         endTime: userProfile.water_reminder_end || '22:00',
         intervalMinutes: userProfile.water_reminder_interval || 60,
+        goal: userProfile.water_target_goal || 2.5,
+        hydration: 0,
       },
       sleepSettings: {
         enabled: userProfile.sleepReminderEnabled !== undefined ? !!userProfile.sleepReminderEnabled : (userProfile.sleep_reminder_enabled !== 0 && userProfile.sleep_reminder_enabled !== false),
