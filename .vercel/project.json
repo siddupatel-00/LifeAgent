@@ -1,0 +1,16 @@
+{
+  "projectId": "prj_ZXKurojMjFzZ56OgIC3RU74OFyoE",
+  "orgId": "team_i6vIQ8g6jwYLpTAKfy4Zt4jA",
+  "projectName": "lifeagent",
+  "settings": {
+    "createdAt": 1784804519465,
+    "framework": "vite",
+    "devCommand": null,
+    "installCommand": null,
+    "buildCommand": null,
+    "outputDirectory": null,
+    "rootDirectory": null,
+    "directoryListing": false,
+    "nodeVersion": "24.x"
+  }
+}

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- L shape in solid black -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M 30,30 L 40,30 L 40,68 L 56,68 L 56,78 L 30,78 Z" />
+        
+    <!-- A shape in solid black -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M 64,30 L 76,30 L 86,78 L 75,78 L 73,67 L 62,67 L 60,78 L 49,78 Z M 64,57 L 71,57 L 67.5,41 Z" />
+
+    <!-- Sparkle accent star in deep black/gray -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M 78,26 C 78,30 82,30 82,30 C 82,30 78,30 78,34 C 78,30 74,30 74,30 C 74,30 78,30 78,26 Z" />
+</vector>

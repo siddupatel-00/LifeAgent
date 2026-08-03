@@ -13,7 +13,6 @@ import android.media.AudioAttributes;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
-import android.os.PowerManager;
 import androidx.core.app.NotificationCompat;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -81,21 +80,14 @@ public class HabitAlarmReceiver extends BroadcastReceiver {
 
         PendingIntent pi = buildIntent(c, habitId, title, timeStr);
 
-        // setAlarmClock() is the ONLY AlarmManager method that:
-        //   1. Bypasses Doze mode completely (fires even when screen is locked/off)
-        //   2. Does NOT require SCHEDULE_EXACT_ALARM permission on Android 12+
-        //   3. Shows alarm icon in status bar (visible indicator the alarm is set)
-        // This is what clock/alarm apps use — it's the most reliable delivery method.
-        Intent launchIntent = c.getPackageManager().getLaunchIntentForPackage(c.getPackageName());
-        PendingIntent showIntent = null;
-        if (launchIntent != null) {
-            int showFlags = PendingIntent.FLAG_UPDATE_CURRENT;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) showFlags |= PendingIntent.FLAG_IMMUTABLE;
-            // Unique request code so each habit's show-intent doesn't overwrite others
-            showIntent = PendingIntent.getActivity(c, HABIT_BASE + habitId + 100000, launchIntent, showFlags);
+        // Match the mechanism used by the working water reminders. RTC_WAKEUP
+        // wakes the device, and setAndAllowWhileIdle lets the broadcast run while
+        // the screen is locked, the app is swiped from Recents, or Doze is active.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, fire.getTimeInMillis(), pi);
+        } else {
+            am.set(AlarmManager.RTC_WAKEUP, fire.getTimeInMillis(), pi);
         }
-        AlarmManager.AlarmClockInfo clockInfo = new AlarmManager.AlarmClockInfo(fire.getTimeInMillis(), showIntent);
-        am.setAlarmClock(clockInfo, pi);
     }
 
     // ── Cancel ONE habit's alarm ────────────────────────────────────────────
@@ -145,18 +137,6 @@ public class HabitAlarmReceiver extends BroadcastReceiver {
     // ── Broadcast received: show notification, then reschedule for next day ─
     @Override
     public void onReceive(Context c, Intent intent) {
-        // Hold a wake lock so the CPU doesn't sleep before we post the notification
-        // Turn on screen & hold wake lock so alarm lights up screen even when locked
-        PowerManager pm = (PowerManager) c.getSystemService(Context.POWER_SERVICE);
-        PowerManager.WakeLock wl = null;
-        if (pm != null) {
-            wl = pm.newWakeLock(
-                PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP | PowerManager.ON_AFTER_RELEASE,
-                "LifeAgent::HabitWakeLock"
-            );
-            wl.acquire(10_000L);
-        }
-
         try {
             if (intent == null) return;
 
@@ -240,8 +220,6 @@ public class HabitAlarmReceiver extends BroadcastReceiver {
 
         } catch (Exception e) {
             e.printStackTrace();
-        } finally {
-            if (wl != null && wl.isHeld()) wl.release();
         }
     }
 }
