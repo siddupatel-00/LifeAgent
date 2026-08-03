@@ -710,38 +710,48 @@ export async function scheduleWaterReminders({ enabled, startTime, endTime, inte
 }
 
 async function configureNativeDailyReminders({
-  sleepSettings = {},
-  workoutSettings = {},
-  summarySettings = {},
+  sleepSettings,
+  workoutSettings,
+  summarySettings,
   globalEnabled = true,
 } = {}) {
   if (Capacitor.getPlatform() !== 'android' || !NativeDailyScheduler) return;
 
-  const name = summarySettings.userName || 'User';
-  const config = {
-    sleep: {
+  const config = {};
+
+  if (sleepSettings) {
+    config.sleep = {
       enabled: !!(sleepSettings.enabled && globalEnabled),
       time: sleepSettings.reminderTime || '22:00',
       title: '😴 Bedtime Reminder',
       body: 'Time to wind down and get ready for bed!',
-    },
-    workout: {
+    };
+  }
+
+  if (workoutSettings) {
+    config.workout = {
       enabled: !!(workoutSettings.enabled && globalEnabled),
       time: workoutSettings.reminderTime || '07:00',
       title: '💪 Workout Reminder',
       body: "Time to hit the gym! Don't skip today's workout.",
-    },
-    summary: {
+    };
+  }
+
+  if (summarySettings) {
+    const name = summarySettings.userName || 'User';
+    config.summary = {
       enabled: !!(summarySettings.enabled && globalEnabled),
       time: summarySettings.reminderTime || '07:00',
       title: '🌅 Morning Summary',
       body: `Good morning ${name}!`,
-    },
-  };
+    };
+  }
 
-  await NativeDailyScheduler.configure({ configJson: JSON.stringify(config) }).catch(e =>
-    console.warn('[reminderScheduler] NativeDailyScheduler configure error:', e)
-  );
+  if (Object.keys(config).length > 0) {
+    await NativeDailyScheduler.configure({ configJson: JSON.stringify(config) }).catch(e =>
+      console.warn('[reminderScheduler] NativeDailyScheduler configure error:', e)
+    );
+  }
 }
 
 // ─── Schedule sleep reminder ──────────────────────────────────────────────────
