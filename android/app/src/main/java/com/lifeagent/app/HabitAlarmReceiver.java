@@ -76,12 +76,21 @@ public class HabitAlarmReceiver extends BroadcastReceiver {
 
         PendingIntent pi = buildIntent(c, habitId, title, timeStr);
 
-        // setExactAndAllowWhileIdle fires reliably even in Doze mode / app closed / screen locked
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, fire.getTimeInMillis(), pi);
-        } else {
-            am.setExact(AlarmManager.RTC_WAKEUP, fire.getTimeInMillis(), pi);
+        // setAlarmClock() is the ONLY AlarmManager method that:
+        //   1. Bypasses Doze mode completely (fires even when screen is locked/off)
+        //   2. Does NOT require SCHEDULE_EXACT_ALARM permission on Android 12+
+        //   3. Shows alarm icon in status bar (visible indicator the alarm is set)
+        // This is what clock/alarm apps use — it's the most reliable delivery method.
+        Intent launchIntent = c.getPackageManager().getLaunchIntentForPackage(c.getPackageName());
+        PendingIntent showIntent = null;
+        if (launchIntent != null) {
+            int showFlags = PendingIntent.FLAG_UPDATE_CURRENT;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) showFlags |= PendingIntent.FLAG_IMMUTABLE;
+            // Unique request code so each habit's show-intent doesn't overwrite others
+            showIntent = PendingIntent.getActivity(c, HABIT_BASE + habitId + 100000, launchIntent, showFlags);
         }
+        AlarmManager.AlarmClockInfo clockInfo = new AlarmManager.AlarmClockInfo(fire.getTimeInMillis(), showIntent);
+        am.setAlarmClock(clockInfo, pi);
     }
 
     // ── Cancel ONE habit's alarm ────────────────────────────────────────────

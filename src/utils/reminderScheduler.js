@@ -396,7 +396,7 @@ export async function scheduleHabitReminders(habitsOrObj, globalEnabled = true) 
         repeatRule = { type: habit.frequency, customDays: habit.custom_days ? String(habit.custom_days).split(',') : [] };
       }
 
-      for (let day = 0; day < 7; day++) {
+      for (let day = 0; day < 14; day++) {
         const fireDate = buildDailyFireDate(day, t.hour, t.minute);
         if (fireDate.getTime() <= now) continue;
         if (!isRepeatDayMatch(repeatRule, fireDate)) continue;
@@ -508,6 +508,18 @@ export async function scheduleHabitReminders(habitsOrObj, globalEnabled = true) 
       }).catch(e => console.warn('[reminderScheduler] NativeHabitScheduler configure error:', e));
 
       console.log(`[reminderScheduler] NativeHabitScheduler configured with ${habitPayloads.length} independent habit alarms.`);
+
+      // Check battery optimization exemption on first run
+      if (Capacitor.getPlatform() === 'android' && NativeAlarmScheduler) {
+        try {
+          const batResult = await NativeAlarmScheduler.checkBatteryOptimization();
+          if (!batResult.isIgnoring) {
+            // App is being battery-optimized — request exemption silently
+            // (the system dialog will pop up asking user to allow)
+            NativeAlarmScheduler.requestBatteryOptimizationExemption().catch(() => {});
+          }
+        } catch(e) { /* ignore */ }
+      }
     } catch (err) {
       console.warn('[reminderScheduler] NativeHabitScheduler plugin error:', err);
     }

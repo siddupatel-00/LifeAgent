@@ -6,8 +6,6 @@ import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 /**
  * Capacitor plugin that JS calls to configure habit reminders.
@@ -34,9 +32,9 @@ public class NativeHabitSchedulerPlugin extends Plugin {
 
         Context ctx = getContext();
 
-        // First cancel ALL previously scheduled habit alarms so stale alarms
-        // for deleted / modified habits don't keep firing.
-        cancelAllHabitAlarms(ctx, habitsJson);
+        // First cancel ALL previously scheduled habit alarms across full range (IDs 0..10000)
+        // so stale alarms for deleted / modified habits don't keep firing.
+        cancelAllHabitAlarms(ctx);
 
         if (enabled) {
             // Schedule one independent alarm per habit
@@ -47,20 +45,17 @@ public class NativeHabitSchedulerPlugin extends Plugin {
     }
 
     /**
-     * Cancel alarms for every habit ID present in the stored JSON so we get a
-     * clean slate before re-scheduling. We iterate up to a wide range to catch
-     * any IDs that may have been persisted from previous sessions.
+     * Cancel alarms for all potential habit IDs across the full HABIT_BASE range (0..10000,
+     * request codes 820000..830000) so we get a clean slate before re-scheduling.
      */
-    private void cancelAllHabitAlarms(Context ctx, String habitsJson) {
+    private void cancelAllHabitAlarms(Context ctx) {
         try {
-            JSONArray habits = new JSONArray(habitsJson == null ? "[]" : habitsJson);
-            for (int i = 0; i < habits.length(); i++) {
-                JSONObject h = habits.getJSONObject(i);
-                int id = h.optInt("id", i);
-                HabitAlarmReceiver.cancelHabit(ctx, id);
+            for (int i = 0; i <= 10000; i++) {
+                HabitAlarmReceiver.cancelHabit(ctx, i);
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 }
+
