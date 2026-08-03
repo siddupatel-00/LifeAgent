@@ -9,6 +9,7 @@ const NativeAlarmScheduler = registerPlugin('NativeAlarmScheduler');
 const NativeHabitScheduler = registerPlugin('NativeHabitScheduler');
 const NativeWaterScheduler = registerPlugin('NativeWaterScheduler');
 const NativeDailyScheduler = registerPlugin('NativeDailyScheduler');
+const NativeEventScheduler = registerPlugin('NativeEventScheduler');
 
 const LAST_SCHEDULED_DAY_KEY = 'reminder_last_scheduled_day';
 
@@ -350,6 +351,7 @@ export async function scheduleEventReminders(events, globalEnabled = true) {
   }
 
   const notifications = [];
+  const eventPayloads = [];
   const now = Date.now();
 
   for (const event of (events || [])) {
@@ -361,6 +363,17 @@ export async function scheduleEventReminders(events, globalEnabled = true) {
     for (const rem of reminders) {
       const isEnabled = rem.enabled !== false && rem.enabled !== 0 && rem.enabled !== '0';
       if (!isEnabled) continue;
+
+      if (Capacitor.getPlatform() === 'android') {
+        eventPayloads.push({
+          id: event.id || Math.floor(Math.random() * 100000),
+          title: event.title || 'Upcoming Event',
+          date: typeof event.date === 'string' ? event.date.split('T')[0] : new Date(event.date).toISOString().split('T')[0],
+          time: event.time || '09:00',
+          offset: rem.offset_minutes || 0,
+        });
+      }
+
       const fireDate = buildEventFireDate(event.date, event.time, rem.offset_minutes || 0);
       if (isNaN(fireDate.getTime()) || fireDate.getTime() <= now) continue;
       const diffDays = Math.floor((fireDate.getTime() - now) / 86400000);
@@ -384,6 +397,14 @@ export async function scheduleEventReminders(events, globalEnabled = true) {
         });
       }
     }
+  }
+
+  // Immediate Native Alarm Clock Registration (Water Reminders Flow)
+  if (Capacitor.getPlatform() === 'android' && NativeEventScheduler) {
+    await NativeEventScheduler.configure({
+      enabled: globalEnabled && eventPayloads.length > 0,
+      eventsJson: JSON.stringify(eventPayloads),
+    }).catch(e => console.warn('[reminderScheduler] NativeEventScheduler configure error:', e));
   }
 
   if (notifications.length > 0) {

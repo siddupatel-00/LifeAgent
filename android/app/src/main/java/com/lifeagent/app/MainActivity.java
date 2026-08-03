@@ -14,6 +14,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(NativeWaterSchedulerPlugin.class);
         registerPlugin(NativeHabitSchedulerPlugin.class);
         registerPlugin(NativeDailySchedulerPlugin.class);
+        registerPlugin(NativeEventSchedulerPlugin.class);
         registerPlugin(NativeAlarmSchedulerPlugin.class);
         
         Window window = getWindow();
