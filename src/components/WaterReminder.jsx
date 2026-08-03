@@ -115,8 +115,17 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
     setIsSettingsOpen(false);
     showToast?.('Water settings saved successfully!', 'success');
 
-    // Sync to API in background
+    // Sync to API and schedule alarms in background
     (async () => {
+      // Reschedule Capacitor notifications FIRST before network request
+      const globalEnabled = userProfile?.remindersGlobalEnabled !== false && userProfile?.reminders_global_enabled !== 0;
+      scheduleWaterReminders({
+        enabled: isReminderEnabled,
+        startTime: reminderStartTime,
+        endTime: reminderEndTime,
+        intervalMinutes: newInterval,
+      }, globalEnabled).catch(console.error);
+
       try {
         const token = safeStorage.getItem('token');
         if (token) {
@@ -135,15 +144,6 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
       } catch (e) {
         console.error('Failed to save water settings', e);
       }
-
-      // Reschedule Capacitor notifications
-      const globalEnabled = userProfile?.remindersGlobalEnabled !== false && userProfile?.reminders_global_enabled !== 0;
-      scheduleWaterReminders({
-        enabled: isReminderEnabled,
-        startTime: reminderStartTime,
-        endTime: reminderEndTime,
-        intervalMinutes: newInterval,
-      }, globalEnabled).catch(console.error);
     })();
   };
 

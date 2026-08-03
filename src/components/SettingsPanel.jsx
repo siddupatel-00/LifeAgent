@@ -49,6 +49,33 @@ const SettingsPanel = ({
   };
   const handleSaveSettings = async (e) => {
     e.preventDefault();
+    // Regenerate OS alarms immediately before network call so swipe-kill doesn't drop alarm schedule updates
+    regenerateAllReminders({
+      habits: Array.isArray(habits) ? habits : [],
+      events: Array.isArray(calendarEvents) ? calendarEvents : [],
+      waterSettings: {
+        enabled: userProfile.waterReminderEnabled !== undefined ? !!userProfile.waterReminderEnabled : (userProfile.water_reminder_enabled !== 0 && userProfile.water_reminder_enabled !== false),
+        startTime: userProfile.water_reminder_start || '08:00',
+        endTime: userProfile.water_reminder_end || '22:00',
+        intervalMinutes: userProfile.water_reminder_interval || 60,
+      },
+      sleepSettings: {
+        enabled: userProfile.sleepReminderEnabled !== undefined ? !!userProfile.sleepReminderEnabled : (userProfile.sleep_reminder_enabled !== 0 && userProfile.sleep_reminder_enabled !== false),
+        reminderTime: userProfile.sleepReminderTime || userProfile.sleep_reminder_time || '22:00',
+      },
+      workoutSettings: {
+        enabled: userProfile.workoutReminderEnabled !== undefined ? !!userProfile.workoutReminderEnabled : (userProfile.workout_reminder_enabled !== 0 && userProfile.workout_reminder_enabled !== false),
+        reminderTime: userProfile.workoutReminderTime || userProfile.workout_reminder_time || '07:00',
+        repeatRule: userProfile.workoutReminderRepeat || userProfile.workout_reminder_repeat || { type: 'daily' },
+      },
+      summarySettings: {
+        enabled: userProfile.summaryReminderEnabled !== undefined ? !!userProfile.summaryReminderEnabled : (userProfile.summary_reminder_enabled !== 0 && userProfile.summary_reminder_enabled !== false),
+        reminderTime: userProfile.summaryReminderTime || userProfile.summary_reminder_time || '07:00',
+        userName: userProfile.name || 'User',
+      },
+      globalEnabled: userProfile.remindersGlobalEnabled !== false && userProfile.reminders_global_enabled !== 0,
+    }).catch(console.error);
+
     if (token) {
       try {
         const res = await fetch(getApiUrl('/api/settings'), {
@@ -91,31 +118,6 @@ const SettingsPanel = ({
           setSettingsSaved(true);
           showToast('Settings Saved Successfully', 'success');
           setTimeout(() => setSettingsSaved(false), 3000);
-          regenerateAllReminders({
-            habits: Array.isArray(habits) ? habits : [],
-            events: Array.isArray(calendarEvents) ? calendarEvents : [],
-            waterSettings: {
-              enabled: userProfile.waterReminderEnabled !== undefined ? !!userProfile.waterReminderEnabled : (userProfile.water_reminder_enabled !== 0 && userProfile.water_reminder_enabled !== false),
-              startTime: userProfile.water_reminder_start || '08:00',
-              endTime: userProfile.water_reminder_end || '22:00',
-              intervalMinutes: userProfile.water_reminder_interval || 60,
-            },
-            sleepSettings: {
-              enabled: userProfile.sleepReminderEnabled !== undefined ? !!userProfile.sleepReminderEnabled : (userProfile.sleep_reminder_enabled !== 0 && userProfile.sleep_reminder_enabled !== false),
-              reminderTime: userProfile.sleepReminderTime || userProfile.sleep_reminder_time || '22:00',
-            },
-            workoutSettings: {
-              enabled: userProfile.workoutReminderEnabled !== undefined ? !!userProfile.workoutReminderEnabled : (userProfile.workout_reminder_enabled !== 0 && userProfile.workout_reminder_enabled !== false),
-              reminderTime: userProfile.workoutReminderTime || userProfile.workout_reminder_time || '07:00',
-              repeatRule: userProfile.workoutReminderRepeat || userProfile.workout_reminder_repeat || { type: 'daily' },
-            },
-            summarySettings: {
-              enabled: userProfile.summaryReminderEnabled !== undefined ? !!userProfile.summaryReminderEnabled : (userProfile.summary_reminder_enabled !== 0 && userProfile.summary_reminder_enabled !== false),
-              reminderTime: userProfile.summaryReminderTime || userProfile.summary_reminder_time || '07:00',
-              userName: userProfile.name || 'User',
-            },
-            globalEnabled: userProfile.remindersGlobalEnabled !== false && userProfile.reminders_global_enabled !== 0,
-          }).catch(console.error);
         } else {
           console.error('Settings save failed:', res.status);
           showToast('Failed to Save Settings', 'error');

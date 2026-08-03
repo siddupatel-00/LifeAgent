@@ -113,26 +113,24 @@ export default function CalendarPanel({
 
   const performDeleteEvent = async (id) => {
     if (!id) return;
+    // Optimistically cancel OS alarms and update state immediately before network call
+    cancelEntityReminders('event', id).catch(console.error);
+    const updated = calendarEvents.filter(ev => ev.id !== id);
+    setCalendarEvents(updated);
+    scheduleEventReminders(updated).catch(console.error);
+    showToast?.('Event deleted successfully', 'success');
+
     try {
       const res = await fetch(getApiUrl('/api/calendar'), {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ id })
       });
-      if (res.ok) {
-        setCalendarEvents(prev => {
-          const updated = prev.filter(ev => ev.id !== id);
-          cancelEntityReminders('event', id).catch(console.error);
-          scheduleEventReminders(updated).catch(console.error);
-          return updated;
-        });
-        showToast?.('Event deleted successfully', 'success');
-      } else {
-        showToast?.('Failed to delete event', 'error');
+      if (!res.ok) {
+        console.error('Failed to delete event on server:', res.status);
       }
-    } catch (err) {
-      console.error('Failed to delete event:', err);
-      showToast?.('Network error deleting event', 'error');
+    } catch (e) {
+      console.error('Failed to delete event:', e);
     }
   };
 

@@ -1411,6 +1411,7 @@ export default function App() {
 
         showToast?.(`🎉 Checked off "${h.title}"! Streak: ${newStreak} days`, 'success');
         if (isArchived && !h.archived) {
+          cancelEntityReminders('habit', h.id).catch(console.error);
           showToast?.(`🏆 Challenge Completed! "${h.title}" moved to History.`, 'success');
         }
       } else {
@@ -1422,21 +1423,23 @@ export default function App() {
   };
 
   // Delete habit from DB and UI
-const handleDeleteHabitDb = async (id) => {
-      if (!token) return;
-      try {
-        await fetch(getApiUrl('/api/habits'), {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ id })
-        });
-        setHabits(prev => prev.filter(h => h.id !== id));
-        // Remove any linked today items
-        setTodayItems(prev => prev.filter(ti => ti.habitId !== id));
-      } catch (err) {
-        console.error('Failed to delete habit:', err);
-      }
-    };
+  const handleDeleteHabitDb = async (id) => {
+    // Cancel native OS alarms and update state immediately before network call
+    cancelEntityReminders('habit', id).catch(console.error);
+    setHabits(prev => prev.filter(h => h.id !== id));
+    setTodayItems(prev => prev.filter(ti => ti.habitId !== id));
+
+    if (!token) return;
+    try {
+      await fetch(getApiUrl('/api/habits'), {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ id })
+      });
+    } catch (err) {
+      console.error('Failed to delete habit:', err);
+    }
+  };
 
   // Handle PC/System vs explicit Dark/Light mode
   useEffect(() => {

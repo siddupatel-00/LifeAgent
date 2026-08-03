@@ -352,13 +352,30 @@ export async function scheduleHabitReminders(habitsOrObj, globalEnabled = true) 
   const generation = ++habitScheduleGeneration;
   await cancelAllOfType('habit');
   if (generation !== habitScheduleGeneration) return;
-  if (!globalEnabled) return;
+
+  if (!globalEnabled) {
+    if (Capacitor.getPlatform() === 'android') {
+      try {
+        const NativeHabitScheduler = registerPlugin('NativeHabitScheduler');
+        await NativeHabitScheduler.configure({ enabled: false, habitsJson: "[]" }).catch(() => {});
+      } catch (e) {}
+    }
+    return;
+  }
+
   const hasPermission = await requestNotificationPermission();
-  if (generation !== habitScheduleGeneration) return;
-  if (!hasPermission) return;
+  if (generation !== habitScheduleGeneration || !hasPermission) {
+    if (Capacitor.getPlatform() === 'android') {
+      try {
+        const NativeHabitScheduler = registerPlugin('NativeHabitScheduler');
+        await NativeHabitScheduler.configure({ enabled: false, habitsJson: "[]" }).catch(() => {});
+      } catch (e) {}
+    }
+    return;
+  }
+
   const hasExactPermission = await ensureExactAlarmPermission();
-  if (generation !== habitScheduleGeneration) return;
-  if (!hasExactPermission) return;
+  if (generation !== habitScheduleGeneration || !hasExactPermission) return;
 
   let habits = [];
   let daily7pmEnabled = false;
