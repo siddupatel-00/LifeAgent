@@ -56,6 +56,20 @@ function clearWebTimers(type) {
   }
 }
 
+// ─── Ensure Exact Alarm Permission ──────────────────────────────────────────
+export async function ensureExactAlarmPermission() {
+  if (Capacitor.getPlatform() !== 'android' || !NativeAlarmScheduler) return true;
+  try {
+    const result = await NativeAlarmScheduler.checkExactAlarmPermission();
+    if (result.granted) return true;
+    const req = await NativeAlarmScheduler.requestExactAlarmPermission();
+    return req.granted;
+  } catch (e) {
+    console.warn('[reminderScheduler] Exact Alarm Permission error:', e);
+    return false;
+  }
+}
+
 // ─── Ensure Notification Channel on Android ─────────────────────────────────
 export async function ensureNotificationChannel() {
   if (Capacitor.getPlatform() === 'web') return;
@@ -317,6 +331,8 @@ export async function scheduleHabitReminders(habitsOrObj, globalEnabled = true) 
   if (!globalEnabled) return;
   const hasPermission = await requestNotificationPermission();
   if (!hasPermission) return;
+  const hasExactPermission = await ensureExactAlarmPermission();
+  if (!hasExactPermission) return;
 
   let habits = [];
   let daily7pmEnabled = false;
@@ -387,7 +403,7 @@ export async function scheduleHabitReminders(habitsOrObj, globalEnabled = true) 
 
         if (Capacitor.getPlatform() === 'web') {
           scheduleWebFallback(title, body, fireDate, 'habit');
-        } else {
+        } else if (Capacitor.getPlatform() !== 'android') {
           const id = makeNotifId('habit', habit.id || i, rem.id || 1, day);
           notifications.push({
             id,
@@ -463,7 +479,7 @@ export async function scheduleHabitReminders(habitsOrObj, globalEnabled = true) 
           }
         }
       }
-      NativeHabitScheduler.configure({ habits: habitPayloads }).catch(e => console.warn('[reminderScheduler] NativeHabitScheduler configure error:', e));
+      NativeHabitScheduler.configure({ enabled: globalEnabled, habitsJson: JSON.stringify(habitPayloads) }).catch(e => console.warn('[reminderScheduler] NativeHabitScheduler configure error:', e));
     } catch (err) {
       console.warn('[reminderScheduler] NativeHabitScheduler plugin error:', err);
     }

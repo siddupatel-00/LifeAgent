@@ -1,5 +1,6 @@
 import { safeStorage } from '../utils/safeStorage';
 import React, { useState, useEffect, useMemo } from 'react';
+import TimeButton from './TimeButton';
 import { Droplet, Bell, BellOff, Plus, RotateCcw, Clock, X, Edit2, Check, MoreVertical, Calendar } from 'lucide-react';
 import Modal from './Modal';
 import CustomSelect from './CustomSelect';
@@ -674,10 +675,9 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Start</div>
-              <input
-                type="time"
+              <TimeButton 
                 value={reminderStartTime}
-                onChange={e => setReminderStartTime(e.target.value)}
+                onChange={(val) => setReminderStartTime(val)}
                 style={{
                   width: '100%', padding: '10px 12px', borderRadius: '10px',
                   border: '1px solid var(--border-color)', background: 'var(--bg-main)',
@@ -687,10 +687,9 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>End</div>
-              <input
-                type="time"
+              <TimeButton 
                 value={reminderEndTime}
-                onChange={e => setReminderEndTime(e.target.value)}
+                onChange={(val) => setReminderEndTime(val)}
                 style={{
                   width: '100%', padding: '10px 12px', borderRadius: '10px',
                   border: '1px solid var(--border-color)', background: 'var(--bg-main)',

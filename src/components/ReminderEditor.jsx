@@ -12,7 +12,7 @@
 import React, { useState } from 'react';
 import { Plus, Trash2, Bell } from 'lucide-react';
 import { testNotificationNow } from '../utils/reminderScheduler';
-
+import TimePicker from './TimePicker';
 
 const OFFSET_OPTIONS = [
   { label: 'At event time', value: 0 },
@@ -54,16 +54,51 @@ function parseRule(rem) {
   }
 }
 
+function formatTimeDisplay(timeStr) {
+  if (!timeStr) return '12:00 AM';
+  let [h, m] = timeStr.split(':');
+  let hNum = Number(h) || 0;
+  const isAm = hNum < 12;
+  if (hNum === 0) hNum = 12;
+  else if (hNum > 12) hNum -= 12;
+  return `${hNum}:${m} ${isAm ? 'AM' : 'PM'}`;
+}
+
 export default function ReminderEditor({ reminders = [], onChange, mode = 'offset', maxReminders, label = 'Reminders' }) {
   const list = Array.isArray(reminders) ? reminders : [];
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [editingId, setEditingId] = useState(null); // null means "new reminder", else reminder ID
+  const [editingTime, setEditingTime] = useState('08:00');
 
   function addReminder() {
     if (maxReminders && list.length >= maxReminders) return;
-    onChange([...list, newReminder(mode)]);
+    if (mode === 'time') {
+      setEditingId(null);
+      setEditingTime('08:00');
+      setPickerOpen(true);
+    } else {
+      onChange([...list, newReminder(mode)]);
+    }
+  }
+
+  function editReminderTime(id, currentTime) {
+    setEditingId(id);
+    setEditingTime(currentTime || '08:00');
+    setPickerOpen(true);
   }
 
   function removeReminder(id) {
     onChange(list.filter(r => r.id !== id));
+  }
+
+  function handleTimeSave(selectedTime) {
+    if (editingId === null) {
+      const newRem = { id: Date.now(), reminder_time: selectedTime, repeat_rule: null, enabled: true };
+      onChange([...list, newRem]);
+    } else {
+      updateReminder(editingId, { reminder_time: selectedTime });
+    }
+    setPickerOpen(false);
   }
 
   function updateReminder(id, patch) {
@@ -88,106 +123,126 @@ export default function ReminderEditor({ reminders = [], onChange, mode = 'offse
   }
 
   return (
-    <div className="reminder-editor">
-      <div className="reminder-editor-header" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <Bell size={16} />
-        <span className="reminder-editor-label" style={{ flex: 1 }}>{label}</span>
-        <button
-          type="button"
-          onClick={async () => {
-            const ok = await testNotificationNow();
-            if (ok) alert("⚡ Test alarm scheduled! Notification will fire in 4 seconds.");
-          }}
-          style={{ background: 'var(--accent-blue-dim, rgba(59, 130, 246, 0.12))', color: 'var(--accent-blue, #3b82f6)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '8px', padding: '5px 10px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
-        >
-          ⚡ Test Alarm
-        </button>
-        {(!maxReminders || list.length < maxReminders) && (
-          <button className="reminder-add-btn" onClick={addReminder} type="button">
-            <Plus size={14} /> Add
+    <>
+      <div className="reminder-editor">
+        <div className="reminder-editor-header" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Bell size={16} />
+          <span className="reminder-editor-label" style={{ flex: 1 }}>{label}</span>
+          <button
+            type="button"
+            onClick={async () => {
+              const ok = await testNotificationNow();
+              if (ok) alert("⚡ Test alarm scheduled! Notification will fire in 4 seconds.");
+            }}
+            style={{ background: 'var(--accent-blue-dim, rgba(59, 130, 246, 0.12))', color: 'var(--accent-blue, #3b82f6)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '8px', padding: '5px 10px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+          >
+            ⚡ Test Alarm
           </button>
+          {(!maxReminders || list.length < maxReminders) && (
+            <button className="reminder-add-btn" onClick={addReminder} type="button">
+              <Plus size={14} /> Add
+            </button>
+          )}
+        </div>
+
+        {list.length === 0 && (
+          <p className="reminder-empty-hint">No reminders set. Tap "Add" to add one.</p>
         )}
-      </div>
 
-      {list.length === 0 && (
-        <p className="reminder-empty-hint">No reminders set. Tap "Add" to add one.</p>
-      )}
+        {list.map((rem) => {
+          const rule = parseRule(rem);
+          const repeatType = rem.repeat_rule ? rule.type : 'never';
 
-      {list.map((rem) => {
-        const rule = parseRule(rem);
-        const repeatType = rem.repeat_rule ? rule.type : 'never';
+          return (
+            <div key={rem.id} className="reminder-item">
+              <div className="reminder-item-row">
+                {/* Toggle */}
+                <button
+                  type="button"
+                  className={`reminder-toggle ${rem.enabled ? 'on' : 'off'}`}
+                  onClick={() => updateReminder(rem.id, { enabled: !rem.enabled })}
+                  aria-label={rem.enabled ? 'Disable reminder' : 'Enable reminder'}
+                />
 
-        return (
-          <div key={rem.id} className="reminder-item">
-            <div className="reminder-item-row">
-              {/* Toggle */}
-              <button
-                type="button"
-                className={`reminder-toggle ${rem.enabled ? 'on' : 'off'}`}
-                onClick={() => updateReminder(rem.id, { enabled: !rem.enabled })}
-                aria-label={rem.enabled ? 'Disable reminder' : 'Enable reminder'}
-              />
+                {/* Offset or Time */}
+                {mode === 'offset' ? (
+                  <select
+                    className="reminder-select"
+                    value={rem.offset_minutes}
+                    onChange={e => updateReminder(rem.id, { offset_minutes: Number(e.target.value) })}
+                  >
+                    {OFFSET_OPTIONS.map(o => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <button
+                    type="button"
+                    className="reminder-time-input"
+                    style={{ 
+                      cursor: 'pointer', 
+                      background: 'var(--glass-bg, rgba(255,255,255,0.05))',
+                      color: 'var(--text-main, #ffffff)',
+                      border: '1px solid var(--glass-border, rgba(255,255,255,0.1))',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      fontSize: '0.9rem',
+                      fontWeight: 500,
+                      minWidth: '90px'
+                    }}
+                    onClick={() => editReminderTime(rem.id, rem.reminder_time)}
+                  >
+                    {formatTimeDisplay(rem.reminder_time)}
+                  </button>
+                )}
 
-              {/* Offset or Time */}
-              {mode === 'offset' ? (
+                {/* Repeat */}
                 <select
                   className="reminder-select"
-                  value={rem.offset_minutes}
-                  onChange={e => updateReminder(rem.id, { offset_minutes: Number(e.target.value) })}
+                  value={repeatType}
+                  onChange={e => handleRepeatChange(rem.id, e.target.value)}
                 >
-                  {OFFSET_OPTIONS.map(o => (
+                  {REPEAT_OPTIONS.map(o => (
                     <option key={o.value} value={o.value}>{o.label}</option>
                   ))}
                 </select>
-              ) : (
-                <input
-                  type="time"
-                  className="reminder-time-input"
-                  value={rem.reminder_time || '08:00'}
-                  onChange={e => updateReminder(rem.id, { reminder_time: e.target.value })}
-                />
-              )}
 
-              {/* Repeat */}
-              <select
-                className="reminder-select"
-                value={repeatType}
-                onChange={e => handleRepeatChange(rem.id, e.target.value)}
-              >
-                {REPEAT_OPTIONS.map(o => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
-
-              {/* Delete */}
-              <button
-                type="button"
-                className="reminder-delete-btn"
-                onClick={() => removeReminder(rem.id)}
-                aria-label="Remove reminder"
-              >
-                <Trash2 size={14} />
-              </button>
-            </div>
-
-            {/* Custom day chips */}
-            {repeatType === 'custom' && (
-              <div className="reminder-day-chips">
-                {DAYS.map(day => (
-                  <button
-                    key={day}
-                    type="button"
-                    className={`reminder-day-chip ${(rule.customDays || []).includes(day) ? 'selected' : ''}`}
-                    onClick={() => handleCustomDayToggle(rem.id, day)}
-                  >
-                    {day}
-                  </button>
-                ))}
+                {/* Delete */}
+                <button
+                  type="button"
+                  className="reminder-delete-btn"
+                  onClick={() => removeReminder(rem.id)}
+                  aria-label="Remove reminder"
+                >
+                  <Trash2 size={14} />
+                </button>
               </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
+
+              {/* Custom day chips */}
+              {repeatType === 'custom' && (
+                <div className="reminder-day-chips">
+                  {DAYS.map(day => (
+                    <button
+                      key={day}
+                      type="button"
+                      className={`reminder-day-chip ${(rule.customDays || []).includes(day) ? 'selected' : ''}`}
+                      onClick={() => handleCustomDayToggle(rem.id, day)}
+                    >
+                      {day}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <TimePicker
+        isOpen={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onSave={handleTimeSave}
+        initialTime={editingTime}
+      />
+    </>
   );
 }

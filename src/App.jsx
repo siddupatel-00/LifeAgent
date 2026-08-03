@@ -1202,7 +1202,12 @@ export default function App() {
         await fetch(getApiUrl('/api/habits'), {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${t}` },
-          body: JSON.stringify({ id: habitId, reminders: updatedReminders })
+          body: JSON.stringify({
+            id: habitId,
+            reminders: updatedReminders,
+            // Preserve legacy single reminder_time field for compatibility
+            ...(updatedReminders.length === 1 ? { reminder_time: updatedReminders[0].reminder_time || updatedReminders[0].time } : {})
+          })
         });
       }
     } catch (e) {
@@ -4495,8 +4500,9 @@ const handleDeleteHabitDb = async (id) => {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
+                                  const existingReminders = Array.isArray(item.reminders) ? item.reminders : [];
+                                  setEditHabitReminderList(existingReminders);
                                   setEditHabitReminderId(item.id);
-                                  setEditHabitReminderList(Array.isArray(item.reminders) ? item.reminders : []);
                                   setHabitMenuOpen(null);
                                 }}
                                 style={{ padding: '10px 16px', background: 'transparent', border: 'none', borderTop: '1px solid var(--border-color)', textAlign: 'left', cursor: 'pointer', color: 'var(--accent-blue)', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}

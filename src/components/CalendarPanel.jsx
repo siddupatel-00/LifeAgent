@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import TimeButton from './TimeButton';
 import { todayKey } from '../utils/date';
 import { getApiUrl } from '../utils/apiConfig';
 import { Calendar as CalendarIcon, Plus, Trash2, ChevronDown, Filter, AlertCircle, CheckCircle, Clock, X, Bell } from 'lucide-react';
@@ -332,10 +333,9 @@ export default function CalendarPanel({
               <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>
                 Event Time <span style={{ fontSize: '0.72rem', opacity: 0.7 }}>(Default 12 AM)</span>
               </label>
-              <input
-                type="time"
+              <TimeButton 
                 value={newEventTime}
-                onChange={(e) => setNewEventTime(e.target.value)}
+                onChange={(val) => setNewEventTime(val)}
                 style={{
                   width: '100%', padding: '12px 14px', borderRadius: '12px',
                   border: '1px solid var(--border-color)', background: 'var(--bg-main)',

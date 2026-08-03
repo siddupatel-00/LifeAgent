@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import TimeButton from './TimeButton';
 import { Plus, X, Trash2, Edit2, Moon, Clock, Calendar, Activity, Filter } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { todayKey } from '../utils/date';
@@ -730,21 +731,19 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
           <div style={{ display: 'flex', gap: '12px' }}>
             <div style={{ flex: 1 }}>
               <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: '6px', color: 'var(--accent-blue)' }}>Bed Time</label>
-              <input 
-                type="time" 
+              <TimeButton  
                 required
                 value={formData.sleep_time}
-                onChange={(e) => handleTimeChange('sleep_time', e.target.value)}
+                onChange={(val) => handleTimeChange('sleep_time', val)}
                 style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '1rem', fontWeight: 700, outline: 'none' }}
               />
             </div>
             <div style={{ flex: 1 }}>
               <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: '6px', color: 'var(--accent-blue)' }}>Wake Time</label>
-              <input 
-                type="time" 
+              <TimeButton  
                 required
                 value={formData.wake_time}
-                onChange={(e) => handleTimeChange('wake_time', e.target.value)}
+                onChange={(val) => handleTimeChange('wake_time', val)}
                 style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '1rem', fontWeight: 700, outline: 'none' }}
               />
             </div>

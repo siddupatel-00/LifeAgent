@@ -1,5 +1,6 @@
 import { safeStorage } from '../utils/safeStorage';
 import React, { useState } from 'react';
+import TimeButton from './TimeButton';
 import { Check, User, Bot, Save, LogOut, AlertTriangle, Bell } from 'lucide-react';
 import CustomSelect from './CustomSelect';
 import ConfirmModal from './ConfirmModal';
@@ -574,10 +575,9 @@ const SettingsPanel = ({
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Daily notification to wind down and prepare for sleep.</div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <input
-                  type="time"
+                <TimeButton 
                   value={userProfile.sleepReminderTime || userProfile.sleep_reminder_time || '22:00'}
-                  onChange={e => setUserProfile({ ...userProfile, sleepReminderTime: e.target.value })}
+                  onChange={(val) => setUserProfile({ ...userProfile, sleepReminderTime: val })}
                   disabled={!userProfile.sleepReminderEnabled}
                   style={{
                     background: 'var(--bg-main)', border: '1px solid var(--border-color)',
@@ -611,10 +611,9 @@ const SettingsPanel = ({
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Daily notification to complete your workout session.</div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <input
-                  type="time"
+                <TimeButton 
                   value={userProfile.workoutReminderTime || userProfile.workout_reminder_time || '07:00'}
-                  onChange={e => setUserProfile({ ...userProfile, workoutReminderTime: e.target.value })}
+                  onChange={(val) => setUserProfile({ ...userProfile, workoutReminderTime: val })}
                   disabled={!userProfile.workoutReminderEnabled}
                   style={{
                     background: 'var(--bg-main)', border: '1px solid var(--border-color)',
@@ -648,10 +647,9 @@ const SettingsPanel = ({
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Daily morning notification summarising today's calendar events.</div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <input
-                  type="time"
+                <TimeButton 
                   value={userProfile.summaryReminderTime || userProfile.summary_reminder_time || '07:00'}
-                  onChange={e => setUserProfile({ ...userProfile, summaryReminderTime: e.target.value })}
+                  onChange={(val) => setUserProfile({ ...userProfile, summaryReminderTime: val })}
                   disabled={!userProfile.summaryReminderEnabled}
                   style={{
                     background: 'var(--bg-main)', border: '1px solid var(--border-color)',
