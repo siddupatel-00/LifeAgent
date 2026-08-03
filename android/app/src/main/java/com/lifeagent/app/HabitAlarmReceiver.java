@@ -27,7 +27,10 @@ public class HabitAlarmReceiver extends BroadcastReceiver {
 
     // Base offset so habit IDs don't clash with other receivers
     static final int HABIT_BASE = 820000;
-    static final String CHANNEL_ID = "habit_reminders";
+    // Use the same verified channel as water reminders. Android persists channel
+    // settings by ID, so a separately created habit channel can remain blocked
+    // or silent even when water notifications are allowed on the lock screen.
+    static final String CHANNEL_ID = "reminders";
 
     // ── Build the PendingIntent for one specific habit ──────────────────────
     static PendingIntent buildIntent(Context c, int habitId, String title, String timeStr) {
@@ -153,8 +156,8 @@ public class HabitAlarmReceiver extends BroadcastReceiver {
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 NotificationChannel ch = new NotificationChannel(
-                    CHANNEL_ID, "Habit Reminders", NotificationManager.IMPORTANCE_HIGH);
-                ch.setDescription("Reminders for your daily habits");
+                    CHANNEL_ID, "Reminders", NotificationManager.IMPORTANCE_HIGH);
+                ch.setDescription("Water and habit reminders");
                 ch.enableLights(true);
                 ch.setLightColor(Color.BLUE);
                 ch.enableVibration(true);
