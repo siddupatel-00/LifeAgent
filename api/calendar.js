@@ -13,32 +13,43 @@ export default async function handler(req, res) {
   if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
   try {
+    // ─── GET: Parallel fetch calendar_events + reminders (NO N+1 queries) ──────
     if (req.method === 'GET') {
       const today = new Date().toISOString().split('T')[0];
-      await db.execute({
-        sql: `UPDATE calendar_events SET status = 'expired' WHERE user_id = ? AND date < ? AND (status = 'upcoming' OR status IS NULL) AND status != 'completed'`,
-        args: [userId, today]
-      });
 
-      const eventsRes = await db.execute({ sql: 'SELECT * FROM calendar_events WHERE user_id = ? ORDER BY date ASC', args: [userId] });
+      const [_, eventsRes, remRes] = await Promise.all([
+        db.execute({
+          sql: `UPDATE calendar_events SET status = 'expired' WHERE user_id = ? AND date < ? AND (status = 'upcoming' OR status IS NULL) AND status != 'completed'`,
+          args: [userId, today]
+        }).catch(() => {}),
+        db.execute({ sql: 'SELECT * FROM calendar_events WHERE user_id = ? ORDER BY date ASC', args: [userId] }),
+        db.execute({ sql: "SELECT * FROM reminders WHERE entity_type = 'event' AND user_id = ?", args: [userId] })
+      ]);
+
       const events = eventsRes.rows || [];
+      const reminderRows = remRes.rows || [];
 
-      const eventsWithReminders = await Promise.all(events.map(async (event) => {
-        const remRes = await db.execute({
-          sql: "SELECT * FROM reminders WHERE entity_type = 'event' AND entity_id = ?",
-          args: [event.id]
-        });
-        event.reminders = (remRes.rows || []).map(r => ({
+      // Group reminders by event entity_id
+      const remindersByEventId = {};
+      for (const r of reminderRows) {
+        const eId = r.entity_id;
+        if (!remindersByEventId[eId]) remindersByEventId[eId] = [];
+        remindersByEventId[eId].push({
           ...r,
           reminder_time: r.reminder_time || r.time || '',
           time: r.reminder_time || r.time || ''
-        }));
-        return event;
+        });
+      }
+
+      const eventsWithReminders = events.map(event => ({
+        ...event,
+        reminders: remindersByEventId[event.id] || []
       }));
 
       return res.status(200).json(eventsWithReminders);
     }
 
+    // ─── POST: Create calendar event + reminders ──────────────────────────────
     if (req.method === 'POST') {
       const { title, date, time, end_date, color, reminders } = req.body;
       const result = await db.execute({
@@ -47,23 +58,24 @@ export default async function handler(req, res) {
       });
       const newEventId = Number(result.lastInsertRowid);
 
-      if (Array.isArray(reminders)) {
-        for (const rem of reminders) {
-          const timeVal = rem.reminder_time || rem.time || rem.reminderTime || null;
-          await db.execute({
-            sql: "INSERT INTO reminders (user_id, entity_type, entity_id, offset_minutes, repeat_rule, enabled, reminder_time) VALUES (?, 'event', ?, ?, ?, ?, ?)",
-            args: [userId, newEventId, rem.offset_minutes || 0, rem.repeat_rule || null, rem.enabled !== undefined ? (rem.enabled ? 1 : 0) : 1, timeVal]
-          });
-        }
+      if (Array.isArray(reminders) && reminders.length > 0) {
+        const remBatch = reminders.map(rem => ({
+          sql: "INSERT INTO reminders (user_id, entity_type, entity_id, offset_minutes, repeat_rule, enabled, reminder_time) VALUES (?, 'event', ?, ?, ?, ?, ?)",
+          args: [userId, newEventId, rem.offset_minutes || 0, rem.repeat_rule || null, rem.enabled !== undefined ? (rem.enabled ? 1 : 0) : 1, rem.reminder_time || rem.time || rem.reminderTime || null]
+        }));
+        await db.batch(remBatch, 'write');
       }
 
       return res.status(201).json({ id: newEventId, title, date, time: time || '', end_date, color, status: 'upcoming' });
     }
 
+    // ─── PUT: Update calendar event + reminders in 1 batch ─────────────────────
     if (req.method === 'PUT') {
       const { id, title, date, time, status, reminders } = req.body;
+      const batchStatements = [];
+
       if (status !== undefined) {
-        await db.execute({
+        batchStatements.push({
           sql: 'UPDATE calendar_events SET status = ? WHERE id = ? AND user_id = ?',
           args: [status, id, userId]
         });
@@ -77,7 +89,7 @@ export default async function handler(req, res) {
         if (time !== undefined) { updateFields.push('time = ?'); updateArgs.push(time); }
         if (updateFields.length > 0) {
           updateArgs.push(id, userId);
-          await db.execute({
+          batchStatements.push({
             sql: `UPDATE calendar_events SET ${updateFields.join(', ')} WHERE id = ? AND user_id = ?`,
             args: updateArgs
           });
@@ -85,23 +97,30 @@ export default async function handler(req, res) {
       }
 
       if (Array.isArray(reminders)) {
-        await db.execute({ sql: "DELETE FROM reminders WHERE entity_type = 'event' AND entity_id = ?", args: [id] });
+        batchStatements.push({ sql: "DELETE FROM reminders WHERE entity_type = 'event' AND entity_id = ?", args: [id] });
         for (const rem of reminders) {
           const timeVal = rem.reminder_time || rem.time || rem.reminderTime || null;
-          await db.execute({
+          batchStatements.push({
             sql: "INSERT INTO reminders (user_id, entity_type, entity_id, offset_minutes, repeat_rule, enabled, reminder_time) VALUES (?, 'event', ?, ?, ?, ?, ?)",
             args: [userId, id, rem.offset_minutes || 0, rem.repeat_rule || null, rem.enabled !== undefined ? (rem.enabled ? 1 : 0) : 1, timeVal]
           });
         }
       }
 
+      if (batchStatements.length > 0) {
+        await db.batch(batchStatements, 'write');
+      }
+
       return res.status(200).json({ success: true });
     }
 
+    // ─── DELETE: Delete event + reminders in 1 batch ───────────────────────────
     if (req.method === 'DELETE') {
       const { id } = req.body;
-      await db.execute({ sql: 'DELETE FROM calendar_events WHERE id = ? AND user_id = ?', args: [id, userId] });
-      await db.execute({ sql: "DELETE FROM reminders WHERE entity_type = 'event' AND entity_id = ?", args: [id] });
+      await db.batch([
+        { sql: 'DELETE FROM calendar_events WHERE id = ? AND user_id = ?', args: [id, userId] },
+        { sql: "DELETE FROM reminders WHERE entity_type = 'event' AND entity_id = ?", args: [id] }
+      ], 'write');
       return res.status(200).json({ success: true });
     }
 

@@ -4937,7 +4937,6 @@ const handleDeleteHabitDb = async (id) => {
 
                                 setIsEditHabitModalOpen(false);
                                 showToast('Habit updated!', 'success');
-                                if (token) fetchStartupData(); // reload backend
                               } catch (e) {
                                 console.error(e);
                                 showToast(e.message || 'Failed to update habit', 'error');
