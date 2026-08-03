@@ -157,6 +157,17 @@ public class HabitAlarmReceiver extends BroadcastReceiver {
         try {
             if (intent == null) return;
 
+            // Briefly acquire a wake lock so the CPU wakes up and screen turns on when app is closed
+            android.os.PowerManager pm = (android.os.PowerManager) c.getSystemService(Context.POWER_SERVICE);
+            if (pm != null) {
+                @SuppressWarnings("deprecation")
+                android.os.PowerManager.WakeLock wl = pm.newWakeLock(
+                    android.os.PowerManager.FULL_WAKE_LOCK | android.os.PowerManager.ACQUIRE_CAUSES_WAKEUP | android.os.PowerManager.ON_AFTER_RELEASE,
+                    "lifeagent:habit_alarm_wakelock"
+                );
+                wl.acquire(3000); // 3 seconds timeout
+            }
+
             int    habitId = intent.getIntExtra("habitId", -1);
             String title   = intent.getStringExtra("title");
             String timeStr = intent.getStringExtra("timeStr");
