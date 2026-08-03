@@ -12,6 +12,10 @@ const LAST_SCHEDULED_DAY_KEY = 'reminder_last_scheduled_day';
 // Web timer storage
 const webTimers = [];
 
+// Profile, habits, and settings load independently during startup. Only the
+// newest habit-scheduling run may update Android's saved alarm configuration.
+let habitScheduleGeneration = 0;
+
 async function dispatchNotifications(notifications) {
   if (!notifications || notifications.length === 0 || Capacitor.getPlatform() === 'web') return;
 
@@ -345,11 +349,15 @@ export async function scheduleEventReminders(events, globalEnabled = true) {
 
 // ─── Schedule habit reminders ──────────────────────────────────────────────────
 export async function scheduleHabitReminders(habitsOrObj, globalEnabled = true) {
+  const generation = ++habitScheduleGeneration;
   await cancelAllOfType('habit');
+  if (generation !== habitScheduleGeneration) return;
   if (!globalEnabled) return;
   const hasPermission = await requestNotificationPermission();
+  if (generation !== habitScheduleGeneration) return;
   if (!hasPermission) return;
   const hasExactPermission = await ensureExactAlarmPermission();
+  if (generation !== habitScheduleGeneration) return;
   if (!hasExactPermission) return;
 
   let habits = [];
@@ -466,6 +474,7 @@ export async function scheduleHabitReminders(habitsOrObj, globalEnabled = true) 
     }
   }
 
+  if (generation !== habitScheduleGeneration) return;
   if (notifications.length > 0) {
     await dispatchNotifications(notifications);
   }
@@ -474,10 +483,10 @@ export async function scheduleHabitReminders(habitsOrObj, globalEnabled = true) 
   //    This fires even when the app is fully killed, Doze mode is on, or screen is locked.
   //    Each entry gets a unique integer ID so alarms never overwrite each other.
   if (Capacitor.getPlatform() === 'android') {
+    if (generation !== habitScheduleGeneration) return;
     try {
       const NativeHabitScheduler = registerPlugin('NativeHabitScheduler');
       const habitPayloads = [];
-      let slotIndex = 0; // used to generate unique IDs when habit.id is unavailable
 
       for (let i = 0; i < habits.length; i++) {
         const h = habits[i];
@@ -501,11 +510,13 @@ export async function scheduleHabitReminders(habitsOrObj, globalEnabled = true) 
           const timeVal = r.reminder_time || r.time || r.reminderTime;
           if (!timeVal) continue;
 
-          // Each reminder slot MUST have a unique integer ID so its PendingIntent
-          // doesn't collide with another habit/reminder in AlarmManager.
-          // We combine habit index and reminder index to guarantee uniqueness.
-          const uniqueId = safeInt(h.id != null ? h.id : i + 1) * 100 + slotIndex;
-          slotIndex++;
+          // The Android receiver uses this value as a PendingIntent request code.
+          // A sequential value is intentionally used instead of `habitId * 100 +
+          // index`: the latter collides once enough reminders exist (for example,
+          // habit 1 / slot 100 and habit 2 / slot 0). The native plugin cancels
+          // the exact IDs saved by the prior configuration before applying this
+          // new list, so these IDs only need to be unique within one config.
+          const uniqueId = habitPayloads.length + 1;
 
           habitPayloads.push({
             id: uniqueId,
@@ -516,6 +527,7 @@ export async function scheduleHabitReminders(habitsOrObj, globalEnabled = true) 
         }
       }
 
+      if (generation !== habitScheduleGeneration) return;
       await NativeHabitScheduler.configure({
         enabled: globalEnabled,
         habitsJson: JSON.stringify(habitPayloads)
@@ -782,4 +794,3 @@ function isRepeatDayMatch(rule, date) {
   }
   return true;
 }
-

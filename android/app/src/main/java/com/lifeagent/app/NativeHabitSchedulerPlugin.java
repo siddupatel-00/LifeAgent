@@ -6,6 +6,8 @@ import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 /**
  * Capacitor plugin that JS calls to configure habit reminders.
@@ -24,6 +26,12 @@ public class NativeHabitSchedulerPlugin extends Plugin {
         boolean enabled   = call.getBoolean("enabled", true);
         String habitsJson = call.getString("habitsJson", "[]");
 
+        // Cancel the IDs from the previous configuration before replacing it.
+        // The old implementation iterated through 10,001 possible IDs on every
+        // save. That work ran on the plugin call and could make habit alarms slow
+        // or unreliable, especially when several habits were edited together.
+        cancelPreviouslyConfiguredAlarms(getContext(), prefs().getString("habitsJson", "[]"));
+
         // Persist so boot receiver can re-schedule without JS bridge
         SharedPreferences.Editor editor = prefs().edit();
         editor.putBoolean("enabled", enabled);
@@ -31,10 +39,6 @@ public class NativeHabitSchedulerPlugin extends Plugin {
         editor.apply();
 
         Context ctx = getContext();
-
-        // First cancel ALL previously scheduled habit alarms across full range (IDs 0..10000)
-        // so stale alarms for deleted / modified habits don't keep firing.
-        cancelAllHabitAlarms(ctx);
 
         if (enabled) {
             // Schedule one independent alarm per habit
@@ -44,18 +48,19 @@ public class NativeHabitSchedulerPlugin extends Plugin {
         call.resolve();
     }
 
-    /**
-     * Cancel alarms for all potential habit IDs across the full HABIT_BASE range (0..10000,
-     * request codes 820000..830000) so we get a clean slate before re-scheduling.
-     */
-    private void cancelAllHabitAlarms(Context ctx) {
+    /** Cancel just the alarms represented by the last saved configuration. */
+    private void cancelPreviouslyConfiguredAlarms(Context ctx, String previousHabitsJson) {
+        if (previousHabitsJson == null || previousHabitsJson.trim().isEmpty()) return;
         try {
-            for (int i = 0; i <= 10000; i++) {
-                HabitAlarmReceiver.cancelHabit(ctx, i);
+            JSONArray habits = new JSONArray(previousHabitsJson);
+            for (int i = 0; i < habits.length(); i++) {
+                JSONObject habit = habits.optJSONObject(i);
+                if (habit != null) {
+                    HabitAlarmReceiver.cancelHabit(ctx, habit.optInt("id", i + 1));
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 }
-
