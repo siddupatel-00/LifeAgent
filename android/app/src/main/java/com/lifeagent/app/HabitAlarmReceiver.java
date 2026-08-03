@@ -141,11 +141,15 @@ public class HabitAlarmReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context c, Intent intent) {
         // Hold a wake lock so the CPU doesn't sleep before we post the notification
+        // Turn on screen & hold wake lock so alarm lights up screen even when locked
         PowerManager pm = (PowerManager) c.getSystemService(Context.POWER_SERVICE);
         PowerManager.WakeLock wl = null;
         if (pm != null) {
-            wl = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "LifeAgent::HabitWakeLock");
-            wl.acquire(30_000L);
+            wl = pm.newWakeLock(
+                PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP | PowerManager.ON_AFTER_RELEASE,
+                "LifeAgent::HabitWakeLock"
+            );
+            wl.acquire(10_000L);
         }
 
         try {
@@ -171,7 +175,6 @@ public class HabitAlarmReceiver extends BroadcastReceiver {
                 ch.enableVibration(true);
                 ch.setVibrationPattern(new long[]{0, 300, 200, 300});
                 ch.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
-                ch.setBypassDnd(true);
 
                 Uri soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
                 if (soundUri != null) {

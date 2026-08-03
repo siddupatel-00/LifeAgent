@@ -9,10 +9,11 @@ import com.getcapacitor.BridgeActivity;
 public class MainActivity extends BridgeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
         registerPlugin(NativeWaterSchedulerPlugin.class);
         registerPlugin(NativeHabitSchedulerPlugin.class);
         registerPlugin(NativeAlarmSchedulerPlugin.class);
-        super.onCreate(savedInstanceState);
         
         Window window = getWindow();
         window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
