@@ -19,175 +19,212 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import java.util.Calendar;
 
+/**
+ * Handles per-habit alarms. Each habit gets its own PendingIntent using
+ * (HABIT_BASE + habitId) as the request code, making alarms fully independent.
+ * One habit failing or being rescheduled cannot affect any other habit.
+ */
 public class HabitAlarmReceiver extends BroadcastReceiver {
-  static final int REQUEST = 820001;
 
-  static PendingIntent intent(Context c) {
-    int flags = PendingIntent.FLAG_UPDATE_CURRENT;
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      flags |= PendingIntent.FLAG_IMMUTABLE;
+    // Base offset so habit IDs don't clash with other receivers
+    static final int HABIT_BASE = 820000;
+    static final String CHANNEL_ID = "habit_reminders";
+
+    // ── Build the PendingIntent for one specific habit ──────────────────────
+    static PendingIntent buildIntent(Context c, int habitId, String title, String timeStr) {
+        Intent i = new Intent(c, HabitAlarmReceiver.class);
+        i.putExtra("habitId", habitId);
+        i.putExtra("title", title);
+        i.putExtra("timeStr", timeStr);  // "HH:MM" — needed so onReceive can reschedule for next day
+
+        int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            flags |= PendingIntent.FLAG_IMMUTABLE;
+        }
+        // Unique request code per habit ensures each has its own independent alarm slot
+        return PendingIntent.getBroadcast(c, HABIT_BASE + habitId, i, flags);
     }
-    return PendingIntent.getBroadcast(c, REQUEST, new Intent(c, HabitAlarmReceiver.class), flags);
-  }
 
-  public static void scheduleNext(Context c) {
-    SharedPreferences p = c.getSharedPreferences("habit_reminders", Context.MODE_PRIVATE);
-    AlarmManager a = (AlarmManager) c.getSystemService(Context.ALARM_SERVICE);
-    if (a == null) return;
+    // ── Schedule (or reschedule) ONE habit ──────────────────────────────────
+    public static void scheduleHabit(Context c, int habitId, String title, String timeStr) {
+        if (timeStr == null || timeStr.trim().isEmpty()) return;
 
-    a.cancel(intent(c));
-    if (!p.getBoolean("enabled", true)) return;
-
-    String jsonString = p.getString("habitsJson", "[]");
-    if (jsonString == null || jsonString.trim().isEmpty() || jsonString.equals("[]")) return;
-
-    try {
-      JSONArray habitsArray = new JSONArray(jsonString);
-      if (habitsArray.length() == 0) return;
-
-      Calendar now = Calendar.getInstance();
-      long nowMillis = now.getTimeInMillis();
-      long nextFireMillis = Long.MAX_VALUE;
-
-      for (int i = 0; i < habitsArray.length(); i++) {
-        JSONObject habit = habitsArray.getJSONObject(i);
-        boolean enabled = habit.optBoolean("enabled", true);
-        if (!enabled) continue;
-
-        String timeStr = habit.optString("time", "");
-        if (timeStr.trim().isEmpty()) continue;
+        AlarmManager am = (AlarmManager) c.getSystemService(Context.ALARM_SERVICE);
+        if (am == null) return;
 
         String[] parts = timeStr.split(":");
-        if (parts.length < 2) continue;
-        int h = Integer.parseInt(parts[0].trim());
-        int m = Integer.parseInt(parts[1].trim());
+        if (parts.length < 2) return;
 
-        Calendar candidate = (Calendar) now.clone();
-        candidate.set(Calendar.HOUR_OF_DAY, h);
-        candidate.set(Calendar.MINUTE, m);
-        candidate.set(Calendar.SECOND, 0);
-        candidate.set(Calendar.MILLISECOND, 0);
-
-        // If candidate time today is in the past, schedule for tomorrow
-        if (candidate.getTimeInMillis() <= nowMillis + 2000) {
-          candidate.add(Calendar.DATE, 1);
+        int hour, minute;
+        try {
+            hour   = Integer.parseInt(parts[0].trim());
+            minute = Integer.parseInt(parts[1].trim());
+        } catch (NumberFormatException e) {
+            return;
         }
 
-        long candidateMillis = candidate.getTimeInMillis();
-        if (candidateMillis < nextFireMillis) {
-          nextFireMillis = candidateMillis;
-        }
-      }
+        Calendar fire = Calendar.getInstance();
+        fire.set(Calendar.HOUR_OF_DAY, hour);
+        fire.set(Calendar.MINUTE, minute);
+        fire.set(Calendar.SECOND, 0);
+        fire.set(Calendar.MILLISECOND, 0);
 
-      if (nextFireMillis != Long.MAX_VALUE) {
+        // If the time already passed today, schedule for tomorrow
+        if (fire.getTimeInMillis() <= System.currentTimeMillis()) {
+            fire.add(Calendar.DATE, 1);
+        }
+
+        PendingIntent pi = buildIntent(c, habitId, title, timeStr);
+
+        // setExactAndAllowWhileIdle fires reliably even in Doze mode / app closed / screen locked
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            a.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, nextFireMillis, intent(c));
+            am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, fire.getTimeInMillis(), pi);
         } else {
-            a.set(AlarmManager.RTC_WAKEUP, nextFireMillis, intent(c));
+            am.setExact(AlarmManager.RTC_WAKEUP, fire.getTimeInMillis(), pi);
         }
-      }
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-  }
-
-  @Override
-  public void onReceive(Context c, Intent i) {
-    PowerManager pm = (PowerManager) c.getSystemService(Context.POWER_SERVICE);
-    PowerManager.WakeLock wakeLock = null;
-    if (pm != null) {
-      wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "LifeAgent::HabitAlarmWakeLock");
-      wakeLock.acquire(60000); // 60 seconds max
     }
 
-    try {
-      SharedPreferences p = c.getSharedPreferences("habit_reminders", Context.MODE_PRIVATE);
-      if (p.getBoolean("enabled", true)) {
-        String jsonString = p.getString("habitsJson", "[]");
-        Calendar now = Calendar.getInstance();
-        int currentMinuteOfDay = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE);
+    // ── Cancel ONE habit's alarm ────────────────────────────────────────────
+    public static void cancelHabit(Context c, int habitId) {
+        AlarmManager am = (AlarmManager) c.getSystemService(Context.ALARM_SERVICE);
+        if (am == null) return;
 
-        JSONArray habitsArray = new JSONArray(jsonString);
-        NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
+        // Create a matching (but empty extras) intent just to cancel
+        Intent i = new Intent(c, HabitAlarmReceiver.class);
+        int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            flags |= PendingIntent.FLAG_IMMUTABLE;
+        }
+        PendingIntent pi = PendingIntent.getBroadcast(c, HABIT_BASE + habitId, i, flags);
+        am.cancel(pi);
+        pi.cancel();
+    }
 
-        if (nm != null) {
-          if (Build.VERSION.SDK_INT >= 26) {
-            NotificationChannel channel = new NotificationChannel("reminders", "Reminders", NotificationManager.IMPORTANCE_HIGH);
-            channel.setDescription("High priority alerts for habits and goals");
-            channel.enableLights(true);
-            channel.setLightColor(Color.BLUE);
-            channel.enableVibration(true);
-            channel.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
-            channel.setBypassDnd(true);
-            
-            Uri soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-            if (soundUri != null) {
-              AudioAttributes audioAttr = new AudioAttributes.Builder()
-                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                .setUsage(AudioAttributes.USAGE_ALARM)
-                .build();
-              channel.setSound(soundUri, audioAttr);
+    // ── Re-schedule ALL habits from SharedPreferences ──────────────────────
+    //    Called from boot receiver and plugin configure
+    public static void scheduleAllFromPrefs(Context c) {
+        SharedPreferences p = c.getSharedPreferences("habit_reminders", Context.MODE_PRIVATE);
+        if (!p.getBoolean("enabled", true)) return;
+
+        String json = p.getString("habitsJson", "[]");
+        if (json == null || json.trim().isEmpty() || json.equals("[]")) return;
+
+        try {
+            JSONArray habits = new JSONArray(json);
+            for (int i = 0; i < habits.length(); i++) {
+                JSONObject h  = habits.getJSONObject(i);
+                boolean enabled = h.optBoolean("enabled", true);
+                if (!enabled) continue;
+
+                int    habitId = h.optInt("id", i);
+                String title   = h.optString("title", "Habit Reminder");
+                String timeStr = h.optString("time", "");
+                if (timeStr.trim().isEmpty()) continue;
+
+                scheduleHabit(c, habitId, title, timeStr);
             }
-            nm.createNotificationChannel(channel);
-          }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
-          for (int idx = 0; idx < habitsArray.length(); idx++) {
-            JSONObject habit = habitsArray.getJSONObject(idx);
-            boolean enabled = habit.optBoolean("enabled", true);
-            if (!enabled) continue;
+    // ── Broadcast received: show notification, then reschedule for next day ─
+    @Override
+    public void onReceive(Context c, Intent intent) {
+        // Hold a wake lock so the CPU doesn't sleep before we post the notification
+        PowerManager pm = (PowerManager) c.getSystemService(Context.POWER_SERVICE);
+        PowerManager.WakeLock wl = null;
+        if (pm != null) {
+            wl = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "LifeAgent::HabitWakeLock");
+            wl.acquire(30_000L);
+        }
 
-            String timeStr = habit.optString("time", "");
-            if (timeStr.trim().isEmpty()) continue;
+        try {
+            if (intent == null) return;
 
-            String[] parts = timeStr.split(":");
-            if (parts.length < 2) continue;
-            int h = Integer.parseInt(parts[0].trim());
-            int m = Integer.parseInt(parts[1].trim());
-            int habitMinuteOfDay = h * 60 + m;
+            int    habitId = intent.getIntExtra("habitId", -1);
+            String title   = intent.getStringExtra("title");
+            String timeStr = intent.getStringExtra("timeStr");
 
-            // Match within 4 minutes window
-            int diff = Math.abs(currentMinuteOfDay - habitMinuteOfDay);
-            if (diff <= 4 || diff >= 1436) {
-              String title = habit.optString("title", "Habit Reminder");
-              int notifId = REQUEST + idx + 1;
+            if (title == null || title.trim().isEmpty()) title = "Habit Reminder";
 
-              Intent launchIntent = c.getPackageManager().getLaunchIntentForPackage(c.getPackageName());
-              PendingIntent contentIntent = null;
-              if (launchIntent != null) {
-                launchIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                int flags = PendingIntent.FLAG_UPDATE_CURRENT;
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                  flags |= PendingIntent.FLAG_IMMUTABLE;
+            // Create notification channel (Android 8+)
+            NotificationManager nm =
+                (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm == null) return;
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                NotificationChannel ch = new NotificationChannel(
+                    CHANNEL_ID, "Habit Reminders", NotificationManager.IMPORTANCE_HIGH);
+                ch.setDescription("Reminders for your daily habits");
+                ch.enableLights(true);
+                ch.setLightColor(Color.BLUE);
+                ch.enableVibration(true);
+                ch.setVibrationPattern(new long[]{0, 300, 200, 300});
+                ch.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
+                ch.setBypassDnd(true);
+
+                Uri soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+                if (soundUri != null) {
+                    AudioAttributes aa = new AudioAttributes.Builder()
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .setUsage(AudioAttributes.USAGE_ALARM)
+                        .build();
+                    ch.setSound(soundUri, aa);
                 }
-                contentIntent = PendingIntent.getActivity(c, notifId, launchIntent, flags);
-              }
+                nm.createNotificationChannel(ch);
+            }
 
-              NotificationCompat.Builder builder = new NotificationCompat.Builder(c, "reminders")
-                .setSmallIcon(com.lifeagent.app.R.mipmap.ic_launcher)
+            // Tap-to-open intent
+            Intent launch = c.getPackageManager().getLaunchIntentForPackage(c.getPackageName());
+            PendingIntent tapIntent = null;
+            if (launch != null) {
+                launch.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                int piFlags = PendingIntent.FLAG_UPDATE_CURRENT;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    piFlags |= PendingIntent.FLAG_IMMUTABLE;
+                }
+                // Unique request code per habit so tap targets don't overwrite each other
+                tapIntent = PendingIntent.getActivity(c, HABIT_BASE + habitId + 50000, launch, piFlags);
+            }
+
+            Uri sound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(c, CHANNEL_ID)
+                .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentTitle("✅ " + title)
                 .setContentText("Don't forget to complete your habit today!")
+                .setStyle(new NotificationCompat.BigTextStyle()
+                    .bigText("Don't forget to complete your habit today!"))
                 .setPriority(NotificationCompat.PRIORITY_MAX)
                 .setCategory(NotificationCompat.CATEGORY_ALARM)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setAutoCancel(true)
-                .setDefaults(NotificationCompat.DEFAULT_ALL);
+                .setSound(sound)
+                .setVibrate(new long[]{0, 300, 200, 300})
+                .setDefaults(NotificationCompat.DEFAULT_LIGHTS);
 
-              if (contentIntent != null) {
-                builder.setContentIntent(contentIntent);
-              }
-
-              nm.notify(notifId, builder.build());
+            if (tapIntent != null) {
+                builder.setContentIntent(tapIntent);
             }
-          }
+
+            // Use HABIT_BASE + habitId so each habit has a unique notification slot
+            nm.notify(HABIT_BASE + habitId, builder.build());
+
+            // ── Reschedule this exact alarm for the same time tomorrow ──────
+            // This is critical: we don't rely on a central "scheduleNext" loop.
+            // Each habit independently reschedules itself 24 hours later.
+            if (timeStr != null && !timeStr.trim().isEmpty() && habitId >= 0) {
+                SharedPreferences prefs = c.getSharedPreferences("habit_reminders", Context.MODE_PRIVATE);
+                if (prefs.getBoolean("enabled", true)) {
+                    scheduleHabit(c, habitId, title, timeStr);
+                }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (wl != null && wl.isHeld()) wl.release();
         }
-      }
-      scheduleNext(c);
-    } catch (Exception e) {
-      e.printStackTrace();
-    } finally {
-      if (wakeLock != null && wakeLock.isHeld()) {
-        wakeLock.release();
-      }
     }
-  }
 }

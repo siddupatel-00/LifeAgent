@@ -62,11 +62,15 @@ export async function ensureExactAlarmPermission() {
   try {
     const result = await NativeAlarmScheduler.checkExactAlarmPermission();
     if (result.granted) return true;
-    const req = await NativeAlarmScheduler.requestExactAlarmPermission();
-    return req.granted;
+    // requestExactAlarmPermission opens the system settings screen and returns
+    // immediately — it does NOT block until the user grants. So we optimistically
+    // continue scheduling; the native alarm receiver will work once the user
+    // grants the permission in the settings screen they just opened.
+    NativeAlarmScheduler.requestExactAlarmPermission().catch(() => {});
+    return true; // don't block habit scheduling while user is on the settings screen
   } catch (e) {
     console.warn('[reminderScheduler] Exact Alarm Permission error:', e);
-    return false;
+    return true; // fail open — let the OS reject the alarm if truly denied
   }
 }
 
@@ -403,7 +407,10 @@ export async function scheduleHabitReminders(habitsOrObj, globalEnabled = true) 
 
         if (Capacitor.getPlatform() === 'web') {
           scheduleWebFallback(title, body, fireDate, 'habit');
-        } else if (Capacitor.getPlatform() !== 'android') {
+        } else {
+          // Schedule via LocalNotifications on ALL native platforms (including Android).
+          // On Android the NativeHabitScheduler (AlarmManager) also fires as a backup
+          // — see the configure() call below.
           const id = makeNotifId('habit', habit.id || i, rem.id || 1, day);
           notifications.push({
             id,
@@ -449,37 +456,58 @@ export async function scheduleHabitReminders(habitsOrObj, globalEnabled = true) 
     await dispatchNotifications(notifications);
   }
 
-  // 3. Configure Native Android Habit Receiver (works even when app is killed/closed or screen locked)
+  // 3. Native Android AlarmManager — one independent alarm per reminder time.
+  //    This fires even when the app is fully killed, Doze mode is on, or screen is locked.
+  //    Each entry gets a unique integer ID so alarms never overwrite each other.
   if (Capacitor.getPlatform() === 'android') {
     try {
       const NativeHabitScheduler = registerPlugin('NativeHabitScheduler');
       const habitPayloads = [];
+      let slotIndex = 0; // used to generate unique IDs when habit.id is unavailable
+
       for (let i = 0; i < habits.length; i++) {
         const h = habits[i];
         if (!h || h.archived) continue;
+
         let rems = [];
-        if (Array.isArray(h.reminders)) rems = h.reminders;
-        else if (typeof h.reminders === 'string') {
+        if (Array.isArray(h.reminders)) {
+          rems = h.reminders;
+        } else if (typeof h.reminders === 'string') {
           try { rems = JSON.parse(h.reminders); } catch (e) { rems = []; }
         }
+
+        // Fallback: legacy single reminder_time field
         const singleTime = h.reminder_time || h.reminderTime || h.time;
         if (rems.length === 0 && singleTime) {
           rems = [{ id: 1, reminder_time: singleTime, enabled: true }];
         }
+
         for (const r of rems) {
           if (r.enabled === false || r.enabled === 0 || r.enabled === '0') continue;
           const timeVal = r.reminder_time || r.time || r.reminderTime;
-          if (timeVal) {
-            habitPayloads.push({
-              id: safeInt(h.id || i + 1),
-              title: h.title || h.label || 'Habit Reminder',
-              time: timeVal,
-              enabled: true
-            });
-          }
+          if (!timeVal) continue;
+
+          // Each reminder slot MUST have a unique integer ID so its PendingIntent
+          // doesn't collide with another habit/reminder in AlarmManager.
+          // We combine habit index and reminder index to guarantee uniqueness.
+          const uniqueId = safeInt(h.id != null ? h.id : i + 1) * 100 + slotIndex;
+          slotIndex++;
+
+          habitPayloads.push({
+            id: uniqueId,
+            title: h.title || h.label || 'Habit Reminder',
+            time: timeVal,
+            enabled: true
+          });
         }
       }
-      NativeHabitScheduler.configure({ enabled: globalEnabled, habitsJson: JSON.stringify(habitPayloads) }).catch(e => console.warn('[reminderScheduler] NativeHabitScheduler configure error:', e));
+
+      await NativeHabitScheduler.configure({
+        enabled: globalEnabled,
+        habitsJson: JSON.stringify(habitPayloads)
+      }).catch(e => console.warn('[reminderScheduler] NativeHabitScheduler configure error:', e));
+
+      console.log(`[reminderScheduler] NativeHabitScheduler configured with ${habitPayloads.length} independent habit alarms.`);
     } catch (err) {
       console.warn('[reminderScheduler] NativeHabitScheduler plugin error:', err);
     }
