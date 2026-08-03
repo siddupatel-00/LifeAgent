@@ -8,6 +8,7 @@ import { Capacitor, registerPlugin } from '@capacitor/core';
 const NativeAlarmScheduler = registerPlugin('NativeAlarmScheduler');
 const NativeHabitScheduler = registerPlugin('NativeHabitScheduler');
 const NativeWaterScheduler = registerPlugin('NativeWaterScheduler');
+const NativeDailyScheduler = registerPlugin('NativeDailyScheduler');
 
 const LAST_SCHEDULED_DAY_KEY = 'reminder_last_scheduled_day';
 
@@ -466,7 +467,7 @@ export async function scheduleHabitReminders(habitsOrObj, globalEnabled = true) 
 
       if (Capacitor.getPlatform() === 'android') {
         habitPayloads.push({
-          id: habitPayloads.length + 1,
+          id: habit.id || i,
           title: habit.title || habit.label || 'Habit Reminder',
           time: timeStr,
           enabled: true,
@@ -513,6 +514,14 @@ export async function scheduleHabitReminders(habitsOrObj, globalEnabled = true) 
 
   // 2. Global Daily 7 PM Check-in reminder
   if (daily7pmEnabled) {
+    if (Capacitor.getPlatform() === 'android') {
+      habitPayloads.push({
+        id: 9999,
+        title: 'Daily Habit Check-in',
+        time: '19:00',
+        enabled: true,
+      });
+    }
     for (let day = 0; day < 7; day++) {
       const fireDate = buildDailyFireDate(day, 19, 0);
       if (fireDate.getTime() <= now) continue;
@@ -655,7 +664,41 @@ export async function scheduleWaterReminders({ enabled, startTime, endTime, inte
   }
 }
 
-// ─── Schedule sleep reminder ──────────────────────────────────────────────────
+async function configureNativeDailyReminders({
+  sleepSettings = {},
+  workoutSettings = {},
+  summarySettings = {},
+  globalEnabled = true,
+} = {}) {
+  if (Capacitor.getPlatform() !== 'android' || !NativeDailyScheduler) return;
+
+  const name = summarySettings.userName || 'User';
+  const config = {
+    sleep: {
+      enabled: !!(sleepSettings.enabled && globalEnabled),
+      time: sleepSettings.reminderTime || '22:00',
+      title: '😴 Bedtime Reminder',
+      body: 'Time to wind down and get ready for bed!',
+    },
+    workout: {
+      enabled: !!(workoutSettings.enabled && globalEnabled),
+      time: workoutSettings.reminderTime || '07:00',
+      title: '💪 Workout Reminder',
+      body: "Time to hit the gym! Don't skip today's workout.",
+    },
+    summary: {
+      enabled: !!(summarySettings.enabled && globalEnabled),
+      time: summarySettings.reminderTime || '07:00',
+      title: '🌅 Morning Summary',
+      body: `Good morning ${name}!`,
+    },
+  };
+
+  await NativeDailyScheduler.configure({ configJson: JSON.stringify(config) }).catch(e =>
+    console.warn('[reminderScheduler] NativeDailyScheduler configure error:', e)
+  );
+}
+
 export async function scheduleSleepReminders({ enabled, reminderTime }, globalEnabled = true) {
   if (!enabled || !globalEnabled) {
     await cancelAllOfType('sleep');
@@ -669,6 +712,13 @@ export async function scheduleSleepReminders({ enabled, reminderTime }, globalEn
 
   const t = parseTime(reminderTime || '22:00');
   if (!t) return;
+
+  if (Capacitor.getPlatform() === 'android') {
+    await configureNativeDailyReminders({
+      sleepSettings: { enabled, reminderTime },
+      globalEnabled,
+    });
+  }
 
   const notifications = [];
   const now = Date.now();
@@ -718,6 +768,13 @@ export async function scheduleWorkoutReminders({ enabled, reminderTime, repeatRu
   if (!t) return;
   const rule = repeatRule ? (typeof repeatRule === 'string' ? JSON.parse(repeatRule) : repeatRule) : { type: 'daily' };
 
+  if (Capacitor.getPlatform() === 'android') {
+    await configureNativeDailyReminders({
+      workoutSettings: { enabled, reminderTime },
+      globalEnabled,
+    });
+  }
+
   const notifications = [];
   const now = Date.now();
 
@@ -765,6 +822,13 @@ export async function scheduleMorningSummaryReminders({ enabled, reminderTime, u
 
   const t = parseTime(reminderTime || '07:00');
   if (!t) return;
+
+  if (Capacitor.getPlatform() === 'android') {
+    await configureNativeDailyReminders({
+      summarySettings: { enabled, reminderTime, userName },
+      globalEnabled,
+    });
+  }
 
   const notifications = [];
   const now = Date.now();
@@ -822,8 +886,9 @@ async function regenerateAllRemindersNow({
   globalEnabled = true,
 } = {}) {
   console.log('[reminderScheduler] Regenerating all reminders...');
-  // Habits first — native OS alarms are registered before JS batch scheduling.
+  // Native OS alarms first — survive swipe-kill like water reminders.
   await scheduleHabitReminders(habits, globalEnabled);
+  await configureNativeDailyReminders({ sleepSettings, workoutSettings, summarySettings, globalEnabled });
   await Promise.all([
     scheduleEventReminders(events, globalEnabled),
     scheduleWaterReminders(waterSettings, globalEnabled),

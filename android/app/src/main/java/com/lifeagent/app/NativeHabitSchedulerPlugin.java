@@ -25,14 +25,9 @@ public class NativeHabitSchedulerPlugin extends Plugin {
     public void configure(PluginCall call) {
         boolean enabled   = call.getBoolean("enabled", true);
         String habitsJson = call.getString("habitsJson", "[]");
+        String previousHabitsJson = prefs().getString("habitsJson", "[]");
 
-        // Cancel the IDs from the previous configuration before replacing it.
-        // The old implementation iterated through 10,001 possible IDs on every
-        // save. That work ran on the plugin call and could make habit alarms slow
-        // or unreliable, especially when several habits were edited together.
-        cancelPreviouslyConfiguredAlarms(getContext(), prefs().getString("habitsJson", "[]"));
-
-        // Persist so boot receiver can re-schedule without JS bridge
+        // Persist first so boot receiver can restore even if the process dies mid-schedule.
         SharedPreferences.Editor editor = prefs().edit();
         editor.putBoolean("enabled", enabled);
         editor.putString("habitsJson", habitsJson);
@@ -40,19 +35,41 @@ public class NativeHabitSchedulerPlugin extends Plugin {
 
         Context ctx = getContext();
 
+        // Schedule-first: register new OS alarms before removing stale ones so a
+        // swipe-kill mid-configure never leaves zero habit alarms.
         if (enabled) {
-            // Schedule one independent alarm per habit
             HabitAlarmReceiver.scheduleAllFromPrefs(ctx);
+        } else {
+            cancelAlarmsFromJson(ctx, previousHabitsJson);
         }
+
+        cancelStaleAlarms(ctx, previousHabitsJson, habitsJson);
 
         call.resolve();
     }
 
-    /** Cancel just the alarms represented by the last saved configuration. */
-    private void cancelPreviouslyConfiguredAlarms(Context ctx, String previousHabitsJson) {
+    private void cancelStaleAlarms(Context ctx, String previousHabitsJson, String newHabitsJson) {
+        java.util.HashSet<Integer> newIds = habitIdsFromJson(newHabitsJson);
         if (previousHabitsJson == null || previousHabitsJson.trim().isEmpty()) return;
         try {
             JSONArray habits = new JSONArray(previousHabitsJson);
+            for (int i = 0; i < habits.length(); i++) {
+                JSONObject habit = habits.optJSONObject(i);
+                if (habit == null) continue;
+                int id = habit.optInt("id", i);
+                if (!newIds.contains(id)) {
+                    HabitAlarmReceiver.cancelHabit(ctx, id);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void cancelAlarmsFromJson(Context ctx, String habitsJson) {
+        if (habitsJson == null || habitsJson.trim().isEmpty()) return;
+        try {
+            JSONArray habits = new JSONArray(habitsJson);
             for (int i = 0; i < habits.length(); i++) {
                 JSONObject habit = habits.optJSONObject(i);
                 if (habit != null) {
@@ -62,5 +79,18 @@ public class NativeHabitSchedulerPlugin extends Plugin {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private java.util.HashSet<Integer> habitIdsFromJson(String habitsJson) {
+        java.util.HashSet<Integer> ids = new java.util.HashSet<>();
+        if (habitsJson == null || habitsJson.trim().isEmpty()) return ids;
+        try {
+            JSONArray habits = new JSONArray(habitsJson);
+            for (int i = 0; i < habits.length(); i++) {
+                JSONObject habit = habits.optJSONObject(i);
+                if (habit != null) ids.add(habit.optInt("id", i));
+            }
+        } catch (Exception ignored) {}
+        return ids;
     }
 }
