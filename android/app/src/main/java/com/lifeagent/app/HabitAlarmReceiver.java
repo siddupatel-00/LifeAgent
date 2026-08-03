@@ -52,14 +52,19 @@ public class HabitAlarmReceiver extends BroadcastReceiver {
         AlarmManager am = (AlarmManager) c.getSystemService(Context.ALARM_SERVICE);
         if (am == null) return;
 
-        String[] parts = timeStr.split(":");
-        if (parts.length < 2) return;
-
-        int hour, minute;
+        int hour = 0, minute = 0;
         try {
+            String clean = timeStr.trim().toUpperCase();
+            boolean isPM = clean.contains("PM");
+            boolean isAM = clean.contains("AM");
+            String digitsOnly = clean.replaceAll("[^0-9:]", "").trim();
+            String[] parts = digitsOnly.split(":");
+            if (parts.length < 2) return;
             hour   = Integer.parseInt(parts[0].trim());
             minute = Integer.parseInt(parts[1].trim());
-        } catch (NumberFormatException e) {
+            if (isPM && hour < 12) hour += 12;
+            if (isAM && hour == 12) hour = 0;
+        } catch (Exception e) {
             return;
         }
 

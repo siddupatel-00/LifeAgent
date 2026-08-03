@@ -89,9 +89,21 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
     safeStorage.setItem('water_target_goal', val.toString());
     setModalTargetGoal(val.toString());
     showToast?.(`🎯 Daily water goal set to ${val} L!`, 'success');
+
+    // Save to API in background
+    try {
+      const token = safeStorage.getItem('token');
+      if (token) {
+        fetch(getApiUrl('/api/settings'), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ water_target_goal: val })
+        }).catch(() => {});
+      }
+    } catch (e) {}
   };
 
-  const handleSaveAllSettings = async () => {
+  const handleSaveAllSettings = () => {
     const newTarget = parseFloat(modalTargetGoal) || 2.5;
     const newInterval = parseInt(modalReminderInterval, 10) || 60;
     
@@ -99,36 +111,40 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
     safeStorage.setItem('water_target_goal', newTarget.toString());
     setReminderIntervalMinutes(newInterval);
     
-    try {
-      const token = safeStorage.getItem('token');
-      if (token) {
-        await fetch(getApiUrl('/api/settings'), {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ 
-            water_target_goal: newTarget,
-            water_reminder_interval: newInterval,
-            water_reminder_enabled: isReminderEnabled,
-            water_reminder_start: reminderStartTime,
-            water_reminder_end: reminderEndTime,
-          })
-        });
-      }
-    } catch (e) {
-      console.error('Failed to save water settings', e);
-    }
-
-    // Reschedule Capacitor notifications
-    const globalEnabled = userProfile?.remindersGlobalEnabled !== false && userProfile?.reminders_global_enabled !== 0;
-    await scheduleWaterReminders({
-      enabled: isReminderEnabled,
-      startTime: reminderStartTime,
-      endTime: reminderEndTime,
-      intervalMinutes: newInterval,
-    }, globalEnabled).catch(console.error);
-    
+    // Close modal & show toast INSTANTLY (0ms response to user)
     setIsSettingsOpen(false);
     showToast?.('Water settings saved successfully!', 'success');
+
+    // Sync to API in background
+    (async () => {
+      try {
+        const token = safeStorage.getItem('token');
+        if (token) {
+          await fetch(getApiUrl('/api/settings'), {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ 
+              water_target_goal: newTarget,
+              water_reminder_interval: newInterval,
+              water_reminder_enabled: isReminderEnabled,
+              water_reminder_start: reminderStartTime,
+              water_reminder_end: reminderEndTime,
+            })
+          });
+        }
+      } catch (e) {
+        console.error('Failed to save water settings', e);
+      }
+
+      // Reschedule Capacitor notifications
+      const globalEnabled = userProfile?.remindersGlobalEnabled !== false && userProfile?.reminders_global_enabled !== 0;
+      scheduleWaterReminders({
+        enabled: isReminderEnabled,
+        startTime: reminderStartTime,
+        endTime: reminderEndTime,
+        intervalMinutes: newInterval,
+      }, globalEnabled).catch(console.error);
+    })();
   };
 
 

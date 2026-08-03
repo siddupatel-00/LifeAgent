@@ -25,6 +25,8 @@ const OFFSET_OPTIONS = [
   { label: '1 day before',     value: 1440 },
   { label: '2 days before',    value: 2880 },
   { label: '1 week before',    value: 10080 },
+  { label: '15 days before',   value: 21600 },
+  { label: 'Custom time...',   value: 'custom' },
 ];
 
 const REPEAT_OPTIONS = [
@@ -272,6 +274,19 @@ export default function ReminderEditor({ reminders = [], onChange, mode = 'offse
         {list.map((rem) => {
           const rule = parseRule(rem);
           const repeatType = rem.repeat_rule ? rule.type : 'never';
+          
+          const isStandardOffset = OFFSET_OPTIONS.some(o => typeof o.value === 'number' && o.value === rem.offset_minutes);
+          const isCustomOffset = rem.is_custom_offset || rem.offset_minutes === 'custom' || (!isStandardOffset && typeof rem.offset_minutes === 'number');
+          
+          // Helper to get custom unit and value
+          const getCustomDisplay = (totalMins) => {
+            if (typeof totalMins !== 'number' || isNaN(totalMins)) return { val: 10, unit: 'mins' };
+            if (totalMins % 1440 === 0) return { val: totalMins / 1440, unit: 'days' };
+            if (totalMins % 60 === 0) return { val: totalMins / 60, unit: 'hours' };
+            return { val: totalMins, unit: 'mins' };
+          };
+
+          const customDisplay = getCustomDisplay(typeof rem.offset_minutes === 'number' ? rem.offset_minutes : 10);
 
           return (
             <div key={rem.id} className="reminder-item">
@@ -288,8 +303,14 @@ export default function ReminderEditor({ reminders = [], onChange, mode = 'offse
                 {mode === 'offset' ? (
                   <CustomDropdown
                     options={OFFSET_OPTIONS}
-                    value={rem.offset_minutes}
-                    onChange={val => updateReminder(rem.id, { offset_minutes: val })}
+                    value={isCustomOffset ? 'custom' : rem.offset_minutes}
+                    onChange={val => {
+                      if (val === 'custom') {
+                        updateReminder(rem.id, { is_custom_offset: true, offset_minutes: 10 });
+                      } else {
+                        updateReminder(rem.id, { is_custom_offset: false, offset_minutes: val });
+                      }
+                    }}
                     minWidth={150}
                   />
                 ) : (
@@ -334,6 +355,49 @@ export default function ReminderEditor({ reminders = [], onChange, mode = 'offse
                   <Trash2 size={14} />
                 </button>
               </div>
+
+              {/* Custom offset controls for events */}
+              {mode === 'offset' && isCustomOffset && (
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '8px', paddingLeft: '32px' }}>
+                  <input
+                    type="number"
+                    min="1"
+                    value={customDisplay.val}
+                    onChange={e => {
+                      const num = Math.max(1, parseInt(e.target.value, 10) || 1);
+                      const mult = customDisplay.unit === 'days' ? 1440 : (customDisplay.unit === 'hours' ? 60 : 1);
+                      updateReminder(rem.id, { offset_minutes: num * mult, is_custom_offset: true });
+                    }}
+                    style={{
+                      width: '70px', padding: '6px 10px', borderRadius: '8px',
+                      border: '1px solid rgba(255,255,255,0.15)', background: 'var(--bg-card, #12141c)',
+                      color: 'var(--text-main, #fff)', fontSize: '0.82rem', outline: 'none'
+                    }}
+                  />
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    {['mins', 'hours', 'days'].map(unit => (
+                      <button
+                        key={unit}
+                        type="button"
+                        onClick={() => {
+                          const mult = unit === 'days' ? 1440 : (unit === 'hours' ? 60 : 1);
+                          updateReminder(rem.id, { offset_minutes: customDisplay.val * mult, is_custom_offset: true });
+                        }}
+                        style={{
+                          padding: '5px 9px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 600,
+                          cursor: 'pointer', border: '1px solid',
+                          borderColor: customDisplay.unit === unit ? 'var(--accent-blue, #3b82f6)' : 'rgba(255,255,255,0.1)',
+                          background: customDisplay.unit === unit ? 'var(--accent-blue-dim, rgba(59,130,246,0.2))' : 'transparent',
+                          color: customDisplay.unit === unit ? 'var(--accent-blue, #3b82f6)' : 'var(--text-muted, #94a3b8)',
+                        }}
+                      >
+                        {unit}
+                      </button>
+                    ))}
+                  </div>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>before event</span>
+                </div>
+              )}
 
               {/* Custom day chips */}
               {repeatType === 'custom' && (

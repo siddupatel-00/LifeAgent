@@ -1190,33 +1190,37 @@ export default function App() {
   ]);
 
   // ─── Save habit reminders ──────────────────────────────────────────────────
-  const handleSaveHabitReminders = async (habitId) => {
+  const handleSaveHabitReminders = (habitId) => {
     const updatedReminders = editHabitReminderList;
     const nextHabits = habits.map(h => h.id === habitId ? { ...h, reminders: updatedReminders } : h);
+    
+    // Instantly update state, close modal, and display toast (0ms latency)
     setHabits(nextHabits);
     setEditHabitReminderId(null);
-    // Persist to API via existing PUT /api/habits endpoint
-    try {
-      const t = safeStorage.getItem('token');
-      if (t) {
-        await fetch(getApiUrl('/api/habits'), {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${t}` },
-          body: JSON.stringify({
-            id: habitId,
-            reminders: updatedReminders,
-            // Preserve legacy single reminder_time field for compatibility
-            ...(updatedReminders.length === 1 ? { reminder_time: updatedReminders[0].reminder_time || updatedReminders[0].time } : {})
-          })
-        });
-      }
-    } catch (e) {
-      console.error('Failed to save habit reminders:', e);
-    }
-    // Reschedule habit notifications
-    const globalEnabled = userProfile?.remindersGlobalEnabled !== false;
-    await scheduleHabitReminders(nextHabits, globalEnabled).catch(console.error);
     showToast?.('Habit reminders saved!', 'success');
+
+    // Run network PUT & notification scheduling asynchronously in background
+    (async () => {
+      try {
+        const t = safeStorage.getItem('token');
+        if (t) {
+          await fetch(getApiUrl('/api/habits'), {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${t}` },
+            body: JSON.stringify({
+              id: habitId,
+              reminders: updatedReminders,
+              // Preserve legacy single reminder_time field for compatibility
+              ...(updatedReminders.length === 1 ? { reminder_time: updatedReminders[0].reminder_time || updatedReminders[0].time } : {})
+            })
+          });
+        }
+      } catch (e) {
+        console.error('Failed to save habit reminders:', e);
+      }
+      const globalEnabled = userProfile?.remindersGlobalEnabled !== false;
+      scheduleHabitReminders(nextHabits, globalEnabled).catch(console.error);
+    })();
   };
 
 

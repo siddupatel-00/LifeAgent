@@ -24,21 +24,22 @@ async function dispatchNotifications(notifications) {
 
   // Dual-scheduling: Also schedule via Android System Alarm Clock for 100% exact lockscreen/killed-app delivery
   if (Capacitor.getPlatform() === 'android' && NativeAlarmScheduler) {
-    for (const n of notifications) {
-      try {
-        const fireAt = n.schedule?.at ? new Date(n.schedule.at).getTime() : null;
-        if (fireAt && fireAt > Date.now()) {
-          await NativeAlarmScheduler.scheduleAlarm({
-            id: n.id,
-            title: n.title,
-            body: n.body,
-            timestamp: fireAt
-          });
-        }
-      } catch (nativeErr) {
-        console.warn('[reminderScheduler] NativeAlarmScheduler error:', nativeErr);
-      }
-    }
+    const validNotifs = notifications.filter(n => {
+      const fireAt = n.schedule?.at ? new Date(n.schedule.at).getTime() : null;
+      return fireAt && fireAt > Date.now();
+    });
+
+    // Fire all native alarm registrations concurrently in parallel (~30ms total)
+    await Promise.all(
+      validNotifs.map(n => 
+        NativeAlarmScheduler.scheduleAlarm({
+          id: n.id,
+          title: n.title,
+          body: n.body,
+          timestamp: new Date(n.schedule.at).getTime()
+        }).catch(err => console.warn('[reminderScheduler] NativeAlarmScheduler error:', err))
+      )
+    );
   }
 }
 
@@ -222,9 +223,22 @@ function scheduleWebFallback(title, body, fireDate, entityType = 'general') {
   if (Capacitor.getPlatform() !== 'web') return;
   const delay = fireDate.getTime() - Date.now();
   if (delay <= 0 || delay > 86400000) return; // max 24h for web timeout
-  const timerId = setTimeout(() => {
-    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-      new Notification(title, { body });
+  const timerId = setTimeout(async () => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'granted') {
+        try {
+          new Notification(title, { body, icon: '/favicon.ico' });
+        } catch (e) {
+          console.warn('[reminderScheduler] Web Notification create failed:', e);
+        }
+      } else if (Notification.permission === 'default') {
+        try {
+          const perm = await Notification.requestPermission();
+          if (perm === 'granted') {
+            new Notification(title, { body, icon: '/favicon.ico' });
+          }
+        } catch (e) {}
+      }
     }
   }, delay);
   webTimers.push({ id: timerId, type: entityType });

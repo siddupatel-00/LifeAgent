@@ -91,24 +91,24 @@ export default function CalendarPanel({
     }
   };
 
-  const handleSaveEventReminders = async (eventId) => {
-    try {
-      await fetch(getApiUrl('/api/calendar'), {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ id: eventId, reminders: editReminderList })
-      });
-      setCalendarEvents(prev => {
-        const updated = prev.map(ev => ev.id === eventId ? { ...ev, reminders: editReminderList } : ev);
-        scheduleEventReminders(updated).catch(console.error);
-        return updated;
-      });
-      setEditReminderEventId(null);
-      showToast?.('Reminders updated', 'success');
-    } catch (err) {
+  const handleSaveEventReminders = (eventId) => {
+    // Instantly update state, close modal, and show toast
+    setCalendarEvents(prev => {
+      const updated = prev.map(ev => ev.id === eventId ? { ...ev, reminders: editReminderList } : ev);
+      scheduleEventReminders(updated).catch(console.error);
+      return updated;
+    });
+    setEditReminderEventId(null);
+    showToast?.('Reminders updated', 'success');
+
+    // Run network PUT in background
+    fetch(getApiUrl('/api/calendar'), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ id: eventId, reminders: editReminderList })
+    }).catch(err => {
       console.error('Failed to update reminders:', err);
-      showToast?.('Error updating reminders', 'error');
-    }
+    });
   };
 
   const performDeleteEvent = async (id) => {
