@@ -27,5 +27,11 @@ dist-ssr
 .env
 .env.local
 .env.production
+
+# Vercel build cache (never commit)
 .vercel
+
+# Android build artifacts (never commit)
 android/
+*.apk
+LifeAgent.apk
