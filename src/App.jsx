@@ -1199,7 +1199,14 @@ export default function App() {
     setEditHabitReminderId(null);
     showToast?.('Habit reminders saved!', 'success');
 
-    // Run network PUT & notification scheduling asynchronously in background
+    // Register the Android alarm before doing any network work. Waiting for the
+    // PUT used to leave no OS alarm when a user saved a reminder and immediately
+    // swiped the app away from Recents; the JS task was stopped first.
+    const globalEnabled = userProfile?.remindersGlobalEnabled !== false
+      && userProfile?.reminders_global_enabled !== 0;
+    scheduleHabitReminders(nextHabits, globalEnabled).catch(console.error);
+
+    // Persist the reminder in the background after the local alarm is safe.
     (async () => {
       try {
         const t = safeStorage.getItem('token');
@@ -1218,8 +1225,6 @@ export default function App() {
       } catch (e) {
         console.error('Failed to save habit reminders:', e);
       }
-      const globalEnabled = userProfile?.remindersGlobalEnabled !== false;
-      scheduleHabitReminders(nextHabits, globalEnabled).catch(console.error);
     })();
   };
 
