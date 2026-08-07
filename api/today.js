@@ -2,6 +2,25 @@ import { handleCors } from '../lib/cors.js';
 import db from '../lib/db.js';
 import { getUserId } from '../lib/auth.js';
 
+const WEEKDAY_CODES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+function isScheduledOnDate(habit, dateStr) {
+  const date = new Date(`${dateStr}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return false;
+
+  const interval = Number(habit.interval_days) || 0;
+  if (interval > 0) {
+    const start = new Date(`${habit.start_date || dateStr}T00:00:00`);
+    const elapsedDays = Math.floor((date - start) / 86400000);
+    return elapsedDays >= 0 && elapsedDays % interval === 0;
+  }
+
+  if (!habit.frequency || habit.frequency === 'daily') return true;
+  if (habit.frequency !== 'custom') return true;
+  const days = String(habit.custom_days || '').split(',').map(day => day.trim().slice(0, 3));
+  return days.includes(WEEKDAY_CODES[date.getDay()]);
+}
+
 export default async function handler(req, res) {
   if (handleCors(req, res)) return;
 
@@ -83,7 +102,8 @@ export default async function handler(req, res) {
       let needsRefetch = false;
 
       for (const habit of activeHabits) {
-        if (habit.paused_until) continue;
+        if (habit.paused_until && habit.paused_until >= targetDate) continue;
+        if (!isScheduledOnDate(habit, targetDate)) continue;
         const habitLabelKey = (habit.label || '').trim().toLowerCase();
         if (existingHabitIdSet.has(String(habit.id)) || (habitLabelKey && existingLabelSet.has(habitLabelKey))) continue;
 

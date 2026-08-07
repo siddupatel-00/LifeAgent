@@ -121,7 +121,8 @@ export default async function handler(req, res) {
       const freqVal = frequency || 'daily';
       const cdVal = Array.isArray(custom_days) ? custom_days.join(',') : (custom_days || '');
       const intervalVal = Number(interval_days) || 0;
-      const start_date = (challenge_days > 0 || intervalVal > 0) ? new Date().toISOString().split('T')[0] : (req.body.start_date || new Date().toISOString().split('T')[0]);
+      const requestedDate = /^\d{4}-\d{2}-\d{2}$/.test(client_date || '') ? client_date : new Date().toISOString().split('T')[0];
+      const start_date = (challenge_days > 0 || intervalVal > 0) ? requestedDate : (req.body.start_date || requestedDate);
       
       const result = await db.execute({
         sql: 'INSERT INTO habits (user_id, label, category, target, challenge_days, start_date, archived, completed_at, frequency, custom_days, interval_days) VALUES (?, ?, ?, ?, ?, ?, 0, NULL, ?, ?, ?)',
@@ -142,7 +143,7 @@ export default async function handler(req, res) {
         }
       }
 
-      const todayDate = /^\d{4}-\d{2}-\d{2}$/.test(client_date || '') ? client_date : new Date().toISOString().split('T')[0];
+      const todayDate = requestedDate;
       postBatch.push({
         sql: 'INSERT INTO today_items (user_id, label, category, time, habit_id, date, checked) VALUES (?, ?, ?, ?, ?, ?, 0)',
         args: [userId, label, category || '', '', newHabitId, todayDate]
