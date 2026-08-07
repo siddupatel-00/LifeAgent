@@ -876,13 +876,9 @@ export default function App() {
     if (!force && loadedTabsRef.current.finance) return;
     try {
       const headers = { 'Authorization': `Bearer ${token}` };
-      const [txRes, financeRes] = await Promise.all([
-        fetch(getApiUrl('/api/transactions'), { headers }).catch(e => null),
-        fetch(getApiUrl('/api/finance'), { headers }).catch(e => null)
-      ]);
-      const validTxRes = (txRes && txRes.ok) ? txRes : (financeRes && financeRes.ok ? financeRes : null);
-      if (validTxRes) {
-        const txData = await validTxRes.json();
+      const txRes = await fetch(getApiUrl('/api/transactions'), { headers }).catch(e => null);
+      if (txRes && txRes.ok) {
+        const txData = await txRes.json();
         const mappedTx = txData.map(t => ({ id: t.id, title: t.title, amount: t.amount, type: t.type, date: t.date }));
         setTransactions(mappedTx);
         safeStorage.setItem('cache_transactions', JSON.stringify(mappedTx));
