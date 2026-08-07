@@ -342,7 +342,7 @@ export default function App() {
     fetch(getApiUrl('/api/auth?action=me'), {
       headers: { 'Authorization': `Bearer ${token}` }
     }).then(res => {
-      if (res.status === 401 || res.status === 403 || res.status === 404) {
+      if (!res.ok) {
         handleLogout();
       }
     }).catch(() => {});

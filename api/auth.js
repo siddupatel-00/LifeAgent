@@ -4,16 +4,44 @@ import bcrypt from 'bcryptjs';
 import { signToken } from '../lib/auth.js';
 import { sendPasswordResetEmail } from '../lib/email.js';
 
+import { getUserId } from '../lib/auth.js';
+
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default async function handler(req, res) {
   if (handleCors(req, res)) return;
 
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-
   await ensureDbSchema();
   const { action } = req.query;
   const body = req.body || {};
+
+  // GET /api/auth?action=me -> Session validation
+  if (req.method === 'GET' && action === 'me') {
+    const userId = getUserId(req);
+    if (!userId) return res.status(401).json({ error: 'Unauthorized session' });
+
+    try {
+      const userRes = await db.execute({ sql: 'SELECT * FROM users WHERE id = ?', args: [userId] });
+      if (userRes.rows.length === 0) return res.status(401).json({ error: 'User not found' });
+      const user = userRes.rows[0];
+      return res.status(200).json({
+        user: {
+          id: Number(user.id),
+          name: user.name,
+          email: user.email,
+          phone: user.phone || '',
+          handle: user.handle || '',
+          theme: user.theme || 'light',
+          ai_name: user.ai_name || 'AI',
+          currency: user.currency || '$'
+        }
+      });
+    } catch {
+      return res.status(401).json({ error: 'Session verification failed' });
+    }
+  }
+
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
     if (action === 'register') {
