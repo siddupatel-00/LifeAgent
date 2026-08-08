@@ -225,6 +225,7 @@ export default function App() {
 
   const setActiveTab = (tab) => {
     setActiveTabRaw(tab);
+    setVisitedTabs(prev => new Set([...prev, tab]));
     if (TAB_SLUGS[tab]) {
       window.history.pushState({}, '', TAB_SLUGS[tab]);
     }
@@ -3152,7 +3153,7 @@ export default function App() {
               </div>
             </div>
 
-            <div style={{ paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
+            <div style={{ paddingTop: '16px', borderTop: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {/* Settings Tab inside the bottom place where LifeAgent v2.4 was */}
               <button
                 onClick={() => setActiveTab('settings')}
@@ -3167,6 +3168,20 @@ export default function App() {
                 }}
               >
                 <Settings size={18} /> Settings & Profile
+              </button>
+              <button
+                onClick={handleLogout}
+                style={{
+                  width: '100%',
+                  display: 'flex', alignItems: 'center', gap: '12px',
+                  padding: '10px 16px', borderRadius: '12px', border: 'none',
+                  background: 'rgba(239, 68, 68, 0.08)',
+                  color: '#ef4444',
+                  fontWeight: 700, cursor: 'pointer',
+                  fontSize: '0.9rem', transition: 'all 0.2s', textAlign: 'left'
+                }}
+              >
+                <LogOut size={18} /> Sign Out
               </button>
             </div>
           </aside>
@@ -3222,7 +3237,7 @@ export default function App() {
                     </button>
                   )}
 
-                  <div ref={themeDropdownRef} style={{ position: 'relative' }}>
+                  <div ref={themeDropdownRef} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <button 
                       className="theme-toggle-btn"
                       style={{ padding: '8px 14px', borderRadius: '30px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}
@@ -3234,6 +3249,14 @@ export default function App() {
                       {themeMode === 'pc' && <Monitor size={16} />}
                       {themeMode === 'night' && <Zap size={16} />}
                       <ChevronDown size={14} style={{ transform: isThemeMenuOpen ? 'rotate(180deg)' : 'none', transition: '0.2s' }} />
+                    </button>
+
+                    <button 
+                      onClick={handleLogout}
+                      style={{ padding: '8px 14px', borderRadius: '30px', background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                      title="Sign Out"
+                    >
+                      <LogOut size={15} /> Sign Out
                     </button>
 
                     {isThemeMenuOpen && (() => {
@@ -5654,7 +5677,7 @@ export default function App() {
               )}
 
               {/* 7) SETTINGS & PROFILE */}
-              {visitedTabs.has('settings') && (
+              {(visitedTabs.has('settings') || activeTab === 'settings') && (
                 <div style={{ display: activeTab === 'settings' ? 'block' : 'none' }}>
                   <TabErrorBoundary tabName="Settings">
                   <SettingsPanel
