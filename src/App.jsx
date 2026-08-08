@@ -3217,8 +3217,7 @@ export default function App() {
                 )}
               </div>
 
-              {!isAiSidePanelOpen && (
-                <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+              <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                   {activeTab !== 'ai' && (
                     <button
                       onClick={() => setIsAiSidePanelOpen(!isAiSidePanelOpen)}
@@ -3325,7 +3324,6 @@ export default function App() {
                     })()}
                   </div>
                 </div>
-              )}
             </div>
 
             {/* Timeframe Dropdown Selector (Hide when on Settings or AI Chat tab) */}
