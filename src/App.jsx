@@ -3880,45 +3880,93 @@ export default function App() {
                         </button>
                       </div>
                     ) : (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '14px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
                         {[...activeTodayItems].sort((a,b) => (a.checked === b.checked ? 0 : a.checked ? 1 : -1)).map(item => (
                           <div 
                             key={item.id} 
                             onClick={() => handleToggleTodayItem(item.id)}
                             style={{
                               background: item.checked ? 'var(--accent-blue-dim)' : 'var(--bg-card)',
-                              padding: '20px 16px',
-                              borderRadius: '18px',
+                              padding: '20px 22px',
+                              borderRadius: '20px',
                               border: `1px solid ${item.checked ? 'var(--accent-blue)' : 'var(--border-color)'}`,
                               display: 'flex',
                               flexDirection: 'column',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              textAlign: 'center',
-                              gap: '8px',
-                              transition: 'all 0.2s ease',
+                              justifyContent: 'space-between',
+                              gap: '16px',
+                              transition: 'all 0.25s ease',
                               cursor: 'pointer',
                               userSelect: 'none',
-                              boxShadow: item.checked ? '0 4px 16px rgba(59,130,246,0.15)' : '0 2px 8px rgba(0,0,0,0.04)',
-                              minHeight: '100px'
+                              boxShadow: item.checked ? '0 8px 24px rgba(59,130,246,0.18)' : '0 4px 12px rgba(0,0,0,0.06)',
+                              position: 'relative'
                             }}
                           >
-                            <div style={{
-                              fontSize: '1.05rem',
-                              fontWeight: 800,
-                              color: 'var(--text-main)',
-                              textDecoration: item.checked ? 'line-through' : 'none',
-                              opacity: item.checked ? 0.75 : 1,
-                              wordBreak: 'break-word',
-                              lineHeight: '1.3'
-                            }}>
-                              {item.title}
+                            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                {item.category && (
+                                  <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--accent-blue)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                                    {item.category}
+                                  </span>
+                                )}
+                                <div style={{
+                                  fontSize: '1.15rem',
+                                  fontWeight: 800,
+                                  color: 'var(--text-main)',
+                                  textDecoration: item.checked ? 'line-through' : 'none',
+                                  opacity: item.checked ? 0.7 : 1,
+                                  wordBreak: 'break-word',
+                                  lineHeight: '1.35'
+                                }}>
+                                  {item.title}
+                                </div>
+                                {item.goal_description && (
+                                  <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                                    {item.goal_description}
+                                  </div>
+                                )}
+                              </div>
+
+                              <div style={{
+                                width: '28px',
+                                height: '28px',
+                                borderRadius: '50%',
+                                border: `2px solid ${item.checked ? 'var(--accent-blue)' : 'var(--border-color)'}`,
+                                background: item.checked ? 'var(--accent-blue)' : 'transparent',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexShrink: 0,
+                                transition: 'all 0.2s ease',
+                                boxShadow: item.checked ? '0 0 10px rgba(59,130,246,0.5)' : 'none'
+                              }}>
+                                {item.checked && <Check size={16} color="#fff" strokeWidth={3} />}
+                              </div>
                             </div>
-                            {item.checked && (
-                              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--accent-blue)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <Check size={14} /> Done
-                              </span>
-                            )}
+
+                            <div style={{
+                              padding: '10px 14px',
+                              borderRadius: '12px',
+                              background: item.checked ? 'rgba(59,130,246,0.15)' : 'var(--bg-main)',
+                              border: `1px solid ${item.checked ? 'rgba(59,130,246,0.3)' : 'var(--border-color)'}`,
+                              color: item.checked ? 'var(--accent-blue)' : 'var(--text-muted)',
+                              fontSize: '0.85rem',
+                              fontWeight: 700,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '6px',
+                              transition: 'all 0.2s ease'
+                            }}>
+                              {item.checked ? (
+                                <>
+                                  <Check size={16} /> Completed Today
+                                </>
+                              ) : (
+                                <>
+                                  <Clock size={15} /> Tap to Mark Done
+                                </>
+                              )}
+                            </div>
                           </div>
                         ))}
                       </div>
