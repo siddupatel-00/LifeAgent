@@ -523,8 +523,8 @@ export default function App() {
     if (savedWidgetsConfig) safeStorage.setItem('cache_todayWidgetsConfig', savedWidgetsConfig);
     setToken('');
     setIsAuthenticated(false);
-    setUserProfile({ name: '', handle: '', email: '', aiTone: 'Analytical & Direct', morningAudit: false, smartAlerts: false, currency: '$', timezone: localTimeZone() });
-    navigate('landing', '/');
+    setAuthMode('login');
+    navigate('auth', '/auth');
   };
 
   const timeOptions = [
