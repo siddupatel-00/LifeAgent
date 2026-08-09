@@ -28,11 +28,14 @@ const SettingsPanel = ({
   chatResetTime,
   setChatResetTime,
   onResetAllAccountData,
+  onDeleteAccount,
   habits = [],
   calendarEvents = []
 }) => {
   const [showResetModal, setShowResetModal] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleConfirmReset = async () => {
     setIsResetting(true);
@@ -45,6 +48,20 @@ const SettingsPanel = ({
     } finally {
       setIsResetting(false);
       setShowResetModal(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    setIsDeleting(true);
+    try {
+      if (onDeleteAccount) {
+        await onDeleteAccount();
+      }
+    } catch (e) {
+      console.error('Error during account deletion:', e);
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteModal(false);
     }
   };
   const handleSaveSettings = async (e) => {
@@ -784,22 +801,40 @@ const SettingsPanel = ({
         <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginBottom: '20px', lineHeight: '1.5' }}>
           Permanently delete all your logged workouts, habits, transactions, notes, sleep logs, and history to reset your account to a completely fresh state.
         </p>
-        <button 
-          type="button"
-          onClick={() => setShowResetModal(true)}
-          disabled={isResetting}
-          style={{
-            display: 'flex', alignItems: 'center', gap: '10px',
-            padding: '14px 24px', borderRadius: '14px',
-            border: 'none', background: '#ef4444',
-            color: '#ffffff', fontWeight: 700, fontSize: '0.95rem', cursor: isResetting ? 'not-allowed' : 'pointer',
-            boxShadow: '0 4px 14px rgba(239, 68, 68, 0.35)',
-            opacity: isResetting ? 0.7 : 1,
-            transition: 'all 0.2s'
-          }}
-        >
-          ⚠️ Reset All Account Data
-        </button>
+        <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
+          <button 
+            type="button"
+            onClick={() => setShowResetModal(true)}
+            disabled={isResetting || isDeleting}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '10px',
+              padding: '14px 24px', borderRadius: '14px',
+              border: 'none', background: '#ef4444',
+              color: '#ffffff', fontWeight: 700, fontSize: '0.95rem', cursor: (isResetting || isDeleting) ? 'not-allowed' : 'pointer',
+              boxShadow: '0 4px 14px rgba(239, 68, 68, 0.35)',
+              opacity: (isResetting || isDeleting) ? 0.7 : 1,
+              transition: 'all 0.2s'
+            }}
+          >
+            ⚠️ Reset All Account Data
+          </button>
+
+          <button 
+            type="button"
+            onClick={() => setShowDeleteModal(true)}
+            disabled={isResetting || isDeleting}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '10px',
+              padding: '14px 24px', borderRadius: '14px',
+              border: '1px solid #ef4444', background: 'transparent',
+              color: '#ef4444', fontWeight: 700, fontSize: '0.95rem', cursor: (isResetting || isDeleting) ? 'not-allowed' : 'pointer',
+              opacity: (isResetting || isDeleting) ? 0.7 : 1,
+              transition: 'all 0.2s'
+            }}
+          >
+            🗑️ Delete Account Permanently
+          </button>
+        </div>
       </div>
 
       <ConfirmModal
@@ -811,6 +846,17 @@ const SettingsPanel = ({
         type="danger"
         onConfirm={handleConfirmReset}
         onCancel={() => !isResetting && setShowResetModal(false)}
+      />
+
+      <ConfirmModal
+        isOpen={showDeleteModal}
+        title="Delete Account Permanently?"
+        message="Permanently delete your entire LifeAgent user profile, login credentials, and all logged data. You will be immediately logged out and your user record removed from the database."
+        confirmText={isDeleting ? "Deleting Account..." : "Yes, Delete My Account"}
+        cancelText="Cancel"
+        type="danger"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => !isDeleting && setShowDeleteModal(false)}
       />
 
       {/* LIFEAGENT V2.4 FOOTER INSIDE SETTINGS */}

@@ -30,6 +30,35 @@ async function resetUserData(userId) {
   }
 }
 
+async function deleteUserAccount(userId) {
+  const currentUserReq = await db.execute({ sql: 'SELECT email FROM users WHERE id = ?', args: [userId] });
+  const userEmail = currentUserReq.rows[0]?.email;
+
+  const queries = [
+    { sql: 'DELETE FROM habits WHERE user_id = ?', args: [userId] },
+    { sql: 'DELETE FROM today_items WHERE user_id = ?', args: [userId] },
+    { sql: 'DELETE FROM transactions WHERE user_id = ?', args: [userId] },
+    { sql: 'DELETE FROM workouts WHERE user_id = ?', args: [userId] },
+    { sql: 'DELETE FROM body_stats WHERE user_id = ?', args: [userId] },
+    { sql: 'DELETE FROM notes WHERE user_id = ?', args: [userId] },
+    { sql: 'DELETE FROM sleep_logs WHERE user_id = ?', args: [userId] },
+    { sql: 'DELETE FROM calendar_events WHERE user_id = ?', args: [userId] },
+    { sql: 'DELETE FROM chat_history WHERE user_id = ?', args: [userId] },
+    { sql: 'DELETE FROM reminders WHERE user_id = ?', args: [userId] },
+    { sql: 'DELETE FROM daily_metrics WHERE user_id = ? OR (user_email IS NOT NULL AND user_email = ?)', args: [userId, userEmail || ''] },
+    { sql: 'DELETE FROM user_settings WHERE user_id = ?', args: [userId] },
+    { sql: 'DELETE FROM users WHERE id = ?', args: [userId] }
+  ];
+
+  for (const q of queries) {
+    try {
+      await db.execute(q);
+    } catch (e) {
+      console.warn(`Delete account step warning (${q.sql}):`, e.message);
+    }
+  }
+}
+
 export default async function handler(req, res) {
   if (handleCors(req, res)) return;
 
@@ -38,7 +67,12 @@ export default async function handler(req, res) {
   if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
   try {
-    if (req.method === 'DELETE' || (req.method === 'POST' && (req.query?.action === 'reset-all' || req.body?.action === 'reset-all'))) {
+    const isDeleteAccount = req.query?.action === 'delete-account' || req.body?.action === 'delete-account';
+    if (req.method === 'DELETE' || (req.method === 'POST' && (req.query?.action === 'reset-all' || req.body?.action === 'reset-all' || isDeleteAccount))) {
+      if (isDeleteAccount) {
+        await deleteUserAccount(userId);
+        return res.status(200).json({ success: true, message: 'User account and all data permanently deleted' });
+      }
       await resetUserData(userId);
       return res.status(200).json({ success: true, message: 'All account data reset successfully' });
     }

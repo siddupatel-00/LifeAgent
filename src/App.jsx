@@ -1026,6 +1026,28 @@ export default function App() {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(getApiUrl('/api/settings?action=delete-account'), {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast('Account permanently deleted', 'info');
+        handleLogout();
+      } else {
+        showToast(data.error || 'Failed to delete account', 'error');
+      }
+    } catch (err) {
+      console.error('Delete account error:', err);
+      showToast('Failed to delete account', 'error');
+    }
+  };
+
   const handleUpdateNoteDb = async (note) => {
     if (!token || !note || !note.id) return;
     try {
@@ -5747,6 +5769,7 @@ export default function App() {
                     chatResetTime={userProfile.chat_reset_time || '00:00'}
                     setChatResetTime={(val) => setUserProfile({ ...userProfile, chat_reset_time: val })}
                     onResetAllAccountData={handleResetAllAccountData}
+                    onDeleteAccount={handleDeleteAccount}
                     habits={habits}
                     calendarEvents={calendarEvents}
                   />
