@@ -1685,7 +1685,12 @@ export default function App() {
         [ADD_HABIT]{"label":"Drink 2L Water","category":"Health","target":"Daily"}[/ADD_HABIT]
 
         3. Calendar Event:
-        [CALENDAR_EVENT]{"title":"Meeting","date":"${todayStr}","endDate":null,"color":"#3b82f6"}[/CALENDAR_EVENT]
+        [CALENDAR_EVENT]{"title":"Meeting","date":"${todayStr}","time":"07:00","endDate":null,"color":"#3b82f6","reminders":[{"reminder_time":"07:00","offset_minutes":0}]}[/CALENDAR_EVENT]
+
+        CRITICAL FOR RECURRING / MULTI-DATE NOTIFICATION COMMANDS (e.g. "every Sunday at 7am", "all Sundays this year", "every day at 8am"):
+        When the user asks for a recurring event or notification (e.g. "every Sunday at 7am in 2026"), you MUST generate ALL matching dates for the year in a "dates" array in [CALENDAR_EVENT] AND/OR output an [ADD_HABIT] tag WITH 7am reminder:
+        - [ADD_HABIT]{"label":"Leet code weekly contest","category":"Coding","target":"Weekly","frequency":"weekly","custom_days":"0","reminders":[{"reminder_time":"07:00"}]}[/ADD_HABIT]
+        - [CALENDAR_EVENT]{"title":"Leet code weekly contest","time":"07:00","color":"#3b82f6","reminders":[{"reminder_time":"07:00","offset_minutes":0}],"dates":["2026-08-09","2026-08-16","2026-08-23","2026-08-30","2026-09-06","2026-09-13","2026-09-20","2026-09-27","2026-10-04","2026-10-11","2026-10-18","2026-10-25","2026-11-01","2026-11-08","2026-11-15","2026-11-22","2026-11-29","2026-12-06","2026-12-13","2026-12-20","2026-12-27"]}[/CALENDAR_EVENT]
 
         4. Create Note / Journal Entry:
         [ADD_NOTE]{"title":"Meeting Notes","content":"Discussed project roadmap","category":"General"}[/ADD_NOTE]
@@ -1750,20 +1755,33 @@ export default function App() {
         for (const match of calendarMatches) {
           try {
             const data = JSON.parse(match[1]);
-            const res = await fetch(getApiUrl('/api/calendar'), {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-              body: JSON.stringify({
-                title: data.title || 'AI Event',
-                date: data.date || todayStr,
-                end_date: data.endDate || null,
-                color: data.color || '#3b82f6',
-                status: 'upcoming'
-              })
-            });
-            if (res.ok) {
-              const saved = await res.json();
-              newEvents.push(saved);
+            const timeVal = data.time || '07:00';
+            const remindersList = Array.isArray(data.reminders) && data.reminders.length > 0
+              ? data.reminders
+              : (data.time ? [{ reminder_time: data.time, offset_minutes: 0 }] : []);
+
+            const datesList = Array.isArray(data.dates) && data.dates.length > 0
+              ? data.dates
+              : [data.date || todayStr];
+
+            for (const dStr of datesList) {
+              const res = await fetch(getApiUrl('/api/calendar'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({
+                  title: data.title || 'AI Event',
+                  date: dStr,
+                  time: timeVal,
+                  end_date: data.endDate || null,
+                  color: data.color || '#3b82f6',
+                  status: 'upcoming',
+                  reminders: remindersList
+                })
+              });
+              if (res.ok) {
+                const saved = await res.json();
+                newEvents.push({ ...saved, reminders: remindersList });
+              }
             }
             finalReply = finalReply.replace(match[0], '').trim();
           } catch (err) {
@@ -1771,7 +1789,11 @@ export default function App() {
           }
         }
         if (newEvents.length > 0) {
-          setCalendarEvents(prev => [...newEvents, ...prev]);
+          setCalendarEvents(prev => {
+            const updated = [...newEvents, ...prev];
+            scheduleEventReminders(updated).catch(console.error);
+            return updated;
+          });
         }
       }
 
@@ -1782,18 +1804,25 @@ export default function App() {
         for (const match of habitMatches) {
           try {
             const data = JSON.parse(match[1]);
+            const remindersList = Array.isArray(data.reminders) && data.reminders.length > 0
+              ? data.reminders
+              : (data.reminder_time ? [{ reminder_time: data.reminder_time }] : []);
+
             const res = await fetch(getApiUrl('/api/habits'), {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
               body: JSON.stringify({
                 label: data.label || 'New Habit',
                 category: data.category || 'General',
-                target: data.target || 'Daily'
+                target: data.target || 'Daily',
+                frequency: data.frequency || 'daily',
+                custom_days: data.custom_days || '',
+                reminders: remindersList
               })
             });
             if (res.ok) {
               const saved = await res.json();
-              addedHabits.push(saved);
+              addedHabits.push({ ...saved, reminders: remindersList });
             }
             finalReply = finalReply.replace(match[0], '').trim();
           } catch (err) {
@@ -1801,9 +1830,27 @@ export default function App() {
           }
         }
         if (addedHabits.length > 0) {
-          setHabits(prev => [...prev, ...addedHabits.map(h => ({
-            id: h.id, title: h.label, category: h.category, streak: h.streak, target: h.target || '', checkedToday: false
-          }))]);
+          setHabits(prev => {
+            const updated = [...prev, ...addedHabits.map(h => ({
+              id: h.id,
+              label: h.label,
+              title: h.label,
+              category: h.category,
+              streak: h.streak || 0,
+              target: h.target || '',
+              frequency: h.frequency || 'daily',
+              custom_days: h.custom_days || '',
+              checkedToday: false,
+              reminders: h.reminders || remindersList
+            }))];
+            const globalEnabled = userProfile?.remindersGlobalEnabled !== false && userProfile?.reminders_global_enabled !== 0;
+            scheduleHabitReminders({
+              habits: updated,
+              daily7pmEnabled: userProfile?.habit_7pm_reminder_enabled !== 0,
+              userName: userProfile?.name || 'User'
+            }, globalEnabled).catch(console.error);
+            return updated;
+          });
         }
       }
 
