@@ -144,6 +144,8 @@ export default function App() {
     if (path.includes('/auth') || path.includes('/login')) return 'auth';
     if (path.includes('/waitlist')) return 'waitlist';
     if (path.includes('/contact')) return 'contact';
+    if (path.includes('/about')) return 'about';
+    if (path.includes('/blog')) return 'blog';
     
     return 'landing';
   });
@@ -158,6 +160,7 @@ export default function App() {
     }
     setCurrentPage(page);
     window.history.pushState({}, '', path);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Handle browser Back/Forward navigation
@@ -178,6 +181,10 @@ export default function App() {
         setCurrentPage('waitlist');
       } else if (path.includes('/contact')) {
         setCurrentPage('contact');
+      } else if (path.includes('/about')) {
+        setCurrentPage('about');
+      } else if (path.includes('/blog')) {
+        setCurrentPage('blog');
       } else {
         setCurrentPage(isAuth ? 'dashboard' : 'landing');
       }
@@ -2109,6 +2116,34 @@ export default function App() {
             </div>
           </div>
 
+          {/* STOREFRONT NAVIGATION LINKS */}
+          <div className="storefront-nav-links" style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <button 
+              className={`storefront-nav-link ${currentPage === 'about' ? 'active' : ''}`}
+              onClick={() => navigate('about', '/about')}
+            >
+              About
+            </button>
+            <button 
+              className={`storefront-nav-link ${currentPage === 'blog' ? 'active' : ''}`}
+              onClick={() => navigate('blog', '/blog')}
+            >
+              Blog
+            </button>
+            <button 
+              className={`storefront-nav-link ${currentPage === 'waitlist' ? 'active' : ''}`}
+              onClick={() => navigate('waitlist', '/waitlist')}
+            >
+              Waitlist
+            </button>
+            <button 
+              className={`storefront-nav-link ${currentPage === 'contact' ? 'active' : ''}`}
+              onClick={() => navigate('contact', '/contact')}
+            >
+              Contact
+            </button>
+          </div>
+
           <div style={{ display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap' }}>
             <div className="landing-theme-controls" style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
               <CustomSelect 
@@ -2221,9 +2256,9 @@ export default function App() {
               <button 
                 className="blue-btn" 
                 style={{ padding: '9px 22px', fontSize: '0.9rem' }}
-                onClick={() => { setWaitlistSuccess(false); navigate('auth', '/auth'); }}
+                onClick={() => { setWaitlistSuccess(false); setAuthMode('login'); navigate('auth', '/auth'); }}
               >
-                Sign Up <ArrowRight size={16} />
+                Sign In <ArrowRight size={16} />
               </button>
             )}
           </div>
@@ -2234,18 +2269,21 @@ export default function App() {
       {currentPage === 'landing' && (
         <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 16px' }}>
           {/* HERO SECTION */}
-          <section className="animate-entrance" style={{ textAlign: 'center', padding: '60px 0 36px' }}>
+          <section className="animate-entrance" style={{ textAlign: 'left', padding: '60px 0 36px' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px', borderRadius: '30px', background: 'var(--accent-blue-dim)', border: '1px solid rgba(59,130,246,0.3)', color: 'var(--accent-blue)', fontSize: '0.85rem', fontWeight: 700, marginBottom: '24px' }}>
+              <Sparkles size={16} /> Autonomous Personal Life Operating System
+            </div>
 
-            <h1 style={{ fontSize: '3.8rem', fontWeight: 900, lineHeight: 1.08, letterSpacing: '-2px', marginBottom: '22px', color: 'var(--text-main)' }}>
-              Your Life Connected with Your Personal AI Agent
+            <h1 style={{ fontSize: '3.8rem', fontWeight: 900, lineHeight: 1.08, letterSpacing: '-0.03em', marginBottom: '22px', color: 'var(--text-main)', maxWidth: '900px' }}>
+              The Personal AI Agent for Your Entire Life
             </h1>
 
-            <p style={{ maxWidth: '780px', margin: '0 auto 36px', fontSize: '1.25rem', color: 'var(--text-muted)', lineHeight: 1.6, fontWeight: 400 }}>
+            <p style={{ maxWidth: '780px', margin: '0 0 36px 0', fontSize: '1.25rem', color: 'var(--text-muted)', lineHeight: 1.6, fontWeight: 400 }}>
               Track your habits, money, sleep, workouts, calendar, notes and daily progress — while your AI understands everything in one place.
             </p>
 
             {/* CTAs */}
-            <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '32px' }}>
+            <div style={{ display: 'flex', gap: '14px', justifyContent: 'flex-start', flexWrap: 'wrap', marginBottom: '32px' }}>
               <button 
                 className="blue-btn" 
                 style={{ fontSize: '1.05rem', padding: '14px 36px', borderRadius: '14px', boxShadow: '0 8px 24px rgba(59, 130, 246, 0.35)' }} 
@@ -2253,8 +2291,14 @@ export default function App() {
               >
                 Get Started Free <ArrowRight size={18} />
               </button>
+              <button 
+                className="secondary-btn" 
+                style={{ fontSize: '1.05rem', padding: '14px 28px', borderRadius: '14px' }} 
+                onClick={() => navigate('waitlist', '/waitlist')}
+              >
+                Join VIP Waitlist
+              </button>
             </div>
-
           </section>
 
           {/* INTERACTIVE 80% PRODUCT PREVIEW SECTION */}
@@ -2614,126 +2658,223 @@ export default function App() {
                     </div>
                   </div>
                 )}
-
-                {/* 7. AI TAB MOCK */}
-                {previewTab === 'AI' && (
-                  <div className="animate-tab-matter" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <div className="glass-card" style={{ padding: '18px', borderRadius: '16px', background: 'var(--bg-card)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-                        <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'var(--accent-blue)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <Bot size={16} color="var(--accent-text)" />
-                        </div>
-                        <span style={{ fontSize: '0.9rem', fontWeight: 700 }}>Personal AI Assistant</span>
-                      </div>
-
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        <div style={{ alignSelf: 'flex-end', background: 'var(--accent-blue)', color: 'var(--accent-text)', padding: '10px 14px', borderRadius: '14px 14px 2px 14px', fontSize: '0.88rem', maxWidth: '85%' }}>
-                          Audit my day: check sleep recovery, push workout volume, and remaining daily budget.
-                        </div>
-                        <div style={{ alignSelf: 'flex-start', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', padding: '14px', borderRadius: '14px 14px 14px 2px', fontSize: '0.88rem', maxWidth: '100%', lineHeight: 1.6 }}>
-                          <p style={{ fontWeight: 700, marginBottom: '6px', color: 'var(--accent-blue-light)' }}>🤖 Executive Daily Audit:</p>
-                          <p>• <strong>Sleep</strong>: 8h 12m (94% optimal score) — Excellent recovery state.</p>
-                          <p>• <strong>Gym</strong>: Push Workout A logged with 12,450 kg volume (Bench PR set!).</p>
-                          <p>• <strong>Money</strong>: Spent $18.50 today — $26.50 under your daily budget.</p>
-                          <p style={{ marginTop: '8px', color: 'var(--text-muted)', fontSize: '0.8rem' }}>💡 Everything is tracking on schedule for your weekly goals!</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="hero-mockup-ai-input" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', borderRadius: '14px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', flexWrap: 'wrap' }}>
-                      <Bot size={16} color="var(--text-muted)" style={{ flexShrink: 0 }} />
-                      <input type="text" readOnly value="Ask AI to log expense, track workout, or optimize schedule... (⌘K)" style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '0.85rem', flex: 1, minWidth: '140px', outline: 'none' }} />
-                      <button className="blue-btn" style={{ padding: '6px 14px', fontSize: '0.8rem', borderRadius: '8px', flexShrink: 0 }}>Send</button>
-                    </div>
-                  </div>
-                )}
-
-                {/* 8. HABITS TAB MOCK */}
-                {previewTab === 'Habits' && (
-                  <div className="animate-tab-matter" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-                      <div>
-                        <div className="hero-mockup-section-title" style={{ fontSize: '1.1rem', fontWeight: 800 }}>Daily Habit Checklist</div>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>4 of 5 Habits Completed Today (80%)</div>
-                      </div>
-                      <div className="pill-tag" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: 'none', fontSize: '0.8rem', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                        🔥 24 Day Streak Active
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      {[
-                        { title: 'Morning Sunlight & Hydration Protocol', category: 'Health', streak: '28 day streak', checked: true },
-                        { title: 'Coding / DSA', category: 'Productivity', streak: '44 day streak', checked: true },
-                        { title: 'Push Day', category: 'Fitness', streak: '12 day streak', checked: true },
-                        { title: 'No Junk Food & Hit 180g Protein Target', category: 'Nutrition', streak: '8 day streak', checked: true },
-                        { title: 'Evening Book Reading (30 mins)', category: 'Mindset', streak: '15 day streak', checked: false },
-                      ].slice(0, 3).map((habit, idx) => (
-                        <div key={idx} className="hero-mockup-habit-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderRadius: '14px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', flexWrap: 'wrap', gap: '8px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
-                            <div style={{ width: '22px', height: '22px', borderRadius: '6px', background: habit.checked ? 'var(--accent-blue)' : 'transparent', border: habit.checked ? 'none' : '2px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                              {habit.checked && <Check size={14} color="var(--accent-text)" />}
-                            </div>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontSize: '0.9rem', fontWeight: 600, textDecoration: habit.checked ? 'line-through' : 'none', opacity: habit.checked ? 0.85 : 1, wordBreak: 'break-word' }}>{habit.title}</div>
-                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{habit.category}</div>
-                            </div>
-                          </div>
-                          <span style={{ fontSize: '0.8rem', color: habit.checked ? '#10b981' : 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0 }}>
-                            🔥 {habit.streak}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
               </div>
             </div>
           </section>
 
-          {/* THREE PILLAR FEATURE CARDS */}
-          <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginBottom: '80px' }}>
-            <div className="glass-card motion-card scroll-swipe-up" style={{ padding: '30px', borderRadius: '20px' }}>
-              <div style={{ background: 'var(--accent-blue-dim)', width: '48px', height: '48px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
-                <Activity size={24} color="var(--accent-blue)" />
-              </div>
-              <h4 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '10px' }}>Health Precision Engine</h4>
-              <p style={{ color: 'var(--text-muted)', lineHeight: 1.6, fontSize: '0.95rem' }}>
-                Glanceable biometrics, workout logging, sleep stages, and progress telemetry engineered for peak physical and mental clarity.
-              </p>
+          {/* STATS SECTION */}
+          <section className="storefront-section scroll-swipe-up">
+            <div style={{ textAlign: 'left', marginBottom: '32px' }}>
+              <h2 className="storefront-section-title">Engineered for Precision & High Performance</h2>
+              <p className="storefront-section-subtitle">Real-time biometrics, local encrypted storage, and continuous autonomous AI sync.</p>
             </div>
 
-            <div className="glass-card motion-card scroll-swipe-up scroll-delay-1" style={{ padding: '30px', borderRadius: '20px' }}>
-              <div style={{ background: 'var(--accent-blue-dim)', width: '48px', height: '48px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
-                <Zap size={24} color="var(--accent-blue)" />
+            <div className="storefront-stats-grid">
+              <div className="storefront-stat-card">
+                <div className="storefront-stat-number">99.8%</div>
+                <div className="storefront-stat-label">Uptime</div>
+                <div className="storefront-stat-desc">Continuous biometrics & telemetry sync</div>
               </div>
-              <h4 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '10px' }}>High-Velocity Command Palette</h4>
-              <p style={{ color: 'var(--text-muted)', lineHeight: 1.6, fontSize: '0.95rem' }}>
-                Instant keyboard commands (`⌘K` / `Ctrl+J`), zero lag workspace switching, and high-velocity workflow automation.
-              </p>
+              <div className="storefront-stat-card">
+                <div className="storefront-stat-number">24/7</div>
+                <div className="storefront-stat-label">AI Sync</div>
+                <div className="storefront-stat-desc">Proactive contextual life assistant</div>
+              </div>
+              <div className="storefront-stat-card">
+                <div className="storefront-stat-number">10k+</div>
+                <div className="storefront-stat-label">Daily Logs</div>
+                <div className="storefront-stat-desc">Habit, expense & workout events</div>
+              </div>
+              <div className="storefront-stat-card">
+                <div className="storefront-stat-number">&lt;10ms</div>
+                <div className="storefront-stat-label">Response</div>
+                <div className="storefront-stat-desc">Instant edge & local db latency</div>
+              </div>
+            </div>
+          </section>
+
+          {/* TESTIMONIALS SECTION */}
+          <section className="storefront-section scroll-swipe-up">
+            <div style={{ textAlign: 'left', marginBottom: '36px' }}>
+              <h2 className="storefront-section-title">Loved by High Performers & Creators</h2>
+              <p className="storefront-section-subtitle">See how LifeAgent transforms daily routines, financial control, and personal productivity.</p>
             </div>
 
-            <div className="glass-card motion-card scroll-swipe-up scroll-delay-2" style={{ padding: '30px', borderRadius: '20px' }}>
-              <div style={{ background: 'var(--accent-blue-dim)', width: '48px', height: '48px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
-                <Bot size={24} color="var(--accent-blue)" />
+            <div className="storefront-testimonials-grid">
+              <div className="storefront-testimonial-card">
+                <p className="storefront-testimonial-quote">
+                  "LifeAgent completely transformed how I manage my daily routines and finances. Having AI synthesize everything in one place saves me hours every week."
+                </p>
+                <div className="storefront-testimonial-author">
+                  <div>
+                    <div className="storefront-author-name">Alex Chen</div>
+                    <div className="storefront-author-role">Founder & Tech Lead</div>
+                  </div>
+                  <span className="storefront-badge">Verified User</span>
+                </div>
               </div>
-              <h4 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '10px' }}>Personal AI Intelligence</h4>
-              <p style={{ color: 'var(--text-muted)', lineHeight: 1.6, fontSize: '0.95rem' }}>
-                Sleek dark/light typography paired with a personal AI companion that understands your notes, budget, and habits in unison.
-              </p>
+
+              <div className="storefront-testimonial-card">
+                <p className="storefront-testimonial-quote">
+                  "The clean interface and instant keyboard-driven commands make logging workouts and habits effortless. It's the AI assistant I always wanted."
+                </p>
+                <div className="storefront-testimonial-author">
+                  <div>
+                    <div className="storefront-author-name">Sarah Jenkins</div>
+                    <div className="storefront-author-role">Product Designer</div>
+                  </div>
+                  <span className="storefront-badge">Early Access</span>
+                </div>
+              </div>
+
+              <div className="storefront-testimonial-card">
+                <p className="storefront-testimonial-quote">
+                  "Tracking sleep, finances, and personal goals in a single high-contrast workspace keeps me accountable every single day."
+                </p>
+                <div className="storefront-testimonial-author">
+                  <div>
+                    <div className="storefront-author-name">Marcus Vance</div>
+                    <div className="storefront-author-role">Senior Software Engineer</div>
+                  </div>
+                  <span className="storefront-badge">VIP Supporter</span>
+                </div>
+              </div>
+
+              <div className="storefront-testimonial-card">
+                <p className="storefront-testimonial-quote">
+                  "Zero bloat, blistering fast, and the AI agent actually remembers my context across notes, workouts, and calendar."
+                </p>
+                <div className="storefront-testimonial-author">
+                  <div>
+                    <div className="storefront-author-name">Elena Rostova</div>
+                    <div className="storefront-author-role">Growth Strategist</div>
+                  </div>
+                  <span className="storefront-badge">Pro Member</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* CARDS (EVENTS / HACKATHONS / FEATURES) SECTION */}
+          <section className="storefront-section scroll-swipe-up">
+            <div style={{ textAlign: 'left', marginBottom: '36px' }}>
+              <h2 className="storefront-section-title">Events, Hackathons & Platform Capabilities</h2>
+              <p className="storefront-section-subtitle">Stay connected with upcoming hackathons, product keynotes, and core features.</p>
+            </div>
+
+            <div style={{ marginBottom: '44px' }}>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--accent-blue)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '20px' }}>
+                🚀 Upcoming Hackathons & Developer Events
+              </h3>
+
+              <div className="storefront-cards-grid">
+                <div className="storefront-event-card">
+                  <div>
+                    <div className="storefront-event-header">
+                      <span className="storefront-event-date">OCT 14 - 16, 2026</span>
+                      <span className="storefront-badge">San Francisco, CA • Hybrid</span>
+                    </div>
+                    <h4 className="storefront-event-title">Global AI Life Hackathon 2026</h4>
+                    <p className="storefront-event-desc">
+                      48-hour global sprint building autonomous personal AI agents, biometrics integrations, and custom LLM workflows.
+                    </p>
+                  </div>
+                  <button className="secondary-btn" style={{ fontSize: '0.88rem', width: '100%', justifyContent: 'center' }} onClick={() => navigate('waitlist', '/waitlist')}>
+                    Register Interest <ArrowRight size={14} />
+                  </button>
+                </div>
+
+                <div className="storefront-event-card">
+                  <div>
+                    <div className="storefront-event-header">
+                      <span className="storefront-event-date">NOV 02, 2026</span>
+                      <span className="storefront-badge">Online • Global Stream</span>
+                    </div>
+                    <h4 className="storefront-event-title">LifeAgent 2.0 Keynote & Launch</h4>
+                    <p className="storefront-event-desc">
+                      Live demonstration of zero-latency multi-device telemetry, encrypted local SQLite sync, and voice assistant integration.
+                    </p>
+                  </div>
+                  <button className="secondary-btn" style={{ fontSize: '0.88rem', width: '100%', justifyContent: 'center' }} onClick={() => navigate('waitlist', '/waitlist')}>
+                    Add to Calendar <Calendar size={14} />
+                  </button>
+                </div>
+
+                <div className="storefront-event-card">
+                  <div>
+                    <div className="storefront-event-header">
+                      <span className="storefront-event-date">DEC 08, 2026</span>
+                      <span className="storefront-badge">New York, NY • In-Person</span>
+                    </div>
+                    <h4 className="storefront-event-title">Developer & AI Creator Summit</h4>
+                    <p className="storefront-event-desc">
+                      Hands-on technical workshops and keynote sessions with world-class engineers on privacy-first agent architectures.
+                    </p>
+                  </div>
+                  <button className="secondary-btn" style={{ fontSize: '0.88rem', width: '100%', justifyContent: 'center' }} onClick={() => navigate('contact', '/contact')}>
+                    Learn More <ExternalLink size={14} />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--accent-blue)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '20px' }}>
+                ⚡ Core Architecture & Capabilities
+              </h3>
+
+              <div className="storefront-cards-grid">
+                <div className="storefront-event-card">
+                  <div>
+                    <div style={{ background: 'var(--accent-blue-dim)', width: '44px', height: '44px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+                      <Activity size={22} color="var(--accent-blue)" />
+                    </div>
+                    <h4 className="storefront-event-title">Health Precision Engine</h4>
+                    <p className="storefront-event-desc">
+                      Glanceable biometrics, workout logging, sleep stages, and progress telemetry engineered for peak physical and mental clarity.
+                    </p>
+                  </div>
+                  <span className="storefront-badge" style={{ alignSelf: 'flex-start' }}>Biometrics & Fitness</span>
+                </div>
+
+                <div className="storefront-event-card">
+                  <div>
+                    <div style={{ background: 'var(--accent-blue-dim)', width: '44px', height: '44px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+                      <Zap size={22} color="var(--accent-blue)" />
+                    </div>
+                    <h4 className="storefront-event-title">High-Velocity Command Palette</h4>
+                    <p className="storefront-event-desc">
+                      Instant keyboard commands (`⌘K` / `Ctrl+J`), zero lag workspace switching, and high-velocity workflow automation.
+                    </p>
+                  </div>
+                  <span className="storefront-badge" style={{ alignSelf: 'flex-start' }}>Keyboard-First UI</span>
+                </div>
+
+                <div className="storefront-event-card">
+                  <div>
+                    <div style={{ background: 'var(--accent-blue-dim)', width: '44px', height: '44px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+                      <Bot size={22} color="var(--accent-blue)" />
+                    </div>
+                    <h4 className="storefront-event-title">Personal AI Intelligence</h4>
+                    <p className="storefront-event-desc">
+                      Clean typography paired with a personal AI companion that understands your notes, budget, and habits in unison.
+                    </p>
+                  </div>
+                  <span className="storefront-badge" style={{ alignSelf: 'flex-start' }}>Contextual AI</span>
+                </div>
+              </div>
             </div>
           </section>
 
           {/* BOTTOM CTA CARD */}
-          <div className="glass-card scroll-swipe-up scroll-delay-3" style={{ padding: '50px 30px', textAlign: 'center', borderRadius: '24px', border: '1px solid var(--border-color)', marginBottom: '40px' }}>
-            <h3 style={{ fontSize: '2.2rem', fontWeight: 800, marginBottom: '14px', letterSpacing: '-1px' }}>
+          <div className="glass-card scroll-swipe-up scroll-delay-3" style={{ padding: '50px 30px', textAlign: 'left', borderRadius: '24px', border: '1px solid var(--border-color)', margin: '60px 0 40px' }}>
+            <h3 style={{ fontSize: '2.2rem', fontWeight: 800, marginBottom: '14px', letterSpacing: '-1px', color: 'var(--text-main)' }}>
               Ready to connect your life with your Personal AI Agent?
             </h3>
-            <p style={{ color: 'var(--text-muted)', marginBottom: '28px', fontSize: '1.1rem', maxWidth: '600px', margin: '0 auto 28px' }}>
-              Start organizing your habits, money, sleep, workouts, and calendar with intelligence today.
+            <p style={{ color: 'var(--text-muted)', marginBottom: '28px', fontSize: '1.1rem', maxWidth: '640px' }}>
+              Start organizing your habits, money, sleep, workouts, and calendar with unified intelligence today.
             </p>
-            <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '14px', justifyContent: 'flex-start', flexWrap: 'wrap' }}>
               <button 
                 className="blue-btn" 
                 style={{ fontSize: '1.1rem', padding: '16px 36px', borderRadius: '14px' }} 
@@ -2741,7 +2882,117 @@ export default function App() {
               >
                 Get Started Free <ArrowRight size={18} />
               </button>
+              <button 
+                className="secondary-btn" 
+                style={{ fontSize: '1.1rem', padding: '16px 30px', borderRadius: '14px' }} 
+                onClick={() => navigate('waitlist', '/waitlist')}
+              >
+                Join VIP Waitlist
+              </button>
             </div>
+          </div>
+        </main>
+      )}
+
+      {/* ABOUT PAGE (At /about) */}
+      {currentPage === 'about' && (
+        <main className="animate-entrance" style={{ maxWidth: '840px', margin: '40px auto 80px' }}>
+          <div className="glass-card" style={{ padding: '48px', border: '1px solid var(--border-color)', borderRadius: '24px' }}>
+            <div style={{ background: 'var(--accent-blue-dim)', width: '56px', height: '56px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px' }}>
+              <Sparkles size={28} color="var(--accent-blue)" />
+            </div>
+            <h1 style={{ fontSize: '2.8rem', fontWeight: 900, marginBottom: '12px', letterSpacing: '-0.02em', color: 'var(--text-main)' }}>
+              About LifeAgent
+            </h1>
+            <p style={{ fontSize: '1.2rem', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '36px' }}>
+              Building the personal AI operating system designed for human agency, high performance, and total life clarity.
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '28px', color: 'var(--text-main)', lineHeight: 1.7, fontSize: '1rem' }}>
+              <div>
+                <h3 style={{ fontSize: '1.3rem', fontWeight: 800, marginBottom: '8px', color: 'var(--accent-blue)' }}>Our Philosophy</h3>
+                <p style={{ color: 'var(--text-muted)' }}>
+                  Modern productivity tools force you to switch between ten different apps for habits, expenses, sleep tracking, workouts, notes, and calendars. LifeAgent unifies all these critical streams into a single high-contrast workspace powered by an intelligent personal AI assistant.
+                </p>
+              </div>
+
+              <div>
+                <h3 style={{ fontSize: '1.3rem', fontWeight: 800, marginBottom: '8px', color: 'var(--accent-blue)' }}>Core Principles</h3>
+                <ul style={{ color: 'var(--text-muted)', paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <li><strong>High-Legibility Design</strong>: Sharp, crisp text with minimal clutter and generous whitespace.</li>
+                  <li><strong>Privacy First</strong>: Encrypted local data storage and user-owned API access.</li>
+                  <li><strong>High-Velocity Speed</strong>: Zero latency, keyboard shortcuts (`⌘K`), and instant responsiveness.</li>
+                  <li><strong>Unified Intelligence</strong>: AI that sees the full picture across your biometrics, budget, and daily logs.</li>
+                </ul>
+              </div>
+
+              <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '28px', display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
+                <button className="blue-btn" style={{ padding: '12px 28px' }} onClick={() => { setAuthMode('signup'); navigate('auth', '/auth'); }}>
+                  Get Started Free <ArrowRight size={16} />
+                </button>
+                <button className="secondary-btn" style={{ padding: '12px 24px' }} onClick={() => navigate('contact', '/contact')}>
+                  Contact Creator
+                </button>
+              </div>
+            </div>
+          </div>
+        </main>
+      )}
+
+      {/* BLOG PAGE (At /blog) */}
+      {currentPage === 'blog' && (
+        <main className="animate-entrance" style={{ maxWidth: '960px', margin: '40px auto 80px' }}>
+          <div style={{ textAlign: 'left', marginBottom: '40px' }}>
+            <h1 style={{ fontSize: '2.8rem', fontWeight: 900, marginBottom: '12px', letterSpacing: '-0.02em', color: 'var(--text-main)' }}>
+              LifeAgent Engineering & Product Blog
+            </h1>
+            <p style={{ fontSize: '1.1rem', color: 'var(--text-muted)' }}>
+              Articles on personal AI agents, health telemetry, privacy-first software, and daily habit science.
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {[
+              {
+                title: "Why Personal AI Agents Are the Future of Daily Productivity",
+                date: "August 12, 2026",
+                readTime: "5 min read",
+                author: "Zenitsu_T7",
+                tag: "AI Architecture",
+                excerpt: "Single-purpose apps cause context fragmentation. Explore how unifying biometrics, finances, and notes under a singular AI model unlocks peak cognitive bandwidth."
+              },
+              {
+                title: "Building a Privacy-First SQLite Telemetry Engine for Web & Mobile",
+                date: "July 28, 2026",
+                readTime: "8 min read",
+                author: "Engineering Team",
+                tag: "Engineering",
+                excerpt: "How we achieved under 10ms local queries and zero-latency offline synchronization using SQLite and indexed web storage."
+              },
+              {
+                title: "Optimizing Sleep Stages, Workout Volume, and Daily Energy with AI",
+                date: "June 19, 2026",
+                readTime: "6 min read",
+                author: "Health Lab",
+                tag: "Biometrics",
+                excerpt: "Practical data insights on combining sleep recovery scores with progressive workout overload to prevent burnout and maximize performance."
+              }
+            ].map((post, idx) => (
+              <div key={idx} className="glass-card" style={{ padding: '32px', border: '1px solid var(--border-color)', borderRadius: '20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                  <span className="storefront-badge">{post.tag}</span>
+                  <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{post.date} • {post.readTime}</span>
+                </div>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '10px', color: 'var(--text-main)' }}>{post.title}</h2>
+                <p style={{ fontSize: '0.98rem', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '20px' }}>{post.excerpt}</p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)' }}>By {post.author}</span>
+                  <button className="secondary-btn" style={{ fontSize: '0.85rem', padding: '6px 16px' }} onClick={() => navigate('waitlist', '/waitlist')}>
+                    Read Full Article <ArrowRight size={14} />
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         </main>
       )}
@@ -2749,7 +3000,7 @@ export default function App() {
       {/* JOIN WAITLIST PAGE (At /waitlist) */}
       {currentPage === 'waitlist' && (
         <main className="animate-entrance" style={{ maxWidth: '520px', margin: '50px auto' }}>
-          <div className="glass-card" style={{ padding: '48px', position: 'relative', border: '2px solid var(--accent-blue)', textAlign: 'center' }}>
+          <div className="glass-card" style={{ padding: '48px', position: 'relative', border: '2px solid var(--accent-blue)', textAlign: 'center', borderRadius: '24px' }}>
             <div style={{ background: 'var(--accent-blue-dim)', width: '64px', height: '64px', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
               <Sparkles size={32} color="var(--accent-blue)" />
             </div>
@@ -2827,7 +3078,7 @@ export default function App() {
       {/* CONTACT US PAGE (At /contact) */}
       {currentPage === 'contact' && (
         <main className="animate-entrance" style={{ maxWidth: '700px', margin: '40px auto' }}>
-          <div className="glass-card" style={{ padding: '48px', textAlign: 'center' }}>
+          <div className="glass-card" style={{ padding: '48px', textAlign: 'center', borderRadius: '24px' }}>
             <div style={{ background: 'var(--accent-blue-dim)', width: '64px', height: '64px', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
               <Mail size={32} color="var(--accent-blue)" />
             </div>
@@ -2838,7 +3089,7 @@ export default function App() {
               LifeAgent is personal software built with passion. If anyone is interested, they can buy or reach out directly via X (formerly Twitter).
             </p>
 
-            <div className="glass-card" style={{ padding: '28px', background: 'var(--bg-main)', border: '1px solid var(--accent-blue)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
+            <div className="glass-card" style={{ padding: '28px', background: 'var(--bg-main)', border: '1px solid var(--accent-blue)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', textAlign: 'left' }}>
                 <div style={{ background: 'var(--accent-blue)', color: 'var(--accent-text)', width: '50px', height: '50px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '1.4rem' }}>
                   𝕏
@@ -2866,6 +3117,74 @@ export default function App() {
             </div>
           </div>
         </main>
+      )}
+
+      {/* STOREFRONT FOOTER (Only visible on non-dashboard pages) */}
+      {currentPage !== 'dashboard' && (
+        <footer className="storefront-footer container">
+          <div className="storefront-footer-grid">
+            {/* Column 1: Brand */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+                <div style={{ background: 'var(--accent-blue)', width: '32px', height: '32px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Sparkles size={18} color="var(--accent-text)" />
+                </div>
+                <span style={{ fontSize: '1.2rem', fontWeight: 900, letterSpacing: '-0.5px' }}>LIFE AGENT</span>
+              </div>
+              <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '18px', maxWidth: '320px' }}>
+                The Personal AI Agent for Your Entire Life. Engineered for speed, crisp typography, and privacy-first local telemetry.
+              </p>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem', color: '#10b981', background: 'rgba(16,185,129,0.1)', padding: '4px 12px', borderRadius: '20px', fontWeight: 600 }}>
+                🟢 All Systems Operational
+              </div>
+            </div>
+
+            {/* Column 2: Navigation */}
+            <div>
+              <h4 className="storefront-footer-col-title">Navigation</h4>
+              <div className="storefront-footer-links">
+                <button className="storefront-footer-link" onClick={() => navigate('about', '/about')}>About</button>
+                <button className="storefront-footer-link" onClick={() => navigate('blog', '/blog')}>Blog</button>
+                <button className="storefront-footer-link" onClick={() => navigate('waitlist', '/waitlist')}>Waitlist</button>
+                <button className="storefront-footer-link" onClick={() => navigate('contact', '/contact')}>Contact</button>
+                <button className="storefront-footer-link" onClick={() => { setAuthMode('login'); navigate('auth', '/auth'); }}>Sign In</button>
+              </div>
+            </div>
+
+            {/* Column 3: Capabilities */}
+            <div>
+              <h4 className="storefront-footer-col-title">Capabilities</h4>
+              <div className="storefront-footer-links">
+                <span className="storefront-footer-link" style={{ cursor: 'default' }}>Money Tracker</span>
+                <span className="storefront-footer-link" style={{ cursor: 'default' }}>Sleep Telemetry</span>
+                <span className="storefront-footer-link" style={{ cursor: 'default' }}>Daily Habits</span>
+                <span className="storefront-footer-link" style={{ cursor: 'default' }}>Gym & Workouts</span>
+                <span className="storefront-footer-link" style={{ cursor: 'default' }}>Personal AI Assistant</span>
+              </div>
+            </div>
+
+            {/* Column 4: Resources & Legal */}
+            <div>
+              <h4 className="storefront-footer-col-title">Connect & Legal</h4>
+              <div className="storefront-footer-links">
+                <a href="https://twitter.com/Zenitsu_T7" target="_blank" rel="noreferrer" className="storefront-footer-link">Creator X (@Zenitsu_T7)</a>
+                <button className="storefront-footer-link" onClick={() => navigate('contact', '/contact')}>Support & Licensing</button>
+                <button className="storefront-footer-link" onClick={() => navigate('waitlist', '/waitlist')}>VIP Early Access</button>
+                <span className="storefront-footer-link" style={{ cursor: 'default' }}>Privacy Policy</span>
+                <span className="storefront-footer-link" style={{ cursor: 'default' }}>Terms of Service</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="storefront-footer-bottom">
+            <div className="storefront-footer-copy">
+              © 2026 LifeAgent Inc. All rights reserved. Designed with clean typography and high contrast.
+            </div>
+            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+              Personal AI Agent v2.0
+            </div>
+          </div>
+        </footer>
       )}
 
       {/* AUTHENTICATION & PASSWORD RESET PAGE (At /auth) */}
