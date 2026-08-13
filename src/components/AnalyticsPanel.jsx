@@ -27,6 +27,10 @@ class ErrorBoundary extends React.Component {
   }
 }
 
+// Module-level in-memory cache for instant SWR tab loading
+const analyticsCache = new Map();
+let metricsLogsCache = null;
+
 export default function AnalyticsPanel(props) {
   return (
     <ErrorBoundary>
@@ -36,15 +40,17 @@ export default function AnalyticsPanel(props) {
 }
 
 function AnalyticsPanelInner({ token, showToast, currency = '$', timeRange = '7d', userProfile }) {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [range, setRange] = useState('7d');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
+
+  const currentKey = `${range}_${customStart}_${customEnd}`;
+  const [data, setData] = useState(() => analyticsCache.get('7d__') || analyticsCache.get(currentKey) || null);
+  const [loading, setLoading] = useState(!analyticsCache.get('7d__') && !analyticsCache.get(currentKey));
   const [retryCount, setRetryCount] = useState(0);
 
   const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'logs'
-  const [metrics, setMetrics] = useState([]);
+  const [metrics, setMetrics] = useState(() => metricsLogsCache || []);
   const [loadingMetrics, setLoadingMetrics] = useState(false);
 
   const handleRangeChange = (newRange) => {
@@ -64,12 +70,24 @@ function AnalyticsPanelInner({ token, showToast, currency = '$', timeRange = '7d
 
   useEffect(() => {
     let mounted = true;
+    const controller = new AbortController();
     
+    // If custom range selected without both dates populated, wait until set
+    if (range === 'custom' && (!customStart || !customEnd)) {
+      return;
+    }
+
+    const key = `${range}_${customStart}_${customEnd}`;
+    const cachedData = analyticsCache.get(key);
+    if (cachedData) {
+      setData(cachedData);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+
     const fetchAnalytics = async () => {
       try {
-        if (!data) {
-          setLoading(true);
-        }
         let query = getApiUrl(`/api/analytics?range=${range}&client_date=${todayKey(userProfile?.timezone)}`);
         if (range === 'custom' && customStart && customEnd) {
           query += `&start_date=${customStart}&end_date=${customEnd}`;
@@ -77,16 +95,18 @@ function AnalyticsPanelInner({ token, showToast, currency = '$', timeRange = '7d
         const res = await fetch(query, {
           headers: {
             'Authorization': `Bearer ${token}`
-          }
+          },
+          signal: controller.signal
         });
         
         if (res.ok) {
           const result = await res.json();
           if (mounted) {
+            analyticsCache.set(key, result);
             setData(result);
           }
         } else {
-          if (mounted && !data) {
+          if (mounted && !cachedData) {
             setData({
               range,
               habits: { total: 0, completedToday: 0, consistency: 0, totalStreaks: 0, bestStreak: 0, breakdown: [], categories: {} },
@@ -99,8 +119,9 @@ function AnalyticsPanelInner({ token, showToast, currency = '$', timeRange = '7d
           }
         }
       } catch (err) {
+        if (err.name === 'AbortError') return;
         console.error('Analytics fetch error:', err);
-        if (mounted && !data) {
+        if (mounted && !cachedData) {
           setData({
             range,
             habits: { total: 0, completedToday: 0, consistency: 0, totalStreaks: 0, bestStreak: 0, breakdown: [], categories: {} },
@@ -126,24 +147,36 @@ function AnalyticsPanelInner({ token, showToast, currency = '$', timeRange = '7d
     
     return () => {
       mounted = false;
+      controller.abort();
     };
   }, [token, range, customStart, customEnd, retryCount, userProfile?.timezone]);
 
   useEffect(() => {
     if (activeTab === 'logs' && token) {
-      setLoadingMetrics(true);
+      if (metricsLogsCache) {
+        setMetrics(metricsLogsCache);
+      } else {
+        setLoadingMetrics(true);
+      }
+      const controller = new AbortController();
       fetch(getApiUrl('/api/analytics?type=logs'), {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${token}` },
+        signal: controller.signal
       })
       .then(res => res.json())
       .then(data => {
-        setMetrics(data);
+        if (Array.isArray(data)) {
+          metricsLogsCache = data;
+          setMetrics(data);
+        }
         setLoadingMetrics(false);
       })
       .catch(err => {
-        console.error(err);
+        if (err.name !== 'AbortError') console.error(err);
         setLoadingMetrics(false);
       });
+
+      return () => controller.abort();
     }
   }, [activeTab, token]);
 

@@ -760,80 +760,103 @@ export default function App() {
       const timezone = userProfile?.timezone || localTimeZone();
       const clientDate = todayKey(timezone);
 
-      const [settingsRes, todayRes, habitsRes, statsRes, calendarRes] = await Promise.all([
-        fetch(getApiUrl('/api/settings'), { headers }).catch(e => null),
-        fetch(getApiUrl(`/api/today?client_date=${clientDate}`), { headers }).catch(e => null),
-        fetch(getApiUrl('/api/habits'), { headers }).catch(e => null),
-        fetch(getApiUrl('/api/fitness?type=body-stats'), { headers }).catch(e => null),
-        fetch(getApiUrl('/api/calendar'), { headers }).catch(e => null)
-      ]);
+      const bootRes = await fetch(getApiUrl(`/api/bootstrap?client_date=${clientDate}`), { headers }).catch(e => null);
 
-      if (settingsRes && settingsRes.ok) {
-        const sData = await settingsRes.json();
-        if (sData) {
-          const userTz = sData.timezone && sData.timezone !== 'UTC' ? sData.timezone : timezone;
-          setUserProfile(prev => {
-            const next = { ...prev, ...sData, currency: sData.currency || '$', timezone: userTz };
-            safeStorage.setItem('cache_userProfile', JSON.stringify(next));
-            return next;
-          });
-          setGeminiApiKey(sData.gemini_api_key || '');
-          setGroqApiKey(sData.groq_api_key || '');
-          setAiProvider(sData.ai_provider || 'gemini');
-          if (sData.ai_name) setAiName(sData.ai_name);
+      if (bootRes && bootRes.ok) {
+        const data = await bootRes.json();
+        if (data) {
+          // 1. User Settings
+          if (data.settings) {
+            const sData = data.settings;
+            const userTz = sData.timezone && sData.timezone !== 'UTC' ? sData.timezone : timezone;
+            setUserProfile(prev => {
+              const next = { ...prev, ...sData, currency: sData.currency || '$', timezone: userTz };
+              safeStorage.setItem('cache_userProfile', JSON.stringify(next));
+              return next;
+            });
+            setGeminiApiKey(sData.gemini_api_key || '');
+            setGroqApiKey(sData.groq_api_key || '');
+            setAiProvider(sData.ai_provider || 'gemini');
+            if (sData.ai_name) setAiName(sData.ai_name);
+          }
+
+          // 2. Today Checklist
+          const todayData = data.todayItems || [];
+          const mappedToday = todayData.map(t => ({ id: t.id, time: t.time, title: t.label, category: t.category, checked: !!t.checked, habitId: t.habit_id || null }));
+          setTodayItems(mappedToday);
+          safeStorage.setItem('cache_todayItems', JSON.stringify(mappedToday));
+
+          // 3. Habits
+          const hData = data.habits || [];
+          const mappedHabits = hData.map(h => ({
+            id: h.id, title: h.label, category: h.category, streak: h.streak, target: h.target || '',
+            challengeDays: h.challenge_days || 0, startDate: h.start_date || null,
+            archived: h.archived === 1, completedAt: h.completed_at || null,
+            checkedToday: todayData.some(item => item.habit_id === h.id && !!item.checked),
+            pausedUntil: h.paused_until || null,
+            frequency: h.frequency || 'daily',
+            customDays: h.custom_days || '',
+            custom_days: h.custom_days || '',
+            intervalDays: h.interval_days || 0,
+            interval_days: h.interval_days || 0,
+            reminders: parseReminders(h.reminders)
+          }));
+          setHabits(mappedHabits);
+          safeStorage.setItem('cache_habits', JSON.stringify(mappedHabits));
+
+          // 4. Body Stats
+          if (data.bodyStats) {
+            setBodyStats(data.bodyStats);
+            safeStorage.setItem('cache_bodyStats', JSON.stringify(data.bodyStats));
+          }
+
+          // 5. Calendar Events
+          const calData = data.calendarEvents || [];
+          const mappedCal = calData.map(c => ({
+            id: c.id,
+            title: c.title,
+            date: c.date,
+            time: c.time || '',
+            reminders: parseReminders(c.reminders),
+            color: c.color,
+            status: c.status,
+            endDate: c.end_date
+          }));
+          setCalendarEvents(mappedCal);
+          safeStorage.setItem('cache_calendarEvents', JSON.stringify(mappedCal));
+
+          // 6. Workouts
+          if (Array.isArray(data.workouts)) {
+            setWorkouts(data.workouts);
+            safeStorage.setItem('cache_workouts', JSON.stringify(data.workouts));
+          }
+
+          // 7. Transactions
+          if (Array.isArray(data.transactions)) {
+            const mappedTx = data.transactions.map(t => ({ id: t.id, title: t.title, amount: t.amount, type: t.type, date: t.date, category: t.category, notes: t.notes }));
+            setTransactions(mappedTx);
+            safeStorage.setItem('cache_transactions', JSON.stringify(mappedTx));
+          }
+
+          // 8. Notes
+          if (Array.isArray(data.notes)) {
+            let activeNotes = data.notes.filter(n => !n.is_trashed).map(n => ({ id: n.id, title: n.title, content: n.content, category: n.category, date: n.date, shareWithAi: !!n.share_with_ai }));
+            const trashedNotes = data.notes.filter(n => !!n.is_trashed).map(n => ({ id: n.id, title: n.title, content: n.content, category: n.category, date: n.date, shareWithAi: !!n.share_with_ai, deletedAt: n.deleted_at ? new Date(n.deleted_at).getTime() : Date.now() }));
+            setTrashNotes(trashedNotes);
+            safeStorage.setItem('cache_trashNotes', JSON.stringify(trashedNotes));
+            setNotesList(activeNotes);
+            safeStorage.setItem('cache_notesList', JSON.stringify(activeNotes));
+          }
+
+          // 9. Sleep Logs
+          if (Array.isArray(data.sleepLogs)) {
+            setSleepLogs(data.sleepLogs);
+            safeStorage.setItem('cache_sleepLogs', JSON.stringify(data.sleepLogs));
+          }
+
+          loadedTabsRef.current = { startup: true, body: true, finance: true, notes: true, sleep: true, calendar: true };
         }
       }
-
-      let todayData = [];
-      if (todayRes && todayRes.ok) {
-        todayData = await todayRes.json();
-        const mappedToday = todayData.map(t => ({ id: t.id, time: t.time, title: t.label, category: t.category, checked: !!t.checked, habitId: t.habit_id || null }));
-        setTodayItems(mappedToday);
-        safeStorage.setItem('cache_todayItems', JSON.stringify(mappedToday));
-      }
-
-      if (habitsRes && habitsRes.ok) {
-        const hData = await habitsRes.json();
-        const mappedHabits = hData.map(h => ({
-          id: h.id, title: h.label, category: h.category, streak: h.streak, target: h.target || '',
-          challengeDays: h.challenge_days || 0, startDate: h.start_date || null,
-          archived: h.archived === 1, completedAt: h.completed_at || null,
-          checkedToday: todayData.some(item => item.habit_id === h.id && !!item.checked),
-          pausedUntil: h.paused_until || null,
-          frequency: h.frequency || 'daily',
-          customDays: h.custom_days || '',
-          custom_days: h.custom_days || '',
-          intervalDays: h.interval_days || 0,
-          interval_days: h.interval_days || 0,
-          reminders: parseReminders(h.reminders)
-        }));
-        setHabits(mappedHabits);
-        safeStorage.setItem('cache_habits', JSON.stringify(mappedHabits));
-      }
-
-      if (statsRes && statsRes.ok) {
-        const sData = await statsRes.json();
-        setBodyStats(sData);
-        safeStorage.setItem('cache_bodyStats', JSON.stringify(sData));
-      }
-
-      if (calendarRes && calendarRes.ok) {
-        const calData = await calendarRes.json();
-        const mappedCal = calData.map(c => ({
-          id: c.id,
-          title: c.title,
-          date: c.date,
-          time: c.time || '',
-          reminders: parseReminders(c.reminders),
-          color: c.color,
-          status: c.status,
-          endDate: c.end_date
-        }));
-        setCalendarEvents(mappedCal);
-        safeStorage.setItem('cache_calendarEvents', JSON.stringify(mappedCal));
-      }
-
-      loadedTabsRef.current.startup = true;
     } catch (err) {
       console.error('Failed to fetch startup data:', err);
       if (err?.status === 401 || err?.message?.includes('401')) {
@@ -3238,20 +3261,6 @@ export default function App() {
               >
                 <Settings size={18} /> Settings & Profile
               </button>
-              <button
-                onClick={handleLogout}
-                style={{
-                  width: '100%',
-                  display: 'flex', alignItems: 'center', gap: '12px',
-                  padding: '10px 16px', borderRadius: '12px', border: 'none',
-                  background: 'rgba(239, 68, 68, 0.08)',
-                  color: '#ef4444',
-                  fontWeight: 700, cursor: 'pointer',
-                  fontSize: '0.9rem', transition: 'all 0.2s', textAlign: 'left'
-                }}
-              >
-                <LogOut size={18} /> Sign Out
-              </button>
             </div>
           </aside>
 
@@ -3317,14 +3326,6 @@ export default function App() {
                       {themeMode === 'pc' && <Monitor size={16} />}
                       {themeMode === 'night' && <Zap size={16} />}
                       <ChevronDown size={14} style={{ transform: isThemeMenuOpen ? 'rotate(180deg)' : 'none', transition: '0.2s' }} />
-                    </button>
-
-                    <button 
-                      onClick={handleLogout}
-                      style={{ padding: '8px 14px', borderRadius: '30px', background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
-                      title="Sign Out"
-                    >
-                      <LogOut size={15} /> Sign Out
                     </button>
 
                     {isThemeMenuOpen && (() => {

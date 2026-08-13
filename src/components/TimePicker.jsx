@@ -343,7 +343,7 @@ export default function TimePicker({ isOpen, onClose, onSave, initialTime = '08:
                     setH(String(val).padStart(2, '0'));
                   }}
                   style={{
-                    width: '70px',
+                    width: '84px',
                     height: '56px',
                     textAlign: 'center',
                     fontSize: '1.8rem',
@@ -351,7 +351,10 @@ export default function TimePicker({ isOpen, onClose, onSave, initialTime = '08:
                     borderRadius: '12px',
                     border: '1px solid var(--border-color)',
                     background: 'var(--bg-card)',
-                    color: 'var(--text-main)'
+                    color: 'var(--text-main)',
+                    padding: '0 4px',
+                    boxSizing: 'border-box',
+                    MozAppearance: 'textfield'
                   }}
                 />
               </div>
@@ -372,7 +375,7 @@ export default function TimePicker({ isOpen, onClose, onSave, initialTime = '08:
                     setM(String(val).padStart(2, '0'));
                   }}
                   style={{
-                    width: '70px',
+                    width: '84px',
                     height: '56px',
                     textAlign: 'center',
                     fontSize: '1.8rem',
@@ -380,7 +383,10 @@ export default function TimePicker({ isOpen, onClose, onSave, initialTime = '08:
                     borderRadius: '12px',
                     border: '1px solid var(--border-color)',
                     background: 'var(--bg-card)',
-                    color: 'var(--text-main)'
+                    color: 'var(--text-main)',
+                    padding: '0 4px',
+                    boxSizing: 'border-box',
+                    MozAppearance: 'textfield'
                   }}
                 />
               </div>

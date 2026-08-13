@@ -253,17 +253,17 @@ export default function MoneyTracker({ transactions = [], setTransactions, token
     <div className="money-tracker-grid" style={{ alignItems: 'flex-start' }}>
       <div style={{ maxHeight: 'calc(100vh - 220px)', overflowY: 'auto', paddingRight: '8px' }} className="hide-scrollbar">
         <div className="money-summary-cards">
-          <div style={{ flex: 1, padding: '20px', background: 'var(--bg-main)', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
-            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '8px' }}>Total Earned</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--accent-blue)' }}>{currency}{totalEarned.toFixed(2)}</div>
+          <div style={{ flex: '1 1 120px', minWidth: '110px', padding: '16px 18px', background: 'var(--bg-main)', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '6px', whiteSpace: 'nowrap' }}>Total Earned</div>
+            <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--accent-blue)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currency}{totalEarned.toFixed(2)}</div>
           </div>
-          <div style={{ flex: 1, padding: '20px', background: 'var(--bg-main)', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
-            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '8px' }}>Total Spent</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)' }}>{currency}{totalSpent.toFixed(2)}</div>
+          <div style={{ flex: '1 1 120px', minWidth: '110px', padding: '16px 18px', background: 'var(--bg-main)', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '6px', whiteSpace: 'nowrap' }}>Total Spent</div>
+            <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currency}{totalSpent.toFixed(2)}</div>
           </div>
-          <div style={{ flex: 1, padding: '20px', background: 'var(--bg-main)', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
-            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '8px' }}>Net Balance</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: netBalance >= 0 ? '#22c55e' : '#ef4444' }}>{currency}{netBalance.toFixed(2)}</div>
+          <div style={{ flex: '1 1 120px', minWidth: '110px', padding: '16px 18px', background: 'var(--bg-main)', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '6px', whiteSpace: 'nowrap' }}>Net Balance</div>
+            <div style={{ fontSize: '1.3rem', fontWeight: 800, color: netBalance >= 0 ? '#22c55e' : '#ef4444', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currency}{netBalance.toFixed(2)}</div>
           </div>
         </div>
 
