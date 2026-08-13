@@ -15,6 +15,20 @@ export default async function handler(req, res) {
   const { action } = req.query;
   const body = req.body || {};
 
+  // Waitlist submission handler
+  if (req.method === 'POST' && (action === 'waitlist' || body.action === 'waitlist')) {
+    try {
+      const { name, email } = body;
+      if (!email) return res.status(400).json({ error: 'Email is required' });
+      const existing = await db.execute({ sql: 'SELECT id FROM waitlist WHERE email = ?', args: [email] });
+      if (existing.rows.length > 0) return res.status(200).json({ success: true, message: 'Already on the waitlist!' });
+      await db.execute({ sql: 'INSERT INTO waitlist (name, email) VALUES (?, ?)', args: [name || '', email] });
+      return res.status(201).json({ success: true, message: 'Added to waitlist!' });
+    } catch (err) {
+      return res.status(500).json({ error: 'Failed to join waitlist' });
+    }
+  }
+
   // GET /api/auth?action=me -> Session validation
   if (req.method === 'GET' && action === 'me') {
     const userId = getUserId(req);

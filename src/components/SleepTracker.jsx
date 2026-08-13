@@ -119,7 +119,7 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
 
   const fetchLogs = async () => {
     try {
-      const res = await fetch(getApiUrl('/api/sleep'), {
+      const res = await fetch(getApiUrl('/api/fitness?type=sleep'), {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -145,7 +145,7 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
 
       if (editingLogId) {
         payload.id = editingLogId;
-        const res = await fetch(getApiUrl('/api/sleep'), {
+        const res = await fetch(getApiUrl('/api/fitness?type=sleep'), {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -176,7 +176,7 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
           showToast?.('Failed to update log', 'error');
         }
       } else {
-        const res = await fetch(getApiUrl('/api/sleep'), {
+        const res = await fetch(getApiUrl('/api/fitness?type=sleep'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -220,7 +220,7 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
     const id = deleteConfirmId;
     setDeleteConfirmId(null);
     try {
-      const res = await fetch(getApiUrl('/api/sleep'), {
+      const res = await fetch(getApiUrl('/api/fitness?type=sleep'), {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

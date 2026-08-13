@@ -940,7 +940,7 @@ export default function App() {
     if (!force && loadedTabsRef.current.sleep) return;
     try {
       const headers = { 'Authorization': `Bearer ${token}` };
-      const sleepRes = await fetch(getApiUrl('/api/sleep'), { headers }).catch(e => null);
+      const sleepRes = await fetch(getApiUrl('/api/fitness?type=sleep'), { headers }).catch(e => null);
       if (sleepRes && sleepRes.ok) {
         const sLogs = await sleepRes.json();
         setSleepLogs(sLogs);
@@ -1583,7 +1583,7 @@ export default function App() {
     if (!waitlistEmail.trim() || !waitlistName.trim()) return;
     
     try {
-      const response = await fetch(getApiUrl('/api/waitlist'), {
+      const response = await fetch(getApiUrl('/api/auth?action=waitlist'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: waitlistName, email: waitlistEmail })
@@ -1938,7 +1938,7 @@ export default function App() {
         for (const match of sleepMatches) {
           try {
             const data = JSON.parse(match[1]);
-            await fetch(getApiUrl('/api/sleep'), {
+            await fetch(getApiUrl('/api/fitness?type=sleep'), {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
               body: JSON.stringify({
