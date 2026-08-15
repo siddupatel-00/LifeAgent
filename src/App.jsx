@@ -549,6 +549,14 @@ export default function App() {
   const [aiName, setAiName] = useState('AI');
   const mainAiChatScrollRef = useRef(null);
   const sideAiChatScrollRef = useRef(null);
+  const mainContentScrollRef = useRef(null);
+
+  // Auto-scroll main workspace container to top on tab switch so every tab starts cleanly and scrolls smoothly
+  useEffect(() => {
+    if (mainContentScrollRef.current) {
+      mainContentScrollRef.current.scrollTop = 0;
+    }
+  }, [activeTab]);
 
   // Toast notification state and helper
   const [toast, setToast] = useState({ message: '', type: '', visible: false, isHiding: false });
@@ -3584,9 +3592,27 @@ export default function App() {
           </aside>
 
           {/* MAIN RIGHT AREA (MeraBaazar layout without Verified Pro, Live, or top Log Out) */}
-          <section className={`main-layout-section ${activeTab === 'ai' ? 'ai-tab-active' : ''}`} style={{ flex: 1, height: '100vh', overflowY: activeTab === 'ai' ? 'hidden' : 'auto' }}>
-            <PullToRefresh onRefresh={() => fetchStartupData(true)} pullingContent="" refreshingContent={<div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)' }}>Refreshing...</div>} disabled={activeTab === 'ai'}>
-              <div style={{ padding: '24px 16px', minHeight: '100vh' }}>
+          <section 
+            ref={mainContentScrollRef}
+            className={`main-layout-section ${activeTab === 'ai' ? 'ai-tab-active' : ''}`} 
+            style={{ 
+              flex: 1, 
+              height: '100vh', 
+              maxHeight: '100vh',
+              overflowY: activeTab === 'ai' ? 'hidden' : 'auto',
+              overflowX: 'hidden',
+              overscrollBehaviorY: 'contain',
+              WebkitOverflowScrolling: 'touch',
+              position: 'relative'
+            }}
+          >
+            <PullToRefresh 
+              onRefresh={() => fetchStartupData(true)} 
+              pullingContent="" 
+              refreshingContent={<div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)' }}>Refreshing...</div>} 
+              disabled={activeTab === 'ai' || (typeof window !== 'undefined' && !('ontouchstart' in window) && navigator.maxTouchPoints <= 0)}
+            >
+              <div style={{ padding: '24px 16px', minHeight: '100%' }}>
             
             <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px', position: 'relative', zIndex: 10000 }}>
               <div>

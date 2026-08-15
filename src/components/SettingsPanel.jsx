@@ -186,7 +186,7 @@ const SettingsPanel = ({
           }
         }
       `}</style>
-    <div style={{ width: '100%', minHeight: '100%', overflowY: 'auto', paddingBottom: '100px', WebkitOverflowScrolling: 'touch' }}>
+    <div style={{ width: '100%', paddingBottom: '100px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '28px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
         <div>
           <h3 style={{ fontSize: '1.5rem', fontWeight: 800 }}>General Settings & Preferences</h3>
