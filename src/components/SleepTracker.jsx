@@ -254,20 +254,32 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
     }
   };
 
-  // Compute graph data & metrics according to selected date range filter
+  // Compute graph data & metrics according to selected date range filter (aggregates multiple sessions per day)
   const getFilteredChartData = () => {
     const today = new Date();
     let startDate, endDate;
 
     if (rangeMode === 'today') {
       const todayStr = todayKey(userProfile?.timezone);
-      const log = logs.find(l => l.date === todayStr);
+      const dayLogs = logs.filter(l => l.date === todayStr);
+      const totalMins = dayLogs.reduce((sum, l) => sum + ((l.hours || 0) * 60 + (l.minutes || 0)), 0);
+      const hours = Math.floor(totalMins / 60);
+      const minutes = totalMins % 60;
+      let quality = null;
+      if (dayLogs.length > 0) {
+        const totalHrs = hours + (minutes / 60);
+        if (totalHrs >= 8) quality = 'Excellent';
+        else if (totalHrs >= 7) quality = 'Good';
+        else if (totalHrs >= 5.5) quality = 'Fair';
+        else quality = 'Poor';
+      }
       return [{
         date: todayStr,
-        hours: log ? (log.hours || 0) : 0,
-        minutes: log ? (log.minutes || 0) : 0,
-        quality: log ? log.quality : null,
-        log: log || null
+        hours,
+        minutes,
+        quality,
+        sessionCount: dayLogs.length,
+        logs: dayLogs
       }];
     } else if (rangeMode === '7d') {
       endDate = new Date(today);
@@ -295,13 +307,25 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
     let daysCount = 0;
     while (curr <= endDate && daysCount < 90) {
       const dateStr = `${curr.getFullYear()}-${String(curr.getMonth()+1).padStart(2,'0')}-${String(curr.getDate()).padStart(2,'0')}`;
-      const log = logs.find(l => l.date === dateStr);
+      const dayLogs = logs.filter(l => l.date === dateStr);
+      const totalMins = dayLogs.reduce((sum, l) => sum + ((l.hours || 0) * 60 + (l.minutes || 0)), 0);
+      const hours = Math.floor(totalMins / 60);
+      const minutes = totalMins % 60;
+      let quality = null;
+      if (dayLogs.length > 0) {
+        const totalHrs = hours + (minutes / 60);
+        if (totalHrs >= 8) quality = 'Excellent';
+        else if (totalHrs >= 7) quality = 'Good';
+        else if (totalHrs >= 5.5) quality = 'Fair';
+        else quality = 'Poor';
+      }
       data.push({
         date: dateStr,
-        hours: log ? (log.hours || 0) : 0,
-        minutes: log ? (log.minutes || 0) : 0,
-        quality: log ? log.quality : null,
-        log: log || null
+        hours,
+        minutes,
+        quality,
+        sessionCount: dayLogs.length,
+        logs: dayLogs
       });
       curr.setDate(curr.getDate() + 1);
       daysCount++;
@@ -590,7 +614,22 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
 
       {/* SLEEP LOGS HISTORY TABLE */}
       <div style={{ background: 'var(--bg-card)', padding: '24px', borderRadius: '18px', border: '1px solid var(--border-color)' }}>
-        <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '16px' }}>Sleep History Logs</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+          <div>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0 }}>Sleep History Logs</h3>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+              Log multiple sleep sessions (night sleep, afternoon naps, or polyphasic sleep) per day.
+            </p>
+          </div>
+          <button 
+            onClick={handleOpenAddModal}
+            className="blue-btn"
+            style={{ padding: '8px 16px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '10px' }}
+          >
+            <Plus size={16} /> + Add Sleep Entry / Nap
+          </button>
+        </div>
+
         {(() => {
           const todayDateKey = todayKey(userProfile?.timezone);
           let displayedLogs = logs;
@@ -624,10 +663,10 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
             return (
               <div className="glass-card" style={{ textAlign: 'center', padding: '36px 20px', background: 'var(--bg-main)', borderRadius: '18px', border: '1px dashed var(--border-color)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
                 <Moon size={40} style={{ color: 'var(--accent-blue)', opacity: 0.5 }} />
-                <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>No items logged yet</div>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>No items logged yet. Click + to add your first entry</p>
+                <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>No sleep entries logged yet</div>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>Log your night sleep or nap to start tracking your daily recovery.</p>
                 <button
-                  onClick={() => { setEditingLogId(null); setLogDate(todayKey(userProfile?.timezone)); setBedTime('23:00'); setWakeTime('07:00'); setSleepQuality(4); setSleepNotes(''); setShowModal(true); }}
+                  onClick={handleOpenAddModal}
                   className="blue-btn"
                   style={{ marginTop: '8px', padding: '8px 18px', fontSize: '0.85rem', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                 >
@@ -637,48 +676,60 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
             );
           }
 
+          // Count logs per date to badge multiple sessions
+          const dateLogCounts = {};
+          displayedLogs.forEach(l => {
+            dateLogCounts[l.date] = (dateLogCounts[l.date] || 0) + 1;
+          });
+
           return (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {[...displayedLogs].sort((a, b) => new Date(b.date) - new Date(a.date)).map(log => (
-                <div key={log.id} style={{
-                  background: 'var(--bg-main)', padding: '16px 20px', borderRadius: '14px',
-                  border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px'
-                }}>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
-                      <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>
-                        {new Date(log.date).toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
-                      </span>
-                      <span style={{
-                        fontSize: '0.75rem', padding: '3px 10px', borderRadius: '12px', fontWeight: 700, 
-                        color: (log.quality === 'Good' || !log.quality) ? 'var(--accent-text, #ffffff)' : '#ffffff',
-                        background: getQualityColor(log.quality)
-                      }}>
-                        {log.quality}
-                      </span>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <Moon size={14} color="var(--accent-blue)" />
-                        <span style={{ fontWeight: 800, color: 'var(--accent-blue)' }}>{log.hours || 0} hrs {log.minutes || 0} mins slept</span>
+              {[...displayedLogs].sort((a, b) => new Date(b.date) - new Date(a.date) || b.id - a.id).map(log => {
+                const isMultiSession = dateLogCounts[log.date] > 1;
+                return (
+                  <div key={log.id} style={{
+                    background: 'var(--bg-main)', padding: '16px 20px', borderRadius: '14px',
+                    border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px'
+                  }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                        <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>
+                          {new Date(log.date).toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
+                        {isMultiSession && (
+                          <span style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: '10px', fontWeight: 700, background: 'rgba(59, 130, 246, 0.15)', color: 'var(--accent-blue)', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
+                            Split Session / Nap
+                          </span>
+                        )}
+                        <span style={{
+                          fontSize: '0.75rem', padding: '3px 10px', borderRadius: '12px', fontWeight: 700, 
+                          color: (log.quality === 'Good' || !log.quality) ? 'var(--accent-text, #ffffff)' : '#ffffff',
+                          background: getQualityColor(log.quality)
+                        }}>
+                          {log.quality}
+                        </span>
                       </div>
-                      {log.sleep_time && log.wake_time && (
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600, flexWrap: 'wrap' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <Clock size={14} />
-                          <span>({log.sleep_time} to {log.wake_time})</span>
+                          <Moon size={14} color="var(--accent-blue)" />
+                          <span style={{ fontWeight: 800, color: 'var(--accent-blue)' }}>{log.hours || 0} hrs {log.minutes || 0} mins slept</span>
+                        </div>
+                        {log.sleep_time && log.wake_time && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Clock size={14} />
+                            <span>({log.sleep_time} to {log.wake_time})</span>
+                          </div>
+                        )}
+                      </div>
+                      {log.notes && (
+                        <div style={{ marginTop: '6px', fontSize: '0.83rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                          &quot;{log.notes}&quot;
                         </div>
                       )}
                     </div>
-                    {log.notes && (
-                      <div style={{ marginTop: '6px', fontSize: '0.83rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                        &quot;{log.notes}&quot;
-                      </div>
-                    )}
-                  </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    {log.date === todayDateKey && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <button 
                         onClick={() => handleEditLog(log)}
                         style={{
@@ -689,20 +740,20 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
                       >
                         <Edit2 size={18} />
                       </button>
-                    )}
-                    <button 
-                      onClick={() => setDeleteConfirmId(log.id)}
-                      style={{
-                        background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer',
-                        padding: '6px', borderRadius: '8px', transition: 'all 0.2s'
-                      }}
-                      title="Delete log"
-                    >
-                      <Trash2 size={18} />
-                    </button>
+                      <button 
+                        onClick={() => setDeleteConfirmId(log.id)}
+                        style={{
+                          background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer',
+                          padding: '6px', borderRadius: '8px', transition: 'all 0.2s'
+                        }}
+                        title="Delete log"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           );
         })()}
