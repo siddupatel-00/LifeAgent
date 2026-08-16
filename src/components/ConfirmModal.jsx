@@ -75,55 +75,50 @@ export default function ConfirmModal({
         style={{
           background: 'var(--bg-card)',
           border: '1px solid var(--border-color)',
-          borderRadius: '24px',
-          padding: '28px',
+          borderRadius: 'var(--radius-md)',
+          padding: '24px',
           width: '90%',
           maxWidth: '400px',
-          boxShadow: '0 25px 60px rgba(0,0,0,0.4)',
+          boxShadow: 'var(--shadow-lg)',
           margin: 'auto'
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{
-              width: '38px',
-              height: '38px',
-              borderRadius: '12px',
-              background: type === 'danger' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+              width: '32px',
+              height: '32px',
+              borderRadius: 'var(--radius-sm)',
+              background: type === 'danger' ? 'rgba(239, 111, 62, 0.15)' : 'var(--accent-blue-dim)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: type === 'danger' ? '#ef4444' : '#f59e0b',
+              color: type === 'danger' ? 'var(--orange)' : 'var(--text-main)',
               flexShrink: 0
             }}>
-              <AlertTriangle size={20} />
+              <AlertTriangle size={16} />
             </div>
-            <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)' }}>{title}</h3>
+            <h3 style={{ margin: 0, fontFamily: 'var(--font-serif)', fontSize: '1.2rem', fontWeight: 500, color: 'var(--text-main)' }}>{title}</h3>
           </div>
           <button 
             onClick={onCancel}
             style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
 
-        <p style={{ margin: '0 0 24px 0', fontSize: '0.92rem', color: 'var(--text-muted)', lineHeight: '1.5' }}>
+        <p style={{ margin: '0 0 20px 0', fontSize: '0.88rem', color: 'var(--text-muted)', lineHeight: '1.5' }}>
           {message}
         </p>
 
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
           <button
             onClick={onCancel}
+            className="secondary-btn"
             style={{
-              padding: '10px 18px',
-              borderRadius: '12px',
-              border: '1px solid var(--border-color)',
-              background: 'var(--bg-main)',
-              color: 'var(--text-main)',
-              fontWeight: 600,
-              cursor: 'pointer',
-              fontSize: '0.9rem',
+              padding: '8px 16px',
+              fontSize: '0.85rem'
             }}
           >
             {cancelText}
@@ -131,15 +126,14 @@ export default function ConfirmModal({
           <button
             onClick={onConfirm}
             style={{
-              padding: '10px 18px',
-              borderRadius: '12px',
+              padding: '8px 16px',
+              borderRadius: 'var(--radius-sm)',
               border: 'none',
-              background: type === 'danger' ? '#ef4444' : 'var(--accent-blue)',
-              color: '#ffffff',
-              fontWeight: 700,
+              background: type === 'danger' ? 'var(--orange)' : 'var(--accent-blue)',
+              color: type === 'danger' ? '#ffffff' : 'var(--accent-text)',
+              font: "600 0.85rem 'DM Sans', sans-serif",
               cursor: 'pointer',
-              fontSize: '0.9rem',
-              boxShadow: type === 'danger' ? '0 4px 12px rgba(239, 68, 68, 0.3)' : '0 4px 12px rgba(59, 130, 246, 0.3)',
+              transition: 'all 0.15s ease'
             }}
           >
             {confirmText}

@@ -250,25 +250,43 @@ export default function MoneyTracker({ transactions = [], setTransactions, token
   };
 
   return (
-    <div className="money-tracker-grid" style={{ alignItems: 'flex-start' }}>
+    <div className="money-tracker-grid" style={{ alignItems: 'flex-start', fontFamily: "'DM Sans', sans-serif" }}>
       <div style={{ maxHeight: 'calc(100vh - 220px)', overflowY: 'auto', paddingRight: '8px' }} className="hide-scrollbar">
-        <div className="money-summary-cards">
-          <div style={{ flex: '1 1 120px', minWidth: '110px', padding: '16px 18px', background: 'var(--bg-main)', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '6px', whiteSpace: 'nowrap' }}>Total Earned</div>
-            <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--accent-blue)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currency}{totalEarned.toFixed(2)}</div>
+        {/* Cashflow summary cards */}
+        <div className="money-summary-cards" style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
+          <div style={{ flex: '1 1 120px', minWidth: '120px', padding: '16px 18px', background: 'var(--bg-card)', borderRadius: '6px', border: '1px solid var(--border-color)', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#d8f277' }} />
+            <div style={{ font: "500 0.68rem 'DM Mono', monospace", color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '8px', whiteSpace: 'nowrap' }}>
+              Total Earned
+            </div>
+            <div style={{ font: "700 1.4rem 'DM Mono', monospace", color: '#d8f277', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', letterSpacing: '-0.02em' }}>
+              {currency}{totalEarned.toFixed(2)}
+            </div>
           </div>
-          <div style={{ flex: '1 1 120px', minWidth: '110px', padding: '16px 18px', background: 'var(--bg-main)', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '6px', whiteSpace: 'nowrap' }}>Total Spent</div>
-            <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currency}{totalSpent.toFixed(2)}</div>
+
+          <div style={{ flex: '1 1 120px', minWidth: '120px', padding: '16px 18px', background: 'var(--bg-card)', borderRadius: '6px', border: '1px solid var(--border-color)', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#ef6f3e' }} />
+            <div style={{ font: "500 0.68rem 'DM Mono', monospace", color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '8px', whiteSpace: 'nowrap' }}>
+              Total Spent
+            </div>
+            <div style={{ font: "700 1.4rem 'DM Mono', monospace", color: '#ef6f3e', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', letterSpacing: '-0.02em' }}>
+              {currency}{totalSpent.toFixed(2)}
+            </div>
           </div>
-          <div style={{ flex: '1 1 120px', minWidth: '110px', padding: '16px 18px', background: 'var(--bg-main)', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '6px', whiteSpace: 'nowrap' }}>Net Balance</div>
-            <div style={{ fontSize: '1.3rem', fontWeight: 800, color: netBalance >= 0 ? '#22c55e' : '#ef4444', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currency}{netBalance.toFixed(2)}</div>
+
+          <div style={{ flex: '1 1 120px', minWidth: '120px', padding: '16px 18px', background: 'var(--bg-card)', borderRadius: '6px', border: `1px solid ${netBalance >= 0 ? 'rgba(216, 242, 119, 0.3)' : 'rgba(239, 111, 62, 0.3)'}`, position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: netBalance >= 0 ? '#d8f277' : '#ef6f3e' }} />
+            <div style={{ font: "500 0.68rem 'DM Mono', monospace", color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '8px', whiteSpace: 'nowrap' }}>
+              Net Balance
+            </div>
+            <div style={{ font: "700 1.4rem 'DM Mono', monospace", color: netBalance >= 0 ? '#d8f277' : '#ef6f3e', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', letterSpacing: '-0.02em' }}>
+              {netBalance >= 0 ? '+' : ''}{currency}{netBalance.toFixed(2)}
+            </div>
           </div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', position: 'relative' }}>
-          <h3 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0 }}>Transactions</h3>
+          <h3 style={{ fontFamily: "Fraunces, Georgia, serif", fontSize: '1.35rem', fontWeight: 600, margin: 0, letterSpacing: '-0.02em' }}>Transactions</h3>
           <div style={{ position: 'relative' }}>
             <CustomSelect
               className="timeframe-dropdown"
@@ -284,48 +302,50 @@ export default function MoneyTracker({ transactions = [], setTransactions, token
                 { value: 'this_year', label: 'This Year' },
                 { value: 'lifetime', label: 'All Time' }
               ]}
-              style={{ width: '160px' }}
+              style={{ width: '160px', borderRadius: '6px', border: '1px solid var(--border-color)', font: "500 0.8rem 'DM Mono', monospace" }}
             />
           </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {filteredTransactions.length === 0 ? (
-            <div className="glass-card" style={{ textAlign: 'center', padding: '36px 20px', background: 'var(--bg-main)', borderRadius: '18px', border: '1px dashed var(--border-color)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-              <DollarSign size={40} style={{ color: 'var(--accent-blue)', opacity: 0.5 }} />
-              <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>No items logged yet</div>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>No items logged yet. Click + to add your first entry</p>
+            <div className="glass-card" style={{ textAlign: 'center', padding: '36px 20px', background: 'var(--bg-card)', borderRadius: '6px', border: '1px dashed var(--border-color)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+              <DollarSign size={36} style={{ color: '#d8f277', opacity: 0.6 }} />
+              <div style={{ fontFamily: "Fraunces, Georgia, serif", fontSize: '1.05rem', fontWeight: 600, color: 'var(--text-main)' }}>No transactions logged</div>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.84rem', margin: 0, fontFamily: "'DM Sans', sans-serif" }}>No items logged yet. Click below to add your first entry.</p>
               <button
                 onClick={() => {
                   setRightPanelView('add');
                   setShowForm?.(true);
                 }}
-                className="blue-btn"
-                style={{ marginTop: '8px', padding: '8px 18px', fontSize: '0.85rem', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                className="button button-primary"
+                style={{ marginTop: '8px', padding: '10px 18px', fontSize: '0.82rem', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: '6px', font: "600 0.8rem 'DM Sans', sans-serif", background: 'var(--ink)', color: '#d8f277', border: '1px solid var(--border-color)', cursor: 'pointer' }}
               >
-                <Plus size={16} /> Add Transaction
+                <Plus size={15} /> Add Transaction
               </button>
             </div>
           ) : (
             filteredTransactions.map(item => (
-              <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px 20px', background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: '1.1rem', marginBottom: '4px' }}>{item.title}</div>
-                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <span style={{ padding: '2px 8px', background: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>{item.category || 'General'}</span>
-                      <span>•</span>
-                      <span>{item.date}</span>
+              <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '14px 18px', background: 'var(--bg-card)', borderRadius: '6px', border: '1px solid var(--border-color)', transition: 'border-color 0.2s' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: '0.98rem', marginBottom: '5px', color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <span style={{ padding: '2px 7px', background: 'var(--bg-main)', borderRadius: '4px', border: '1px solid var(--border-color)', font: "500 0.68rem 'DM Mono', monospace", letterSpacing: '0.04em', textTransform: 'uppercase', color: item.type === 'earn' ? '#d8f277' : '#ef6f3e' }}>
+                        {item.category || 'General'}
+                      </span>
+                      <span style={{ color: 'var(--border-color)' }}>•</span>
+                      <span style={{ font: "400 0.75rem 'DM Mono', monospace" }}>{item.date}</span>
                     </div>
-                    {item.notes && <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '8px', fontStyle: 'italic' }}>{item.notes}</div>}
+                    {item.notes && <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '6px', fontStyle: 'italic' }}>{item.notes}</div>}
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
-                    <div style={{ fontSize: '1.2rem', fontWeight: 800, color: item.type === 'earn' ? '#22c55e' : '#ef4444', whiteSpace: 'nowrap' }}>
-                      {item.type === 'earn' ? '+' : '-'}{currency}{item.amount}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px', flexShrink: 0 }}>
+                    <div style={{ font: "700 1.15rem 'DM Mono', monospace", color: item.type === 'earn' ? '#d8f277' : '#ef6f3e', whiteSpace: 'nowrap', letterSpacing: '-0.02em' }}>
+                      {item.type === 'earn' ? '+' : '-'}{currency}{Number(item.amount).toFixed(2)}
                     </div>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <button onClick={() => startEdit(item)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }} title="Edit"><Edit2 size={16} /></button>
-                      <button onClick={() => deleteTransaction(item.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }} title="Delete"><Trash2 size={16} /></button>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <button onClick={() => startEdit(item)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '3px', borderRadius: '4px' }} title="Edit"><Edit2 size={14} /></button>
+                      <button onClick={() => deleteTransaction(item.id)} style={{ background: 'none', border: 'none', color: '#ef6f3e', cursor: 'pointer', padding: '3px', borderRadius: '4px' }} title="Delete"><Trash2 size={14} /></button>
                     </div>
                   </div>
                 </div>
@@ -335,13 +355,14 @@ export default function MoneyTracker({ transactions = [], setTransactions, token
         </div>
       </div>
 
-      <div style={{ background: 'var(--bg-main)', padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)', maxHeight: 'calc(100vh - 160px)', overflowY: 'auto', position: 'sticky', top: '20px' }}>
+      {/* Right Column: Charts */}
+      <div style={{ background: 'var(--bg-card)', padding: '22px', borderRadius: '6px', border: '1px solid var(--border-color)', maxHeight: 'calc(100vh - 160px)', overflowY: 'auto', position: 'sticky', top: '20px' }}>
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h4 style={{ fontSize: '1.15rem', fontWeight: 700, margin: 0 }}>Charts</h4>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
+            <h4 style={{ fontFamily: "Fraunces, Georgia, serif", fontSize: '1.15rem', fontWeight: 600, margin: 0, letterSpacing: '-0.02em' }}>Financial Analytics</h4>
           </div>
           
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', gap: '6px', marginBottom: '18px' }}>
             {[
               { id: 'bar', label: 'Bar Chart', icon: BarChart3 },
               { id: 'line', label: 'Line Chart', icon: TrendingUp },
@@ -356,40 +377,42 @@ export default function MoneyTracker({ transactions = [], setTransactions, token
                   title={t.label}
                   style={{ 
                     flex: 1, 
-                    padding: '10px 0', 
-                    borderRadius: '10px', 
-                    border: isActive ? 'none' : '1px solid var(--border-color)', 
+                    padding: '8px 0', 
+                    borderRadius: '6px', 
+                    border: isActive ? '1px solid #d8f277' : '1px solid var(--border-color)', 
                     cursor: 'pointer', 
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    background: isActive ? 'var(--accent-blue)' : 'var(--bg-main)', 
-                    color: isActive ? 'var(--accent-text, #ffffff)' : 'var(--text-muted)', 
-                    transition: 'all 0.2s' 
+                    background: isActive ? '#d8f277' : 'var(--bg-main)', 
+                    color: isActive ? '#11110f' : 'var(--text-muted)', 
+                    transition: 'all 0.2s',
+                    font: "600 0.78rem 'DM Sans', sans-serif"
                   }}
                 >
-                  <IconComp size={18} />
+                  <IconComp size={16} />
                 </button>
               );
             })}
           </div>
 
-          <div style={{ width: '100%', height: chartType === 'pie' ? 'auto' : '400px', minHeight: '400px' }}>
+          <div style={{ width: '100%', height: chartType === 'pie' ? 'auto' : '380px', minHeight: '380px' }}>
             <MoneyCharts transactions={filteredTransactions} chartType={chartType} currency={currency} />
           </div>
         </div>
       </div>
       
+      {/* Modal: Add Transaction */}
       <Modal
         isOpen={rightPanelView === 'add'}
         onClose={() => { setRightPanelView('charts'); setShowForm?.(false); }}
-        title="Add Transaction"
+        title="Record Transaction"
         icon={Plus}
         maxWidth="440px"
       >
-        <form onSubmit={addTransaction} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <form onSubmit={addTransaction} style={{ display: 'flex', flexDirection: 'column', gap: '14px', fontFamily: "'DM Sans', sans-serif" }}>
           <div>
-            <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Type</label>
+            <label style={{ font: "500 0.72rem 'DM Mono', monospace", color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Transaction Type</label>
             <CustomSelect 
               value={newType} 
               onChange={(e) => {
@@ -397,7 +420,7 @@ export default function MoneyTracker({ transactions = [], setTransactions, token
                 setNewType(val);
                 setNewCategory(val === 'earn' ? 'Job' : 'General');
               }} 
-              style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', font: "500 0.85rem 'DM Mono', monospace" }}
               options={[
                 { value: "spend", label: "Spending (-)" },
                 { value: "earn", label: "Earning (+)" }
@@ -405,16 +428,16 @@ export default function MoneyTracker({ transactions = [], setTransactions, token
             />
           </div>
           <div>
-            <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Description</label>
-            <input type="text" placeholder="Enter description..." value={newTitle} onChange={(e) => setNewTitle(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
+            <label style={{ font: "500 0.72rem 'DM Mono', monospace", color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Description</label>
+            <input type="text" placeholder="e.g. Groceries, Freelance Invoice..." value={newTitle} onChange={(e) => setNewTitle(e.target.value)} required style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' }} />
           </div>
           <div>
-            <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Amount ({currency})</label>
-            <input type="text" placeholder="e.g., 950+300 or 1250" value={newAmount} onChange={(e) => setNewAmount(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
+            <label style={{ font: "500 0.72rem 'DM Mono', monospace", color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Amount ({currency})</label>
+            <input type="text" placeholder="e.g., 950+300 or 1250" value={newAmount} onChange={(e) => setNewAmount(e.target.value)} required style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', font: "600 0.95rem 'DM Mono', monospace", outline: 'none', boxSizing: 'border-box' }} />
           </div>
           <div>
-            <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '8px' }}>Category</label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            <label style={{ font: "500 0.72rem 'DM Mono', monospace", color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', display: 'block', marginBottom: '8px' }}>Category</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
               {(newType === 'earn' ? EARNING_CATEGORIES : SPEND_CATEGORIES).map(cat => {
                 const isSelected = newCategory === cat;
                 return (
@@ -423,15 +446,15 @@ export default function MoneyTracker({ transactions = [], setTransactions, token
                     type="button"
                     onClick={() => setNewCategory(cat)}
                     style={{
-                      padding: '8px 14px',
-                      borderRadius: '20px',
-                      fontSize: '0.85rem',
-                      fontWeight: isSelected ? 600 : 500,
-                      border: isSelected ? '1px solid var(--accent-blue)' : '1px solid var(--border-color)',
-                      background: isSelected ? 'var(--accent-blue)' : 'var(--bg-card)',
-                      color: isSelected ? 'var(--accent-text, #ffffff)' : 'var(--text-main)',
+                      padding: '6px 12px',
+                      borderRadius: '6px',
+                      font: "500 0.75rem 'DM Mono', monospace",
+                      letterSpacing: '0.03em',
+                      border: isSelected ? '1px solid ' + (newType === 'earn' ? '#d8f277' : '#ef6f3e') : '1px solid var(--border-color)',
+                      background: isSelected ? (newType === 'earn' ? '#d8f277' : '#ef6f3e') : 'var(--bg-main)',
+                      color: isSelected ? (newType === 'earn' ? '#11110f' : '#ffffff') : 'var(--text-main)',
                       cursor: 'pointer',
-                      transition: 'all 0.2s ease',
+                      transition: 'all 0.15s ease',
                       whiteSpace: 'nowrap'
                     }}
                   >
@@ -442,20 +465,21 @@ export default function MoneyTracker({ transactions = [], setTransactions, token
             </div>
           </div>
           <div>
-            <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Date</label>
-            <input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
+            <label style={{ font: "500 0.72rem 'DM Mono', monospace", color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Date</label>
+            <input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} required style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', font: "500 0.85rem 'DM Mono', monospace", outline: 'none', boxSizing: 'border-box' }} />
           </div>
           <div>
-            <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Notes (Optional)</label>
-            <input type="text" placeholder="Enter notes..." value={newNotes} onChange={(e) => setNewNotes(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
+            <label style={{ font: "500 0.72rem 'DM Mono', monospace", color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Notes (Optional)</label>
+            <input type="text" placeholder="Additional details..." value={newNotes} onChange={(e) => setNewNotes(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.88rem', outline: 'none', boxSizing: 'border-box' }} />
           </div>
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px' }}>
-            <button type="button" onClick={() => { setRightPanelView('charts'); setShowForm?.(false); }} className="secondary-btn" style={{ padding: '10px 20px', borderRadius: '50px', fontSize: '0.9rem' }}>Cancel</button>
-            <button type="submit" className="blue-btn" style={{ padding: '10px 20px', borderRadius: '50px', fontSize: '0.9rem', justifyContent: 'center' }}><Plus size={18} /> Record Entry</button>
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '12px' }}>
+            <button type="button" onClick={() => { setRightPanelView('charts'); setShowForm?.(false); }} className="secondary-btn" style={{ padding: '9px 18px', borderRadius: '6px', fontSize: '0.85rem', font: "500 0.82rem 'DM Sans', sans-serif" }}>Cancel</button>
+            <button type="submit" style={{ padding: '9px 18px', borderRadius: '6px', fontSize: '0.85rem', font: "600 0.82rem 'DM Sans', sans-serif", background: '#d8f277', color: '#11110f', border: '1px solid #d8f277', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Plus size={16} /> Record Entry</button>
           </div>
         </form>
       </Modal>
 
+      {/* Modal: Edit Transaction */}
       <Modal
         isOpen={editingId !== null}
         onClose={cancelEdit}
@@ -463,16 +487,16 @@ export default function MoneyTracker({ transactions = [], setTransactions, token
         icon={Edit2}
         maxWidth="440px"
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', fontFamily: "'DM Sans', sans-serif" }}>
           <div>
-            <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Type</label>
+            <label style={{ font: "500 0.72rem 'DM Mono', monospace", color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Type</label>
             <CustomSelect 
               value={editForm.type || 'spend'} 
               onChange={e => {
                 const val = e.target.value;
                 setEditForm({ ...editForm, type: val, category: val === 'earn' ? 'Job' : 'General' });
               }} 
-              style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', font: "500 0.85rem 'DM Mono', monospace" }}
               options={[
                 { value: "spend", label: "Spending (-)" },
                 { value: "earn", label: "Earning (+)" }
@@ -480,16 +504,16 @@ export default function MoneyTracker({ transactions = [], setTransactions, token
             />
           </div>
           <div>
-            <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Description</label>
-            <input type="text" placeholder="Enter description..." value={editForm.title || ''} onChange={e => setEditForm({...editForm, title: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
+            <label style={{ font: "500 0.72rem 'DM Mono', monospace", color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Description</label>
+            <input type="text" placeholder="Enter description..." value={editForm.title || ''} onChange={e => setEditForm({...editForm, title: e.target.value})} style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' }} />
           </div>
           <div>
-            <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Amount ({currency})</label>
-            <input type="text" placeholder="e.g., 950+300 or 1250" value={editForm.amount || ''} onChange={e => setEditForm({...editForm, amount: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
+            <label style={{ font: "500 0.72rem 'DM Mono', monospace", color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Amount ({currency})</label>
+            <input type="text" placeholder="e.g., 950+300 or 1250" value={editForm.amount || ''} onChange={e => setEditForm({...editForm, amount: e.target.value})} style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', font: "600 0.95rem 'DM Mono', monospace", outline: 'none', boxSizing: 'border-box' }} />
           </div>
           <div>
-            <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '8px' }}>Category</label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            <label style={{ font: "500 0.72rem 'DM Mono', monospace", color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', display: 'block', marginBottom: '8px' }}>Category</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
               {((editForm.type || 'spend') === 'earn' ? EARNING_CATEGORIES : SPEND_CATEGORIES).map(cat => {
                 const currentCat = editForm.category || ((editForm.type || 'spend') === 'earn' ? 'Job' : 'General');
                 const isSelected = currentCat === cat;
@@ -499,15 +523,15 @@ export default function MoneyTracker({ transactions = [], setTransactions, token
                     type="button"
                     onClick={() => setEditForm({ ...editForm, category: cat })}
                     style={{
-                      padding: '8px 14px',
-                      borderRadius: '20px',
-                      fontSize: '0.85rem',
-                      fontWeight: isSelected ? 600 : 500,
-                      border: isSelected ? '1px solid var(--accent-blue)' : '1px solid var(--border-color)',
-                      background: isSelected ? 'var(--accent-blue)' : 'var(--bg-card)',
-                      color: isSelected ? 'var(--accent-text, #ffffff)' : 'var(--text-main)',
+                      padding: '6px 12px',
+                      borderRadius: '6px',
+                      font: "500 0.75rem 'DM Mono', monospace",
+                      letterSpacing: '0.03em',
+                      border: isSelected ? '1px solid ' + ((editForm.type || 'spend') === 'earn' ? '#d8f277' : '#ef6f3e') : '1px solid var(--border-color)',
+                      background: isSelected ? ((editForm.type || 'spend') === 'earn' ? '#d8f277' : '#ef6f3e') : 'var(--bg-main)',
+                      color: isSelected ? ((editForm.type || 'spend') === 'earn' ? '#11110f' : '#ffffff') : 'var(--text-main)',
                       cursor: 'pointer',
-                      transition: 'all 0.2s ease',
+                      transition: 'all 0.15s ease',
                       whiteSpace: 'nowrap'
                     }}
                   >
@@ -518,16 +542,16 @@ export default function MoneyTracker({ transactions = [], setTransactions, token
             </div>
           </div>
           <div>
-            <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Date</label>
-            <input type="date" value={editForm.date || ''} onChange={e => setEditForm({...editForm, date: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
+            <label style={{ font: "500 0.72rem 'DM Mono', monospace", color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Date</label>
+            <input type="date" value={editForm.date || ''} onChange={e => setEditForm({...editForm, date: e.target.value})} style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', font: "500 0.85rem 'DM Mono', monospace", outline: 'none', boxSizing: 'border-box' }} />
           </div>
           <div>
-            <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Notes (Optional)</label>
-            <input type="text" placeholder="Enter notes..." value={editForm.notes || ''} onChange={e => setEditForm({...editForm, notes: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} />
+            <label style={{ font: "500 0.72rem 'DM Mono', monospace", color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Notes (Optional)</label>
+            <input type="text" placeholder="Enter notes..." value={editForm.notes || ''} onChange={e => setEditForm({...editForm, notes: e.target.value})} style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.88rem', outline: 'none', boxSizing: 'border-box' }} />
           </div>
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px' }}>
-            <button onClick={cancelEdit} className="secondary-btn" style={{ padding: '10px 20px', borderRadius: '50px', fontSize: '0.9rem' }}>Cancel</button>
-            <button onClick={() => saveEdit(editingId)} className="blue-btn" style={{ padding: '10px 20px', borderRadius: '50px', fontSize: '0.9rem', justifyContent: 'center' }}><Check size={18} /> Save Changes</button>
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '12px' }}>
+            <button onClick={cancelEdit} className="secondary-btn" style={{ padding: '9px 18px', borderRadius: '6px', fontSize: '0.85rem', font: "500 0.82rem 'DM Sans', sans-serif" }}>Cancel</button>
+            <button onClick={() => saveEdit(editingId)} style={{ padding: '9px 18px', borderRadius: '6px', fontSize: '0.85rem', font: "600 0.82rem 'DM Sans', sans-serif", background: '#d8f277', color: '#11110f', border: '1px solid #d8f277', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Check size={16} /> Save Changes</button>
           </div>
         </div>
       </Modal>

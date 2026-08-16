@@ -160,25 +160,31 @@ const SettingsPanel = ({
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 14px;
-          background: var(--bg-main);
-          border-radius: 14px;
+          padding: 16px 18px;
+          background: var(--bg-card);
+          border-radius: 6px;
           border: 1px solid var(--border-color);
           gap: 16px;
           flex-wrap: wrap;
           width: 100%;
+          box-sizing: border-box;
         }
         .settings-input {
           width: 100%;
           max-width: 320px;
-          padding: 14px;
-          border-radius: 12px;
-          background: var(--bg-card);
+          padding: 10px 14px;
+          border-radius: 6px;
+          background: var(--bg-main);
           color: var(--text-main);
           border: 1px solid var(--border-color);
-          font-size: 0.95rem;
-          font-weight: 600;
+          font-size: 0.88rem;
+          font-family: 'DM Sans', sans-serif;
           outline: none;
+          box-sizing: border-box;
+          transition: border-color 0.15s ease;
+        }
+        .settings-input:focus {
+          border-color: #d8f277;
         }
         @media (max-width: 768px) {
           .settings-input {
@@ -186,16 +192,16 @@ const SettingsPanel = ({
           }
         }
       `}</style>
-    <div style={{ width: '100%', paddingBottom: '100px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '28px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
+    <div style={{ width: '100%', paddingBottom: '100px', fontFamily: "'DM Sans', sans-serif" }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px', marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
         <div>
-          <h3 style={{ fontSize: '1.5rem', fontWeight: 800 }}>General Settings & Preferences</h3>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Customize your personal profile details, AI agent behavior, and workspace rules.</p>
+          <h3 style={{ fontFamily: "Fraunces, Georgia, serif", fontSize: '1.45rem', fontWeight: 600, margin: 0, letterSpacing: '-0.02em' }}>Settings & System Preferences</h3>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.84rem', marginTop: '4px', margin: 0 }}>Configure profile metadata, AI model providers, notification alerts, and data rules.</p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           {settingsSaved && (
-            <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', padding: '6px 14px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Check size={16} /> Saved Successfully
+            <span style={{ font: "500 0.72rem 'DM Mono', monospace", background: '#d8f277', color: '#11110f', padding: '4px 10px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '6px', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+              <Check size={14} /> Saved
             </span>
           )}
           {handleLogout && (
@@ -203,39 +209,38 @@ const SettingsPanel = ({
               type="button" 
               onClick={handleLogout} 
               style={{ 
-                background: 'rgba(239, 68, 68, 0.15)', 
-                color: '#ef4444', 
-                border: '1px solid rgba(239, 68, 68, 0.3)', 
-                padding: '8px 18px', 
-                borderRadius: '12px', 
-                fontWeight: 700, 
-                fontSize: '0.9rem', 
+                background: 'rgba(239, 111, 62, 0.1)', 
+                color: '#ef6f3e', 
+                border: '1px solid rgba(239, 111, 62, 0.3)', 
+                padding: '8px 16px', 
+                borderRadius: '6px', 
+                font: "600 0.82rem 'DM Sans', sans-serif", 
                 cursor: 'pointer', 
                 display: 'flex', 
                 alignItems: 'center', 
-                gap: '8px',
-                transition: 'all 0.2s'
+                gap: '6px',
+                transition: 'all 0.15s'
               }}
             >
-              <LogOut size={16} /> Sign Out
+              <LogOut size={15} /> Sign Out
             </button>
           )}
         </div>
       </div>
 
-      <form onSubmit={handleSaveSettings} style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+      <form onSubmit={handleSaveSettings} style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
         
         {/* SECTION 1: General Profile Details */}
         <div>
-          <h4 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-blue)' }}>
-            <User size={18} /> General Profile Details
+          <h4 style={{ fontFamily: "Fraunces, Georgia, serif", fontSize: '1.1rem', fontWeight: 600, marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-main)', letterSpacing: '-0.01em' }}>
+            <User size={17} color="#d8f277" /> General Profile
           </h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             
             <div className="settings-row">
               <div>
-                <div style={{ fontWeight: 700, fontSize: '1rem' }}>Full Name</div>
-                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Your primary display name inside the dashboard.</div>
+                <div style={{ fontWeight: 600, fontSize: '0.92rem' }}>Full Name</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Your primary display name inside the dashboard.</div>
               </div>
               <input 
                 type="text" 
@@ -247,34 +252,36 @@ const SettingsPanel = ({
 
             <div className="settings-row">
               <div>
-                <div style={{ fontWeight: 700, fontSize: '1rem' }}>Handle / Username</div>
-                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Your unique public handle shown in the header.</div>
+                <div style={{ fontWeight: 600, fontSize: '0.92rem' }}>Handle / Username</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Unique username shown across headers and export logs.</div>
               </div>
               <input 
                 type="text" 
                 value={userProfile.handle || ''} 
                 onChange={(e) => setUserProfile({ ...userProfile, handle: e.target.value })} 
                 className="settings-input"
+                style={{ font: "500 0.85rem 'DM Mono', monospace" }}
               />
             </div>
 
             <div className="settings-row">
               <div>
-                <div style={{ fontWeight: 700, fontSize: '1rem' }}>Email Address</div>
-                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Used for account notifications and VIP early access alerts.</div>
+                <div style={{ fontWeight: 600, fontSize: '0.92rem' }}>Email Address</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Used for security confirmations and account backup.</div>
               </div>
               <input 
                 type="email" 
                 value={userProfile.email || ''} 
                 onChange={(e) => setUserProfile({ ...userProfile, email: e.target.value })} 
                 className="settings-input"
+                style={{ font: "500 0.85rem 'DM Mono', monospace" }}
               />
             </div>
 
             <div className="settings-row">
               <div>
-                <div style={{ fontWeight: 700, fontSize: '1rem' }}>Phone Number</div>
-                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Your contact phone number for SMS notifications and security alerts.</div>
+                <div style={{ fontWeight: 600, fontSize: '0.92rem' }}>Phone Number</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Contact number for SMS dispatch and urgent reminders.</div>
               </div>
               <input 
                 type="tel" 
@@ -282,13 +289,14 @@ const SettingsPanel = ({
                 placeholder="+1 234 567 8900"
                 onChange={(e) => setUserProfile({ ...userProfile, phone: e.target.value })} 
                 className="settings-input"
+                style={{ font: "500 0.85rem 'DM Mono', monospace" }}
               />
             </div>
 
             <div className="settings-row">
               <div>
-                <div style={{ fontWeight: 700, fontSize: '1rem' }}>First Day of the Week</div>
-                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Sets the start day for your 7-day habit matrix and weekly calendars.</div>
+                <div style={{ fontWeight: 600, fontSize: '0.92rem' }}>First Day of the Week</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Sets the starting column for the 7-day habit matrix and weekly planners.</div>
               </div>
               <CustomSelect 
                 value={userProfile.weekStartDay || userProfile.week_start_day || 'Monday'} 
@@ -308,13 +316,14 @@ const SettingsPanel = ({
 
             <div className="settings-row">
               <div>
-                <div style={{ fontWeight: 700, fontSize: '1rem' }}>Timezone</div>
-                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Select your primary timezone for automated audits and reminders.</div>
+                <div style={{ fontWeight: 600, fontSize: '0.92rem' }}>Timezone</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Primary timezone for audit calculations and streak resets.</div>
               </div>
               <CustomSelect 
                 value={userProfile.timezone || 'UTC'} 
                 onChange={(e) => setUserProfile({ ...userProfile, timezone: e.target.value })} 
                 className="settings-input"
+                style={{ font: "500 0.82rem 'DM Mono', monospace" }}
                 options={[
                   { value: "UTC", label: "UTC (Coordinated Universal Time)" },
                   { value: "Asia/Kolkata", label: "Asia/Kolkata (IST +5:30)" },
@@ -330,13 +339,14 @@ const SettingsPanel = ({
 
             <div className="settings-row">
               <div>
-                <div style={{ fontWeight: 700, fontSize: '1rem' }}>Currency Preference</div>
-                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Choose your default currency for the Money Tracker.</div>
+                <div style={{ fontWeight: 600, fontSize: '0.92rem' }}>Currency Symbol</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Default currency indicator in Money Tracker & Analytics.</div>
               </div>
               <CustomSelect 
                 value={userProfile.currency || '$'} 
                 onChange={(e) => setUserProfile({ ...userProfile, currency: e.target.value })} 
                 className="settings-input"
+                style={{ font: "500 0.85rem 'DM Mono', monospace" }}
                 options={[
                   { value: "$", label: "Dollar ($)" },
                   { value: "₹", label: "Rupee (₹)" },
@@ -348,8 +358,8 @@ const SettingsPanel = ({
 
             <div className="settings-row">
               <div>
-                <div style={{ fontWeight: 700, fontSize: '1rem' }}>Display Theme Mode</div>
-                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Choose your overall workspace theme appearance mode.</div>
+                <div style={{ fontWeight: 600, fontSize: '0.92rem' }}>Display Theme Mode</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Workspace appearance theme.</div>
               </div>
               <CustomSelect 
                 value={themeMode || 'pc'}
@@ -366,8 +376,8 @@ const SettingsPanel = ({
 
             <div className="settings-row">
               <div>
-                <div style={{ fontWeight: 700, fontSize: '1rem' }}>Accent Color Theme</div>
-                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Personalize your dashboard's accent colors.</div>
+                <div style={{ fontWeight: 600, fontSize: '0.92rem' }}>Accent Color Theme</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Tactile accent highlight color.</div>
               </div>
               <CustomSelect 
                 value={typeof window !== 'undefined' ? (safeStorage.getItem('themeColor') || 'blue') : 'blue'}
@@ -378,11 +388,11 @@ const SettingsPanel = ({
                 }} 
                 className="settings-input"
                 options={[
-                  { value: "blue", label: "Classic Blue" },
+                  { value: "blue", label: "Acid Lime & Ink (Editorial)" },
                   { value: "professional", label: "Black & White" },
-                  { value: "pink", label: "Vibrant Pink" },
+                  { value: "pink", label: "Vibrant Rose" },
                   { value: "neon", label: "Neon Tech" },
-                  { value: "emerald", label: "Emerald Green" }
+                  { value: "emerald", label: "Emerald Pine" }
                 ]}
               />
             </div>
@@ -391,21 +401,21 @@ const SettingsPanel = ({
         </div>
 
         {/* SECTION 2: AI Agent & Features */}
-        <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '24px' }}>
-          <h4 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-blue)' }}>
-            <Bot size={18} /> Personal AI Assistant Features
+        <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '22px' }}>
+          <h4 style={{ fontFamily: "Fraunces, Georgia, serif", fontSize: '1.1rem', fontWeight: 600, marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-main)', letterSpacing: '-0.01em' }}>
+            <Bot size={17} color="#d8f277" /> AI Intelligence & Behavior
           </h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             
             <div className="settings-row">
               <div>
-                <div style={{ fontWeight: 700, fontSize: '1rem' }}>AI Assistant Name</div>
-                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Customize what your AI friend is called across your entire dashboard (default: AI).</div>
+                <div style={{ fontWeight: 600, fontSize: '0.92rem' }}>Assistant Name</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Name shown in AI companion chats and autonomous audits.</div>
               </div>
               <input 
                 type="text" 
                 value={aiName || ''} 
-                placeholder="Enter assistant name..."
+                placeholder="LifeAgent AI..."
                 onChange={(e) => setAiName(e.target.value)} 
                 onBlur={() => { if (!aiName?.trim()) setAiName('AI'); }}
                 className="settings-input"
@@ -414,8 +424,8 @@ const SettingsPanel = ({
 
             <div className="settings-row">
               <div>
-                <div style={{ fontWeight: 700, fontSize: '1rem' }}>Preferred AI Provider</div>
-                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Choose which AI brain powers your dashboard assistant.</div>
+                <div style={{ fontWeight: 600, fontSize: '0.92rem' }}>AI Model Provider</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Underlying neural intelligence backend.</div>
               </div>
               <CustomSelect 
                 value={aiProvider} 
@@ -430,13 +440,14 @@ const SettingsPanel = ({
 
             <div className="settings-row">
               <div>
-                <div style={{ fontWeight: 700, fontSize: '1rem' }}>AI Chat Reset Time</div>
-                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Choose when your daily AI chat history resets.</div>
+                <div style={{ fontWeight: 600, fontSize: '0.92rem' }}>AI Daily Chat Reset Hour</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Time when context window refreshes daily for crisp interactions.</div>
               </div>
               <CustomSelect 
                 value={chatResetTime} 
                 onChange={(e) => setChatResetTime(e.target.value)} 
                 className="settings-input"
+                style={{ font: "500 0.82rem 'DM Mono', monospace" }}
                 options={[...Array(24)].map((_, i) => {
                   const hour = i.toString().padStart(2, '0');
                   return {
@@ -447,11 +458,10 @@ const SettingsPanel = ({
               />
             </div>
 
-
             <div className="settings-row">
               <div>
-                <div style={{ fontWeight: 700, fontSize: '1rem' }}>Gemini API Key</div>
-                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Enter your free Google Gemini API key to enable real AI responses. Get one at aistudio.google.com</div>
+                <div style={{ fontWeight: 600, fontSize: '0.92rem' }}>Gemini API Key</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Free key from aistudio.google.com for Gemini Pro 2.5 intelligence.</div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <input 
@@ -460,15 +470,16 @@ const SettingsPanel = ({
                   placeholder="AIzaSy..."
                   onChange={(e) => setGeminiApiKey(e.target.value)} 
                   className="settings-input"
+                  style={{ font: "500 0.85rem 'DM Mono', monospace" }}
                 />
-                {geminiApiKey && <span style={{ color: '#22c55e', fontWeight: 700, fontSize: '0.85rem' }}>● Connected</span>}
+                {geminiApiKey && <span style={{ font: "500 0.72rem 'DM Mono', monospace", color: '#d8f277' }}>● ACTIVE</span>}
               </div>
             </div>
 
             <div className="settings-row">
               <div>
-                <div style={{ fontWeight: 700, fontSize: '1rem' }}>Groq API Key</div>
-                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Enter your free Groq API key for ultra-fast Llama 3 responses. Get one at console.groq.com</div>
+                <div style={{ fontWeight: 600, fontSize: '0.92rem' }}>Groq API Key</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Free key from console.groq.com for ultra-fast Llama-3-70b.</div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <input 
@@ -477,15 +488,16 @@ const SettingsPanel = ({
                   placeholder="gsk_..."
                   onChange={(e) => setGroqApiKey(e.target.value)} 
                   className="settings-input"
+                  style={{ font: "500 0.85rem 'DM Mono', monospace" }}
                 />
-                {groqApiKey && <span style={{ color: '#22c55e', fontWeight: 700, fontSize: '0.85rem' }}>● Connected</span>}
+                {groqApiKey && <span style={{ font: "500 0.72rem 'DM Mono', monospace", color: '#d8f277' }}>● ACTIVE</span>}
               </div>
             </div>
 
             <div className="settings-row">
               <div>
-                <div style={{ fontWeight: 700, fontSize: '1rem' }}>Daily Morning Audit Summary</div>
-                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>AI automatically generates a schedule & spendings audit every morning at 7:00 AM.</div>
+                <div style={{ fontWeight: 600, fontSize: '0.92rem' }}>Daily Morning Audit Summary</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Automated morning schedule breakdown and spending audit generated at 7:00 AM.</div>
               </div>
               <div
                 onClick={() => {
@@ -493,25 +505,26 @@ const SettingsPanel = ({
                   setUserProfile({ ...userProfile, morningAudit: val, morning_audit: val ? 1 : 0 });
                 }}
                 style={{
-                  width: '52px', height: '28px', borderRadius: '14px', cursor: 'pointer', flexShrink: 0,
-                  background: (userProfile.morningAudit !== undefined ? !!userProfile.morningAudit : (userProfile.morning_audit !== undefined ? userProfile.morning_audit !== 0 : false)) ? 'var(--accent-blue)' : 'var(--border-color)',
-                  position: 'relative', transition: 'background 0.25s'
+                  width: '46px', height: '24px', borderRadius: '12px', cursor: 'pointer', flexShrink: 0,
+                  background: (userProfile.morningAudit !== undefined ? !!userProfile.morningAudit : (userProfile.morning_audit !== undefined ? userProfile.morning_audit !== 0 : false)) ? '#d8f277' : 'var(--border-color)',
+                  position: 'relative', transition: 'background 0.2s'
                 }}
               >
                 <div style={{
-                  position: 'absolute', top: '3px',
-                  left: (userProfile.morningAudit !== undefined ? !!userProfile.morningAudit : (userProfile.morning_audit !== undefined ? userProfile.morning_audit !== 0 : false)) ? '26px' : '3px',
-                  width: '22px', height: '22px', borderRadius: '50%',
-                  background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
-                  transition: 'left 0.25s'
+                  position: 'absolute', top: '2px',
+                  left: (userProfile.morningAudit !== undefined ? !!userProfile.morningAudit : (userProfile.morning_audit !== undefined ? userProfile.morning_audit !== 0 : false)) ? '24px' : '2px',
+                  width: '20px', height: '20px', borderRadius: '50%',
+                  background: (userProfile.morningAudit !== undefined ? !!userProfile.morningAudit : (userProfile.morning_audit !== undefined ? userProfile.morning_audit !== 0 : false)) ? '#11110f' : '#fff',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                  transition: 'left 0.2s'
                 }} />
               </div>
             </div>
 
             <div className="settings-row">
               <div>
-                <div style={{ fontWeight: 700, fontSize: '1rem' }}>Real-Time Smart Streak Alerts</div>
-                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Notify instantly when a study pomodoro or gym habit streak is about to expire.</div>
+                <div style={{ fontWeight: 600, fontSize: '0.92rem' }}>Real-Time Habit Streak Alerts</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Notify before midnight when a study pomodoro or gym streak is about to break.</div>
               </div>
               <div
                 onClick={() => {
@@ -519,25 +532,26 @@ const SettingsPanel = ({
                   setUserProfile({ ...userProfile, smartAlerts: val, smart_alerts: val ? 1 : 0 });
                 }}
                 style={{
-                  width: '52px', height: '28px', borderRadius: '14px', cursor: 'pointer', flexShrink: 0,
-                  background: (userProfile.smartAlerts !== undefined ? !!userProfile.smartAlerts : (userProfile.smart_alerts !== undefined ? userProfile.smart_alerts !== 0 : false)) ? 'var(--accent-blue)' : 'var(--border-color)',
-                  position: 'relative', transition: 'background 0.25s'
+                  width: '46px', height: '24px', borderRadius: '12px', cursor: 'pointer', flexShrink: 0,
+                  background: (userProfile.smartAlerts !== undefined ? !!userProfile.smartAlerts : (userProfile.smart_alerts !== undefined ? userProfile.smart_alerts !== 0 : false)) ? '#d8f277' : 'var(--border-color)',
+                  position: 'relative', transition: 'background 0.2s'
                 }}
               >
                 <div style={{
-                  position: 'absolute', top: '3px',
-                  left: (userProfile.smartAlerts !== undefined ? !!userProfile.smartAlerts : (userProfile.smart_alerts !== undefined ? userProfile.smart_alerts !== 0 : false)) ? '26px' : '3px',
-                  width: '22px', height: '22px', borderRadius: '50%',
-                  background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
-                  transition: 'left 0.25s'
+                  position: 'absolute', top: '2px',
+                  left: (userProfile.smartAlerts !== undefined ? !!userProfile.smartAlerts : (userProfile.smart_alerts !== undefined ? userProfile.smart_alerts !== 0 : false)) ? '24px' : '2px',
+                  width: '20px', height: '20px', borderRadius: '50%',
+                  background: (userProfile.smartAlerts !== undefined ? !!userProfile.smartAlerts : (userProfile.smart_alerts !== undefined ? userProfile.smart_alerts !== 0 : false)) ? '#11110f' : '#fff',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                  transition: 'left 0.2s'
                 }} />
               </div>
             </div>
 
             <div className="settings-row">
               <div>
-                <div style={{ fontWeight: 700, fontSize: '1rem' }}>Auto-Open AI Side Chat</div>
-                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Automatically open the AI assistant panel when navigating to different tabs.</div>
+                <div style={{ fontWeight: 600, fontSize: '0.92rem' }}>Auto-Open AI Side Chat</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Keep the companion drawer visible when switching between tabs.</div>
               </div>
               <div
                 onClick={() => {
@@ -545,26 +559,26 @@ const SettingsPanel = ({
                   setUserProfile({ ...userProfile, auto_open_ai_sidechat: val });
                 }}
                 style={{
-                  width: '52px', height: '28px', borderRadius: '14px', cursor: 'pointer', flexShrink: 0,
-                  background: (userProfile.auto_open_ai_sidechat === true) ? 'var(--accent-blue)' : 'var(--border-color)',
-                  position: 'relative', transition: 'background 0.25s'
+                  width: '46px', height: '24px', borderRadius: '12px', cursor: 'pointer', flexShrink: 0,
+                  background: (userProfile.auto_open_ai_sidechat === true) ? '#d8f277' : 'var(--border-color)',
+                  position: 'relative', transition: 'background 0.2s'
                 }}
               >
                 <div style={{
-                  position: 'absolute', top: '3px',
-                  left: (userProfile.auto_open_ai_sidechat === true) ? '26px' : '3px',
-                  width: '22px', height: '22px', borderRadius: '50%',
-                  background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
-                  transition: 'left 0.25s'
+                  position: 'absolute', top: '2px',
+                  left: (userProfile.auto_open_ai_sidechat === true) ? '24px' : '2px',
+                  width: '20px', height: '20px', borderRadius: '50%',
+                  background: (userProfile.auto_open_ai_sidechat === true) ? '#11110f' : '#fff',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                  transition: 'left 0.2s'
                 }} />
               </div>
             </div>
 
-
             <div className="settings-row">
               <div>
-                <div style={{ fontWeight: 700, fontSize: '1rem' }}>Personal AI Assistant Tone & Personality</div>
-                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Choose how strict, encouraging, or concise the AI audits your metrics.</div>
+                <div style={{ fontWeight: 600, fontSize: '0.92rem' }}>AI Personality & Tone</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Choose response styling for daily critiques and encouragement.</div>
               </div>
               <CustomSelect 
                 value={userProfile.aiTone || userProfile.ai_tone || 'Analytical & Direct'}
@@ -572,7 +586,7 @@ const SettingsPanel = ({
                   const val = e.target.value;
                   setUserProfile({ ...userProfile, aiTone: val, ai_tone: val });
                 }}
-                className="settings-input" style={{ fontSize: "0.92rem" }}
+                className="settings-input"
                 options={[
                   { value: "Analytical & Direct", label: "Analytical & Direct" },
                   { value: "Encouraging & Supportive", label: "Encouraging & Supportive" },
@@ -585,17 +599,17 @@ const SettingsPanel = ({
         </div>
 
         {/* SECTION 2.5: Reminders & Notifications */}
-        <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '24px' }}>
-          <h4 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-blue)' }}>
-            <Bell size={18} /> Reminders &amp; Notifications
+        <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '22px' }}>
+          <h4 style={{ fontFamily: "Fraunces, Georgia, serif", fontSize: '1.1rem', fontWeight: 600, marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-main)', letterSpacing: '-0.01em' }}>
+            <Bell size={17} color="#d8f277" /> Reminders & Notifications
           </h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
 
             {/* Master switch */}
             <div className="settings-row">
               <div>
-                <div style={{ fontWeight: 700, fontSize: '1rem' }}>Enable All Reminders</div>
-                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Master switch for all Capacitor Local Notifications. Turning this OFF pauses all reminders without deleting them. Turning it back ON reschedules everything automatically.</div>
+                <div style={{ fontWeight: 600, fontSize: '0.92rem' }}>Enable All Local Reminders</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Master switch for all device notifications. Toggling ON automatically reschedules pending alarms.</div>
               </div>
               <div
                 onClick={() => {
@@ -603,17 +617,18 @@ const SettingsPanel = ({
                   setUserProfile({ ...userProfile, remindersGlobalEnabled: val });
                 }}
                 style={{
-                  width: '52px', height: '28px', borderRadius: '14px', cursor: 'pointer', flexShrink: 0,
-                  background: userProfile.remindersGlobalEnabled ? 'var(--accent-blue)' : 'var(--border-color)',
-                  position: 'relative', transition: 'background 0.25s'
+                  width: '46px', height: '24px', borderRadius: '12px', cursor: 'pointer', flexShrink: 0,
+                  background: userProfile.remindersGlobalEnabled ? '#d8f277' : 'var(--border-color)',
+                  position: 'relative', transition: 'background 0.2s'
                 }}
               >
                 <div style={{
-                  position: 'absolute', top: '3px',
-                  left: userProfile.remindersGlobalEnabled ? '26px' : '3px',
-                  width: '22px', height: '22px', borderRadius: '50%',
-                  background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
-                  transition: 'left 0.25s'
+                  position: 'absolute', top: '2px',
+                  left: userProfile.remindersGlobalEnabled ? '24px' : '2px',
+                  width: '20px', height: '20px', borderRadius: '50%',
+                  background: userProfile.remindersGlobalEnabled ? '#11110f' : '#fff',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                  transition: 'left 0.2s'
                 }} />
               </div>
             </div>
@@ -621,8 +636,8 @@ const SettingsPanel = ({
             {/* Sleep Reminder */}
             <div className="settings-row">
               <div>
-                <div style={{ fontWeight: 700, fontSize: '1rem' }}>Bedtime Reminder</div>
-                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Daily notification to wind down and prepare for sleep.</div>
+                <div style={{ fontWeight: 600, fontSize: '0.92rem' }}>Bedtime & Sleep Reminder</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Nightly prompt to wind down and hit your sleep target.</div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <TimeButton 
@@ -631,24 +646,25 @@ const SettingsPanel = ({
                   disabled={!userProfile.sleepReminderEnabled}
                   style={{
                     background: 'var(--bg-main)', border: '1px solid var(--border-color)',
-                    borderRadius: '8px', color: 'var(--text-main)', padding: '6px 10px',
-                    fontSize: '0.9rem', opacity: userProfile.sleepReminderEnabled ? 1 : 0.4
+                    borderRadius: '6px', color: 'var(--text-main)', padding: '6px 10px',
+                    font: "500 0.85rem 'DM Mono', monospace", opacity: userProfile.sleepReminderEnabled ? 1 : 0.4
                   }}
                 />
                 <div
                   onClick={() => setUserProfile({ ...userProfile, sleepReminderEnabled: !userProfile.sleepReminderEnabled })}
                   style={{
-                    width: '52px', height: '28px', borderRadius: '14px', cursor: 'pointer', flexShrink: 0,
-                    background: userProfile.sleepReminderEnabled ? 'var(--accent-blue)' : 'var(--border-color)',
-                    position: 'relative', transition: 'background 0.25s'
+                    width: '46px', height: '24px', borderRadius: '12px', cursor: 'pointer', flexShrink: 0,
+                    background: userProfile.sleepReminderEnabled ? '#d8f277' : 'var(--border-color)',
+                    position: 'relative', transition: 'background 0.2s'
                   }}
                 >
                   <div style={{
-                    position: 'absolute', top: '3px',
-                    left: userProfile.sleepReminderEnabled ? '26px' : '3px',
-                    width: '22px', height: '22px', borderRadius: '50%',
-                    background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
-                    transition: 'left 0.25s'
+                    position: 'absolute', top: '2px',
+                    left: userProfile.sleepReminderEnabled ? '24px' : '2px',
+                    width: '20px', height: '20px', borderRadius: '50%',
+                    background: userProfile.sleepReminderEnabled ? '#11110f' : '#fff',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                    transition: 'left 0.2s'
                   }} />
                 </div>
               </div>
@@ -657,8 +673,8 @@ const SettingsPanel = ({
             {/* Workout Reminder */}
             <div className="settings-row">
               <div>
-                <div style={{ fontWeight: 700, fontSize: '1rem' }}>Workout Reminder</div>
-                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Daily notification to complete your workout session.</div>
+                <div style={{ fontWeight: 600, fontSize: '0.92rem' }}>Workout Session Reminder</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Daily reminder to log your daily training session.</div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <TimeButton 
@@ -667,24 +683,25 @@ const SettingsPanel = ({
                   disabled={!userProfile.workoutReminderEnabled}
                   style={{
                     background: 'var(--bg-main)', border: '1px solid var(--border-color)',
-                    borderRadius: '8px', color: 'var(--text-main)', padding: '6px 10px',
-                    fontSize: '0.9rem', opacity: userProfile.workoutReminderEnabled ? 1 : 0.4
+                    borderRadius: '6px', color: 'var(--text-main)', padding: '6px 10px',
+                    font: "500 0.85rem 'DM Mono', monospace", opacity: userProfile.workoutReminderEnabled ? 1 : 0.4
                   }}
                 />
                 <div
                   onClick={() => setUserProfile({ ...userProfile, workoutReminderEnabled: !userProfile.workoutReminderEnabled })}
                   style={{
-                    width: '52px', height: '28px', borderRadius: '14px', cursor: 'pointer', flexShrink: 0,
-                    background: userProfile.workoutReminderEnabled ? 'var(--accent-blue)' : 'var(--border-color)',
-                    position: 'relative', transition: 'background 0.25s'
+                    width: '46px', height: '24px', borderRadius: '12px', cursor: 'pointer', flexShrink: 0,
+                    background: userProfile.workoutReminderEnabled ? '#d8f277' : 'var(--border-color)',
+                    position: 'relative', transition: 'background 0.2s'
                   }}
                 >
                   <div style={{
-                    position: 'absolute', top: '3px',
-                    left: userProfile.workoutReminderEnabled ? '26px' : '3px',
-                    width: '22px', height: '22px', borderRadius: '50%',
-                    background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
-                    transition: 'left 0.25s'
+                    position: 'absolute', top: '2px',
+                    left: userProfile.workoutReminderEnabled ? '24px' : '2px',
+                    width: '20px', height: '20px', borderRadius: '50%',
+                    background: userProfile.workoutReminderEnabled ? '#11110f' : '#fff',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                    transition: 'left 0.2s'
                   }} />
                 </div>
               </div>
@@ -693,8 +710,8 @@ const SettingsPanel = ({
             {/* Morning Summary Reminder */}
             <div className="settings-row">
               <div>
-                <div style={{ fontWeight: 700, fontSize: '1rem' }}>Morning Summary Notification</div>
-                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Daily morning notification summarising today's calendar events.</div>
+                <div style={{ fontWeight: 600, fontSize: '0.92rem' }}>Morning Calendar Summary</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Morning notification previewing all today's events.</div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <TimeButton 
@@ -703,24 +720,25 @@ const SettingsPanel = ({
                   disabled={!userProfile.summaryReminderEnabled}
                   style={{
                     background: 'var(--bg-main)', border: '1px solid var(--border-color)',
-                    borderRadius: '8px', color: 'var(--text-main)', padding: '6px 10px',
-                    fontSize: '0.9rem', opacity: userProfile.summaryReminderEnabled ? 1 : 0.4
+                    borderRadius: '6px', color: 'var(--text-main)', padding: '6px 10px',
+                    font: "500 0.85rem 'DM Mono', monospace", opacity: userProfile.summaryReminderEnabled ? 1 : 0.4
                   }}
                 />
                 <div
                   onClick={() => setUserProfile({ ...userProfile, summaryReminderEnabled: !userProfile.summaryReminderEnabled })}
                   style={{
-                    width: '52px', height: '28px', borderRadius: '14px', cursor: 'pointer', flexShrink: 0,
-                    background: userProfile.summaryReminderEnabled ? 'var(--accent-blue)' : 'var(--border-color)',
-                    position: 'relative', transition: 'background 0.25s'
+                    width: '46px', height: '24px', borderRadius: '12px', cursor: 'pointer', flexShrink: 0,
+                    background: userProfile.summaryReminderEnabled ? '#d8f277' : 'var(--border-color)',
+                    position: 'relative', transition: 'background 0.2s'
                   }}
                 >
                   <div style={{
-                    position: 'absolute', top: '3px',
-                    left: userProfile.summaryReminderEnabled ? '26px' : '3px',
-                    width: '22px', height: '22px', borderRadius: '50%',
-                    background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
-                    transition: 'left 0.25s'
+                    position: 'absolute', top: '2px',
+                    left: userProfile.summaryReminderEnabled ? '24px' : '2px',
+                    width: '20px', height: '20px', borderRadius: '50%',
+                    background: userProfile.summaryReminderEnabled ? '#11110f' : '#fff',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                    transition: 'left 0.2s'
                   }} />
                 </div>
               </div>
@@ -730,15 +748,15 @@ const SettingsPanel = ({
         </div>
 
         {/* SECTION 3: Account & Data Preferences */}
-        <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '24px' }}>
-          <h4 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-blue)' }}>
-            <Save size={18} /> Account & Data Preferences
+        <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '22px' }}>
+          <h4 style={{ fontFamily: "Fraunces, Georgia, serif", fontSize: '1.1rem', fontWeight: 600, marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-main)', letterSpacing: '-0.01em' }}>
+            <Save size={17} color="#d8f277" /> Data Sync & Backup
           </h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <div className="settings-row">
               <div>
-                <div style={{ fontWeight: 700, fontSize: '1rem' }}>Sync Data to Cloud Database</div>
-                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>If app is uninstalled, your data is safe and can be restored anytime from cloud backup.</div>
+                <div style={{ fontWeight: 600, fontSize: '0.92rem' }}>Sync to Cloud Database</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Persistent remote database synchronization to ensure zero data loss.</div>
               </div>
               <div
                 onClick={() => {
@@ -746,77 +764,77 @@ const SettingsPanel = ({
                   setUserProfile({ ...userProfile, syncToCloud: val, sync_to_cloud: val ? 1 : 0 });
                 }}
                 style={{
-                  width: '52px', height: '28px', borderRadius: '14px', cursor: 'pointer', flexShrink: 0,
-                  background: (userProfile.syncToCloud !== false) ? 'var(--accent-blue)' : 'var(--border-color)',
-                  position: 'relative', transition: 'background 0.25s'
+                  width: '46px', height: '24px', borderRadius: '12px', cursor: 'pointer', flexShrink: 0,
+                  background: (userProfile.syncToCloud !== false) ? '#d8f277' : 'var(--border-color)',
+                  position: 'relative', transition: 'background 0.2s'
                 }}
               >
                 <div style={{
-                  position: 'absolute', top: '3px',
-                  left: (userProfile.syncToCloud !== false) ? '26px' : '3px',
-                  width: '22px', height: '22px', borderRadius: '50%',
-                  background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
-                  transition: 'left 0.25s'
+                  position: 'absolute', top: '2px',
+                  left: (userProfile.syncToCloud !== false) ? '24px' : '2px',
+                  width: '20px', height: '20px', borderRadius: '50%',
+                  background: (userProfile.syncToCloud !== false) ? '#11110f' : '#fff',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                  transition: 'left 0.2s'
                 }} />
               </div>
             </div>
           </div>
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
-          <button type="submit" className="blue-btn" style={{ padding: '14px 28px' }}>
-            <Save size={18} /> Save Changes
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', borderTop: '1px solid var(--border-color)', paddingTop: '18px' }}>
+          <button type="submit" style={{ padding: '10px 24px', borderRadius: '6px', font: "600 0.84rem 'DM Sans', sans-serif", background: 'var(--ink)', color: '#d8f277', border: '1px solid var(--border-color)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            <Save size={16} /> Save Changes
           </button>
         </div>
 
       </form>
 
-      {/* DOWN BELOW: LOGOUT OPTION AS REQUESTED */}
-      <div style={{ marginTop: '48px', borderTop: '2px dashed var(--border-color)', paddingTop: '32px' }}>
-        <h4 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#ef4444', marginBottom: '8px' }}>
+      {/* SESSION & LOGOUT */}
+      <div style={{ marginTop: '40px', borderTop: '1px dashed var(--border-color)', paddingTop: '24px' }}>
+        <h4 style={{ fontFamily: "Fraunces, Georgia, serif", fontSize: '1.05rem', fontWeight: 600, color: '#ef6f3e', marginBottom: '6px' }}>
           Account Session
         </h4>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginBottom: '20px' }}>
-          Logging out will close your active dashboard session and return you to the public storefront.
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginBottom: '16px' }}>
+          Terminates the active authenticated session and returns to the welcome screen.
         </p>
         <button 
           onClick={handleLogout}
           style={{
-            display: 'flex', alignItems: 'center', gap: '10px',
-            padding: '14px 24px', borderRadius: '14px',
-            border: '1px solid #ef4444', background: 'rgba(239, 68, 68, 0.1)',
-            color: '#ef4444', fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer',
-            transition: 'all 0.2s'
+            display: 'flex', alignItems: 'center', gap: '8px',
+            padding: '10px 20px', borderRadius: '6px',
+            border: '1px solid rgba(239, 111, 62, 0.3)', background: 'rgba(239, 111, 62, 0.1)',
+            color: '#ef6f3e', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer',
+            transition: 'all 0.15s'
           }}
         >
-          <LogOut size={18} /> Log Out of LifeAgent
+          <LogOut size={16} /> Log Out of LifeAgent
         </button>
       </div>
 
       {/* DANGER ZONE SECTION */}
-      <div style={{ marginTop: '48px', borderTop: '2px solid rgba(239, 68, 68, 0.3)', paddingTop: '32px' }}>
-        <h4 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#ef4444', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <AlertTriangle size={20} /> Danger Zone
+      <div style={{ marginTop: '40px', borderTop: '1px solid rgba(239, 111, 62, 0.3)', paddingTop: '24px' }}>
+        <h4 style={{ fontFamily: "Fraunces, Georgia, serif", fontSize: '1.05rem', fontWeight: 600, color: '#ef6f3e', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <AlertTriangle size={17} /> Danger Zone
         </h4>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginBottom: '20px', lineHeight: '1.5' }}>
-          Permanently delete all your logged workouts, habits, transactions, notes, sleep logs, and history to reset your account to a completely fresh state.
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginBottom: '16px', lineHeight: '1.5' }}>
+          Permanently erase all your logged data or delete your account records completely.
         </p>
-        <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
           <button 
             type="button"
             onClick={() => setShowResetModal(true)}
             disabled={isResetting || isDeleting}
             style={{
-              display: 'flex', alignItems: 'center', gap: '10px',
-              padding: '14px 24px', borderRadius: '14px',
-              border: 'none', background: '#ef4444',
-              color: '#ffffff', fontWeight: 700, fontSize: '0.95rem', cursor: (isResetting || isDeleting) ? 'not-allowed' : 'pointer',
-              boxShadow: '0 4px 14px rgba(239, 68, 68, 0.35)',
+              display: 'flex', alignItems: 'center', gap: '8px',
+              padding: '10px 18px', borderRadius: '6px',
+              border: '1px solid #ef6f3e', background: '#ef6f3e',
+              color: '#ffffff', fontWeight: 600, fontSize: '0.84rem', cursor: (isResetting || isDeleting) ? 'not-allowed' : 'pointer',
               opacity: (isResetting || isDeleting) ? 0.7 : 1,
-              transition: 'all 0.2s'
+              transition: 'all 0.15s'
             }}
           >
-            ⚠️ Reset All Account Data
+            ⚠️ Reset All Logged Data
           </button>
 
           <button 
@@ -824,12 +842,12 @@ const SettingsPanel = ({
             onClick={() => setShowDeleteModal(true)}
             disabled={isResetting || isDeleting}
             style={{
-              display: 'flex', alignItems: 'center', gap: '10px',
-              padding: '14px 24px', borderRadius: '14px',
-              border: '1px solid #ef4444', background: 'transparent',
-              color: '#ef4444', fontWeight: 700, fontSize: '0.95rem', cursor: (isResetting || isDeleting) ? 'not-allowed' : 'pointer',
+              display: 'flex', alignItems: 'center', gap: '8px',
+              padding: '10px 18px', borderRadius: '6px',
+              border: '1px solid rgba(239, 111, 62, 0.4)', background: 'transparent',
+              color: '#ef6f3e', fontWeight: 600, fontSize: '0.84rem', cursor: (isResetting || isDeleting) ? 'not-allowed' : 'pointer',
               opacity: (isResetting || isDeleting) ? 0.7 : 1,
-              transition: 'all 0.2s'
+              transition: 'all 0.15s'
             }}
           >
             🗑️ Delete Account Permanently
@@ -859,9 +877,9 @@ const SettingsPanel = ({
         onCancel={() => !isDeleting && setShowDeleteModal(false)}
       />
 
-      {/* LIFEAGENT V2.4 FOOTER INSIDE SETTINGS */}
-      <div style={{ marginTop: '48px', paddingTop: '24px', borderTop: '1px solid var(--border-color)', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600, opacity: 0.8 }}>
-        LifeAgent v2.4 • Pro Edition
+      {/* LIFEAGENT V2.4 FOOTER */}
+      <div style={{ marginTop: '40px', paddingTop: '20px', borderTop: '1px solid var(--border-color)', textAlign: 'center', font: "400 0.75rem 'DM Mono', monospace", color: 'var(--text-muted)' }}>
+        LIFEAGENT V2.4 • PRO EDITION
       </div>
 
     </div>

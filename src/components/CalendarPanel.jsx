@@ -264,26 +264,26 @@ export default function CalendarPanel({
   });
 
   return (
-    <div className="animate-entrance">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px', flexWrap: 'wrap', gap: '16px' }}>
+    <div className="animate-entrance" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '22px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px', flexWrap: 'wrap', gap: '14px' }}>
         <div>
-          <h3 style={{ fontSize: '1.55rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <CalendarIcon size={24} color="var(--accent-blue)" /> Universal Calendar
+          <h3 style={{ fontFamily: "Fraunces, Georgia, serif", fontSize: '1.45rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '10px', margin: 0, letterSpacing: '-0.02em' }}>
+            <CalendarIcon size={22} color="#d8f277" /> Universal Calendar
           </h3>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: '4px' }}>
-            Manage your events, meetings, and deadlines.
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.84rem', marginTop: '4px', margin: 0, fontFamily: "'DM Sans', sans-serif" }}>
+            Scheduled events, meetings, deadlines, and time audits.
           </p>
         </div>
         <button 
-          className="blue-btn" 
+          className="button button-primary" 
           onClick={() => {
             setIsAddEventFormOpen(true);
             setNewEventDate(selectedCalendarDate || todayKey());
             setNewEventTitle('');
           }}
-          style={{ padding: '12px 22px', fontSize: '0.92rem' }}
+          style={{ padding: '10px 20px', fontSize: '0.84rem', borderRadius: '6px', font: "600 0.82rem 'DM Sans', sans-serif", background: 'var(--ink)', color: '#d8f277', border: '1px solid var(--border-color)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
         >
-          <Plus size={18} /> Add Event
+          <Plus size={16} /> Add Event
         </button>
       </div>
 
@@ -294,19 +294,20 @@ export default function CalendarPanel({
         icon={CalendarIcon}
         maxWidth="440px"
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', fontFamily: "'DM Sans', sans-serif" }}>
           <div>
-            <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Event Title</label>
+            <label style={{ display: 'block', marginBottom: '6px', font: "500 0.72rem 'DM Mono', monospace", color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Event Title</label>
             <input
               type="text"
               value={newEventTitle}
               onChange={(e) => setNewEventTitle(e.target.value)}
-              placeholder="Enter event title..."
+              placeholder="e.g. Strategy Review, Team Sync..."
               autoFocus
               style={{
-                width: '100%', padding: '12px 14px', borderRadius: '12px',
+                width: '100%', padding: '10px 12px', borderRadius: '6px',
                 border: '1px solid var(--border-color)', background: 'var(--bg-main)',
-                color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none'
+                color: 'var(--text-main)', fontSize: '0.9rem', outline: 'none',
+                boxSizing: 'border-box', fontFamily: "'DM Sans', sans-serif"
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleAddEvent();
@@ -315,30 +316,31 @@ export default function CalendarPanel({
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <div>
-              <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Date</label>
+              <label style={{ display: 'block', marginBottom: '6px', font: "500 0.72rem 'DM Mono', monospace", color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Date</label>
               <input
                 type="date"
                 value={newEventDate}
                 onChange={(e) => setNewEventDate(e.target.value)}
                 style={{
-                  width: '100%', padding: '12px 14px', borderRadius: '12px',
+                  width: '100%', padding: '10px 12px', borderRadius: '6px',
                   border: '1px solid var(--border-color)', background: 'var(--bg-main)',
-                  color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none'
+                  color: 'var(--text-main)', font: "500 0.85rem 'DM Mono', monospace", outline: 'none',
+                  boxSizing: 'border-box'
                 }}
               />
             </div>
             <div>
-              <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>
-                Event Time <span style={{ fontSize: '0.72rem', opacity: 0.7 }}>(Default 12 AM)</span>
+              <label style={{ display: 'block', marginBottom: '6px', font: "500 0.72rem 'DM Mono', monospace", color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                Time <span style={{ fontSize: '0.68rem', opacity: 0.7 }}>(Default 12 AM)</span>
               </label>
               <TimeButton 
                 value={newEventTime}
                 onChange={(val) => setNewEventTime(val)}
                 style={{
-                  width: '100%', padding: '12px 14px', borderRadius: '12px',
+                  width: '100%', padding: '10px 12px', borderRadius: '6px',
                   border: '1px solid var(--border-color)', background: 'var(--bg-main)',
-                  color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none',
-                  colorScheme: 'dark'
+                  color: 'var(--text-main)', font: "500 0.85rem 'DM Mono', monospace", outline: 'none',
+                  boxSizing: 'border-box'
                 }}
               />
             </div>
@@ -350,17 +352,17 @@ export default function CalendarPanel({
             label="Reminders"
           />
         </div>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
-          <button className="secondary-btn" onClick={() => setIsAddEventFormOpen(false)}>Cancel</button>
-          <button className="blue-btn" onClick={handleAddEvent}>Save Event</button>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
+          <button className="secondary-btn" onClick={() => setIsAddEventFormOpen(false)} style={{ padding: '8px 16px', borderRadius: '6px', font: "500 0.82rem 'DM Sans', sans-serif" }}>Cancel</button>
+          <button onClick={handleAddEvent} style={{ padding: '8px 18px', borderRadius: '6px', font: "600 0.82rem 'DM Sans', sans-serif", background: '#d8f277', color: '#11110f', border: '1px solid #d8f277', cursor: 'pointer' }}>Save Event</button>
         </div>
       </Modal>
 
       {/* Sub-tabs & Range Selection */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '20px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <Filter size={15} /> Timeframe:
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '18px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <span style={{ font: "500 0.72rem 'DM Mono', monospace", color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <Filter size={14} /> Timeframe:
           </span>
           <CustomSelect
             className="timeframe-dropdown"
@@ -380,25 +382,25 @@ export default function CalendarPanel({
               { value: 'custom', label: '🔍 Custom Range' }
             ]}
             style={{
-              width: '190px',
+              width: '180px',
               background: 'var(--bg-card)',
               border: '1px solid var(--border-color)',
-              borderRadius: '30px',
-              padding: '8px 16px',
+              borderRadius: '6px',
+              padding: '6px 14px',
               color: 'var(--text-primary)',
-              fontSize: '0.85rem'
+              font: "500 0.8rem 'DM Mono', monospace"
             }}
           />
         </div>
 
         {/* Toggle Expired Events checkbox for non-custom tabs */}
         {calendarSubTab !== 'custom' && calendarSubTab !== 'today' && (
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600, cursor: 'pointer' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', font: "500 0.75rem 'DM Mono', monospace", color: 'var(--text-muted)', cursor: 'pointer' }}>
             <input 
               type="checkbox"
               checked={showExpired}
               onChange={e => setShowExpired(e.target.checked)}
-              style={{ accentColor: 'var(--accent-blue)', cursor: 'pointer' }}
+              style={{ accentColor: '#d8f277', cursor: 'pointer' }}
             />
             Show Expired Events
           </label>
@@ -407,32 +409,32 @@ export default function CalendarPanel({
 
       {/* Custom Range Picker Box */}
       {calendarSubTab === 'custom' && (
-        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', background: 'var(--bg-card)', padding: '12px 18px', borderRadius: '14px', border: '1px solid var(--accent-blue)', marginBottom: '20px', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--accent-blue)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Filter size={16} /> Custom Date Range (Includes Expired Events):
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', background: 'var(--bg-card)', padding: '10px 14px', borderRadius: '6px', border: '1px solid var(--border-color)', marginBottom: '18px', flexWrap: 'wrap' }}>
+          <span style={{ font: "500 0.72rem 'DM Mono', monospace", color: '#d8f277', letterSpacing: '0.06em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Filter size={14} /> Custom Range:
           </span>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Start:</span>
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <span style={{ font: "500 0.7rem 'DM Mono', monospace", color: 'var(--text-muted)', textTransform: 'uppercase' }}>Start:</span>
             <input 
               type="date" 
               value={customStartDate} 
               onChange={e => setCustomStartDate(e.target.value)}
-              style={{ background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', padding: '6px 12px', borderRadius: '8px', fontSize: '0.85rem' }}
+              style={{ background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', padding: '5px 10px', borderRadius: '6px', font: "500 0.82rem 'DM Mono', monospace" }}
             />
           </div>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>End:</span>
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <span style={{ font: "500 0.7rem 'DM Mono', monospace", color: 'var(--text-muted)', textTransform: 'uppercase' }}>End:</span>
             <input 
               type="date" 
               value={customEndDate} 
               onChange={e => setCustomEndDate(e.target.value)}
-              style={{ background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', padding: '6px 12px', borderRadius: '8px', fontSize: '0.85rem' }}
+              style={{ background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', padding: '5px 10px', borderRadius: '6px', font: "500 0.82rem 'DM Mono', monospace" }}
             />
           </div>
           {(customStartDate || customEndDate) && (
             <button 
               onClick={() => { setCustomStartDate(''); setCustomEndDate(''); }}
-              style={{ background: 'transparent', border: 'none', color: '#ef4444', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}
+              style={{ background: 'transparent', border: 'none', color: '#ef6f3e', font: "600 0.75rem 'DM Mono', monospace", cursor: 'pointer' }}
             >
               Clear Range
             </button>
@@ -440,22 +442,22 @@ export default function CalendarPanel({
         </div>
       )}
 
-      <div className="calendar-main-grid">
+      <div className="calendar-main-grid" style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '20px' }}>
         {/* Left: Mini Calendar Grid */}
-        <div className="calendar-left-col" style={{ background: 'var(--bg-card)', borderRadius: '18px', border: '1px solid var(--border-color)', padding: '24px', width: '100%', boxSizing: 'border-box' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h4 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0 }}>{new Date(calendarMonth.year, calendarMonth.month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</h4>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button onClick={() => setCalendarMonth(prev => { const d = new Date(prev.year, prev.month - 1); return { year: d.getFullYear(), month: d.getMonth() }; })} style={{ background: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: '8px', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-main)', cursor: 'pointer' }}>&lt;</button>
-              <button onClick={() => setCalendarMonth(prev => { const d = new Date(prev.year, prev.month + 1); return { year: d.getFullYear(), month: d.getMonth() }; })} style={{ background: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: '8px', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-main)', cursor: 'pointer' }}>&gt;</button>
+        <div className="calendar-left-col" style={{ background: 'var(--bg-card)', borderRadius: '6px', border: '1px solid var(--border-color)', padding: '18px', width: '100%', boxSizing: 'border-box' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+            <h4 style={{ fontFamily: "Fraunces, Georgia, serif", fontSize: '1.05rem', fontWeight: 600, margin: 0, letterSpacing: '-0.01em' }}>{new Date(calendarMonth.year, calendarMonth.month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</h4>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <button onClick={() => setCalendarMonth(prev => { const d = new Date(prev.year, prev.month - 1); return { year: d.getFullYear(), month: d.getMonth() }; })} style={{ background: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: '6px', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-main)', cursor: 'pointer', font: "600 0.8rem 'DM Mono', monospace" }}>&lt;</button>
+              <button onClick={() => setCalendarMonth(prev => { const d = new Date(prev.year, prev.month + 1); return { year: d.getFullYear(), month: d.getMonth() }; })} style={{ background: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: '6px', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-main)', cursor: 'pointer', font: "600 0.8rem 'DM Mono', monospace" }}>&gt;</button>
             </div>
           </div>
-          <div className="calendar-day-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', textAlign: 'center', marginBottom: '8px' }}>
+          <div className="calendar-day-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px', textAlign: 'center', marginBottom: '8px' }}>
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-              <div key={d} style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>{d}</div>
+              <div key={d} style={{ font: "500 0.68rem 'DM Mono', monospace", color: 'var(--text-muted)', textTransform: 'uppercase' }}>{d}</div>
             ))}
           </div>
-          <div className="calendar-day-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', textAlign: 'center' }}>
+          <div className="calendar-day-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px', textAlign: 'center' }}>
             {(() => {
               const firstDay = new Date(calendarMonth.year, calendarMonth.month, 1).getDay();
               const daysInMonth = new Date(calendarMonth.year, calendarMonth.month + 1, 0).getDate();
@@ -472,17 +474,26 @@ export default function CalendarPanel({
                     className="calendar-date-cell"
                     onClick={() => setSelectedCalendarDate(isSelected ? '' : dateStr)}
                     style={{ 
-                      background: isSelected ? 'var(--accent-blue)' : isToday ? 'var(--accent-blue-dim)' : 'var(--bg-main)', 
-                      color: isSelected ? 'var(--accent-text, #ffffff)' : 'var(--text-main)',
-                      fontWeight: isSelected || isToday ? 800 : 500,
-                      border: isToday && !isSelected ? '2px solid var(--accent-blue)' : '1px solid var(--border-color)'
+                      borderRadius: '6px',
+                      padding: '8px 0',
+                      cursor: 'pointer',
+                      position: 'relative',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: isSelected ? '#d8f277' : isToday ? 'rgba(216, 242, 119, 0.12)' : 'var(--bg-main)', 
+                      color: isSelected ? '#11110f' : 'var(--text-main)',
+                      font: "500 0.8rem 'DM Mono', monospace",
+                      fontWeight: isSelected || isToday ? 700 : 500,
+                      border: isSelected ? '1px solid #d8f277' : isToday ? '1px solid #d8f277' : '1px solid var(--border-color)',
+                      transition: 'all 0.15s'
                     }}
                   >
                     <span>{d}</span>
                     {dayEvents.length > 0 && (
                       <div style={{ display: 'flex', justifyContent: 'center', gap: '2px', position: 'absolute', bottom: '3px', left: 0, right: 0 }}>
                         {dayEvents.slice(0, 3).map((e, idx) => (
-                          <div key={idx} style={{ width: '4px', height: '4px', borderRadius: '50%', background: isSelected ? '#fff' : e.color || 'var(--accent-blue)' }} />
+                          <div key={idx} style={{ width: '4px', height: '4px', borderRadius: '50%', background: isSelected ? '#11110f' : e.color || '#d8f277' }} />
                         ))}
                       </div>
                     )}
@@ -495,22 +506,22 @@ export default function CalendarPanel({
         </div>
         
         {/* Right: Event List */}
-        <div className="calendar-right-col" style={{ background: 'var(--bg-card)', borderRadius: '18px', border: '1px solid var(--border-color)', padding: '24px', width: '100%', boxSizing: 'border-box' }}>
+        <div className="calendar-right-col" style={{ background: 'var(--bg-card)', borderRadius: '6px', border: '1px solid var(--border-color)', padding: '20px', width: '100%', boxSizing: 'border-box' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h4 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0 }}>
+            <h4 style={{ fontFamily: "Fraunces, Georgia, serif", fontSize: '1.05rem', fontWeight: 600, margin: 0, letterSpacing: '-0.01em' }}>
               {selectedCalendarDate ? `Events for ${selectedCalendarDate}` : calendarSubTab === 'today' ? "Today's Events" : calendarSubTab === 'custom' ? 'Custom Range Events' : 'Filtered Events'}
             </h4>
             {selectedCalendarDate && (
               <button 
                 onClick={() => setSelectedCalendarDate('')}
-                style={{ background: 'transparent', border: 'none', color: 'var(--accent-blue)', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}
+                style={{ background: 'transparent', border: 'none', color: '#d8f277', font: "600 0.78rem 'DM Mono', monospace", cursor: 'pointer' }}
               >
                 Clear Date Filter
               </button>
             )}
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
             {groupedSections.filter(g => g.key === 'today' || g.events.length > 0).map(group => (
               <div key={group.key}>
                 <div style={{
@@ -518,14 +529,13 @@ export default function CalendarPanel({
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   gap: '8px',
-                  fontSize: '0.82rem',
-                  fontWeight: 800,
+                  font: "600 0.72rem 'DM Mono', monospace",
                   textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
+                  letterSpacing: '0.06em',
                   color: group.badgeColor,
-                  marginBottom: '12px',
-                  paddingBottom: '6px',
-                  borderBottom: `2px solid ${group.badgeColor}33`
+                  marginBottom: '10px',
+                  paddingBottom: '4px',
+                  borderBottom: `1px solid ${group.badgeColor}33`
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <span>{group.title}</span>
@@ -533,17 +543,16 @@ export default function CalendarPanel({
                   <span style={{
                     background: group.badgeBg,
                     color: group.badgeColor,
-                    borderRadius: '12px',
-                    padding: '2px 8px',
-                    fontSize: '0.75rem',
-                    fontWeight: 700
+                    borderRadius: '4px',
+                    padding: '2px 7px',
+                    font: "500 0.7rem 'DM Mono', monospace"
                   }}>
                     {group.events.length}
                   </span>
                 </div>
 
                 {group.events.length > 0 ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {group.events.map(e => {
                       const badge = getStatusBadgeProps(e.status);
                       const isDropdownOpen = openStatusDropdown === e.id;
@@ -553,43 +562,42 @@ export default function CalendarPanel({
                           key={e.id}
                           className="calendar-event-card"
                           style={{
-                            padding: '14px 16px',
+                            padding: '12px 16px',
                             background: 'var(--bg-main)',
-                            borderRadius: '14px',
+                            borderRadius: '6px',
                             border: '1px solid var(--border-color)',
-                            borderLeft: `4px solid ${e.color || 'var(--accent-blue)'}`,
+                            borderLeft: `4px solid ${e.color || '#d8f277'}`,
                             display: 'flex',
                             flexDirection: 'column',
-                            gap: '10px',
-                            boxShadow: '0 2px 6px rgba(0,0,0,0.03)'
+                            gap: '8px'
                           }}
                         >
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-                            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <CalendarIcon size={14} /> {e.date} <span style={{ opacity: 0.85, color: 'var(--text-main)', fontSize: '0.8rem' }}>• ⏰ {formatTime12h(e.time)}</span>
+                            <div style={{ font: "400 0.75rem 'DM Mono', monospace", color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <CalendarIcon size={13} /> {e.date} <span style={{ color: 'var(--text-main)', opacity: 0.9 }}>• ⏰ {formatTime12h(e.time)}</span>
                             </div>
                             
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                               {/* Status Badge with Dropdown */}
                               <div style={{ position: 'relative' }}>
                                 <button
                                   onClick={() => setOpenStatusDropdown(isDropdownOpen ? null : e.id)}
                                   style={{
-                                    display: 'inline-flex', alignItems: 'center', gap: '5px',
+                                    display: 'inline-flex', alignItems: 'center', gap: '4px',
                                     background: badge.bg, color: badge.color,
-                                    border: `1px solid ${badge.color}44`, borderRadius: '20px',
-                                    padding: '4px 12px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer',
+                                    border: `1px solid ${badge.color}44`, borderRadius: '4px',
+                                    padding: '3px 8px', font: "500 0.72rem 'DM Mono', monospace", cursor: 'pointer',
                                     transition: 'all 0.15s ease'
                                   }}
                                 >
-                                  {badge.icon} {badge.label} <ChevronDown size={12} />
+                                  {badge.icon} {badge.label} <ChevronDown size={11} />
                                 </button>
                                 
                                 {isDropdownOpen && (
                                   <div style={{
-                                    position: 'absolute', top: '100%', right: 0, marginTop: '6px',
+                                    position: 'absolute', top: '100%', right: 0, marginTop: '4px',
                                     background: 'var(--bg-card)', border: '1px solid var(--border-color)',
-                                    borderRadius: '12px', zIndex: 20, minWidth: '140px', boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
+                                    borderRadius: '6px', zIndex: 20, minWidth: '130px', boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
                                     overflow: 'hidden'
                                   }}>
                                     {['upcoming', 'completed', 'failed', 'expired'].map(status => {
@@ -599,9 +607,9 @@ export default function CalendarPanel({
                                           key={status}
                                           onClick={() => handleUpdateStatus(e.id, status)}
                                           style={{
-                                            padding: '9px 14px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '8px',
+                                            padding: '8px 12px', font: "500 0.75rem 'DM Mono', monospace", display: 'flex', alignItems: 'center', gap: '6px',
                                             cursor: 'pointer', borderBottom: '1px solid var(--border-color)',
-                                            color: sBadge.color, fontWeight: 600, background: 'var(--bg-card)',
+                                            color: sBadge.color, background: 'var(--bg-card)',
                                             transition: 'background 0.15s'
                                           }}
                                         >
@@ -620,49 +628,47 @@ export default function CalendarPanel({
                                   setEditReminderList(Array.isArray(e.reminders) ? e.reminders : []);
                                 }}
                                 style={{
-                                  background: 'rgba(59,130,246,0.08)',
-                                  border: '1px solid rgba(59,130,246,0.2)',
-                                  color: 'var(--accent-blue)',
-                                  borderRadius: '8px',
-                                  padding: '4px 10px',
-                                  fontSize: '0.75rem',
-                                  fontWeight: 700,
+                                  background: 'rgba(216, 242, 119, 0.1)',
+                                  border: '1px solid rgba(216, 242, 119, 0.25)',
+                                  color: '#a7c878',
+                                  borderRadius: '4px',
+                                  padding: '3px 8px',
+                                  font: "500 0.72rem 'DM Mono', monospace",
                                   cursor: 'pointer',
                                   display: 'inline-flex',
                                   alignItems: 'center',
                                   gap: '4px',
-                                  transition: 'all 0.2s'
+                                  transition: 'all 0.15s'
                                 }}
                                 title="Edit Reminders"
                               >
-                                <Bell size={13} /> {(e.reminders?.length || 0) > 0 ? `${e.reminders.length} reminder${e.reminders.length > 1 ? 's' : ''}` : 'Remind'}
+                                <Bell size={12} /> {(e.reminders?.length || 0) > 0 ? `${e.reminders.length}` : 'Remind'}
                               </button>
 
                               {/* Delete Button */}
                               <button 
                                 onClick={() => setDeleteConfirmId(e.id)}
                                 style={{
-                                  background: 'rgba(239, 68, 68, 0.08)',
-                                  border: '1px solid rgba(239, 68, 68, 0.2)',
-                                  color: '#ef4444',
-                                  borderRadius: '8px',
-                                  padding: '4px 10px',
-                                  fontSize: '0.75rem',
-                                  fontWeight: 700,
+                                  background: 'rgba(239, 111, 62, 0.08)',
+                                  border: '1px solid rgba(239, 111, 62, 0.25)',
+                                  color: '#ef6f3e',
+                                  borderRadius: '4px',
+                                  padding: '3px 8px',
+                                  font: "500 0.72rem 'DM Mono', monospace",
                                   cursor: 'pointer',
                                   display: 'inline-flex',
                                   alignItems: 'center',
                                   gap: '4px',
-                                  transition: 'all 0.2s'
+                                  transition: 'all 0.15s'
                                 }}
                                 title="Delete Event"
                               >
-                                <Trash2 size={13} /> Delete
+                                <Trash2 size={12} /> Delete
                               </button>
                             </div>
                           </div>
                           
-                          <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', wordBreak: 'break-word', lineHeight: 1.4 }}>
+                          <div style={{ fontSize: '0.94rem', fontWeight: 600, color: 'var(--text-main)', wordBreak: 'break-word', lineHeight: 1.4, fontFamily: "'DM Sans', sans-serif" }}>
                             {e.title}
                           </div>
                         </div>
@@ -670,7 +676,7 @@ export default function CalendarPanel({
                     })}
                   </div>
                 ) : (
-                  <div style={{ padding: '12px 16px', background: 'var(--bg-main)', borderRadius: '12px', border: '1px dashed var(--border-color)', fontSize: '0.82rem', color: 'var(--text-muted)', textAlign: 'center', fontStyle: 'italic' }}>
+                  <div style={{ padding: '10px 14px', background: 'var(--bg-main)', borderRadius: '6px', border: '1px dashed var(--border-color)', font: "400 0.78rem 'DM Mono', monospace", color: 'var(--text-muted)', textAlign: 'center' }}>
                     {group.emptyMsg}
                   </div>
                 )}
@@ -685,7 +691,7 @@ export default function CalendarPanel({
                   textAlign: 'center',
                   color: 'var(--text-muted)',
                   background: 'var(--bg-main)',
-                  borderRadius: '16px',
+                  borderRadius: '6px',
                   border: '1px dashed var(--border-color)',
                   display: 'flex',
                   flexDirection: 'column',
@@ -694,22 +700,22 @@ export default function CalendarPanel({
                 }}
               >
                 <div style={{
-                  width: '52px', height: '52px', borderRadius: '50%',
-                  background: 'var(--accent-blue-dim)', display: 'flex',
-                  alignItems: 'center', justifyContent: 'center', marginBottom: '4px'
+                  width: '46px', height: '46px', borderRadius: '6px',
+                  background: 'rgba(216, 242, 119, 0.12)', display: 'flex',
+                  alignItems: 'center', justifyContent: 'center', marginBottom: '4px',
+                  border: '1px solid rgba(216, 242, 119, 0.25)'
                 }}>
-                  <CalendarIcon size={26} style={{ color: 'var(--accent-blue)' }} />
+                  <CalendarIcon size={22} style={{ color: '#d8f277' }} />
                 </div>
-                <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>No events found</div>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', margin: 0, maxWidth: '300px', lineHeight: 1.4 }}>
-                  No events scheduled for this view. Click below to add your first entry.
+                <div style={{ fontFamily: "Fraunces, Georgia, serif", fontSize: '1.05rem', fontWeight: 600, color: 'var(--text-main)' }}>No events scheduled</div>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.84rem', margin: 0, maxWidth: '300px', lineHeight: 1.4, fontFamily: "'DM Sans', sans-serif" }}>
+                  No events found for this view. Click below to add an event.
                 </p>
                 <button
                   onClick={() => { setIsAddEventFormOpen(true); setNewEventDate(selectedCalendarDate || todayKey(userProfile?.timezone)); setNewEventTitle(''); }}
-                  className="blue-btn"
-                  style={{ marginTop: '6px', padding: '8px 18px', fontSize: '0.85rem', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  style={{ marginTop: '6px', padding: '8px 16px', fontSize: '0.82rem', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#d8f277', color: '#11110f', border: '1px solid #d8f277', cursor: 'pointer', fontWeight: 600 }}
                 >
-                  <Plus size={16} /> Add Event
+                  <Plus size={15} /> Add Event
                 </button>
               </div>
             )}
@@ -744,9 +750,9 @@ export default function CalendarPanel({
           mode="offset"
           label="Reminders"
         />
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
-          <button className="secondary-btn" onClick={() => setEditReminderEventId(null)}>Cancel</button>
-          <button className="blue-btn" onClick={() => handleSaveEventReminders(editReminderEventId)}>Save Reminders</button>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
+          <button className="secondary-btn" onClick={() => setEditReminderEventId(null)} style={{ padding: '8px 16px', borderRadius: '6px', font: "500 0.82rem 'DM Sans', sans-serif" }}>Cancel</button>
+          <button onClick={() => handleSaveEventReminders(editReminderEventId)} style={{ padding: '8px 18px', borderRadius: '6px', font: "600 0.82rem 'DM Sans', sans-serif", background: '#d8f277', color: '#11110f', border: '1px solid #d8f277', cursor: 'pointer' }}>Save Reminders</button>
         </div>
       </Modal>
     </div>

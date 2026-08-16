@@ -4,17 +4,17 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer 
 } from 'recharts';
 
-const COLORS = ['#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f43f5e', '#84cc16', '#64748b'];
-const EARN_COLOR = '#22c55e';
-const SPEND_COLOR = '#ef4444';
+const COLORS = ['#d8f277', '#ef6f3e', '#8b5cf6', '#3b82f6', '#14b8a6', '#f59e0b', '#ec4899', '#64748b'];
+const EARN_COLOR = '#a7c878';
+const SPEND_COLOR = '#ef6f3e';
 
 export default function MoneyCharts({ transactions = [], chartType, currency = '$' }) {
   
   if (!transactions || transactions.length === 0) {
     return (
-      <div className="glass-card" style={{ textAlign: 'center', padding: '36px 20px', background: 'var(--bg-main)', borderRadius: '18px', border: '1px dashed var(--border-color)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-        <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)' }}>No items logged yet</div>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', margin: 0 }}>No items logged yet. Click + to add your first entry</p>
+      <div className="glass-card" style={{ textAlign: 'center', padding: '36px 20px', background: 'var(--bg-card)', borderRadius: '6px', border: '1px dashed var(--border-color)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+        <div style={{ fontFamily: "Fraunces, Georgia, serif", fontSize: '1rem', fontWeight: 600, color: 'var(--text-main)' }}>No items logged yet</div>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.84rem', margin: 0, fontFamily: "'DM Sans', sans-serif" }}>No transactions logged. Click + to add your first entry.</p>
       </div>
     );
   }
@@ -54,10 +54,10 @@ export default function MoneyCharts({ transactions = [], chartType, currency = '
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
-        <div style={{ background: 'var(--bg-card)', padding: '12px', border: '1px solid var(--border-color)', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-          <p style={{ margin: '0 0 8px 0', fontWeight: 'bold' }}>{label}</p>
+        <div style={{ background: 'var(--bg-card)', padding: '12px 14px', border: '1px solid var(--border-color)', borderRadius: '6px', boxShadow: '0 4px 16px rgba(0,0,0,0.15)', fontFamily: "'DM Sans', sans-serif" }}>
+          <p style={{ margin: '0 0 6px 0', font: "500 0.78rem 'DM Mono', monospace", color: 'var(--text-muted)' }}>{label}</p>
           {payload.map((entry, index) => (
-            <p key={index} style={{ color: entry.color, margin: '4px 0', fontSize: '0.9rem' }}>
+            <p key={index} style={{ color: entry.color, margin: '4px 0', font: "600 0.85rem 'DM Mono', monospace" }}>
               {entry.name}: {currency}{(Number(entry.value) || 0).toFixed(2)}
             </p>
           ))}
@@ -72,12 +72,12 @@ export default function MoneyCharts({ transactions = [], chartType, currency = '
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={timeData} margin={{ top: 20, right: 20, left: 0, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" vertical={false} />
-          <XAxis dataKey="date" stroke="var(--text-muted)" fontSize={12} tickMargin={10} />
-          <YAxis stroke="var(--text-muted)" fontSize={12} tickFormatter={(val) => `${currency}${val}`} />
-          <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--text-muted)', opacity: 0.1 }} />
-          <Legend wrapperStyle={{ paddingTop: '20px' }} />
-          <Bar dataKey="earn" name="Earnings" fill={EARN_COLOR} radius={[4, 4, 0, 0]} maxBarSize={50} minPointSize={3} />
-          <Bar dataKey="spend" name="Spending" fill={SPEND_COLOR} radius={[4, 4, 0, 0]} maxBarSize={50} minPointSize={3} />
+          <XAxis dataKey="date" stroke="var(--text-muted)" tick={{ fill: 'var(--text-muted)', fontFamily: "'DM Mono', monospace", fontSize: 11 }} tickMargin={10} />
+          <YAxis stroke="var(--text-muted)" tick={{ fill: 'var(--text-muted)', fontFamily: "'DM Mono', monospace", fontSize: 11 }} tickFormatter={(val) => `${currency}${val}`} />
+          <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--text-muted)', opacity: 0.08 }} />
+          <Legend wrapperStyle={{ paddingTop: '16px', fontFamily: "'DM Sans', sans-serif", fontSize: '0.82rem' }} />
+          <Bar dataKey="earn" name="Earnings" fill={EARN_COLOR} radius={[4, 4, 0, 0]} maxBarSize={45} minPointSize={3} />
+          <Bar dataKey="spend" name="Spending" fill={SPEND_COLOR} radius={[4, 4, 0, 0]} maxBarSize={45} minPointSize={3} />
         </BarChart>
       </ResponsiveContainer>
     );
@@ -88,12 +88,12 @@ export default function MoneyCharts({ transactions = [], chartType, currency = '
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={timeData} margin={{ top: 20, right: 20, left: 0, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" vertical={false} />
-          <XAxis dataKey="date" stroke="var(--text-muted)" fontSize={12} tickMargin={10} />
-          <YAxis stroke="var(--text-muted)" fontSize={12} tickFormatter={(val) => `${currency}${val}`} />
+          <XAxis dataKey="date" stroke="var(--text-muted)" tick={{ fill: 'var(--text-muted)', fontFamily: "'DM Mono', monospace", fontSize: 11 }} tickMargin={10} />
+          <YAxis stroke="var(--text-muted)" tick={{ fill: 'var(--text-muted)', fontFamily: "'DM Mono', monospace", fontSize: 11 }} tickFormatter={(val) => `${currency}${val}`} />
           <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'var(--text-muted)', strokeWidth: 1, strokeDasharray: '4 4', fill: 'transparent' }} />
-          <Legend wrapperStyle={{ paddingTop: '20px' }} />
-          <Line type="monotone" dataKey="earn" name="Earnings" stroke={EARN_COLOR} strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-          <Line type="monotone" dataKey="spend" name="Spending" stroke={SPEND_COLOR} strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+          <Legend wrapperStyle={{ paddingTop: '16px', fontFamily: "'DM Sans', sans-serif", fontSize: '0.82rem' }} />
+          <Line type="monotone" dataKey="earn" name="Earnings" stroke={EARN_COLOR} strokeWidth={2.5} dot={{ r: 4, fill: EARN_COLOR }} activeDot={{ r: 6 }} />
+          <Line type="monotone" dataKey="spend" name="Spending" stroke={SPEND_COLOR} strokeWidth={2.5} dot={{ r: 4, fill: SPEND_COLOR }} activeDot={{ r: 6 }} />
         </LineChart>
       </ResponsiveContainer>
     );
@@ -104,8 +104,8 @@ export default function MoneyCharts({ transactions = [], chartType, currency = '
     return (
       <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
         {payload.map((entry, index) => (
-          <li key={`item-${index}`} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', color: 'var(--text-main)', fontWeight: 600 }}>
-            <div style={{ width: '14px', height: '14px', backgroundColor: entry.color, borderRadius: '4px' }} />
+          <li key={`item-${index}`} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', color: 'var(--text-main)', font: "500 0.8rem 'DM Mono', monospace" }}>
+            <div style={{ width: '12px', height: '12px', backgroundColor: entry.color, borderRadius: '3px', flexShrink: 0 }} />
             {entry.value}
           </li>
         ))}
@@ -122,14 +122,14 @@ export default function MoneyCharts({ transactions = [], chartType, currency = '
     ].filter(d => d.value > 0);
 
     const renderPieSection = (title, data, colorTitle, colors) => (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%', height: '280px', marginBottom: '20px' }}>
-        <h3 style={{ color: colorTitle, marginBottom: '10px', fontSize: '1.1rem', fontWeight: 700 }}>{title}</h3>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%', height: '260px', marginBottom: '20px' }}>
+        <h4 style={{ color: colorTitle, marginBottom: '8px', fontFamily: "Fraunces, Georgia, serif", fontSize: '1rem', fontWeight: 600 }}>{title}</h4>
         {data.length === 0 ? (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>No data</div>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', color: 'var(--text-muted)', fontSize: '0.85rem', font: "400 0.8rem 'DM Mono', monospace" }}>No data</div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
-              <Pie data={data} cx="50%" cy="50%" innerRadius={70} outerRadius={90} paddingAngle={5} dataKey="value">
+              <Pie data={data} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={4} dataKey="value">
                 {data.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
                 ))}
@@ -143,10 +143,10 @@ export default function MoneyCharts({ transactions = [], chartType, currency = '
     );
 
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', width: '100%', gap: '30px', paddingBottom: '20px' }}>
-        {renderPieSection('Overall', overallData, 'var(--text-main)', [EARN_COLOR, SPEND_COLOR])}
-        {renderPieSection('Earnings', earnData, 'var(--text-main)', COLORS)}
-        {renderPieSection('Spendings', spendData, 'var(--text-main)', COLORS)}
+      <div style={{ display: 'flex', flexDirection: 'column', width: '100%', gap: '20px', paddingBottom: '16px' }}>
+        {renderPieSection('Overall Cashflow', overallData, 'var(--text-main)', [EARN_COLOR, SPEND_COLOR])}
+        {renderPieSection('Earnings by Category', earnData, 'var(--text-main)', COLORS)}
+        {renderPieSection('Spendings by Category', spendData, 'var(--text-main)', COLORS)}
       </div>
     );
   }

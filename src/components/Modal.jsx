@@ -72,10 +72,10 @@ export default function Modal({
         onClick={(e) => e.stopPropagation()}
         style={{
           background: 'var(--bg-card)',
-          padding: '28px',
-          borderRadius: '24px',
+          padding: '24px',
+          borderRadius: 'var(--radius-md)',
           border: '1px solid var(--border-color)',
-          boxShadow: '0 25px 60px rgba(0,0,0,0.4)',
+          boxShadow: 'var(--shadow-lg)',
           width: '90%',
           maxWidth: maxWidth,
           maxHeight: '90vh',
@@ -88,32 +88,36 @@ export default function Modal({
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            marginBottom: '20px'
+            marginBottom: '18px',
+            borderBottom: '1px solid var(--border-color)',
+            paddingBottom: '12px'
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             {Icon && (
               <div
                 style={{
-                  width: '38px',
-                  height: '38px',
-                  borderRadius: '12px',
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: 'var(--radius-sm)',
                   background: 'var(--accent-blue-dim)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: 'var(--accent-blue)',
+                  color: 'var(--text-main)',
                   flexShrink: 0
                 }}
               >
-                <Icon size={20} />
+                <Icon size={16} />
               </div>
             )}
             {title && (
               <h3
                 style={{
-                  fontSize: '1.2rem',
-                  fontWeight: 800,
+                  fontFamily: 'var(--font-serif)',
+                  fontSize: '1.25rem',
+                  fontWeight: 500,
+                  letterSpacing: '-0.03em',
                   margin: 0,
                   color: 'var(--text-main)'
                 }}
@@ -133,11 +137,11 @@ export default function Modal({
               alignItems: 'center',
               justifyContent: 'center',
               padding: '6px',
-              borderRadius: '8px'
+              borderRadius: 'var(--radius-sm)'
             }}
             title="Close modal"
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
 

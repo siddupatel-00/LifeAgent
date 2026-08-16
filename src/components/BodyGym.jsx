@@ -21,10 +21,10 @@ class BodyGymErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ padding: '24px', background: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
-          <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '12px', color: 'var(--accent-blue)' }}>Body & Gym Panel</h3>
-          <p style={{ color: 'var(--text-muted)', marginBottom: '16px' }}>{this.state.error?.toString()}</p>
-          <button className="blue-btn" style={{ margin: '0 auto' }} onClick={() => this.setState({ hasError: false })}>Reload Panel</button>
+        <div style={{ padding: '24px', background: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
+          <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '12px', color: '#d8f277', fontFamily: "'DM Mono', monospace" }}>Body &amp; Gym Panel</h3>
+          <p style={{ color: 'var(--text-muted)', marginBottom: '16px', fontFamily: "'DM Mono', monospace" }}>{this.state.error?.toString()}</p>
+          <button className="blue-btn" style={{ margin: '0 auto', borderRadius: '8px' }} onClick={() => this.setState({ hasError: false })}>Reload Panel</button>
         </div>
       );
     }
@@ -144,8 +144,6 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
     }
   }, [showForm]);
 
-
-
   // Body stats form state
   const [isLogProteinOpen, setIsLogProteinOpen] = useState(false);
   const [proteinInput, setProteinInput] = useState('');
@@ -224,17 +222,23 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
   // Derived metrics for body stats
   const statsList = Array.isArray(bodyStats) ? bodyStats : (bodyStats ? [bodyStats] : []);
   const latestStat = statsList.length > 0 ? statsList[0] : null;
-  const exactTodayStat = statsList.find(s => s.date === todayStr);
+  const exactTodayStat = statsList.find(s => s && s.date === todayStr);
   const todayStat = exactTodayStat !== undefined ? exactTodayStat : null;
   
   const currentProtein = exactTodayStat ? (Number(exactTodayStat.protein) || 0) : 0;
   const targetWeight = Number(latestStat?.target_weight) || 0;
   const targetProteinGoal = Number(latestStat?.target_protein) || (targetWeight > 0 ? Math.round(targetWeight * 2) : 0);
-  const proteinPercentComplete = Math.min(100, Math.max(0, Math.round((currentProtein / targetProteinGoal) * 100)));
+  
+  // Safe protein percentage calculation - eliminates any NaN% bug
+  const proteinPercentComplete = targetProteinGoal > 0 
+    ? Math.min(100, Math.max(0, Math.round((currentProtein / targetProteinGoal) * 100))) 
+    : 0;
 
   const currentHydration = exactTodayStat ? (Number(exactTodayStat.hydration) || 0) : 0;
   const targetHydrationGoal = Number(safeStorage.getItem('water_target_goal')) || 3.0;
-  const hydrationPercentComplete = Math.min(100, Math.max(0, Math.round((currentHydration / targetHydrationGoal) * 100)));
+  const hydrationPercentComplete = targetHydrationGoal > 0 
+    ? Math.min(100, Math.max(0, Math.round((currentHydration / targetHydrationGoal) * 100))) 
+    : 0;
 
   // Check if today's scheduled workout has been logged
   const todayLoggedWorkout = workouts.find(w => w.date === todayStr);
@@ -458,7 +462,6 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
   };
 
   const handleAddProtein = handleLogProtein;
-  const handleQuickAddProtein = (amount) => handleLogProtein(amount);
 
   const handleLogHydration = async (deltaLiters) => {
     if (!token) return;
@@ -623,92 +626,106 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
   const thisWeekCount = workouts.filter(w => new Date(w.date) >= oneWeekAgo).length;
 
-  const statsArray = Array.isArray(bodyStats) ? bodyStats : (bodyStats ? [bodyStats] : []);
-  const last7Days = statsArray.slice(0, 7).reverse();
-  const maxWeight = last7Days.length > 0 ? Math.max(...last7Days.map(s => s.weight || 0), 1) : 1;
-
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       {/* Sub-tab navigation: Today | Workouts | Body Stats */}
-      <div style={{ display: 'flex', gap: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+      <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
         <button 
           onClick={() => { userHasChangedTab.current = true; setActiveSubTab('today'); }}
           style={{ 
-            background: 'none', border: 'none', padding: '8px 16px', cursor: 'pointer',
-            fontSize: '1rem', fontWeight: activeSubTab === 'today' ? 700 : 500,
-            color: activeSubTab === 'today' ? 'var(--accent-blue)' : 'var(--text-muted)',
-            borderBottom: activeSubTab === 'today' ? '2px solid var(--accent-blue)' : 'none'
+            background: activeSubTab === 'today' ? 'rgba(216, 242, 119, 0.12)' : 'transparent', 
+            border: `1px solid ${activeSubTab === 'today' ? '#d8f277' : 'transparent'}`, 
+            borderRadius: '6px',
+            padding: '6px 14px', 
+            cursor: 'pointer',
+            fontSize: '0.84rem', 
+            fontWeight: 700,
+            fontFamily: "'DM Mono', monospace",
+            color: activeSubTab === 'today' ? '#d8f277' : 'var(--text-muted)',
+            transition: 'all 0.15s ease'
           }}
         >
-          Today
+          TODAY
         </button>
         <button 
           onClick={() => { userHasChangedTab.current = true; setActiveSubTab('workouts'); }}
           style={{ 
-            background: 'none', border: 'none', padding: '8px 16px', cursor: 'pointer',
-            fontSize: '1rem', fontWeight: activeSubTab === 'workouts' ? 700 : 500,
-            color: activeSubTab === 'workouts' ? 'var(--accent-blue)' : 'var(--text-muted)',
-            borderBottom: activeSubTab === 'workouts' ? '2px solid var(--accent-blue)' : 'none'
+            background: activeSubTab === 'workouts' ? 'rgba(216, 242, 119, 0.12)' : 'transparent', 
+            border: `1px solid ${activeSubTab === 'workouts' ? '#d8f277' : 'transparent'}`, 
+            borderRadius: '6px',
+            padding: '6px 14px', 
+            cursor: 'pointer',
+            fontSize: '0.84rem', 
+            fontWeight: 700,
+            fontFamily: "'DM Mono', monospace",
+            color: activeSubTab === 'workouts' ? '#d8f277' : 'var(--text-muted)',
+            transition: 'all 0.15s ease'
           }}
         >
-          Workouts
+          WORKOUTS
         </button>
         <button 
           onClick={() => { userHasChangedTab.current = true; setActiveSubTab('stats'); }}
           style={{ 
-            background: 'none', border: 'none', padding: '8px 16px', cursor: 'pointer',
-            fontSize: '1rem', fontWeight: activeSubTab === 'stats' ? 700 : 500,
-            color: activeSubTab === 'stats' ? 'var(--accent-blue)' : 'var(--text-muted)',
-            borderBottom: activeSubTab === 'stats' ? '2px solid var(--accent-blue)' : 'none'
+            background: activeSubTab === 'stats' ? 'rgba(216, 242, 119, 0.12)' : 'transparent', 
+            border: `1px solid ${activeSubTab === 'stats' ? '#d8f277' : 'transparent'}`, 
+            borderRadius: '6px',
+            padding: '6px 14px', 
+            cursor: 'pointer',
+            fontSize: '0.84rem', 
+            fontWeight: 700,
+            fontFamily: "'DM Mono', monospace",
+            color: activeSubTab === 'stats' ? '#d8f277' : 'var(--text-muted)',
+            transition: 'all 0.15s ease'
           }}
         >
-          Body Stats
+          BODY STATS
         </button>
       </div>
 
       {/* 1. TODAY SUB-TAB: Minimal Daily Protein & Hydration Trackers */}
       {activeSubTab === 'today' && (
-        <div className="animate-entrance" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+        <div className="animate-entrance" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
           {/* Daily Protein Tracker */}
-          <div className="glass-card" style={{ padding: '24px', borderRadius: '22px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div style={{ padding: '20px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-                <div style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--accent-blue)', letterSpacing: '0.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  🥩 Daily Protein Tracker
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#ef6f3e', letterSpacing: '0.06em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', fontFamily: "'DM Mono', monospace" }}>
+                  🥩 PROTEIN TELEMETRY
                 </div>
-                <span style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--accent-blue)' }}>
+                <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#d8f277', fontFamily: "'DM Mono', monospace" }}>
                   {proteinPercentComplete}%
                 </span>
               </div>
 
-              <div style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--accent-blue)', display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-                {currentProtein}g <span style={{ fontSize: '0.92rem', color: 'var(--text-muted)', fontWeight: 600 }}>/ {targetProteinGoal}g goal</span>
+              <div style={{ fontSize: '1.9rem', fontWeight: 900, color: 'var(--text-main)', display: 'flex', alignItems: 'baseline', gap: '6px', fontFamily: "'DM Mono', monospace" }}>
+                {currentProtein}g <span style={{ fontSize: '0.88rem', color: 'var(--text-muted)', fontWeight: 500 }}>/ {targetProteinGoal}g goal</span>
               </div>
 
-              <div style={{ width: '100%', height: '10px', background: 'var(--bg-main)', borderRadius: '10px', marginTop: '14px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
-                <div style={{ height: '100%', width: `${proteinPercentComplete}%`, background: 'var(--accent-blue)', borderRadius: '10px', transition: 'width 0.3s ease' }} />
+              <div style={{ width: '100%', height: '8px', background: 'var(--bg-main)', borderRadius: '4px', marginTop: '12px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                <div style={{ height: '100%', width: `${proteinPercentComplete}%`, background: '#d8f277', borderRadius: '4px', transition: 'width 0.3s ease' }} />
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px', marginTop: '24px' }}>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '20px' }}>
               <button
                 type="button"
                 onClick={() => handleLogProtein(25)}
-                style={{ flex: 1, padding: '12px 10px', borderRadius: '14px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.95rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s' }}
+                style={{ flex: 1, padding: '10px 8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.88rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", cursor: 'pointer', transition: 'all 0.15s' }}
               >
                 +25g
               </button>
               <button
                 type="button"
                 onClick={() => handleLogProtein(30)}
-                style={{ flex: 1, padding: '12px 10px', borderRadius: '14px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.95rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s' }}
+                style={{ flex: 1, padding: '10px 8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.88rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", cursor: 'pointer', transition: 'all 0.15s' }}
               >
                 +30g
               </button>
               <button
                 type="button"
                 onClick={() => handleLogProtein(-10)}
-                style={{ flex: 1, padding: '12px 10px', borderRadius: '14px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-muted)', fontSize: '0.95rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s' }}
+                style={{ flex: 1, padding: '10px 8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-muted)', fontSize: '0.88rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", cursor: 'pointer', transition: 'all 0.15s' }}
               >
                 -10g
               </button>
@@ -716,47 +733,47 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
           </div>
 
           {/* Daily Hydration Tracker */}
-          <div className="glass-card" style={{ padding: '24px', borderRadius: '22px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div style={{ padding: '20px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-                <div style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--accent-blue)', letterSpacing: '0.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  💧 Daily Hydration Tracker
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--accent-blue-light, #60a5fa)', letterSpacing: '0.06em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', fontFamily: "'DM Mono', monospace" }}>
+                  💧 HYDRATION TELEMETRY
                 </div>
-                <span style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--accent-blue)' }}>
+                <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#d8f277', fontFamily: "'DM Mono', monospace" }}>
                   {hydrationPercentComplete}%
                 </span>
               </div>
 
-              <div style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--accent-blue)', display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-                {currentHydration.toFixed(1)} L <span style={{ fontSize: '0.92rem', color: 'var(--text-muted)', fontWeight: 600 }}>/ {targetHydrationGoal} L target</span>
+              <div style={{ fontSize: '1.9rem', fontWeight: 900, color: 'var(--text-main)', display: 'flex', alignItems: 'baseline', gap: '6px', fontFamily: "'DM Mono', monospace" }}>
+                {currentHydration.toFixed(1)} L <span style={{ fontSize: '0.88rem', color: 'var(--text-muted)', fontWeight: 500 }}>/ {targetHydrationGoal} L target</span>
               </div>
 
-              <div style={{ width: '100%', height: '10px', background: 'var(--bg-main)', borderRadius: '10px', marginTop: '14px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
-                <div style={{ height: '100%', width: `${hydrationPercentComplete}%`, background: 'var(--accent-blue)', borderRadius: '10px', transition: 'width 0.3s ease' }} />
+              <div style={{ width: '100%', height: '8px', background: 'var(--bg-main)', borderRadius: '4px', marginTop: '12px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                <div style={{ height: '100%', width: `${hydrationPercentComplete}%`, background: 'var(--accent-blue, #3b82f6)', borderRadius: '4px', transition: 'width 0.3s ease' }} />
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px', marginTop: '24px' }}>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '20px' }}>
               <button
                 type="button"
                 onClick={() => handleLogHydration(0.5)}
-                style={{ flex: 1, padding: '12px 10px', borderRadius: '14px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.95rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s' }}
+                style={{ flex: 1, padding: '10px 8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.88rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", cursor: 'pointer', transition: 'all 0.15s' }}
               >
-                +0.5 L
+                +0.5L
               </button>
               <button
                 type="button"
                 onClick={() => handleLogHydration(1.0)}
-                style={{ flex: 1, padding: '12px 10px', borderRadius: '14px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.95rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s' }}
+                style={{ flex: 1, padding: '10px 8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.88rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", cursor: 'pointer', transition: 'all 0.15s' }}
               >
-                +1.0 L
+                +1.0L
               </button>
               <button
                 type="button"
                 onClick={() => handleLogHydration(-0.5)}
-                style={{ flex: 1, padding: '12px 10px', borderRadius: '14px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-muted)', fontSize: '0.95rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s' }}
+                style={{ flex: 1, padding: '10px 8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-muted)', fontSize: '0.88rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", cursor: 'pointer', transition: 'all 0.15s' }}
               >
-                -0.5 L
+                -0.5L
               </button>
             </div>
           </div>
@@ -766,57 +783,60 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
       {activeSubTab === 'workouts' && (
         <div className="animate-entrance">
           {/* Summary Cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-            <div className="glass-card" style={{ padding: '20px', borderRadius: '18px', border: '1px solid var(--border-color)', background: 'var(--bg-card)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', marginBottom: '8px' }}>
-                <Dumbbell size={16} /> <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Total Workouts</span>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '12px', marginBottom: '20px' }}>
+            <div style={{ padding: '16px 18px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-card)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)', marginBottom: '6px' }}>
+                <Dumbbell size={14} color="#d8f277" /> <span style={{ fontSize: '0.72rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", textTransform: 'uppercase' }}>TOTAL WORKOUTS</span>
               </div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 800 }}>{totalWorkouts}</div>
+              <div style={{ fontSize: '1.65rem', fontWeight: 800, fontFamily: "'DM Mono', monospace", color: 'var(--text-main)' }}>{totalWorkouts}</div>
             </div>
             
-            <div className="glass-card" style={{ padding: '20px', borderRadius: '18px', border: '1px solid var(--border-color)', background: 'var(--bg-card)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', marginBottom: '8px' }}>
-                <Clock size={16} /> <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Duration (hrs)</span>
+            <div style={{ padding: '16px 18px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-card)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)', marginBottom: '6px' }}>
+                <Clock size={14} color="#d8f277" /> <span style={{ fontSize: '0.72rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", textTransform: 'uppercase' }}>DURATION (HRS)</span>
               </div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 800 }}>{totalDuration.toFixed(1)}</div>
+              <div style={{ fontSize: '1.65rem', fontWeight: 800, fontFamily: "'DM Mono', monospace", color: '#d8f277' }}>{totalDuration.toFixed(1)}</div>
             </div>
 
-            <div className="glass-card" style={{ padding: '20px', borderRadius: '18px', border: '1px solid var(--border-color)', background: 'var(--bg-card)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', marginBottom: '8px' }}>
-                <Flame size={16} /> <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Total Calories</span>
+            <div style={{ padding: '16px 18px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-card)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)', marginBottom: '6px' }}>
+                <Flame size={14} color="#ef6f3e" /> <span style={{ fontSize: '0.72rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", textTransform: 'uppercase' }}>CALORIES</span>
               </div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 800 }}>{totalCalories.toLocaleString()}</div>
+              <div style={{ fontSize: '1.65rem', fontWeight: 800, fontFamily: "'DM Mono', monospace", color: '#ef6f3e' }}>{totalCalories.toLocaleString()}</div>
             </div>
 
-            <div className="glass-card" style={{ padding: '20px', borderRadius: '18px', border: '1px solid var(--border-color)', background: 'var(--bg-card)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', marginBottom: '8px' }}>
-                <Activity size={16} /> <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>This Week</span>
+            <div style={{ padding: '16px 18px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-card)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)', marginBottom: '6px' }}>
+                <Activity size={14} color="var(--accent-blue-light, #60a5fa)" /> <span style={{ fontSize: '0.72rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", textTransform: 'uppercase' }}>THIS WEEK</span>
               </div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 800 }}>{thisWeekCount}</div>
+              <div style={{ fontSize: '1.65rem', fontWeight: 800, fontFamily: "'DM Mono', monospace", color: 'var(--text-main)' }}>{thisWeekCount}</div>
             </div>
           </div>
 
-          {/* Active Workout Split Routine & Customizer — only shown once the user has a saved custom split */}
+          {/* Active Workout Split Routine & Customizer */}
           {hasCustomSplit && (
-          <div className="glass-card" style={{ padding: '24px', borderRadius: '18px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', marginBottom: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+          <div style={{ padding: '20px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
               <div>
-                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)' }}>
-                  {isWeekly ? '📅 Weekly Workout Schedule' : `🔄 Workout Rotation Split (${splitList.length} Days)`}
-                </h3>
-                <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                  {isWeekly ? 'Your scheduled workouts mapped to each day of the week.' : 'Your scheduled workouts rotate automatically day by day in this cycle.'}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#d8f277', display: 'inline-block' }} />
+                  <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.02em' }}>
+                    {isWeekly ? 'Weekly Workout Routine' : `Workout Rotation Split (${splitList.length} Days)`}
+                  </h3>
+                </div>
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px', fontFamily: "'DM Mono', monospace" }}>
+                  {isWeekly ? 'Scheduled workouts mapped to each day of the week.' : 'Workouts rotate sequentially day by day.'}
                 </p>
               </div>
               <button 
                 onClick={() => setIsEditSplitOpen(true)}
-                style={{ background: 'var(--accent-blue-dim)', color: 'var(--accent-blue)', border: '1px solid var(--accent-blue)', padding: '8px 16px', fontSize: '0.84rem', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                style={{ background: 'rgba(216, 242, 119, 0.12)', color: '#d8f277', border: '1px solid #d8f277', padding: '6px 14px', fontSize: '0.8rem', borderRadius: '6px', fontWeight: 700, fontFamily: "'DM Mono', monospace", cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
               >
-                + Edit Split
+                + EDIT SPLIT
               </button>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '8px' }}>
+            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '6px' }}>
               {splitList.map((dayObj, idx) => {
                 const isCurrentToday = isWeekly ? idx === (dayOfWeek % splitList.length) : idx === todaySplitIdx;
                 const dayName = typeof dayObj === 'string' ? dayObj : dayObj.name;
@@ -826,22 +846,22 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
                     key={idx} 
                     onClick={() => !isWeekly && !isCurrentToday && handleSetDayActive(idx)}
                     style={{ 
-                      flex: 1, minWidth: '130px', padding: '14px 16px', borderRadius: '14px',
-                      background: isCurrentToday ? 'var(--accent-blue-dim)' : 'var(--bg-main)',
-                      border: `1px solid ${isCurrentToday ? 'var(--accent-blue)' : 'var(--border-color)'}`,
+                      flex: 1, minWidth: '120px', padding: '12px 14px', borderRadius: '6px',
+                      background: isCurrentToday ? 'rgba(216, 242, 119, 0.12)' : 'var(--bg-main)',
+                      border: `1px solid ${isCurrentToday ? '#d8f277' : 'var(--border-color)'}`,
                       cursor: !isWeekly && !isCurrentToday ? 'pointer' : 'default',
-                      transition: 'all 0.2s ease'
+                      transition: 'all 0.15s ease'
                     }}
                     title={!isWeekly && !isCurrentToday ? "Click to set as Today's workout" : ""}
                   >
-                    <div style={{ fontSize: '0.7rem', fontWeight: 800, color: isCurrentToday ? 'var(--accent-blue)' : 'var(--text-muted)', textTransform: 'uppercase' }}>
-                      {isCurrentToday ? `🎯 TODAY (${dayHeader})` : dayHeader}
+                    <div style={{ fontSize: '0.68rem', fontWeight: 800, color: isCurrentToday ? '#d8f277' : 'var(--text-muted)', textTransform: 'uppercase', fontFamily: "'DM Mono', monospace" }}>
+                      {isCurrentToday ? `🎯 TODAY (${dayHeader.slice(0, 3)})` : dayHeader.slice(0, 3)}
                     </div>
-                    <div style={{ fontSize: '0.92rem', fontWeight: 700, marginTop: '4px', color: 'var(--text-main)' }}>
+                    <div style={{ fontSize: '0.88rem', fontWeight: 700, marginTop: '4px', color: 'var(--text-main)' }}>
                       {dayName}
                     </div>
                     {!isWeekly && !isCurrentToday && (
-                      <div style={{ fontSize: '0.68rem', color: 'var(--accent-blue)', marginTop: '6px', fontWeight: 600, opacity: 0.85 }}>
+                      <div style={{ fontSize: '0.66rem', color: '#ef6f3e', marginTop: '4px', fontWeight: 700, fontFamily: "'DM Mono', monospace" }}>
                         👉 Set as Today
                       </div>
                     )}
@@ -852,60 +872,65 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
           </div>
           )}
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '1.2rem', fontWeight: 700 }}>Workout History</h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ef6f3e', display: 'inline-block' }} />
+              <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>Workout History Logs</h3>
+            </div>
             <button 
               onClick={() => { setIsAddWorkoutOpen(true); setShowForm?.(true); }}
               style={{ 
-                background: 'linear-gradient(135deg, #10b981, #059669)', 
-                color: '#ffffff', 
-                border: 'none', 
-                padding: '8px 18px', 
-                fontSize: '0.85rem', 
-                borderRadius: '30px', 
+                background: '#d8f277', 
+                color: '#11110f', 
+                border: '1px solid #c2de60', 
+                padding: '6px 14px', 
+                fontSize: '0.8rem', 
+                borderRadius: '6px', 
                 fontWeight: 700, 
+                fontFamily: "'DM Mono', monospace",
                 cursor: 'pointer', 
                 display: 'inline-flex', 
                 alignItems: 'center', 
-                gap: '6px',
-                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.35)'
+                gap: '6px'
               }}
             >
-              <Plus size={16} /> Add Workout
+              <Plus size={14} /> + LOG WORKOUT
             </button>
           </div>
 
           {workouts.length === 0 ? (
-            <div className="glass-card" style={{ textAlign: 'center', padding: '36px 20px', background: 'var(--bg-card)', borderRadius: '18px', border: '1px dashed var(--border-color)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-              <Dumbbell size={40} style={{ color: 'var(--accent-blue)', opacity: 0.5 }} />
-              <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>No items logged yet</div>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>No items logged yet. Click + to add your first entry</p>
+            <div style={{ textAlign: 'center', padding: '32px 20px', background: 'var(--bg-card)', borderRadius: '8px', border: '1px dashed var(--border-color)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+              <Dumbbell size={36} style={{ color: '#d8f277', opacity: 0.6 }} />
+              <div style={{ fontSize: '0.98rem', fontWeight: 700, color: 'var(--text-main)' }}>No workouts logged yet</div>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', margin: 0 }}>Click + to record your training session.</p>
               <button 
                 onClick={() => { setIsAddWorkoutOpen(true); setShowForm?.(true); }}
                 className="blue-btn"
-                style={{ marginTop: '8px', padding: '8px 18px', fontSize: '0.85rem', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                style={{ marginTop: '6px', padding: '8px 16px', fontSize: '0.82rem', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: '6px', fontFamily: "'DM Mono', monospace" }}
               >
-                <Plus size={16} /> Log Workout
+                <Plus size={14} /> Log Workout
               </button>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {workouts.map(workout => (
-                <div key={workout.id} className="glass-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderRadius: '18px', border: '1px solid var(--border-color)', background: 'var(--bg-card)' }}>
+                <div key={workout.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-card)' }}>
                   <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
-                      <span style={{ fontWeight: 700, fontSize: '1.05rem' }}>{workout.title}</span>
-                      <span className="pill-tag" style={{ fontSize: '0.7rem' }}>{workout.category}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+                      <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>{workout.title}</span>
+                      <span style={{ fontSize: '0.68rem', padding: '2px 8px', borderRadius: '4px', background: 'rgba(216, 242, 119, 0.12)', color: '#d8f277', border: '1px solid rgba(216, 242, 119, 0.3)', fontFamily: "'DM Mono', monospace", fontWeight: 700 }}>
+                        {workout.category}
+                      </span>
                     </div>
-                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', gap: '12px' }}>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', gap: '12px', fontFamily: "'DM Mono', monospace" }}>
                       <span>{workout.date}</span>
-                      <span>{workout.duration_mins} mins</span>
-                      {Number(workout.calories) > 0 && <span>{workout.calories} kcal</span>}
+                      <span style={{ color: 'var(--text-main)' }}>{workout.duration_mins} mins</span>
+                      {Number(workout.calories) > 0 && <span style={{ color: '#ef6f3e' }}>{workout.calories} kcal</span>}
                     </div>
                   </div>
                   <button 
                     onClick={() => handleDeleteWorkout(workout.id)}
-                    style={{ background: 'none', border: 'none', color: '#ff5252', cursor: 'pointer', padding: '8px' }}
+                    style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '6px', borderRadius: '4px' }}
                   >
                     <Trash2 size={16} />
                   </button>
@@ -926,16 +951,16 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
         maxWidth="400px"
       >
         <form onSubmit={handleAddWorkout}>
-          <div className="input-group" style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Title</label>
-            <input type="text" required className="glass-input" style={{ width: '100%', padding: '12px 14px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '12px' }} placeholder="Enter workout name..." value={workoutForm.title} onChange={e => setWorkoutForm({...workoutForm, title: e.target.value})} autoFocus />
+          <div className="input-group" style={{ marginBottom: '14px' }}>
+            <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.78rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", color: 'var(--text-muted)' }}>WORKOUT TITLE</label>
+            <input type="text" required className="glass-input" style={{ width: '100%', padding: '10px 12px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '8px', fontSize: '0.88rem' }} placeholder="Enter workout name..." value={workoutForm.title} onChange={e => setWorkoutForm({...workoutForm, title: e.target.value})} autoFocus />
           </div>
           
-          <div className="input-group" style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Category</label>
+          <div className="input-group" style={{ marginBottom: '14px' }}>
+            <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.78rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", color: 'var(--text-muted)' }}>CATEGORY</label>
             <CustomSelect 
               className="glass-input" 
-              style={{ width: '100%', padding: '12px 14px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '12px' }} 
+              style={{ width: '100%', padding: '10px 12px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '8px', fontSize: '0.88rem', fontFamily: "'DM Mono', monospace" }} 
               value={workoutForm.category} 
               onChange={e => setWorkoutForm({...workoutForm, category: e.target.value})}
               options={[
@@ -948,25 +973,25 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
             <div className="input-group">
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Duration (mins)</label>
-              <input type="number" required className="glass-input" style={{ width: '100%', padding: '12px 14px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '12px' }} placeholder="45" value={workoutForm.duration_mins} onChange={e => setWorkoutForm({...workoutForm, duration_mins: e.target.value})} />
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.78rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", color: '#d8f277' }}>DURATION (MINS)</label>
+              <input type="number" required className="glass-input" style={{ width: '100%', padding: '10px 12px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '8px', fontSize: '0.88rem', fontFamily: "'DM Mono', monospace" }} placeholder="45" value={workoutForm.duration_mins} onChange={e => setWorkoutForm({...workoutForm, duration_mins: e.target.value})} />
             </div>
             <div className="input-group">
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Calories (Optional)</label>
-              <input type="number" className="glass-input" style={{ width: '100%', padding: '12px 14px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '12px' }} placeholder="Optional (e.g. 300)" value={workoutForm.calories} onChange={e => setWorkoutForm({...workoutForm, calories: e.target.value})} />
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.78rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", color: '#ef6f3e' }}>CALORIES</label>
+              <input type="number" className="glass-input" style={{ width: '100%', padding: '10px 12px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '8px', fontSize: '0.88rem', fontFamily: "'DM Mono', monospace" }} placeholder="300" value={workoutForm.calories} onChange={e => setWorkoutForm({...workoutForm, calories: e.target.value})} />
             </div>
           </div>
 
-          <div className="input-group" style={{ marginBottom: '24px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Notes</label>
-            <input type="text" className="glass-input" style={{ width: '100%', padding: '12px 14px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '12px' }} placeholder="Enter notes..." value={workoutForm.notes} onChange={e => setWorkoutForm({...workoutForm, notes: e.target.value})} />
+          <div className="input-group" style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.78rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", color: 'var(--text-muted)' }}>NOTES</label>
+            <input type="text" className="glass-input" style={{ width: '100%', padding: '10px 12px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '8px', fontSize: '0.88rem' }} placeholder="Enter notes..." value={workoutForm.notes} onChange={e => setWorkoutForm({...workoutForm, notes: e.target.value})} />
           </div>
 
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-            <button type="button" className="secondary-btn" onClick={closeWorkoutModal}>Cancel</button>
-            <button type="submit" className="blue-btn">Save Workout</button>
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+            <button type="button" className="secondary-btn" onClick={closeWorkoutModal} style={{ padding: '8px 16px', borderRadius: '8px' }}>Cancel</button>
+            <button type="submit" className="blue-btn" style={{ padding: '8px 18px', borderRadius: '8px' }}>Save Workout</button>
           </div>
         </form>
       </Modal>
@@ -1004,12 +1029,15 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
 
         return (
         <div className="animate-entrance">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', alignItems: 'start' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', alignItems: 'start' }}>
             
-            {/* Left Column: Graphs (Independent Scroll) */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxHeight: 'calc(100vh - 200px)', overflowY: 'auto', paddingRight: '4px' }}>
+            {/* Left Column: Graphs */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxHeight: 'calc(100vh - 200px)', overflowY: 'auto', paddingRight: '4px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 700 }}>Trends</h3>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#d8f277', display: 'inline-block' }} />
+                  <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>Telemetry Trends</h3>
+                </div>
                 <CustomSelect
                   className="timeframe-dropdown"
                   value={statsHistoryFilter}
@@ -1020,153 +1048,154 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
                     { value: 'all', label: 'All Time' }
                   ]}
                   style={{ 
-                    width: '160px', 
+                    width: '150px', 
                     background: 'var(--bg-card)', 
                     border: '1px solid var(--border-color)', 
-                    borderRadius: '30px', 
-                    padding: '6px 14px', 
+                    borderRadius: '8px', 
+                    padding: '6px 12px', 
                     color: 'var(--text-primary)', 
-                    fontSize: '0.85rem' 
+                    fontSize: '0.82rem',
+                    fontFamily: "'DM Mono', monospace"
                   }}
                 />
               </div>
 
               {/* Protein Intake Graph */}
-              <div className="glass-card" style={{ padding: '24px', borderRadius: '18px', border: '1px solid var(--border-color)', background: 'var(--bg-card)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                  <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, color: '#10b981' }}>Protein Intake (g)</h4>
-                  <div style={{ display: 'flex', gap: '14px', fontSize: '0.78rem', fontWeight: 700 }}>
-                    <span style={{ color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px' }}>● Achieved</span>
-                    <span style={{ color: 'var(--accent-blue)', display: 'flex', alignItems: 'center', gap: '4px' }}>--- Target ({targetProteinGoal}g)</span>
+              <div style={{ padding: '18px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-card)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                  <h4 style={{ fontSize: '0.88rem', fontWeight: 700, margin: 0, color: '#d8f277', fontFamily: "'DM Mono', monospace", textTransform: 'uppercase' }}>PROTEIN INTAKE (G)</h4>
+                  <div style={{ display: 'flex', gap: '12px', fontSize: '0.72rem', fontWeight: 700, fontFamily: "'DM Mono', monospace" }}>
+                    <span style={{ color: '#d8f277', display: 'flex', alignItems: 'center', gap: '4px' }}>● Achieved</span>
+                    <span style={{ color: '#ef6f3e', display: 'flex', alignItems: 'center', gap: '4px' }}>--- Goal ({targetProteinGoal}g)</span>
                   </div>
                 </div>
-                <div style={{ height: '220px', width: '100%' }}>
+                <div style={{ height: '200px', width: '100%' }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                       <defs>
                         <linearGradient id="colorProtein" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.35}/>
-                          <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                          <stop offset="5%" stopColor="#d8f277" stopOpacity={0.4}/>
+                          <stop offset="95%" stopColor="#d8f277" stopOpacity={0}/>
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-color)" />
-                      <XAxis dataKey="date" tick={{fontSize: 12, fill: 'var(--text-muted)'}} tickFormatter={(tick) => tick.slice(5)} axisLine={false} tickLine={false} />
-                      <YAxis tick={{fontSize: 12, fill: 'var(--text-muted)'}} axisLine={false} tickLine={false} />
+                      <XAxis dataKey="date" tick={{fontSize: 11, fill: 'var(--text-muted)', fontFamily: "'DM Mono', monospace"}} tickFormatter={(tick) => tick.slice(5)} axisLine={false} tickLine={false} />
+                      <YAxis tick={{fontSize: 11, fill: 'var(--text-muted)', fontFamily: "'DM Mono', monospace"}} axisLine={false} tickLine={false} />
                       <RechartsTooltip 
-                        contentStyle={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)', borderRadius: '12px' }}
-                        itemStyle={{ color: 'var(--text-main)', fontWeight: 'bold' }}
-                        labelStyle={{ color: 'var(--text-muted)', marginBottom: '4px' }}
+                        contentStyle={{ backgroundColor: '#121624', borderColor: 'var(--border-color)', borderRadius: '6px', fontSize: '0.82rem', fontFamily: "'DM Mono', monospace" }}
+                        itemStyle={{ color: '#d8f277', fontWeight: 'bold' }}
+                        labelStyle={{ color: 'var(--text-muted)', marginBottom: '4px', fontFamily: "'DM Mono', monospace" }}
                       />
-                      <Area type="monotone" dataKey="protein" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorProtein)" name="Achieved Protein (g)" />
-                      <Line type="monotone" dataKey="target_protein" stroke="var(--accent-blue)" strokeWidth={2} strokeDasharray="5 5" dot={false} name="Protein Goal (g)" />
+                      <Area type="monotone" dataKey="protein" stroke="#d8f277" strokeWidth={2.5} fillOpacity={1} fill="url(#colorProtein)" name="Achieved Protein (g)" />
+                      <Line type="monotone" dataKey="target_protein" stroke="#ef6f3e" strokeWidth={2} strokeDasharray="4 4" dot={false} name="Protein Goal (g)" />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
               </div>
 
               {/* Body Weight Trend Graph */}
-              <div className="glass-card" style={{ padding: '24px', borderRadius: '18px', border: '1px solid var(--border-color)', background: 'var(--bg-card)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                  <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, color: 'var(--text-main)' }}>Weight (kg)</h4>
-                  <div style={{ display: 'flex', gap: '14px', fontSize: '0.78rem', fontWeight: 700 }}>
-                    <span style={{ color: 'var(--accent-blue)', display: 'flex', alignItems: 'center', gap: '4px' }}>● Actual</span>
-                    <span style={{ color: '#ef4444', display: 'flex', alignItems: 'center', gap: '4px' }}>--- Target ({targetWeight > 0 ? `${targetWeight}kg` : 'not set'})</span>
+              <div style={{ padding: '18px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-card)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                  <h4 style={{ fontSize: '0.88rem', fontWeight: 700, margin: 0, color: 'var(--text-main)', fontFamily: "'DM Mono', monospace", textTransform: 'uppercase' }}>WEIGHT (KG)</h4>
+                  <div style={{ display: 'flex', gap: '12px', fontSize: '0.72rem', fontWeight: 700, fontFamily: "'DM Mono', monospace" }}>
+                    <span style={{ color: 'var(--accent-blue-light, #60a5fa)', display: 'flex', alignItems: 'center', gap: '4px' }}>● Actual</span>
+                    <span style={{ color: '#ef6f3e', display: 'flex', alignItems: 'center', gap: '4px' }}>--- Target ({targetWeight > 0 ? `${targetWeight}kg` : 'not set'})</span>
                   </div>
                 </div>
-                <div style={{ height: '220px', width: '100%' }}>
+                <div style={{ height: '200px', width: '100%' }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-color)" />
-                      <XAxis dataKey="date" tick={{fontSize: 12, fill: 'var(--text-muted)'}} tickFormatter={(tick) => tick.slice(5)} axisLine={false} tickLine={false} />
-                      <YAxis domain={['auto', 'auto']} tick={{fontSize: 12, fill: 'var(--text-muted)'}} axisLine={false} tickLine={false} />
+                      <XAxis dataKey="date" tick={{fontSize: 11, fill: 'var(--text-muted)', fontFamily: "'DM Mono', monospace"}} tickFormatter={(tick) => tick.slice(5)} axisLine={false} tickLine={false} />
+                      <YAxis domain={['auto', 'auto']} tick={{fontSize: 11, fill: 'var(--text-muted)', fontFamily: "'DM Mono', monospace"}} axisLine={false} tickLine={false} />
                       <RechartsTooltip 
-                        contentStyle={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)', borderRadius: '12px' }}
+                        contentStyle={{ backgroundColor: '#121624', borderColor: 'var(--border-color)', borderRadius: '6px', fontSize: '0.82rem', fontFamily: "'DM Mono', monospace" }}
                         itemStyle={{ color: 'var(--text-main)', fontWeight: 'bold' }}
-                        labelStyle={{ color: 'var(--text-muted)', marginBottom: '4px' }}
+                        labelStyle={{ color: 'var(--text-muted)', marginBottom: '4px', fontFamily: "'DM Mono', monospace" }}
                       />
-                      <Line type="monotone" dataKey="weight" stroke="var(--accent-blue)" strokeWidth={3} dot={{r: 4, fill: 'var(--accent-blue)', strokeWidth: 2}} name="Actual Weight (kg)" />
-                      <Line type="monotone" dataKey="target_weight" stroke="#ef4444" strokeWidth={2} strokeDasharray="5 5" dot={false} name="Target Weight (kg)" />
+                      <Line type="monotone" dataKey="weight" stroke="var(--accent-blue, #3b82f6)" strokeWidth={2.5} dot={{r: 4, fill: 'var(--accent-blue, #3b82f6)', stroke: '#121624', strokeWidth: 1.5}} name="Actual Weight (kg)" />
+                      <Line type="monotone" dataKey="target_weight" stroke="#ef6f3e" strokeWidth={2} strokeDasharray="4 4" dot={false} name="Target Weight (kg)" />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
               </div>
             </div>
 
-            {/* Right Column: History Table & Protein Target (Independent Scroll) */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxHeight: 'calc(100vh - 200px)', overflowY: 'auto', paddingRight: '4px' }}>
+            {/* Right Column: History Table & Protein Target */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxHeight: 'calc(100vh - 200px)', overflowY: 'auto', paddingRight: '4px' }}>
               
               {/* Daily Protein Goal & Tracker Card */}
-              <div className="glass-card" style={{ padding: '24px', borderRadius: '18px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <div style={{ padding: '18px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Target size={18} color="var(--accent-blue)" />
-                      <h3 style={{ fontSize: '1.15rem', fontWeight: 700 }}>Daily Protein Goal</h3>
+                      <Target size={16} color="#d8f277" />
+                      <h3 style={{ fontSize: '0.95rem', fontWeight: 800, fontFamily: "'DM Mono', monospace", textTransform: 'uppercase', margin: 0 }}>DAILY PROTEIN GOAL</h3>
                     </div>
-                    <div style={{ display: 'flex', gap: '8px' }}>
+                    <div style={{ display: 'flex', gap: '6px' }}>
                       <button 
                         className="blue-btn" 
-                        style={{ padding: '6px 14px', fontSize: '0.82rem', fontWeight: 700 }}
+                        style={{ padding: '4px 10px', fontSize: '0.78rem', fontWeight: 700, borderRadius: '6px', fontFamily: "'DM Mono', monospace" }}
                         onClick={openLogProteinModal}
                       >
-                        + Log
+                        + LOG
                       </button>
                       <button 
                         className="secondary-btn" 
-                        style={{ padding: '6px 14px', fontSize: '0.82rem', borderRadius: '10px' }} 
+                        style={{ padding: '4px 10px', fontSize: '0.78rem', borderRadius: '6px', fontFamily: "'DM Mono', monospace" }} 
                         onClick={openEditMetricsModal}
                       >
-                        Edit
+                        EDIT
                       </button>
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '12px' }}>
-                    <span style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--accent-blue)' }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '10px' }}>
+                    <span style={{ fontSize: '1.9rem', fontWeight: 900, color: '#d8f277', fontFamily: "'DM Mono', monospace" }}>
                       {currentProtein}g
                     </span>
                     {targetProteinGoal > 0 && (
-                      <span style={{ fontSize: '0.95rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-                        / {targetProteinGoal}g daily target
+                      <span style={{ fontSize: '0.88rem', color: 'var(--text-muted)', fontWeight: 500, fontFamily: "'DM Mono', monospace" }}>
+                        / {targetProteinGoal}g TARGET
                       </span>
                     )}
                   </div>
 
                   {/* Progress Bar */}
-                  <div style={{ width: '100%', height: '10px', background: 'var(--border-color)', borderRadius: '5px', overflow: 'hidden', marginBottom: '8px' }}>
+                  <div style={{ width: '100%', height: '8px', background: 'var(--bg-main)', borderRadius: '4px', overflow: 'hidden', marginBottom: '8px', border: '1px solid var(--border-color)' }}>
                     <div 
                       style={{ 
                         height: '100%', 
                         width: `${proteinPercentComplete}%`,
-                        background: 'linear-gradient(90deg, var(--accent-blue), #10b981)',
-                        borderRadius: '5px',
-                        transition: 'width 0.4s ease'
+                        background: '#d8f277',
+                        borderRadius: '4px',
+                        transition: 'width 0.3s ease'
                       }} 
                     />
                   </div>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600, display: 'flex', justifyContent: 'space-between' }}>
-                    <span>{proteinPercentComplete}% complete</span>
-                    <span>{latestStat?.date ? `Updated: ${latestStat.date}` : 'No entry today'}</span>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600, display: 'flex', justifyContent: 'space-between', fontFamily: "'DM Mono', monospace" }}>
+                    <span>{proteinPercentComplete}% COMPLETE</span>
+                    <span>{latestStat?.date ? `UPDATED: ${latestStat.date}` : 'NO ENTRY TODAY'}</span>
                   </div>
-                  <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
+                  <div style={{ display: 'flex', gap: '6px', marginTop: '12px' }}>
                     <button
                       type="button"
                       onClick={() => handleLogProtein(25)}
-                      style={{ flex: 1, padding: '7px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+                      style={{ flex: 1, padding: '6px 8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.78rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", cursor: 'pointer' }}
                     >
                       +25g
                     </button>
                     <button
                       type="button"
                       onClick={() => handleLogProtein(30)}
-                      style={{ flex: 1, padding: '7px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+                      style={{ flex: 1, padding: '6px 8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.78rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", cursor: 'pointer' }}
                     >
                       +30g
                     </button>
                     <button
                       type="button"
                       onClick={() => handleLogProtein(-10)}
-                      style={{ padding: '7px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-muted)', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+                      style={{ padding: '6px 8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-muted)', fontSize: '0.78rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", cursor: 'pointer' }}
                     >
                       -10g
                     </button>
@@ -1175,43 +1204,46 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
               </div>
               
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 700 }}>History</h3>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#d8f277', display: 'inline-block' }} />
+                  <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>Metric History</h3>
+                </div>
               </div>
 
               {filteredStats.length === 0 ? (
-                <div className="glass-card" style={{ textAlign: 'center', padding: '36px 20px', background: 'var(--bg-card)', borderRadius: '18px', border: '1px dashed var(--border-color)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-                  <Activity size={40} style={{ color: 'var(--accent-blue)', opacity: 0.5 }} />
-                  <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>No items logged yet</div>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>No items logged yet. Click + to add your first entry</p>
+                <div style={{ textAlign: 'center', padding: '32px 20px', background: 'var(--bg-card)', borderRadius: '8px', border: '1px dashed var(--border-color)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                  <Activity size={36} style={{ color: '#d8f277', opacity: 0.6 }} />
+                  <div style={{ fontSize: '0.98rem', fontWeight: 700, color: 'var(--text-main)' }}>No items logged yet</div>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', margin: 0 }}>Click + to record your daily body telemetry.</p>
                   <button 
-                    onClick={() => setIsAddStatOpen(true)}
+                    onClick={openEditMetricsModal}
                     className="blue-btn"
-                    style={{ marginTop: '8px', padding: '8px 18px', fontSize: '0.85rem', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                    style={{ marginTop: '6px', padding: '8px 16px', fontSize: '0.82rem', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: '6px', fontFamily: "'DM Mono', monospace" }}
                   >
-                    <Plus size={16} /> Log Body Stat
+                    <Plus size={14} /> Log Body Stat
                   </button>
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {filteredStats.map(stat => (
-                    <div key={stat.id} className="glass-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderRadius: '18px', border: '1px solid var(--border-color)', background: 'var(--bg-card)' }}>
-                      <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
-                        <div style={{ minWidth: '80px' }}>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Date</div>
-                          <div style={{ fontWeight: 600 }}>{stat.date}</div>
+                    <div key={stat.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-card)' }}>
+                      <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                        <div style={{ minWidth: '70px' }}>
+                          <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontFamily: "'DM Mono', monospace", textTransform: 'uppercase' }}>DATE</div>
+                          <div style={{ fontWeight: 600, fontSize: '0.85rem', fontFamily: "'DM Mono', monospace" }}>{stat.date}</div>
                         </div>
                         <div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Weight</div>
-                          <div style={{ fontWeight: 600 }}>{stat.weight} kg</div>
+                          <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontFamily: "'DM Mono', monospace", textTransform: 'uppercase' }}>WEIGHT</div>
+                          <div style={{ fontWeight: 700, fontSize: '0.88rem', fontFamily: "'DM Mono', monospace", color: 'var(--accent-blue-light, #60a5fa)' }}>{stat.weight} kg</div>
                         </div>
                         <div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Protein</div>
-                          <div style={{ fontWeight: 600 }}>{stat.protein} g</div>
+                          <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontFamily: "'DM Mono', monospace", textTransform: 'uppercase' }}>PROTEIN</div>
+                          <div style={{ fontWeight: 700, fontSize: '0.88rem', fontFamily: "'DM Mono', monospace", color: '#d8f277' }}>{stat.protein} g</div>
                         </div>
                       </div>
                       <button 
                         onClick={() => handleDeleteStat(stat.id)}
-                        style={{ background: 'none', border: 'none', color: '#ff5252', cursor: 'pointer', padding: '8px' }}
+                        style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '6px', borderRadius: '4px' }}
                       >
                         <Trash2 size={16} />
                       </button>
@@ -1235,28 +1267,28 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
         maxWidth="400px"
       >
         <form onSubmit={handleAddProtein}>
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '8px' }}>Protein Consumed Today (grams)</label>
+          <div style={{ marginBottom: '14px' }}>
+            <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", marginBottom: '6px', color: 'var(--text-muted)' }}>PROTEIN CONSUMED TODAY (GRAMS)</label>
             <input 
               type="number" 
               value={proteinInput} 
               onChange={(e) => setProteinInput(e.target.value)} 
               className="glass-input" 
-              style={{ width: '100%', padding: '12px 14px', fontSize: '1.2rem', textAlign: 'center', fontWeight: 700, background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '12px' }} 
+              style={{ width: '100%', padding: '10px 12px', fontSize: '1.2rem', textAlign: 'center', fontWeight: 700, fontFamily: "'DM Mono', monospace", background: 'var(--bg-main)', color: '#d8f277', border: '1px solid var(--border-color)', borderRadius: '8px' }} 
               placeholder="e.g. 25"
               autoFocus
             />
           </div>
-          <div style={{ display: 'flex', gap: '10px', marginBottom: '24px', justifyContent: 'center' }}>
-            <button type="button" className="secondary-btn" onClick={() => handleLogProtein(25)} style={{ padding: '8px 16px', fontSize: '0.9rem' }}>+25g</button>
-            <button type="button" className="secondary-btn" onClick={() => handleLogProtein(30)} style={{ padding: '8px 16px', fontSize: '0.9rem' }}>+30g</button>
-            <button type="button" className="secondary-btn" onClick={() => handleLogProtein(-10)} style={{ padding: '8px 16px', fontSize: '0.9rem' }}>-10g</button>
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', justifyContent: 'center' }}>
+            <button type="button" className="secondary-btn" onClick={() => handleLogProtein(25)} style={{ padding: '6px 14px', fontSize: '0.85rem', fontFamily: "'DM Mono', monospace", borderRadius: '6px' }}>+25g</button>
+            <button type="button" className="secondary-btn" onClick={() => handleLogProtein(30)} style={{ padding: '6px 14px', fontSize: '0.85rem', fontFamily: "'DM Mono', monospace", borderRadius: '6px' }}>+30g</button>
+            <button type="button" className="secondary-btn" onClick={() => handleLogProtein(-10)} style={{ padding: '6px 14px', fontSize: '0.85rem', fontFamily: "'DM Mono', monospace", borderRadius: '6px' }}>-10g</button>
           </div>
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
-            <button type="button" className="secondary-btn" onClick={handleResetProtein} style={{ color: '#ef4444', borderColor: 'rgba(239,68,68,0.3)', padding: '8px 14px', fontSize: '0.85rem' }}>Reset to 0g</button>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button type="button" className="secondary-btn" onClick={closeLogProteinModal}>Cancel</button>
-              <button type="submit" className="blue-btn">Save Protein</button>
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
+            <button type="button" className="secondary-btn" onClick={handleResetProtein} style={{ color: '#ef4444', borderColor: 'rgba(239,68,68,0.3)', padding: '6px 12px', fontSize: '0.8rem', fontFamily: "'DM Mono', monospace", borderRadius: '6px' }}>RESET 0G</button>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button type="button" className="secondary-btn" onClick={closeLogProteinModal} style={{ padding: '8px 14px', borderRadius: '8px', fontSize: '0.85rem' }}>Cancel</button>
+              <button type="submit" className="blue-btn" style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem' }}>Save Protein</button>
             </div>
           </div>
         </form>
@@ -1271,34 +1303,32 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
         maxWidth="400px"
       >
         <form onSubmit={handleAddStats}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
             <div className="input-group">
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Current Weight (kg)</label>
-              <input type="number" step="0.1" required className="glass-input" style={{ width: '100%', padding: '12px 14px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '12px' }} placeholder="75.5" value={statsForm.weight} onChange={e => setStatsForm({...statsForm, weight: e.target.value})} />
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.78rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", color: 'var(--accent-blue-light, #60a5fa)' }}>CURRENT WEIGHT (KG)</label>
+              <input type="number" step="0.1" required className="glass-input" style={{ width: '100%', padding: '10px 12px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '8px', fontFamily: "'DM Mono', monospace", fontSize: '0.88rem' }} placeholder="75.5" value={statsForm.weight} onChange={e => setStatsForm({...statsForm, weight: e.target.value})} />
             </div>
             <div className="input-group">
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600 }}>Target Weight (kg)</label>
-              <input type="number" step="0.1" className="glass-input" style={{ width: '100%', padding: '12px 14px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '12px' }} placeholder="70" value={statsForm.target_weight} onChange={e => setStatsForm({...statsForm, target_weight: e.target.value})} />
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.78rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", color: '#ef6f3e' }}>TARGET WEIGHT (KG)</label>
+              <input type="number" step="0.1" className="glass-input" style={{ width: '100%', padding: '10px 12px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '8px', fontFamily: "'DM Mono', monospace", fontSize: '0.88rem' }} placeholder="70" value={statsForm.target_weight} onChange={e => setStatsForm({...statsForm, target_weight: e.target.value})} />
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px', marginBottom: '24px' }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Daily Protein Goal (g)</label>
-              <input 
-                type="number" 
-                value={statsForm.target_protein} 
-                onChange={(e) => setStatsForm({...statsForm, target_protein: e.target.value})} 
-                className="glass-input" 
-                style={{ width: '100%', padding: '12px 14px', fontSize: '0.95rem', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '12px' }} 
-                placeholder="e.g. 150"
-              />
-            </div>
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", color: '#d8f277', marginBottom: '6px' }}>DAILY PROTEIN GOAL (G)</label>
+            <input 
+              type="number" 
+              value={statsForm.target_protein} 
+              onChange={(e) => setStatsForm({...statsForm, target_protein: e.target.value})} 
+              className="glass-input" 
+              style={{ width: '100%', padding: '10px 12px', fontSize: '0.92rem', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '8px', fontFamily: "'DM Mono', monospace" }} 
+              placeholder="e.g. 150"
+            />
           </div>
 
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-            <button type="button" className="secondary-btn" onClick={closeEditMetricsModal}>Cancel</button>
-            <button type="submit" className="blue-btn">Save</button>
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+            <button type="button" className="secondary-btn" onClick={closeEditMetricsModal} style={{ padding: '8px 16px', borderRadius: '8px' }}>Cancel</button>
+            <button type="submit" className="blue-btn" style={{ padding: '8px 18px', borderRadius: '8px' }}>Save</button>
           </div>
         </form>
       </Modal>
@@ -1311,18 +1341,18 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
         icon={Dumbbell}
         maxWidth="460px"
       >
-        <div style={{ paddingBottom: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', margin: 0 }}>
+        <div style={{ paddingBottom: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0, fontFamily: "'DM Mono', monospace" }}>
             {isWeekly 
               ? "Configure your workout routine for each day of the week (Monday – Sunday)."
               : "Your workouts will automatically rotate day by day in this order."}
           </p>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-            <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)' }}>Split Type:</label>
+            <label style={{ fontSize: '0.78rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", color: 'var(--text-muted)' }}>SPLIT TYPE:</label>
             <CustomSelect 
               className="glass-input"
-              style={{ width: '220px', padding: '8px 12px', fontSize: '0.84rem', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '10px' }}
+              style={{ width: '220px', padding: '6px 12px', fontSize: '0.82rem', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '8px', fontFamily: "'DM Mono', monospace" }}
               value={workoutSettings.split_type || 'weekly'}
               onChange={(e) => {
                 const newType = e.target.value;
@@ -1343,14 +1373,14 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
           <div style={{ 
             display: 'flex', 
             flexDirection: 'column', 
-            gap: '12px', 
-            maxHeight: '340px', 
+            gap: '10px', 
+            maxHeight: '320px', 
             overflowY: 'auto', 
             paddingRight: '4px',
             WebkitOverflowScrolling: 'touch' 
           }}>
             {splitList.length === 0 ? (
-              <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.88rem', background: 'var(--bg-main)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+              <div style={{ padding: '18px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.82rem', fontFamily: "'DM Mono', monospace", background: 'var(--bg-main)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                 {isWeekly
                   ? "No weekly split days added yet. Type a split day name below and click + Add to create your routine for Monday - Sunday."
                   : "No split days added yet. Type a split day name below and click + Add to create your routine."}
@@ -1360,23 +1390,23 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
                 const item = typeof itemObj === 'string' ? { name: itemObj, exercises: [] } : itemObj;
                 const weekdayName = WEEKDAYS[idx];
                 const cardHeader = isWeekly 
-                  ? (weekdayName ? `${weekdayName}: ${item.name}` : `Day ${idx + 1}: ${item.name}`)
-                  : `Day ${idx + 1}: ${item.name}`;
+                  ? (weekdayName ? `${weekdayName.toUpperCase()}: ${item.name}` : `DAY ${idx + 1}: ${item.name}`)
+                  : `DAY ${idx + 1}: ${item.name}`;
 
                 return (
                   <div key={idx} style={{ 
                     display: 'flex', 
                     flexDirection: 'column', 
-                    gap: '10px', 
-                    padding: '14px', 
-                    borderRadius: '14px', 
+                    gap: '8px', 
+                    padding: '12px', 
+                    borderRadius: '8px', 
                     background: 'var(--bg-main)', 
                     border: '1px solid var(--border-color)',
                     boxSizing: 'border-box',
                     width: '100%'
                   }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-                      <span style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-main)' }}>
+                      <span style={{ fontWeight: 700, fontSize: '0.88rem', color: '#d8f277', fontFamily: "'DM Mono', monospace" }}>
                         {cardHeader}
                       </span>
                       <button 
@@ -1385,28 +1415,28 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
                         style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
                         title="Remove Day"
                       >
-                        <Trash2 size={16} />
+                        <Trash2 size={15} />
                       </button>
                     </div>
 
-                    <div style={{ paddingLeft: '8px', borderLeft: '2px solid var(--border-color)' }}>
+                    <div style={{ paddingLeft: '8px', borderLeft: '2px solid #ef6f3e' }}>
                       {item.exercises && item.exercises.length > 0 ? (
                         item.exercises.map((ex, eIdx) => (
-                          <div key={eIdx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', marginBottom: '6px' }}>
+                          <div key={eIdx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', marginBottom: '4px' }}>
                             <span style={{ fontWeight: 600 }}>{ex.name}</span>
-                            <span style={{ color: 'var(--text-muted)' }}>{ex.sets}</span>
+                            <span style={{ color: '#d8f277', fontFamily: "'DM Mono', monospace", fontWeight: 700 }}>{ex.sets}</span>
                           </div>
                         ))
                       ) : (
-                        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '6px' }}>No exercises added.</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px', fontFamily: "'DM Mono', monospace" }}>No exercises added.</div>
                       )}
 
                       {/* Exercise Input Row - Clean Wrap & Mobile Friendly */}
                       <div style={{ 
                         display: 'flex', 
                         flexWrap: 'wrap', 
-                        gap: '8px', 
-                        marginTop: '10px', 
+                        gap: '6px', 
+                        marginTop: '8px', 
                         width: '100%', 
                         boxSizing: 'border-box',
                         alignItems: 'center'
@@ -1419,12 +1449,12 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
                           style={{ 
                             flex: '1 1 120px', 
                             minWidth: 0, 
-                            padding: '8px 12px', 
+                            padding: '6px 10px', 
                             fontSize: '0.78rem', 
-                            background: 'var(--bg-main)', 
+                            background: 'var(--bg-card)', 
                             color: 'var(--text-main)', 
                             border: '1px solid var(--border-color)', 
-                            borderRadius: '10px', 
+                            borderRadius: '6px', 
                             boxSizing: 'border-box' 
                           }}
                         />
@@ -1436,12 +1466,13 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
                           style={{ 
                             flex: '1 1 80px', 
                             minWidth: 0, 
-                            padding: '8px 12px', 
+                            padding: '6px 10px', 
                             fontSize: '0.78rem', 
-                            background: 'var(--bg-main)', 
+                            fontFamily: "'DM Mono', monospace",
+                            background: 'var(--bg-card)', 
                             color: 'var(--text-main)', 
                             border: '1px solid var(--border-color)', 
-                            borderRadius: '10px', 
+                            borderRadius: '6px', 
                             boxSizing: 'border-box' 
                           }}
                         />
@@ -1449,13 +1480,14 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
                           type="button" 
                           className="secondary-btn" 
                           style={{ 
-                            padding: '8px 14px', 
-                            fontSize: '0.78rem', 
+                            padding: '6px 12px', 
+                            fontSize: '0.75rem', 
                             fontWeight: 700, 
+                            fontFamily: "'DM Mono', monospace",
                             whiteSpace: 'nowrap', 
                             flexShrink: 0, 
                             boxSizing: 'border-box',
-                            borderRadius: '10px'
+                            borderRadius: '6px'
                           }}
                           onClick={() => {
                             const nameEl = document.getElementById(`ex-name-${idx}`);
@@ -1475,7 +1507,7 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
                             }
                           }}
                         >
-                          Add
+                          + ADD EX
                         </button>
                       </div>
                     </div>
@@ -1491,7 +1523,7 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
               saveSplitList([...splitList, { name: newSplitName.trim(), exercises: [] }]);
               setNewSplitName('');
             }
-          }} style={{ display: 'flex', gap: '8px', width: '100%', boxSizing: 'border-box' }}>
+          }} style={{ display: 'flex', gap: '6px', width: '100%', boxSizing: 'border-box' }}>
             <input 
               type="text" 
               placeholder={isWeekly && splitList.length < 7 
@@ -1500,20 +1532,20 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
               value={newSplitName} 
               onChange={(e) => setNewSplitName(e.target.value)} 
               className="glass-input" 
-              style={{ flex: '1 1 180px', minWidth: 0, padding: '10px 14px', fontSize: '0.84rem', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '12px', boxSizing: 'border-box' }}
+              style={{ flex: '1 1 180px', minWidth: 0, padding: '8px 12px', fontSize: '0.82rem', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '8px', boxSizing: 'border-box' }}
             />
-            <button type="submit" className="blue-btn" style={{ padding: '10px 16px', fontSize: '0.84rem', whiteSpace: 'nowrap', flexShrink: 0, borderRadius: '12px' }}>+ Add</button>
+            <button type="submit" className="blue-btn" style={{ padding: '8px 14px', fontSize: '0.8rem', fontFamily: "'DM Mono', monospace", whiteSpace: 'nowrap', flexShrink: 0, borderRadius: '8px' }}>+ ADD DAY</button>
           </form>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
             <button 
               type="button" 
               onClick={() => saveSplitList([])}
-              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline' }}
+              style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.78rem', fontFamily: "'DM Mono', monospace", cursor: 'pointer', textDecoration: 'underline' }}
             >
               Clear All Split Days
             </button>
-            <button type="button" className="blue-btn" style={{ padding: '10px 24px', borderRadius: '12px' }} onClick={() => {
+            <button type="button" className="blue-btn" style={{ padding: '8px 20px', borderRadius: '8px', fontSize: '0.85rem' }} onClick={() => {
               setIsEditSplitOpen(false);
               setHasCustomSplit(true);
               const updatedStartCount = workouts.length;
@@ -1535,4 +1567,3 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
     </div>
   );
 }
-

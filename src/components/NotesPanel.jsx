@@ -68,18 +68,18 @@ export default function NotesPanel({
   };
 
   return (
-    <div className="animate-entrance">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px', flexWrap: 'wrap', gap: '16px' }}>
+    <div className="animate-entrance" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '22px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px', flexWrap: 'wrap', gap: '14px' }}>
         <div>
-          <h3 style={{ fontSize: '1.55rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <BookOpen size={24} color="var(--accent-blue)" /> Notes & Personal Diary
+          <h3 style={{ fontFamily: "Fraunces, Georgia, serif", fontSize: '1.45rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '10px', margin: 0, letterSpacing: '-0.02em' }}>
+            <BookOpen size={22} color="#d8f277" /> Notes & Personal Diary
           </h3>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: '4px' }}>
-            Create daily logs, 2026 master goals, and wishlists.
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.84rem', marginTop: '4px', margin: 0, fontFamily: "'DM Sans', sans-serif" }}>
+            Daily reflections, master goals, and personal journal logs.
           </p>
         </div>
         <button 
-          className="blue-btn" 
+          className="button button-primary" 
           onClick={async () => {
             const baseTitle = getFormattedDateTitle();
             const count = notesList.filter(n => n.title === baseTitle || n.title.startsWith(`${baseTitle} (`)).length;
@@ -90,38 +90,40 @@ export default function NotesPanel({
               setActiveNoteId(newNote.id);
             });
           }}
-          style={{ padding: '12px 22px', fontSize: '0.92rem' }}
+          style={{ padding: '10px 20px', fontSize: '0.84rem', borderRadius: '6px', font: "600 0.82rem 'DM Sans', sans-serif", background: 'var(--ink)', color: '#d8f277', border: '1px solid var(--border-color)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
         >
-          <Plus size={18} /> New Diary Page / Note
+          <Plus size={16} /> New Diary Page / Note
         </button>
       </div>
 
-      <div className="notes-main-grid" style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '24px', height: 'calc(100vh - 260px)', minHeight: '480px' }}>
+      <div className="notes-main-grid" style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '20px', height: 'calc(100vh - 260px)', minHeight: '480px' }}>
         {/* LEFT NOTEBOOK LIST / TRASH VIEW SWITCHER */}
-        <div className="notes-left-col" style={{ background: 'var(--bg-main)', borderRadius: '18px', border: '1px solid var(--border-color)', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: 'calc(100vh - 220px)', overflowY: 'auto' }}>
+        <div className="notes-left-col" style={{ background: 'var(--bg-card)', borderRadius: '6px', border: '1px solid var(--border-color)', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: 'calc(100vh - 220px)', overflowY: 'auto' }}>
           <div style={{ display: 'flex', gap: '6px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
             <button
               onClick={() => setNotesViewMode('active')}
               style={{
-                flex: 1, padding: '8px', borderRadius: '10px', border: '1px solid',
-                borderColor: notesViewMode === 'active' ? 'var(--accent-blue)' : 'transparent',
-                background: notesViewMode === 'active' ? 'var(--accent-blue-dim)' : 'transparent',
-                color: notesViewMode === 'active' ? 'var(--accent-blue)' : 'var(--text-muted)',
-                fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', transition: 'all 0.2s'
+                flex: 1, padding: '7px', borderRadius: '6px', border: '1px solid',
+                borderColor: notesViewMode === 'active' ? '#d8f277' : 'transparent',
+                background: notesViewMode === 'active' ? 'rgba(216, 242, 119, 0.12)' : 'transparent',
+                color: notesViewMode === 'active' ? '#d8f277' : 'var(--text-muted)',
+                fontWeight: 600, fontSize: '0.78rem', cursor: 'pointer', transition: 'all 0.15s',
+                fontFamily: "'DM Sans', sans-serif"
               }}
             >
-              📖 Active ({notesList.length})
+              📖 Active <span style={{ font: "500 0.72rem 'DM Mono', monospace" }}>({notesList.length})</span>
             </button>
             <button
               onClick={() => setNotesViewMode('trash')}
               style={{
-                flex: 1, padding: '8px', borderRadius: '10px', border: 'none',
-                background: notesViewMode === 'trash' ? 'rgba(239, 68, 68, 0.18)' : 'transparent',
-                color: notesViewMode === 'trash' ? '#ef4444' : 'var(--text-muted)',
-                fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', transition: 'all 0.2s'
+                flex: 1, padding: '7px', borderRadius: '6px', border: 'none',
+                background: notesViewMode === 'trash' ? 'rgba(239, 111, 62, 0.15)' : 'transparent',
+                color: notesViewMode === 'trash' ? '#ef6f3e' : 'var(--text-muted)',
+                fontWeight: 600, fontSize: '0.78rem', cursor: 'pointer', transition: 'all 0.15s',
+                fontFamily: "'DM Sans', sans-serif"
               }}
             >
-              🗑️ Trash ({trashNotes.length})
+              🗑️ Trash <span style={{ font: "500 0.72rem 'DM Mono', monospace" }}>({trashNotes.length})</span>
             </button>
           </div>
 
@@ -133,17 +135,17 @@ export default function NotesPanel({
               placeholder="Search notes..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              style={{ width: '100%', padding: '8px 10px 8px 30px', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.83rem', outline: 'none', boxSizing: 'border-box' }}
+              style={{ width: '100%', padding: '7px 10px 7px 30px', borderRadius: '6px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.82rem', outline: 'none', boxSizing: 'border-box', fontFamily: "'DM Sans', sans-serif" }}
             />
           </div>
 
           {notesViewMode === 'active' ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto', flex: 1 }}>
               {notesList.length === 0 ? (
-                <div className="glass-card" style={{ textAlign: 'center', padding: '36px 20px', background: 'var(--bg-main)', borderRadius: '18px', border: '1px dashed var(--border-color)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-                  <BookOpen size={40} style={{ color: 'var(--accent-blue)', opacity: 0.5 }} />
-                  <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>No notes created yet</div>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>Click below to create your first note or diary page</p>
+                <div className="glass-card" style={{ textAlign: 'center', padding: '32px 16px', background: 'var(--bg-main)', borderRadius: '6px', border: '1px dashed var(--border-color)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                  <BookOpen size={36} style={{ color: '#d8f277', opacity: 0.6 }} />
+                  <div style={{ fontFamily: "Fraunces, Georgia, serif", fontSize: '0.98rem', fontWeight: 600, color: 'var(--text-main)' }}>No notes created</div>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', margin: 0 }}>Click below to create your first note or reflection.</p>
                   <button
                     onClick={async () => {
                       const baseTitle = getFormattedDateTitle();
@@ -154,10 +156,9 @@ export default function NotesPanel({
                         setActiveNoteId(newNote.id);
                       });
                     }}
-                    className="blue-btn"
-                    style={{ marginTop: '8px', padding: '8px 18px', fontSize: '0.85rem', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                    style={{ marginTop: '6px', padding: '7px 14px', fontSize: '0.78rem', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#d8f277', color: '#11110f', border: '1px solid #d8f277', cursor: 'pointer', fontWeight: 600 }}
                   >
-                    <Plus size={16} /> Create First Note
+                    <Plus size={14} /> Create First Note
                   </button>
                 </div>
               ) : (
@@ -168,18 +169,18 @@ export default function NotesPanel({
                     <div
                       onClick={() => setActiveNoteId(activeNoteId === note.id ? null : note.id)}
                       style={{
-                        padding: '14px 16px',
-                        borderRadius: '14px',
-                        background: activeNoteId === note.id ? 'var(--accent-blue-dim)' : 'var(--bg-main)',
+                        padding: '12px 14px',
+                        borderRadius: '6px',
+                        background: activeNoteId === note.id ? 'rgba(216, 242, 119, 0.08)' : 'var(--bg-main)',
                         color: 'var(--text-main)',
-                        border: `1px solid ${activeNoteId === note.id ? 'var(--accent-blue)' : 'var(--border-color)'}`,
+                        border: `1px solid ${activeNoteId === note.id ? '#d8f277' : 'var(--border-color)'}`,
                         cursor: 'pointer',
-                        transition: 'all 0.2s',
-                        display: 'flex', flexDirection: 'column', gap: '6px'
+                        transition: 'all 0.15s',
+                        display: 'flex', flexDirection: 'column', gap: '5px'
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '0.7rem', fontWeight: 800, background: activeNoteId === note.id ? 'rgba(255,255,255,0.2)' : 'var(--bg-main)', padding: '2px 8px', borderRadius: '8px' }}>
+                        <span style={{ font: "500 0.65rem 'DM Mono', monospace", background: '#d8f277', color: '#11110f', padding: '1px 6px', borderRadius: '3px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                           {note.category || 'General'}
                         </span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -192,18 +193,18 @@ export default function NotesPanel({
                               setNotesList(next);
                               if (activeNoteId === note.id) setActiveNoteId(next[0]?.id || null);
                             }}
-                            style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '2px', opacity: 0.8 }}
+                            style={{ background: 'transparent', border: 'none', color: '#ef6f3e', cursor: 'pointer', padding: '2px', opacity: 0.8 }}
                             title="Move to Trash"
                           >
-                            <Trash2 size={15} />
+                            <Trash2 size={14} />
                           </button>
                         </div>
                       </div>
-                      <h5 style={{ fontSize: '0.96rem', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', margin: 0 }}>
+                      <h5 style={{ fontFamily: "Fraunces, Georgia, serif", fontSize: '0.92rem', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', margin: 0, letterSpacing: '-0.01em' }}>
                         {note.title}
                       </h5>
-                      <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>
-                        Last updated: {note.date || 'Today'}
+                      <span style={{ font: "400 0.72rem 'DM Mono', monospace", color: 'var(--text-muted)' }}>
+                        {note.date || 'Today'}
                       </span>
                     </div>
 
@@ -212,14 +213,14 @@ export default function NotesPanel({
                       <div
                         className="notes-mobile-editor animate-entrance"
                         style={{
-                          background: 'var(--bg-card)',
-                          border: '1px solid var(--accent-blue)',
-                          borderRadius: '14px',
-                          padding: '14px',
+                          background: 'var(--bg-main)',
+                          border: '1px solid #d8f277',
+                          borderRadius: '6px',
+                          padding: '12px',
                           display: 'flex',
                           flexDirection: 'column',
-                          gap: '10px',
-                          marginBottom: '8px'
+                          gap: '8px',
+                          marginBottom: '6px'
                         }}
                       >
                         <input
@@ -232,40 +233,40 @@ export default function NotesPanel({
                           }}
                           placeholder="Note title..."
                           style={{
-                            width: '100%', padding: '10px 12px', borderRadius: '10px',
-                            background: 'var(--bg-main)', color: 'var(--text-main)',
-                            border: '1px solid var(--border-color)', fontSize: '0.95rem', fontWeight: 700, outline: 'none'
+                            width: '100%', padding: '8px 10px', borderRadius: '6px',
+                            background: 'var(--bg-card)', color: 'var(--text-main)',
+                            border: '1px solid var(--border-color)', fontSize: '0.9rem', fontWeight: 600, outline: 'none',
+                            fontFamily: "Fraunces, Georgia, serif"
                           }}
                         />
                         <textarea
                           ref={(el) => {
                             if (el) {
                               el.style.height = 'auto';
-                              el.style.height = `${Math.max(120, el.scrollHeight)}px`;
+                              el.style.height = `${Math.max(100, el.scrollHeight)}px`;
                             }
                           }}
                           value={note.content}
                           onChange={(e) => {
                             e.target.style.height = 'auto';
-                            e.target.style.height = `${Math.max(120, e.target.scrollHeight)}px`;
+                            e.target.style.height = `${Math.max(100, e.target.scrollHeight)}px`;
                             const newContent = e.target.value;
                             const updated = notesList.map(n => n.id === note.id ? { ...n, content: newContent } : n);
                             setNotesList(updated);
                           }}
                           placeholder="Write your note, thoughts, or daily diary entry here..."
                           style={{
-                            width: '100%', padding: '10px 12px', borderRadius: '10px',
-                            background: 'var(--bg-main)', color: 'var(--text-main)',
-                            border: '1px solid var(--border-color)', fontSize: '0.9rem', outline: 'none',
-                            resize: 'none', overflow: 'hidden'
+                            width: '100%', padding: '8px 10px', borderRadius: '6px',
+                            background: 'var(--bg-card)', color: 'var(--text-main)',
+                            border: '1px solid var(--border-color)', fontSize: '0.86rem', outline: 'none',
+                            resize: 'none', overflow: 'hidden', fontFamily: "'DM Sans', sans-serif"
                           }}
                         />
                         <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
                           <button
                             type="button"
-                            className="blue-btn"
                             onClick={() => handleManualSave(note)}
-                            style={{ padding: '8px 18px', fontSize: '0.85rem', fontWeight: 700, borderRadius: '10px' }}
+                            style={{ padding: '6px 14px', fontSize: '0.78rem', fontWeight: 600, borderRadius: '6px', background: '#d8f277', color: '#11110f', border: '1px solid #d8f277', cursor: 'pointer' }}
                           >
                             💾 Save Note
                           </button>
@@ -277,13 +278,13 @@ export default function NotesPanel({
               )}
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', overflowY: 'auto' }}>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: '1.4', background: 'rgba(239, 68, 68, 0.08)', padding: '10px', borderRadius: '10px', border: '1px dashed rgba(239, 68, 68, 0.3)' }}>
-                🗑️ **Trash Bin:** Items here are permanently deleted after **49 days**, or if deleted directly from here.
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto' }}>
+              <div style={{ font: "400 0.72rem 'DM Mono', monospace", color: 'var(--text-muted)', lineHeight: '1.4', background: 'rgba(239, 111, 62, 0.08)', padding: '8px 10px', borderRadius: '6px', border: '1px dashed rgba(239, 111, 62, 0.3)' }}>
+                🗑️ Items deleted permanently after 49 days.
               </div>
               {trashNotes.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '30px 10px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                  Trash is currently empty.
+                <div style={{ textAlign: 'center', padding: '24px 10px', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+                  Trash is empty.
                 </div>
               ) : (
                 trashNotes.map(tNote => {
@@ -293,17 +294,17 @@ export default function NotesPanel({
                       key={tNote.id}
                       onClick={() => setActiveNoteId(tNote.id)}
                       style={{
-                        padding: '14px 16px', borderRadius: '14px',
-                        background: activeNoteId === tNote.id ? 'rgba(239, 68, 68, 0.15)' : 'var(--bg-card)',
-                        border: `1px solid ${activeNoteId === tNote.id ? '#ef4444' : 'var(--border-color)'}`,
-                        cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '8px'
+                        padding: '12px 14px', borderRadius: '6px',
+                        background: activeNoteId === tNote.id ? 'rgba(239, 111, 62, 0.12)' : 'var(--bg-main)',
+                        border: `1px solid ${activeNoteId === tNote.id ? '#ef6f3e' : 'var(--border-color)'}`,
+                        cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '6px'
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '0.72rem', color: '#ef4444', fontWeight: 800 }}>
-                          ⏳ {daysLeft} days until deletion
+                        <span style={{ font: "500 0.68rem 'DM Mono', monospace", color: '#ef6f3e' }}>
+                          ⏳ {daysLeft}d left
                         </span>
-                        <div style={{ display: 'flex', gap: '6px' }}>
+                        <div style={{ display: 'flex', gap: '4px' }}>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -313,24 +314,24 @@ export default function NotesPanel({
                               setActiveNoteId(tNote.id);
                               setNotesViewMode('active');
                             }}
-                            style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', border: 'none', borderRadius: '6px', padding: '4px 8px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}
-                            title="Restore Note to Active"
+                            style={{ background: 'rgba(216, 242, 119, 0.2)', color: '#a7c878', border: '1px solid rgba(216, 242, 119, 0.3)', borderRadius: '4px', padding: '3px 6px', fontSize: '0.68rem', fontWeight: 600, cursor: 'pointer' }}
+                            title="Restore Note"
                           >
-                            ♻️ Restore
+                            Restore
                           </button>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               setTrashNotes(trashNotes.filter(n => n.id !== tNote.id));
                             }}
-                            style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: 'none', borderRadius: '6px', padding: '4px 8px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}
-                            title="Permanently Delete Now"
+                            style={{ background: 'rgba(239, 111, 62, 0.15)', color: '#ef6f3e', border: '1px solid rgba(239, 111, 62, 0.3)', borderRadius: '4px', padding: '3px 6px', fontSize: '0.68rem', fontWeight: 600, cursor: 'pointer' }}
+                            title="Delete Permanently"
                           >
-                            ❌ Delete
+                            Delete
                           </button>
                         </div>
                       </div>
-                      <h5 style={{ fontSize: '0.94rem', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--text-main)' }}>
+                      <h5 style={{ fontFamily: "Fraunces, Georgia, serif", fontSize: '0.9rem', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--text-main)', margin: 0 }}>
                         {tNote.title}
                       </h5>
                     </div>
@@ -347,17 +348,17 @@ export default function NotesPanel({
           const currentNote = currentList.find(n => n.id === activeNoteId) || currentList[0];
           if (!currentNote) {
             return (
-              <div style={{ background: 'var(--bg-main)', borderRadius: '18px', border: '1px solid var(--border-color)', padding: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', gap: '12px' }}>
-                <BookOpen size={40} opacity={0.4} />
-                <h4 style={{ fontSize: '1.1rem', fontWeight: 700 }}>No Note Selected</h4>
-                <p style={{ fontSize: '0.85rem' }}>Select a note from the left panel or click "+ New Diary Page / Note".</p>
+              <div style={{ background: 'var(--bg-card)', borderRadius: '6px', border: '1px solid var(--border-color)', padding: '36px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', gap: '10px' }}>
+                <BookOpen size={36} opacity={0.4} />
+                <h4 style={{ fontFamily: "Fraunces, Georgia, serif", fontSize: '1.05rem', fontWeight: 600 }}>No Note Selected</h4>
+                <p style={{ fontSize: '0.82rem', fontFamily: "'DM Sans', sans-serif" }}>Select a note from the left panel or click "+ New Diary Page / Note".</p>
               </div>
             );
           }
           return (
-            <div className="notes-right-col" style={{ background: 'var(--bg-main)', borderRadius: '18px', border: '1px solid var(--border-color)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px', maxHeight: 'calc(100vh - 220px)', overflowY: 'auto' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
-                <div style={{ flex: 1, minWidth: '240px' }}>
+            <div className="notes-right-col" style={{ background: 'var(--bg-card)', borderRadius: '6px', border: '1px solid var(--border-color)', padding: '22px', display: 'flex', flexDirection: 'column', gap: '16px', maxHeight: 'calc(100vh - 220px)', overflowY: 'auto' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '14px' }}>
+                <div style={{ flex: 1, minWidth: '220px' }}>
                   <input
                     type="text"
                     disabled={notesViewMode === 'trash'}
@@ -373,22 +374,22 @@ export default function NotesPanel({
                         setNotesList(notesList.map(n => n.id === currentNote.id ? { ...n, title: newTitle, date: new Date().toISOString().split('T')[0] } : n));
                       }
                     }}
-                    style={{ width: '100%', fontSize: '1.3rem', fontWeight: 800, background: 'transparent', border: 'none', color: 'var(--text-main)', outline: 'none' }}
+                    style={{ width: '100%', fontSize: '1.35rem', fontWeight: 600, background: 'transparent', border: 'none', color: 'var(--text-main)', outline: 'none', fontFamily: "Fraunces, Georgia, serif", letterSpacing: '-0.02em' }}
                   />
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                   {notesViewMode === 'active' ? (
                     <>
                       {noteUnsaved && (
-                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#d97706', background: 'rgba(217, 119, 6, 0.1)', padding: '4px 8px', borderRadius: '8px' }}>
-                          ⚠️ Unsaved Changes
+                        <span style={{ font: "500 0.68rem 'DM Mono', monospace", background: '#d8f277', color: '#11110f', padding: '3px 8px', borderRadius: '4px', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                          ● Draft Changes
                         </span>
                       )}
                       <button
                         onClick={() => handleManualSave(currentNote)}
-                        style={{ padding: '8px 18px', borderRadius: '30px', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-muted)', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}
+                        style={{ padding: '7px 16px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', transition: 'all 0.15s', fontFamily: "'DM Sans', sans-serif" }}
                       >
-                        Save Note
+                        💾 Save
                       </button>
 
                       <button
@@ -405,20 +406,20 @@ export default function NotesPanel({
                           }
                         }}
                         style={{
-                          display: 'flex', alignItems: 'center', gap: '6px',
-                          padding: '8px 14px', borderRadius: '20px',
-                          background: 'rgba(239, 68, 68, 0.12)', color: '#ef4444',
-                          border: '1px solid rgba(239, 68, 68, 0.3)',
-                          fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer',
-                          transition: 'all 0.2s'
+                          display: 'flex', alignItems: 'center', gap: '5px',
+                          padding: '7px 14px', borderRadius: '6px',
+                          background: 'rgba(239, 111, 62, 0.1)', color: '#ef6f3e',
+                          border: '1px solid rgba(239, 111, 62, 0.3)',
+                          fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer',
+                          transition: 'all 0.15s', fontFamily: "'DM Sans', sans-serif"
                         }}
                         title="Move this note to Trash"
                       >
-                        <Trash2 size={16} /> Delete Note
+                        <Trash2 size={14} /> Delete
                       </button>
                     </>
                   ) : (
-                    <div style={{ display: 'flex', gap: '10px' }}>
+                    <div style={{ display: 'flex', gap: '8px' }}>
                       <button
                         onClick={() => {
                           const restoredNote = { ...currentNote, is_trashed: 0, deletedAt: null };
@@ -428,8 +429,7 @@ export default function NotesPanel({
                           setNotesViewMode('active');
                           handleUpdateNoteDb(restoredNote);
                         }}
-                        className="blue-btn"
-                        style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+                        style={{ padding: '7px 14px', borderRadius: '6px', background: '#d8f277', color: '#11110f', border: '1px solid #d8f277', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}
                       >
                         ♻️ Restore Note
                       </button>
@@ -444,9 +444,9 @@ export default function NotesPanel({
                             });
                           } catch(e){}
                         }}
-                        style={{ padding: '8px 16px', borderRadius: '20px', background: '#ef4444', color: '#fff', border: 'none', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}
+                        style={{ padding: '7px 14px', borderRadius: '6px', background: '#ef6f3e', color: '#fff', border: 'none', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}
                       >
-                        ❌ Permanently Delete
+                        ❌ Delete Permanently
                       </button>
                     </div>
                   )}
@@ -476,12 +476,12 @@ export default function NotesPanel({
                   }
                 }}
                 placeholder="Write your diary entry, personal reflection, or goals..."
-                style={{ width: '100%', padding: '18px', borderRadius: '14px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '1rem', lineHeight: '1.6', outline: 'none', resize: 'none', overflow: 'hidden', opacity: notesViewMode === 'trash' ? 0.7 : 1 }}
+                style={{ width: '100%', padding: '16px', borderRadius: '6px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', lineHeight: '1.65', outline: 'none', resize: 'none', overflow: 'hidden', opacity: notesViewMode === 'trash' ? 0.7 : 1, fontFamily: "'DM Sans', sans-serif", boxSizing: 'border-box' }}
               />
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                <span>{notesViewMode === 'active' ? '' : '🗑️ Viewing note in Trash. Restore it to edit or keep permanently.'}</span>
-                <span style={{ fontWeight: 700, color: notesViewMode === 'active' ? 'transparent' : '#ef4444' }}>{notesViewMode === 'active' ? '' : 'In Trash Bin'}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', font: "400 0.75rem 'DM Mono', monospace", color: 'var(--text-muted)' }}>
+                <span>{notesViewMode === 'active' ? '' : '🗑️ In Trash Bin. Restore to keep or edit.'}</span>
+                <span style={{ fontWeight: 600, color: notesViewMode === 'active' ? 'transparent' : '#ef6f3e' }}>{notesViewMode === 'active' ? '' : 'Archived'}</span>
               </div>
             </div>
           );

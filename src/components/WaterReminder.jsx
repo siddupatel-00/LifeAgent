@@ -58,12 +58,8 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
   const [goalInput, setGoalInput] = useState('');
   const [goalInputError, setGoalInputError] = useState('');
 
-  const [isEditingTarget, setIsEditingTarget] = useState(false);
-  const [targetGoalInput, setTargetGoalInput] = useState(targetGoal != null ? targetGoal.toString() : '2.5');
-
   // Custom Quick Presets
   const [presets, setPresets] = useState(DEFAULT_PRESETS);
-
   const [customMlInput, setCustomMlInput] = useState('');
   const [isAddPresetOpen, setIsAddPresetOpen] = useState(false);
 
@@ -147,7 +143,6 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
     })();
   };
 
-
   useEffect(() => {
     const todayStr = todayKey(userProfile?.timezone);
     const currentStat = Array.isArray(todayStat)
@@ -214,25 +209,6 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
     } catch (e) {}
   };
 
-  const handleIntervalChange = (mins) => {
-    setReminderIntervalMinutes(mins);
-    setModalReminderInterval(mins.toString());
-    if (isReminderEnabled) {
-      showToast?.(`Reminder interval updated to ${mins} minutes.`, 'success');
-    }
-    
-    try {
-      const token = safeStorage.getItem('token');
-      if (token) {
-        fetch(getApiUrl('/api/settings'), {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ water_reminder_interval: mins })
-        }).catch(err => console.error('Failed to update water reminder interval:', err));
-      }
-    } catch (e) {}
-  };
-
   const handleAddWater = (mlToAdd) => {
     const litersToAdd = mlToAdd / 1000;
     const newTotal = parseFloat((hydrationLiters + litersToAdd).toFixed(2));
@@ -242,7 +218,7 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
       ? todayStat.find(s => s?.date === todayStr)
       : (todayStat?.date ? (todayStat.date === todayStr ? todayStat : null) : todayStat);
     onLogStat?.({ ...(currentStat || {}), hydration: newTotal, date: todayStr });
-    showToast?.(`Added +${mlToAdd} ml water! Total: ${newTotal} L`, 'success');
+    showToast?.(`Added +${mlToAdd}ml water! Total: ${newTotal} L`, 'success');
   };
 
   const handleReset = () => {
@@ -263,40 +239,46 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
       return;
     }
     if (presets.includes(ml)) {
-      showToast?.(`${ml} ml button already exists!`, 'info');
+      showToast?.(`${ml}ml button already exists!`, 'info');
       return;
     }
     const updatedPresets = [...presets, ml].sort((a, b) => a - b);
     setPresets(updatedPresets);
     setCustomMlInput('');
     setIsAddPresetOpen(false);
-    showToast?.(`Added new +${ml} ml quick button!`, 'success');
+    showToast?.(`Added new +${ml}ml quick button!`, 'success');
   };
 
   const handleDeletePreset = (mlToDelete, e) => {
     e.stopPropagation();
     const updatedPresets = presets.filter(p => p !== mlToDelete);
     setPresets(updatedPresets);
-    showToast?.(`Removed +${mlToDelete} ml quick button`, 'info');
+    showToast?.(`Removed +${mlToDelete}ml quick button`, 'info');
   };
 
-  const percentComplete = Math.min(100, Math.round((hydrationLiters / targetGoal) * 100));
+  const percentComplete = targetGoal > 0 ? Math.min(100, Math.round((hydrationLiters / targetGoal) * 100)) : 0;
 
   // ── Empty-state: no goal set yet ──────────────────────────────────────────
   if (targetGoal === null) {
     return (
-      <div className="animate-entrance" style={{ marginTop: '24px', marginBottom: '24px' }}>
+      <div className="animate-entrance" style={{ marginTop: '20px', marginBottom: '20px' }}>
         {/* Page header (icon + title) */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '28px' }}>
-          <div style={{ background: 'var(--bg-card-hover)', padding: '10px', borderRadius: '14px', color: 'var(--text-main)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Droplet size={22} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
+          <div style={{ background: 'var(--bg-card)', padding: '10px', borderRadius: '8px', color: '#d8f277', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Droplet size={20} />
           </div>
           <div>
-            <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
-              💧 Water
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#d8f277', display: 'inline-block' }} />
+              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.72rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+                TELEMETRY // HYDRATION
+              </span>
+            </div>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.02em' }}>
+              Hydration Tracking &amp; Reminders
             </h3>
-            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
-              Track daily water intake, customize quick buttons, set target goals, and receive reminders.
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
+              Log water intake, customize presets, and set automatic reminders.
             </p>
           </div>
         </div>
@@ -305,27 +287,26 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
         <div style={{
           background: 'var(--bg-card)',
           border: '1px dashed var(--border-color)',
-          borderRadius: '20px',
-          padding: '40px 32px',
+          borderRadius: '8px',
+          padding: '36px 28px',
           textAlign: 'center',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px',
           maxWidth: '440px', margin: '0 auto'
         }}>
           <div style={{
-            width: '64px', height: '64px', borderRadius: '50%',
-            background: 'linear-gradient(135deg, var(--accent-blue) 0%, rgba(59,130,246,0.3) 100%)',
+            width: '56px', height: '56px', borderRadius: '50%',
+            background: 'rgba(216, 242, 119, 0.15)', border: '1px solid #d8f277',
             display: 'flex', alignItems: 'center', justifyContent: 'center'
           }}>
-            <Droplet size={30} style={{ color: '#fff' }} />
+            <Droplet size={26} style={{ color: '#d8f277' }} />
           </div>
 
           <div>
-            <h4 style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--text-main)', margin: '0 0 6px 0' }}>
-              Set Your Daily Water Goal
+            <h4 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 6px 0', fontFamily: "'DM Mono', monospace", textTransform: 'uppercase' }}>
+              Set Daily Water Goal
             </h4>
-            <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.6 }}>
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
               Enter how many litres of water you aim to drink each day.
-              You can always change this later from the settings menu.
             </p>
           </div>
 
@@ -337,17 +318,17 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
                   type="button"
                   onClick={() => { setGoalInput(val.toString()); setGoalInputError(''); }}
                   style={{
-                    padding: '6px 12px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 700,
+                    padding: '6px 12px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 700,
                     border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)',
-                    cursor: 'pointer'
+                    fontFamily: "'DM Mono', monospace", cursor: 'pointer'
                   }}
                 >
-                  {val} L
+                  {val}L
                 </button>
               ))}
             </div>
 
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', width: '100%' }}>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', width: '100%' }}>
               <input
                 id="water-goal-input"
                 type="number"
@@ -358,26 +339,26 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
                 onChange={e => { setGoalInput(e.target.value); setGoalInputError(''); }}
                 onKeyDown={e => e.key === 'Enter' && handleSetGoal()}
                 style={{
-                  flex: 1, padding: '10px 14px', borderRadius: '12px',
+                  flex: 1, padding: '10px 12px', borderRadius: '8px',
                   border: `1px solid ${goalInputError ? '#ef4444' : 'var(--border-color)'}`,
                   background: 'var(--bg-main)', color: 'var(--text-main)',
-                  fontSize: '1rem', outline: 'none', fontWeight: 600
+                  fontSize: '0.95rem', outline: 'none', fontWeight: 700, fontFamily: "'DM Mono', monospace"
                 }}
               />
-              <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 700 }}>L</span>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 700, fontFamily: "'DM Mono', monospace" }}>L</span>
               <button
                 id="water-goal-save-btn"
                 className="blue-btn"
                 onClick={handleSetGoal}
-                style={{ padding: '10px 20px', borderRadius: '12px', fontWeight: 700, fontSize: '0.9rem', flexShrink: 0 }}
+                style={{ padding: '10px 18px', borderRadius: '8px', fontWeight: 700, fontSize: '0.85rem', flexShrink: 0, fontFamily: "'DM Mono', monospace" }}
               >
-                Save Goal
+                SAVE GOAL
               </button>
             </div>
           </div>
 
           {goalInputError && (
-            <p style={{ fontSize: '0.82rem', color: '#ef4444', margin: 0 }}>{goalInputError}</p>
+            <p style={{ fontSize: '0.78rem', color: '#ef4444', margin: 0, fontFamily: "'DM Mono', monospace" }}>{goalInputError}</p>
           )}
         </div>
       </div>
@@ -386,34 +367,41 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
 
   // ── Normal tracker UI (goal is set) ─────────────────────────────────────────
   return (
-    <div className="animate-entrance" style={{ marginTop: '24px', marginBottom: '24px' }}>
+    <div className="animate-entrance" style={{ marginTop: '16px', marginBottom: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ background: 'var(--bg-card-hover)', padding: '10px', borderRadius: '14px', color: 'var(--text-main)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Droplet size={22} />
+          <div style={{ background: 'var(--bg-card)', padding: '8px', borderRadius: '8px', color: '#d8f277', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Droplet size={18} />
           </div>
           <div>
-            <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
-              💧 Water
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#d8f277', display: 'inline-block' }} />
+              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.72rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+                TELEMETRY // WATER TRACKER
+              </span>
+            </div>
+            <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.02em' }}>
+              Daily Hydration Telemetry
             </h3>
-            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
-              Track daily water intake, customize quick buttons, set target goals, and receive reminders.
-            </p>
           </div>
         </div>
 
-        {/* Reminder Toggle Button & 3-dots Menu */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        {/* Reminder Toggle Button & Settings */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <button
             className="blue-btn"
             onClick={toggleReminder}
             style={{
-              display: 'flex', alignItems: 'center', gap: '8px',
-              padding: '8px 16px', fontSize: '0.85rem'
+              display: 'flex', alignItems: 'center', gap: '6px',
+              padding: '6px 14px', fontSize: '0.78rem', borderRadius: '8px',
+              fontFamily: "'DM Mono', monospace",
+              background: isReminderEnabled ? '#d8f277' : 'var(--bg-card)',
+              color: isReminderEnabled ? '#11110f' : 'var(--text-main)',
+              border: `1px solid ${isReminderEnabled ? '#c2de60' : 'var(--border-color)'}`
             }}
           >
-            {isReminderEnabled ? <Bell size={16} /> : <BellOff size={16} />}
-            <span>{isReminderEnabled ? `Reminders Active (${reminderIntervalMinutes}m)` : 'Enable Reminders'}</span>
+            {isReminderEnabled ? <Bell size={14} /> : <BellOff size={14} />}
+            <span>{isReminderEnabled ? `REMINDERS (${reminderIntervalMinutes}M)` : 'ENABLE REMINDERS'}</span>
           </button>
           
           <button
@@ -424,103 +412,104 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
             }}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              padding: '8px', borderRadius: '12px', background: 'var(--bg-card-hover)',
+              padding: '7px', borderRadius: '8px', background: 'var(--bg-card)',
               border: '1px solid var(--border-color)', color: 'var(--text-main)',
               cursor: 'pointer'
             }}
-            title="Settings"
+            title="Hydration Settings"
           >
-            <MoreVertical size={18} />
+            <MoreVertical size={16} />
           </button>
         </div>
       </div>
 
-      {/* Progress Card */}
-      <div style={{ background: 'var(--bg-main)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border-color)', marginBottom: '20px' }}>
+      {/* Progress Card - Dark contrast, acid lime smooth meter, 8px radius */}
+      <div style={{ background: 'var(--bg-card)', padding: '18px 20px', borderRadius: '8px', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '10px', flexWrap: 'wrap', gap: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--text-main)' }}>{hydrationLiters} L</span>
+            <span style={{ fontSize: '1.9rem', fontWeight: 900, color: 'var(--text-main)', fontFamily: "'DM Mono', monospace" }}>{hydrationLiters} L</span>
             
-            <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-              / {targetGoal} L target
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px', fontFamily: "'DM Mono', monospace" }}>
+              / {targetGoal} L TARGET
             </span>
           </div>
-          <div style={{ fontSize: '0.95rem', fontWeight: 800, color: percentComplete >= 100 ? '#10b981' : 'var(--text-main)' }}>
-            {percentComplete}% {percentComplete >= 100 && '🎉 Goal Met!'}
+          <div style={{ fontSize: '0.88rem', fontWeight: 800, fontFamily: "'DM Mono', monospace", color: percentComplete >= 100 ? '#d8f277' : 'var(--text-main)' }}>
+            {percentComplete}% {percentComplete >= 100 && '🎉 GOAL MET!'}
           </div>
         </div>
 
-        {/* Bar */}
-        <div style={{ width: '100%', height: '10px', background: 'var(--border-color)', borderRadius: '6px', overflow: 'hidden' }}>
-          <div style={{ height: '100%', width: `${percentComplete}%`, background: 'var(--accent-blue)', borderRadius: '6px', transition: 'width 0.4s ease' }} />
+        {/* Smooth progress meter in acid lime / dark contrast */}
+        <div style={{ width: '100%', height: '8px', background: 'var(--bg-main)', borderRadius: '4px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+          <div style={{ height: '100%', width: `${percentComplete}%`, background: '#d8f277', borderRadius: '4px', transition: 'width 0.3s ease' }} />
         </div>
       </div>
 
-      {/* Quick Log Buttons Section */}
+      {/* Quick Log Preset Buttons Section - Clean preset buttons (+50ml, +150ml, +200ml) with DM Mono and crisp 4px borders */}
       <div style={{ marginBottom: '16px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)' }}>
-            Quick Add Preset Buttons:
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+          <span style={{ fontSize: '0.75rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+            QUICK ADD PRESETS:
           </span>
           <button
             onClick={() => setIsAddPresetOpen(!isAddPresetOpen)}
-            className="blue-btn"
+            className="secondary-btn"
             style={{
-              padding: '6px 14px',
-              fontSize: '0.82rem',
-              borderRadius: '10px'
+              padding: '4px 10px',
+              fontSize: '0.75rem',
+              borderRadius: '6px',
+              fontFamily: "'DM Mono', monospace"
             }}
           >
-            <Plus size={14} /> {isAddPresetOpen ? 'Close' : 'Add your own'}
+            <Plus size={12} /> {isAddPresetOpen ? 'CLOSE' : '+ CUSTOM PRESET'}
           </button>
         </div>
 
         {/* Custom Preset Input Form */}
         {isAddPresetOpen && (
-          <form onSubmit={handleCreateCustomPreset} style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '14px', background: 'var(--bg-main)', padding: '10px 14px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+          <form onSubmit={handleCreateCustomPreset} style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '12px', background: 'var(--bg-card)', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
             <input
               type="number"
-              placeholder="e.g. 700"
+              placeholder="e.g. 500"
               value={customMlInput}
               onChange={e => setCustomMlInput(e.target.value)}
               style={{
-                width: '120px', padding: '6px 12px', borderRadius: '8px',
-                border: '1px solid var(--border-color)', background: 'var(--bg-card)',
-                color: 'var(--text-main)', fontSize: '0.88rem', fontWeight: 600, outline: 'none'
+                width: '100px', padding: '6px 10px', borderRadius: '6px',
+                border: '1px solid var(--border-color)', background: 'var(--bg-main)',
+                color: 'var(--text-main)', fontSize: '0.85rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", outline: 'none'
               }}
             />
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 700 }}>ml</span>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, fontFamily: "'DM Mono', monospace" }}>ml</span>
             <button
               type="submit"
               className="blue-btn"
-              style={{ padding: '6px 14px', fontSize: '0.82rem' }}
+              style={{ padding: '6px 12px', fontSize: '0.78rem', borderRadius: '6px', fontFamily: "'DM Mono', monospace" }}
             >
-              Add Button
+              + ADD PRESET
             </button>
           </form>
         )}
 
-        {/* Preset Buttons Grid */}
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+        {/* Preset Buttons Grid - Crisp 4px-6px borders & DM Mono */}
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
           {presets.map((ml) => (
             <button
               key={ml}
               onClick={() => handleAddWater(ml)}
               style={{
-                display: 'flex', alignItems: 'center', gap: '6px',
-                padding: '8px 14px', borderRadius: '20px', border: '1px solid var(--border-color)',
-                background: 'var(--bg-card-hover)', color: 'var(--text-main)',
-                fontWeight: 700, fontSize: '0.83rem', cursor: 'pointer', transition: 'all 0.2s',
+                display: 'flex', alignItems: 'center', gap: '5px',
+                padding: '8px 14px', borderRadius: '6px', border: '1px solid var(--border-color)',
+                background: 'var(--bg-card)', color: 'var(--text-main)',
+                fontWeight: 700, fontSize: '0.84rem', fontFamily: "'DM Mono', monospace", cursor: 'pointer', transition: 'all 0.15s',
                 position: 'relative'
               }}
             >
-              <Plus size={14} /> +{ml} ml
+              <Plus size={13} color="#d8f277" /> +{ml}ml
               {!DEFAULT_PRESETS.includes(ml) && (
                 <span
                   onClick={(e) => handleDeletePreset(ml, e)}
                   title="Remove custom button"
                   style={{
-                    marginLeft: '4px', opacity: 0.7, display: 'flex', alignItems: 'center', cursor: 'pointer'
+                    marginLeft: '4px', opacity: 0.6, display: 'flex', alignItems: 'center', cursor: 'pointer'
                   }}
                 >
                   <X size={12} />
@@ -534,72 +523,84 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
             title="Reset today's water"
             style={{
               display: 'flex', alignItems: 'center', gap: '4px',
-              padding: '8px 14px', borderRadius: '20px', border: '1px solid var(--border-color)',
-              background: 'transparent', color: 'var(--text-muted)',
-              fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer'
+              padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border-color)',
+              background: 'transparent', color: '#ef6f3e',
+              fontWeight: 700, fontSize: '0.78rem', fontFamily: "'DM Mono', monospace", cursor: 'pointer'
             }}
           >
-            <RotateCcw size={12} /> Reset
+            <RotateCcw size={12} /> RESET 0L
           </button>
         </div>
       </div>
 
       {/* Timeframe & Hydration History Section */}
-      <div style={{ marginTop: '28px' }}>
+      <div style={{ marginTop: '24px' }}>
         {/* Header & Timeframe Selector */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
-          <h4 style={{ fontSize: '1.15rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
-            <Calendar size={18} color="var(--accent-blue)" /> Hydration History
-          </h4>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-muted)' }}>Timeframe:</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#d8f277', display: 'inline-block' }} />
+            <h4 style={{ fontSize: '0.98rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '6px', margin: 0, letterSpacing: '-0.02em' }}>
+              <Calendar size={16} color="#d8f277" /> Hydration History
+            </h4>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", color: 'var(--text-muted)' }}>WINDOW:</span>
             <CustomSelect
               value={waterTimeframe}
               onChange={(e) => setWaterTimeframe(e.target.value)}
               options={[
                 { value: 'today', label: 'Today' },
-                { value: '7d', label: 'Last 7 Days' },
-                { value: '30d', label: 'Last 30 Days' },
+                { value: '7d', label: 'Past 7 Days' },
+                { value: '30d', label: 'Past 30 Days' },
                 { value: 'all', label: 'All Time' }
               ]}
-              style={{ minWidth: '150px', padding: '6px 14px', borderRadius: '30px' }}
+              style={{ minWidth: '140px', padding: '6px 12px', borderRadius: '8px', fontFamily: "'DM Mono', monospace", fontSize: '0.82rem' }}
             />
           </div>
         </div>
 
         {/* History Cards List */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {filteredHistory.length === 0 ? (
-            <div className="glass-card" style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)', borderRadius: '16px', border: '1px dashed var(--border-color)' }}>
+            <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)', borderRadius: '8px', border: '1px dashed var(--border-color)', background: 'var(--bg-card)', fontSize: '0.84rem', fontFamily: "'DM Mono', monospace" }}>
               No hydration logs found for this timeframe.
             </div>
           ) : (
             filteredHistory.map(record => {
               const liters = Number(record.hydration || 0);
               const goal = targetGoal || 3.0;
-              const pct = Math.min(100, Math.round((liters / goal) * 100));
+              const pct = goal > 0 ? Math.min(100, Math.round((liters / goal) * 100)) : 0;
               const isGoalMet = liters >= goal;
 
               return (
-                <div key={record.date || record.id} className="glass-card" style={{ padding: '16px 20px', borderRadius: '16px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--accent-blue-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Droplet size={20} color="var(--accent-blue)" />
+                <div key={record.date || record.id} style={{ padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '6px', background: 'rgba(216, 242, 119, 0.12)', border: '1px solid rgba(216, 242, 119, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Droplet size={16} color="#d8f277" />
                     </div>
                     <div>
-                      <div style={{ fontWeight: 800, fontSize: '0.98rem' }}>{record.date === todayDateStr ? 'Today' : record.date}</div>
-                      <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                        {liters.toFixed(1)} L of {goal} L target ({pct}%)
+                      <div style={{ fontWeight: 700, fontSize: '0.88rem', fontFamily: "'DM Mono', monospace", color: 'var(--text-main)' }}>{record.date === todayDateStr ? 'TODAY' : record.date}</div>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px', fontFamily: "'DM Mono', monospace" }}>
+                        {liters.toFixed(1)}L OF {goal}L TARGET ({pct}%)
                       </div>
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1, maxWidth: '240px' }}>
-                    <div style={{ flex: 1, height: '6px', background: 'var(--bg-main)', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
-                      <div style={{ width: `${pct}%`, height: '100%', background: 'var(--accent-blue)', transition: 'width 0.3s' }} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, maxWidth: '240px' }}>
+                    <div style={{ flex: 1, height: '6px', background: 'var(--bg-main)', borderRadius: '3px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                      <div style={{ width: `${pct}%`, height: '100%', background: '#d8f277', transition: 'width 0.3s' }} />
                     </div>
-                    <span className="pill-tag" style={{ background: isGoalMet ? 'rgba(34, 197, 94, 0.15)' : 'var(--accent-blue-dim)', color: isGoalMet ? '#22c55e' : 'var(--accent-blue)', borderColor: isGoalMet ? '#22c55e' : 'var(--border-color)', fontWeight: 700, fontSize: '0.75rem' }}>
-                      {isGoalMet ? 'Goal Met 💧' : 'In Progress'}
+                    <span style={{ 
+                      background: isGoalMet ? '#d8f277' : 'rgba(239, 111, 62, 0.15)', 
+                      color: isGoalMet ? '#11110f' : '#ef6f3e', 
+                      border: `1px solid ${isGoalMet ? '#c2de60' : 'rgba(239, 111, 62, 0.35)'}`, 
+                      fontWeight: 700, 
+                      fontSize: '0.7rem',
+                      fontFamily: "'DM Mono', monospace",
+                      padding: '2px 8px',
+                      borderRadius: '4px'
+                    }}>
+                      {isGoalMet ? 'MET 💧' : 'IN PROGRESS'}
                     </span>
                   </div>
                 </div>
@@ -617,9 +618,9 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
         icon={Droplet}
         maxWidth="440px"
       >
-        <div style={{ marginBottom: '20px' }}>
-          <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px' }}>
-            Daily Target (Liters)
+        <div style={{ marginBottom: '16px' }}>
+          <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", color: 'var(--text-muted)', marginBottom: '6px' }}>
+            DAILY TARGET (LITERS)
           </label>
           <input
             type="number"
@@ -627,27 +628,28 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
             value={modalTargetGoal}
             onChange={e => setModalTargetGoal(e.target.value)}
             style={{
-              width: '100%', padding: '12px 14px', borderRadius: '12px',
+              width: '100%', padding: '10px 12px', borderRadius: '8px',
               border: '1px solid var(--border-color)', background: 'var(--bg-main)',
-              color: 'var(--text-main)', fontSize: '1rem', outline: 'none'
+              color: 'var(--text-main)', fontSize: '0.95rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", outline: 'none'
             }}
           />
         </div>
         
-        <div style={{ marginBottom: '24px' }}>
-          <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px' }}>
-            Reminder Interval
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", color: 'var(--text-muted)', marginBottom: '6px' }}>
+            REMINDER INTERVAL
           </label>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '12px' }}>
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '10px' }}>
             {[15, 30, 45, 60, 90, 120].map(mins => (
               <button
                 key={mins}
                 onClick={() => setModalReminderInterval(mins.toString())}
                 style={{
-                  padding: '8px 12px', borderRadius: '12px', border: '1px solid',
-                  borderColor: modalReminderInterval === mins.toString() ? 'rgba(255, 255, 255, 0.3)' : 'var(--border-color)',
-                  background: modalReminderInterval === mins.toString() ? 'rgba(255, 255, 255, 0.08)' : 'var(--bg-card-hover)',
-                  color: 'var(--text-main)', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer'
+                  padding: '6px 10px', borderRadius: '6px', border: '1px solid',
+                  borderColor: modalReminderInterval === mins.toString() ? '#d8f277' : 'var(--border-color)',
+                  background: modalReminderInterval === mins.toString() ? 'rgba(216, 242, 119, 0.15)' : 'var(--bg-card)',
+                  color: modalReminderInterval === mins.toString() ? '#d8f277' : 'var(--text-main)',
+                  fontSize: '0.8rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", cursor: 'pointer'
                 }}
               >
                 {mins < 60 ? `${mins}m` : `${mins / 60}h`}
@@ -655,16 +657,16 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
             ))}
           </div>
           
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
             <input
               type="number"
               placeholder="Custom minutes"
               value={modalCustomInterval}
               onChange={e => setModalCustomInterval(e.target.value)}
               style={{
-                flex: 1, padding: '12px 14px', borderRadius: '12px',
+                flex: 1, padding: '10px 12px', borderRadius: '8px',
                 border: '1px solid var(--border-color)', background: 'var(--bg-main)',
-                color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none'
+                color: 'var(--text-main)', fontSize: '0.88rem', fontFamily: "'DM Mono', monospace", outline: 'none'
               }}
             />
             <button
@@ -676,56 +678,55 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
                 }
               }}
               className="blue-btn"
-              style={{ padding: '10px 16px', borderRadius: '12px' }}
+              style={{ padding: '8px 14px', borderRadius: '8px', fontSize: '0.8rem', fontFamily: "'DM Mono', monospace" }}
             >
-              Set
+              SET
             </button>
           </div>
         </div>
 
         {/* Reminder Window */}
-        <div style={{ marginBottom: '24px' }}>
-          <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px' }}>
-            Reminder Window
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", color: 'var(--text-muted)', marginBottom: '6px' }}>
+            REMINDER WINDOW
           </label>
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Start</div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '4px', fontFamily: "'DM Mono', monospace" }}>START</div>
               <TimeButton 
                 value={reminderStartTime}
                 onChange={(val) => setReminderStartTime(val)}
                 style={{
-                  width: '100%', padding: '10px 12px', borderRadius: '10px',
+                  width: '100%', padding: '8px 10px', borderRadius: '8px',
                   border: '1px solid var(--border-color)', background: 'var(--bg-main)',
-                  color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none'
+                  color: 'var(--text-main)', fontSize: '0.9rem', outline: 'none', fontFamily: "'DM Mono', monospace"
                 }}
               />
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>End</div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '4px', fontFamily: "'DM Mono', monospace" }}>END</div>
               <TimeButton 
                 value={reminderEndTime}
                 onChange={(val) => setReminderEndTime(val)}
                 style={{
-                  width: '100%', padding: '10px 12px', borderRadius: '10px',
+                  width: '100%', padding: '8px 10px', borderRadius: '8px',
                   border: '1px solid var(--border-color)', background: 'var(--bg-main)',
-                  color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none'
+                  color: 'var(--text-main)', fontSize: '0.9rem', outline: 'none', fontFamily: "'DM Mono', monospace"
                 }}
               />
             </div>
           </div>
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '6px' }}>
-            Reminders will only fire between these times each day.
+          <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '6px', fontFamily: "'DM Mono', monospace" }}>
+            Reminders fire only between these times each day.
           </p>
         </div>
 
-        
         <button
           onClick={handleSaveAllSettings}
           className="blue-btn"
-          style={{ width: '100%', padding: '12px', fontSize: '1rem', borderRadius: '14px', display: 'flex', justifyContent: 'center', gap: '8px' }}
+          style={{ width: '100%', padding: '10px', fontSize: '0.92rem', borderRadius: '8px', display: 'flex', justifyContent: 'center', gap: '6px', fontFamily: "'DM Mono', monospace" }}
         >
-          <Check size={18} /> Save Settings
+          <Check size={16} /> SAVE SETTINGS
         </button>
       </Modal>
     </div>

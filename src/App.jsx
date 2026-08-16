@@ -2095,29 +2095,14 @@ export default function App() {
       {/* STOREFRONT NAVIGATION BAR (Only visible on other non-dashboard pages) */}
       {currentPage !== 'dashboard' && currentPage !== 'landing' && (
         <nav className="nav-bar">
-          <div 
-            style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
+          <button 
+            className="wordmark"
+            type="button"
             onClick={() => navigate('landing', '/')}
           >
-            <div style={{
-              background: 'var(--accent-blue)',
-              width: '40px',
-              height: '40px',
-              borderRadius: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 0 20px rgba(59, 130, 246, 0.4)'
-            }}>
-              <Sparkles size={22} color="var(--accent-text)" />
-            </div>
-            <div>
-              <h1 style={{ fontSize: '1.35rem', fontWeight: 800, letterSpacing: '-0.5px' }}>
-                LIFE <span className="serif-italic">AGENT</span>
-              </h1>
-              <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 500 }}>Personal AI Life & Growth Companion</p>
-            </div>
-          </div>
+            <span className="wordmark-mark" aria-hidden="true">L</span>
+            <span>lifeagent</span>
+          </button>
 
           {/* STOREFRONT NAVIGATION LINKS */}
           <div className="storefront-nav-links" style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -2125,7 +2110,7 @@ export default function App() {
               className={`storefront-nav-link ${currentPage === 'landing' ? 'active' : ''}`}
               onClick={() => navigate('landing', '/')}
             >
-              Home
+              Systems
             </button>
             <button 
               className={`storefront-nav-link ${currentPage === 'waitlist' ? 'active' : ''}`}
@@ -2141,36 +2126,19 @@ export default function App() {
             </button>
           </div>
 
-          <div style={{ display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <div className="landing-theme-controls" style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
-              <CustomSelect 
-                value={themeColor || 'blue'}
-                onChange={(e) => {
-                  safeStorage.setItem('themeColor', e.target.value);
-                  document.documentElement.setAttribute('data-color-theme', e.target.value);
-                  window.dispatchEvent(new Event('storage'));
-                }} 
-                style={{ padding: '7px 14px', borderRadius: '40px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.85rem', fontWeight: 600, width: '170px' }}
-                options={[
-                  { value: "blue", label: "🔵 Classic Blue" },
-                  { value: "professional", label: "⚫ Black & White" },
-                  { value: "pink", label: "🌸 Vibrant Pink" },
-                  { value: "neon", label: "⚡ Neon Tech" },
-                  { value: "emerald", label: "🌿 Emerald" }
-                ]}
-              />
-
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <div className="landing-theme-controls" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
               <div className="theme-dropdown" ref={themeDropdownRef} style={{ position: 'relative' }}>
                 <button 
                   className="theme-toggle-btn"
-                  style={{ padding: '8px 12px', borderRadius: '40px' }}
+                  style={{ padding: '8px 12px', borderRadius: 'var(--radius-sm)' }}
                   onClick={() => setIsThemeMenuOpen(!isThemeMenuOpen)}
                   title="Change Theme Mode"
                 >
-                  {themeMode === 'dark' && <Moon size={18} />}
-                  {themeMode === 'light' && <Sun size={18} />}
-                  {themeMode === 'pc' && <Monitor size={18} />}
-                  {themeMode === 'night' && <Zap size={18} />}
+                  {themeMode === 'dark' && <Moon size={16} />}
+                  {themeMode === 'light' && <Sun size={16} />}
+                  {themeMode === 'pc' && <Monitor size={16} />}
+                  {themeMode === 'night' && <Zap size={16} />}
                   <ChevronDown size={14} style={{ transform: isThemeMenuOpen ? 'rotate(180deg)' : 'none', transition: '0.2s' }} />
                 </button>
 
@@ -2197,13 +2165,13 @@ export default function App() {
                         top: `${top}px`,
                         right: `${right}px`,
                         left: 'auto',
-                        minWidth: '165px',
+                        minWidth: '160px',
                         zIndex: 99999999,
-                        boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+                        boxShadow: 'var(--shadow-lg)',
                         background: 'var(--bg-card)',
                         border: '1px solid var(--border-color)',
-                        borderRadius: '16px',
-                        padding: '8px'
+                        borderRadius: 'var(--radius-sm)',
+                        padding: '6px'
                       }}
                     >
                       <button 
@@ -2244,18 +2212,18 @@ export default function App() {
             {token ? (
               <button 
                 className="blue-btn" 
-                style={{ padding: '9px 22px', fontSize: '0.9rem' }}
+                style={{ padding: '9px 18px', fontSize: '0.85rem' }}
                 onClick={() => navigate('dashboard', '/dashboard')}
               >
-                Go to Dashboard <ArrowRight size={16} />
+                Open System <ArrowRight size={15} />
               </button>
             ) : (
               <button 
                 className="blue-btn" 
-                style={{ padding: '9px 22px', fontSize: '0.9rem' }}
+                style={{ padding: '9px 18px', fontSize: '0.85rem' }}
                 onClick={() => { setWaitlistSuccess(false); setAuthMode('login'); navigate('auth', '/auth'); }}
               >
-                Sign In <ArrowRight size={16} />
+                Sign In <ArrowRight size={15} />
               </button>
             )}
           </div>
@@ -2289,16 +2257,16 @@ export default function App() {
             <h2 style={{ fontSize: '2.2rem', fontWeight: 800, marginBottom: '10px', letterSpacing: '-0.5px' }}>
               Join the VIP Waitlist
             </h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '1rem', marginBottom: '32px', lineHeight: 1.6 }}>
-              Enter your email address below to show your interest in our all-in-one personal progress app and secure early VIP access.
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', marginBottom: '28px', lineHeight: 1.6 }}>
+              Enter your email address below to secure early VIP access to LifeAgent personal operating system.
             </p>
 
             {!waitlistSuccess ? (
-              <form onSubmit={handleWaitlistSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              <form onSubmit={handleWaitlistSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div style={{ textAlign: 'left' }}>
-                  <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Your Name *</label>
+                  <label className="micro-label" style={{ display: 'block', marginBottom: '6px' }}>Your Name *</label>
                   <div style={{ position: 'relative' }}>
-                    <User size={20} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                    <User size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                     <input 
                       type="text" 
                       placeholder="Enter your name..."
@@ -2306,17 +2274,17 @@ export default function App() {
                       onChange={(e) => setWaitlistName(e.target.value)} 
                       required
                       style={{ 
-                        width: '100%', padding: '16px 16px 16px 48px', borderRadius: '16px', 
+                        width: '100%', padding: '12px 14px 12px 42px', borderRadius: 'var(--radius-sm)', 
                         border: '1px solid var(--border-color)', background: 'var(--bg-main)', 
-                        color: 'var(--text-main)', fontSize: '1.05rem', outline: 'none' 
+                        color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none' 
                       }}
                     />
                   </div>
                 </div>
                 <div style={{ textAlign: 'left' }}>
-                  <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Email Address *</label>
+                  <label className="micro-label" style={{ display: 'block', marginBottom: '6px' }}>Email Address *</label>
                   <div style={{ position: 'relative' }}>
-                    <Mail size={20} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                    <Mail size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                     <input 
                       type="email" 
                       placeholder="Enter your email address..."
@@ -2324,30 +2292,30 @@ export default function App() {
                       onChange={(e) => setWaitlistEmail(e.target.value)} 
                       required
                       style={{ 
-                        width: '100%', padding: '16px 16px 16px 48px', borderRadius: '16px', 
+                        width: '100%', padding: '12px 14px 12px 42px', borderRadius: 'var(--radius-sm)', 
                         border: '1px solid var(--border-color)', background: 'var(--bg-main)', 
-                        color: 'var(--text-main)', fontSize: '1.05rem', outline: 'none' 
+                        color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none' 
                       }}
                     />
                   </div>
                 </div>
 
-                <button type="submit" className="blue-btn" style={{ justifyContent: 'center', padding: '18px', fontSize: '1.15rem', marginTop: '6px' }}>
-                  Join Waitlist Now <ArrowRight size={20} />
+                <button type="submit" className="blue-btn" style={{ justifyContent: 'center', padding: '14px', fontSize: '0.95rem', marginTop: '6px' }}>
+                  Join Waitlist Now <ArrowRight size={16} />
                 </button>
               </form>
             ) : (
-              <div style={{ padding: '24px', background: 'rgba(59, 130, 246, 0.12)', border: '1px solid var(--accent-blue)', borderRadius: '16px', textAlign: 'center' }}>
-                <CheckCircle2 color="var(--accent-blue)" size={52} style={{ margin: '0 auto 14px' }} />
-                <h4 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--accent-blue)', marginBottom: '8px' }}>
-                  You're on the VIP List!
+              <div style={{ padding: '24px', background: 'var(--accent-blue-dim)', border: '1px solid var(--accent-blue)', borderRadius: 'var(--radius-sm)', textAlign: 'center' }}>
+                <CheckCircle2 color="var(--accent-blue)" size={44} style={{ margin: '0 auto 12px' }} />
+                <h4 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.4rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '8px' }}>
+                  You're on the VIP list.
                 </h4>
-                <p style={{ color: 'var(--text-muted)', marginBottom: '28px', lineHeight: 1.6 }}>
-                  We have saved <strong>{waitlistEmail}</strong> directly to our waitlist. We will notify you the moment early access invites open up!
+                <p style={{ color: 'var(--text-muted)', marginBottom: '24px', lineHeight: 1.6, fontSize: '0.9rem' }}>
+                  We have saved <strong>{waitlistEmail}</strong>. We'll notify you the moment early access invites open.
                 </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <button className="secondary-btn" style={{ width: '100%', justifyContent: 'center', padding: '14px' }} onClick={() => navigate('landing', '/')}>
-                    Back to Storefront Landing
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <button className="secondary-btn" style={{ width: '100%', justifyContent: 'center', padding: '12px' }} onClick={() => navigate('landing', '/')}>
+                    Back to Home
                   </button>
                 </div>
               </div>
@@ -2358,26 +2326,31 @@ export default function App() {
 
       {/* CONTACT US PAGE (At /contact) */}
       {currentPage === 'contact' && (
-        <main className="animate-entrance" style={{ maxWidth: '700px', margin: '40px auto' }}>
-          <div className="glass-card" style={{ padding: '48px', textAlign: 'center', borderRadius: '24px' }}>
-            <div style={{ background: 'var(--accent-blue-dim)', width: '64px', height: '64px', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
-              <Mail size={32} color="var(--accent-blue)" />
+        <main className="animate-entrance" style={{ maxWidth: '640px', margin: '50px auto' }}>
+          <div className="glass-card" style={{ padding: '40px', textAlign: 'center', borderRadius: 'var(--radius-md)' }}>
+            <div style={{ margin: '0 auto 18px', display: 'flex', justifyContent: 'center' }}>
+              <span className="wordmark-mark" style={{ width: '48px', height: '48px', fontSize: '1.6rem' }}>L</span>
             </div>
-            <h2 style={{ fontSize: '2.4rem', fontWeight: 800, marginBottom: '12px', letterSpacing: '-0.5px' }}>
-              Contact & Connect With Me
+            
+            <div className="eyebrow" style={{ justifyContent: 'center', marginBottom: '12px' }}>
+              <span className="eyebrow-dot" /> direct channel <span className="eyebrow-rule" /> contact
+            </div>
+
+            <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '2.2rem', fontWeight: 500, letterSpacing: '-0.04em', marginBottom: '10px', color: 'var(--text-main)' }}>
+              Connect with <em>the builder.</em>
             </h2>
-            <p style={{ color: 'var(--text-muted)', marginBottom: '36px', fontSize: '1.1rem', lineHeight: 1.6 }}>
-              LifeAgent is personal software built with passion. If anyone is interested, they can buy or reach out directly via X (formerly Twitter).
+            <p style={{ color: 'var(--text-muted)', marginBottom: '28px', fontSize: '0.95rem', lineHeight: 1.6 }}>
+              LifeAgent is personal software handcrafted for clarity. Reach out directly for support, feedback, or licensing.
             </p>
 
-            <div className="glass-card" style={{ padding: '28px', background: 'var(--bg-main)', border: '1px solid var(--accent-blue)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', textAlign: 'left' }}>
-                <div style={{ background: 'var(--accent-blue)', color: 'var(--accent-text)', width: '50px', height: '50px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '1.4rem' }}>
+            <div className="glass-card" style={{ padding: '22px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '14px', borderRadius: 'var(--radius-sm)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', textAlign: 'left' }}>
+                <div style={{ background: 'var(--ink)', color: 'var(--acid)', width: '42px', height: '42px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '1.2rem', border: '1px solid var(--border-color)' }}>
                   𝕏
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Official Creator X Account</div>
-                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--accent-blue)' }}>@Zenitsu_T7</div>
+                  <div className="micro-label" style={{ marginBottom: '2px' }}>Official Creator Account</div>
+                  <div style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-main)', fontFamily: 'var(--font-mono)' }}>@Zenitsu_T7</div>
                 </div>
               </div>
               <a 
@@ -2386,15 +2359,15 @@ export default function App() {
                 rel="noreferrer"
                 style={{ textDecoration: 'none' }}
               >
-                <button className="blue-btn" style={{ padding: '10px 20px', fontSize: '0.9rem' }}>
-                  Follow / Message <ExternalLink size={16} />
+                <button className="blue-btn" style={{ padding: '9px 16px', fontSize: '0.85rem' }}>
+                  Message on X <ExternalLink size={14} />
                 </button>
               </a>
             </div>
 
-            <div style={{ textAlign: 'left', color: 'var(--text-muted)', fontSize: '0.95rem' }}>
-              <h5 style={{ color: 'var(--text-main)', fontSize: '1.1rem', marginBottom: '8px' }}>Direct Support & Custom Licensing</h5>
-              <p>For custom inquiries, feature requests, or enterprise licensing beyond the $4/mo all-in-one tier, drop a direct message on X to <strong>@Zenitsu_T7</strong>. We reply within 24 hours!</p>
+            <div style={{ textAlign: 'left', color: 'var(--text-muted)', fontSize: '0.86rem', lineHeight: 1.6, borderTop: '1px solid var(--border-color)', paddingTop: '18px' }}>
+              <span className="micro-label" style={{ display: 'block', marginBottom: '6px', color: 'var(--orange)' }}>Direct Support</span>
+              <p style={{ margin: 0 }}>For custom inquiries or feedback, send a direct message on X to <strong>@Zenitsu_T7</strong>. We read and respond to every note.</p>
             </div>
           </div>
         </main>
@@ -2406,17 +2379,15 @@ export default function App() {
           <div className="storefront-footer-grid">
             {/* Column 1: Brand */}
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
-                <div style={{ background: 'var(--accent-blue)', width: '32px', height: '32px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Sparkles size={18} color="var(--accent-text)" />
-                </div>
-                <span style={{ fontSize: '1.2rem', fontWeight: 900, letterSpacing: '-0.5px' }}>LIFE AGENT</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px', cursor: 'pointer' }} onClick={() => navigate('landing', '/')}>
+                <span className="wordmark-mark">L</span>
+                <span style={{ fontSize: '1.05rem', fontWeight: 700, letterSpacing: '-0.04em', color: 'var(--text-main)' }}>lifeagent</span>
               </div>
-              <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '18px', maxWidth: '320px' }}>
-                The Personal AI Agent for Your Entire Life. Engineered for speed, crisp typography, and privacy-first local telemetry.
+              <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '16px', maxWidth: '300px' }}>
+                One calm place for the systems that move you forward. Handcrafted for clarity and local telemetry.
               </p>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem', color: '#10b981', background: 'rgba(16,185,129,0.1)', padding: '4px 12px', borderRadius: '20px', fontWeight: 600 }}>
-                🟢 All Systems Operational
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.68rem', font: "500 0.68rem 'DM Mono', monospace", color: 'var(--text-muted)', background: 'var(--bg-card)', padding: '4px 10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
+                <span className="status-dot" style={{ background: '#78a354', boxShadow: 'none' }} /> systems online
               </div>
             </div>
 
@@ -2424,7 +2395,7 @@ export default function App() {
             <div>
               <h4 className="storefront-footer-col-title">Navigation</h4>
               <div className="storefront-footer-links">
-                <button className="storefront-footer-link" onClick={() => navigate('landing', '/')}>Home</button>
+                <button className="storefront-footer-link" onClick={() => navigate('landing', '/')}>Systems</button>
                 <button className="storefront-footer-link" onClick={() => navigate('waitlist', '/waitlist')}>Waitlist</button>
                 <button className="storefront-footer-link" onClick={() => navigate('contact', '/contact')}>Contact</button>
                 <button className="storefront-footer-link" onClick={() => { setAuthMode('login'); navigate('auth', '/auth'); }}>Sign In</button>
@@ -2433,35 +2404,33 @@ export default function App() {
 
             {/* Column 3: Capabilities */}
             <div>
-              <h4 className="storefront-footer-col-title">Capabilities</h4>
+              <h4 className="storefront-footer-col-title">Systems</h4>
               <div className="storefront-footer-links">
-                <span className="storefront-footer-link" style={{ cursor: 'default' }}>Money Tracker</span>
-                <span className="storefront-footer-link" style={{ cursor: 'default' }}>Sleep Telemetry</span>
+                <span className="storefront-footer-link" style={{ cursor: 'default' }}>Sleep Recovery</span>
+                <span className="storefront-footer-link" style={{ cursor: 'default' }}>Training Load</span>
+                <span className="storefront-footer-link" style={{ cursor: 'default' }}>Cashflow View</span>
                 <span className="storefront-footer-link" style={{ cursor: 'default' }}>Daily Habits</span>
-                <span className="storefront-footer-link" style={{ cursor: 'default' }}>Gym & Workouts</span>
-                <span className="storefront-footer-link" style={{ cursor: 'default' }}>Personal AI Assistant</span>
+                <span className="storefront-footer-link" style={{ cursor: 'default' }}>Copilot Direction</span>
               </div>
             </div>
 
             {/* Column 4: Resources & Legal */}
             <div>
-              <h4 className="storefront-footer-col-title">Connect & Legal</h4>
+              <h4 className="storefront-footer-col-title">Connect</h4>
               <div className="storefront-footer-links">
                 <a href="https://twitter.com/Zenitsu_T7" target="_blank" rel="noreferrer" className="storefront-footer-link">Creator X (@Zenitsu_T7)</a>
-                <button className="storefront-footer-link" onClick={() => navigate('contact', '/contact')}>Support & Licensing</button>
+                <button className="storefront-footer-link" onClick={() => navigate('contact', '/contact')}>Support</button>
                 <button className="storefront-footer-link" onClick={() => navigate('waitlist', '/waitlist')}>VIP Early Access</button>
-                <span className="storefront-footer-link" style={{ cursor: 'default' }}>Privacy Policy</span>
-                <span className="storefront-footer-link" style={{ cursor: 'default' }}>Terms of Service</span>
               </div>
             </div>
           </div>
 
           <div className="storefront-footer-bottom">
             <div className="storefront-footer-copy">
-              © 2026 LifeAgent Inc. All rights reserved. Designed with clean typography and high contrast.
+              © 2026 LifeAgent. Handcrafted with clean typography.
             </div>
-            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-              Personal AI Agent v2.0
+            <div style={{ font: "500 0.65rem 'DM Mono', monospace", color: 'var(--text-muted)' }}>
+              v2.0 / editorial edition
             </div>
           </div>
         </footer>
@@ -2470,42 +2439,42 @@ export default function App() {
       {/* AUTHENTICATION & PASSWORD RESET PAGE (At /auth) */}
       {currentPage === 'auth' && (
         <main className="animate-entrance auth-page" style={{ display: 'flex', minHeight: '80vh', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div className="auth-card" style={{ background: 'var(--bg-card)', padding: '40px', borderRadius: '24px', border: '1px solid var(--border-color)', width: '100%', maxWidth: '440px', boxShadow: '0 8px 30px rgba(0,0,0,0.1)' }}>
+          <div className="auth-card" style={{ background: 'var(--bg-card)', padding: '36px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', width: '100%', maxWidth: '420px', boxShadow: 'var(--shadow-lg)' }}>
             
             {/* Header Title */}
-            <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-              <div style={{
-                background: 'var(--accent-blue)', width: '48px', height: '48px', borderRadius: '14px',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px'
-              }}>
-                <Lock size={24} color="var(--accent-text)" />
+            <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+              <div style={{ margin: '0 auto 14px', display: 'flex', justifyContent: 'center' }}>
+                <span className="wordmark-mark" style={{ width: '44px', height: '44px', fontSize: '1.5rem' }}>L</span>
               </div>
-              <h2 style={{ fontSize: '1.8rem', fontWeight: 800 }}>
+              <div className="eyebrow" style={{ justifyContent: 'center', marginBottom: '8px' }}>
+                <span className="eyebrow-dot" /> secure gateway <span className="eyebrow-rule" /> system
+              </div>
+              <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.75rem', fontWeight: 500, letterSpacing: '-0.04em', color: 'var(--text-main)', margin: '4px 0 6px' }}>
                 {authMode === 'forgot' 
                   ? 'Reset Password' 
                   : (authMode === 'login' ? 'Welcome Back' : 'Create Account')}
               </h2>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', marginTop: '8px' }}>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: '4px' }}>
                 {authMode === 'forgot'
                   ? (resetStep === 1 
                       ? 'Enter your registered email or username to get a reset code.' 
                       : (resetStep === 2 
                           ? 'Enter the 6-digit reset code sent to your email.' 
                           : 'Create your new password below.'))
-                  : (authMode === 'login' ? 'Sign in to access your AI workspace.' : 'Sign up to get your Personal AI Assistant.')}
+                  : (authMode === 'login' ? 'Sign in to access your personal system.' : 'Sign up to build your personal operating system.')}
               </p>
             </div>
 
             {/* Banners & Messages */}
             {authError && (
-              <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', color: '#ef4444', padding: '12px 16px', borderRadius: '12px', marginBottom: '20px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <XCircle size={18} /> {authError}
+              <div style={{ background: 'rgba(239, 111, 62, 0.1)', border: '1px solid var(--orange)', color: 'var(--orange)', padding: '10px 14px', borderRadius: 'var(--radius-sm)', marginBottom: '18px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <XCircle size={16} /> {authError}
               </div>
             )}
 
             {resetSuccessMsg && (
-              <div style={{ background: 'rgba(16, 185, 129, 0.12)', border: '1px solid #10b981', color: '#10b981', padding: '12px 16px', borderRadius: '12px', marginBottom: '20px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <CheckCircle2 size={18} /> {resetSuccessMsg}
+              <div style={{ background: 'var(--accent-blue-dim)', border: '1px solid var(--accent-blue)', color: 'var(--text-main)', padding: '10px 14px', borderRadius: 'var(--radius-sm)', marginBottom: '18px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <CheckCircle2 size={16} color="var(--accent-blue)" /> {resetSuccessMsg}
               </div>
             )}
 
@@ -2513,109 +2482,109 @@ export default function App() {
             {authMode === 'forgot' ? (
               resetStep === 1 ? (
                 /* Step 1: Request Code */
-                <form onSubmit={handleForgotPassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <form onSubmit={handleForgotPassword} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                   <div>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Email Address or Username</label>
+                    <label className="micro-label" style={{ display: 'block', marginBottom: '6px' }}>Email Address or Username</label>
                     <input 
                       type="text" 
                       required 
                       value={resetEmailOrHandle} 
                       onChange={e => setResetEmailOrHandle(e.target.value)} 
-                      style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', outline: 'none' }} 
+                      style={{ width: '100%' }} 
                       placeholder="example@gmail.com" 
                     />
                   </div>
 
-                  <button type="submit" className="blue-btn" disabled={authLoading} style={{ width: '100%', padding: '14px', fontSize: '1rem', marginTop: '8px', opacity: authLoading ? 0.7 : 1 }}>
+                  <button type="submit" className="blue-btn" disabled={authLoading} style={{ width: '100%', padding: '12px', fontSize: '0.92rem', marginTop: '6px' }}>
                     {authLoading ? 'Sending Reset Code...' : 'Get Reset Code'}
                   </button>
                 </form>
               ) : resetStep === 2 ? (
                 /* Step 2: Verify 6-Digit Code */
-                <form onSubmit={handleVerifyResetCode} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <form onSubmit={handleVerifyResetCode} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                   <div>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>6-Digit Reset Code</label>
+                    <label className="micro-label" style={{ display: 'block', marginBottom: '6px' }}>6-Digit Reset Code</label>
                     <input 
                       type="text" 
                       required 
                       value={resetCode} 
                       onChange={e => setResetCode(e.target.value)} 
-                      style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', outline: 'none', letterSpacing: '4px', fontFamily: 'monospace', fontSize: '1.2rem', textAlign: 'center' }} 
+                      style={{ width: '100%', letterSpacing: '4px', fontFamily: "'DM Mono', monospace", fontSize: '1.15rem', textAlign: 'center' }} 
                       placeholder="123456" 
                     />
                   </div>
 
-                  <button type="submit" className="blue-btn" disabled={authLoading} style={{ width: '100%', padding: '14px', fontSize: '1rem', marginTop: '8px', opacity: authLoading ? 0.7 : 1 }}>
+                  <button type="submit" className="blue-btn" disabled={authLoading} style={{ width: '100%', padding: '12px', fontSize: '0.92rem', marginTop: '6px' }}>
                     {authLoading ? 'Verifying Code...' : 'Verify Code'}
                   </button>
                 </form>
               ) : (
                 /* Step 3: Enter New Password Twice & Save */
-                <form onSubmit={handleResetPassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <form onSubmit={handleResetPassword} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                   <div>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>New Password</label>
+                    <label className="micro-label" style={{ display: 'block', marginBottom: '6px' }}>New Password</label>
                     <input 
                       type="password" 
                       required 
                       value={resetNewPassword} 
                       onChange={e => setResetNewPassword(e.target.value)} 
-                      style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', outline: 'none' }} 
+                      style={{ width: '100%' }} 
                       placeholder="Enter new password..." 
                     />
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Confirm New Password</label>
+                    <label className="micro-label" style={{ display: 'block', marginBottom: '6px' }}>Confirm New Password</label>
                     <input 
                       type="password" 
                       required 
                       value={resetConfirmPassword} 
                       onChange={e => setResetConfirmPassword(e.target.value)} 
-                      style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', outline: 'none' }} 
-                      placeholder="Re-enter new password to confirm..." 
+                      style={{ width: '100%' }} 
+                      placeholder="Re-enter new password..." 
                     />
                   </div>
 
-                  <button type="submit" className="blue-btn" disabled={authLoading} style={{ width: '100%', padding: '14px', fontSize: '1rem', marginTop: '8px', opacity: authLoading ? 0.7 : 1 }}>
+                  <button type="submit" className="blue-btn" disabled={authLoading} style={{ width: '100%', padding: '12px', fontSize: '0.92rem', marginTop: '6px' }}>
                     {authLoading ? 'Updating Password...' : 'Save New Password'}
                   </button>
                 </form>
               )
             ) : (
               /* LOGIN / SIGNUP FORM */
-              <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 {authMode === 'signup' && (
                   <>
                     <div>
-                      <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Full Name</label>
-                      <input type="text" required value={authForm.name} onChange={e => setAuthForm({...authForm, name: e.target.value})} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', outline: 'none' }} placeholder="Enter your name..." />
+                      <label className="micro-label" style={{ display: 'block', marginBottom: '6px' }}>Full Name</label>
+                      <input type="text" required value={authForm.name} onChange={e => setAuthForm({...authForm, name: e.target.value})} style={{ width: '100%' }} placeholder="Enter your name..." />
                     </div>
                     <div>
-                      <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Handle / Username</label>
-                      <input type="text" value={authForm.handle} onChange={e => setAuthForm({...authForm, handle: e.target.value})} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', outline: 'none' }} placeholder="Enter your handle..." />
+                      <label className="micro-label" style={{ display: 'block', marginBottom: '6px' }}>Handle / Username</label>
+                      <input type="text" value={authForm.handle} onChange={e => setAuthForm({...authForm, handle: e.target.value})} style={{ width: '100%' }} placeholder="Enter your handle..." />
                     </div>
                     <div>
-                      <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Phone (Optional)</label>
-                      <input type="tel" value={authForm.phone} onChange={e => setAuthForm({...authForm, phone: e.target.value})} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', outline: 'none' }} placeholder="Enter your phone number..." />
+                      <label className="micro-label" style={{ display: 'block', marginBottom: '6px' }}>Phone (Optional)</label>
+                      <input type="tel" value={authForm.phone} onChange={e => setAuthForm({...authForm, phone: e.target.value})} style={{ width: '100%' }} placeholder="Enter your phone number..." />
                     </div>
                   </>
                 )}
                 
                 <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Email Address or Username</label>
-                  <input type="text" required value={authForm.email} onChange={e => setAuthForm({...authForm, email: e.target.value})} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', outline: 'none' }} placeholder="Enter email or username..." />
+                  <label className="micro-label" style={{ display: 'block', marginBottom: '6px' }}>Email Address or Username</label>
+                  <input type="text" required value={authForm.email} onChange={e => setAuthForm({...authForm, email: e.target.value})} style={{ width: '100%' }} placeholder="Enter email or username..." />
                 </div>
                 
                 <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Password</label>
-                  <input type="password" required value={authForm.password} onChange={e => setAuthForm({...authForm, password: e.target.value})} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', outline: 'none' }} placeholder="••••••••" />
+                  <label className="micro-label" style={{ display: 'block', marginBottom: '6px' }}>Password</label>
+                  <input type="password" required value={authForm.password} onChange={e => setAuthForm({...authForm, password: e.target.value})} style={{ width: '100%' }} placeholder="••••••••" />
                   
                   {authMode === 'login' && (
                     <div style={{ textAlign: 'right', marginTop: '6px' }}>
                       <button 
                         type="button"
                         onClick={() => { setAuthMode('forgot'); setResetStep(1); setAuthError(''); setResetSuccessMsg(''); }}
-                        style={{ background: 'none', border: 'none', color: 'var(--accent-blue)', fontSize: '0.88rem', fontWeight: 600, cursor: 'pointer', padding: '2px 0' }}
+                        style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.78rem', font: "500 0.78rem 'DM Mono', monospace", cursor: 'pointer', padding: '2px 0' }}
                       >
                         Forgot Password?
                       </button>
@@ -2623,18 +2592,18 @@ export default function App() {
                   )}
                 </div>
 
-                <button type="submit" className="blue-btn" disabled={authLoading} style={{ width: '100%', padding: '14px', fontSize: '1.02rem', marginTop: '8px', opacity: authLoading ? 0.7 : 1 }}>
+                <button type="submit" className="blue-btn" disabled={authLoading} style={{ width: '100%', padding: '12px', fontSize: '0.92rem', marginTop: '6px' }}>
                   {authLoading ? 'Please wait...' : (authMode === 'login' ? 'Sign In' : 'Create Account')}
                 </button>
               </form>
             )}
 
             {/* Footer Navigation Link */}
-            <div style={{ textAlign: 'center', marginTop: '24px', fontSize: '0.92rem', color: 'var(--text-muted)' }}>
+            <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
               {authMode === 'forgot' ? (
                 <button 
                   onClick={() => { setAuthMode('login'); setAuthError(''); setResetSuccessMsg(''); }}
-                  style={{ background: 'none', border: 'none', color: 'var(--accent-blue)', fontWeight: 600, cursor: 'pointer', padding: 0 }}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-main)', fontWeight: 600, cursor: 'pointer', padding: 0, font: "500 0.8rem 'DM Mono', monospace" }}
                 >
                   ← Back to Sign In
                 </button>
@@ -2643,7 +2612,7 @@ export default function App() {
                   {authMode === 'login' ? "Don't have an account? " : "Already have an account? "}
                   <button 
                     onClick={() => { setAuthMode(authMode === 'login' ? 'signup' : 'login'); setAuthError(''); }} 
-                    style={{ background: 'none', border: 'none', color: 'var(--accent-blue)', fontWeight: 600, cursor: 'pointer', padding: 0 }}
+                    style={{ background: 'none', border: 'none', color: 'var(--orange)', fontWeight: 600, cursor: 'pointer', padding: 0 }}
                   >
                     {authMode === 'login' ? 'Sign Up' : 'Sign In'}
                   </button>
@@ -2657,12 +2626,14 @@ export default function App() {
       {/* Redirect unauthenticated users trying to access /dashboard */}
       {currentPage === 'dashboard' && !isAuthenticated && (
         <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-main)' }}>
-          <div style={{ textAlign: 'center', padding: '40px', background: 'var(--bg-card)', borderRadius: '20px', border: '1px solid var(--border-color)', maxWidth: '400px' }}>
-            <Lock size={40} color="var(--accent-blue)" style={{ marginBottom: '16px' }} />
-            <h3 style={{ fontSize: '1.3rem', fontWeight: 800, marginBottom: '8px' }}>Sign in Required</h3>
-            <p style={{ color: 'var(--text-muted)', marginBottom: '24px', fontSize: '0.9rem' }}>You need to sign in to access your dashboard.</p>
-            <button className="blue-btn" style={{ padding: '12px 32px' }} onClick={() => navigate('auth', '/auth')}>
-              <LogIn size={18} /> Sign In
+          <div style={{ textAlign: 'center', padding: '36px', background: 'var(--bg-card)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', maxWidth: '380px' }}>
+            <div style={{ margin: '0 auto 16px', display: 'flex', justifyContent: 'center' }}>
+              <span className="wordmark-mark" style={{ width: '48px', height: '48px', fontSize: '1.6rem' }}>L</span>
+            </div>
+            <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.4rem', fontWeight: 500, marginBottom: '8px' }}>Sign in Required</h3>
+            <p style={{ color: 'var(--text-muted)', marginBottom: '20px', fontSize: '0.88rem' }}>You need to sign in to access your personal system.</p>
+            <button className="blue-btn" style={{ padding: '10px 24px' }} onClick={() => navigate('auth', '/auth')}>
+              <LogIn size={16} /> Sign In
             </button>
           </div>
         </main>
@@ -2676,17 +2647,15 @@ export default function App() {
           <aside className="desktop-sidebar">
             <div>
               <div 
-                style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingBottom: '18px', borderBottom: '1px solid var(--border-color)', marginBottom: '16px', cursor: 'pointer', paddingLeft: '4px' }}
+                style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingBottom: '16px', borderBottom: '1px solid var(--border-color)', marginBottom: '16px', cursor: 'pointer', paddingLeft: '4px' }}
                 onClick={() => navigate('landing', '/')}
               >
-                <div style={{ background: 'var(--accent-blue)', width: '34px', height: '34px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 16px var(--accent-blue-dim)' }}>
-                  <Sparkles size={18} color="var(--accent-text)" />
-                </div>
+                <span className="wordmark-mark" aria-hidden="true">L</span>
                 <div>
-                  <h1 style={{ fontSize: '1.2rem', fontWeight: 900, letterSpacing: '-0.5px', color: 'var(--text-main)', lineHeight: 1.1 }}>
-                    life<span style={{ fontWeight: 400, color: 'var(--accent-blue)' }}>agent</span>
+                  <h1 style={{ fontSize: '1.05rem', fontWeight: 700, letterSpacing: '-0.04em', color: 'var(--text-main)', lineHeight: 1.1, margin: 0 }}>
+                    lifeagent
                   </h1>
-                  <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>STUDIO</span>
+                  <span style={{ font: "500 0.62rem 'DM Mono', monospace", color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>system</span>
                 </div>
               </div>
 
@@ -2695,84 +2664,84 @@ export default function App() {
                   onClick={() => setActiveTab('ai')}
                   className={`sidebar-nav-btn ${activeTab === 'ai' ? 'active' : ''}`}
                 >
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <Bot size={18} /> {aiName} Mode
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <Bot size={16} /> {aiName} Copilot
                   </span>
-                  <span style={{ background: 'var(--accent-blue)', color: 'var(--accent-text)', fontSize: '0.65rem', fontWeight: 800, padding: '2px 7px', borderRadius: '20px' }}>AI</span>
+                  <span style={{ marginLeft: 'auto', background: 'var(--acid)', color: 'var(--ink)', fontSize: '0.62rem', font: "600 0.62rem 'DM Mono', monospace", padding: '1px 5px', borderRadius: '3px' }}>AI</span>
                 </button>
 
                 <button 
                   onClick={() => setActiveTab('today')}
                   className={`sidebar-nav-btn ${activeTab === 'today' ? 'active' : ''}`}
                 >
-                  <Clock size={18} /> Today
+                  <Clock size={16} /> Today
                 </button>
 
                 <button 
                   onClick={() => setActiveTab('habits')}
                   className={`sidebar-nav-btn ${activeTab === 'habits' ? 'active' : ''}`}
                 >
-                  <CheckCircle2 size={18} /> Daily Works
+                  <CheckCircle2 size={16} /> Daily Works
                 </button>
 
                 <button
                   onClick={() => setActiveTab('water')}
                   className={`sidebar-nav-btn ${activeTab === 'water' ? 'active' : ''}`}
                 >
-                  <Droplet size={18} /> Drink Water
+                  <Droplet size={16} /> Water
                 </button>
 
                 <button
                   onClick={() => setActiveTab('notes')}
                   className={`sidebar-nav-btn ${activeTab === 'notes' ? 'active' : ''}`}
                 >
-                  <BookOpen size={18} /> Notes & Diary
+                  <BookOpen size={16} /> Field Notes
                 </button>
 
                 <button
                   onClick={() => setActiveTab('calendar')}
                   className={`sidebar-nav-btn ${activeTab === 'calendar' ? 'active' : ''}`}
                 >
-                  <Calendar size={18} /> Calendar
+                  <Calendar size={16} /> Calendar
                 </button>
 
                 <button
                   onClick={() => setActiveTab('finance')}
                   className={`sidebar-nav-btn ${activeTab === 'finance' ? 'active' : ''}`}
                 >
-                  <DollarSign size={18} /> Money Tracking
+                  <DollarSign size={16} /> Cashflow
                 </button>
 
                 <button
                   onClick={() => setActiveTab('body')}
                   className={`sidebar-nav-btn ${activeTab === 'body' ? 'active' : ''}`}
                 >
-                  <Dumbbell size={18} /> Body & Gym
+                  <Dumbbell size={16} /> Training
                 </button>
 
                 <button
                   onClick={() => setActiveTab('sleep')}
                   className={`sidebar-nav-btn ${activeTab === 'sleep' ? 'active' : ''}`}
                 >
-                  <SleepIcon size={18} /> Sleep Quality
+                  <SleepIcon size={16} /> Sleep
                 </button>
 
                 <button
                   onClick={() => setActiveTab('analytics')}
                   className={`sidebar-nav-btn ${activeTab === 'analytics' ? 'active' : ''}`}
                 >
-                  <BarChart3 size={18} /> Analytics Hub
+                  <BarChart3 size={16} /> Analytics
                 </button>
 
               </div>
             </div>
 
-            <div style={{ paddingTop: '14px', borderTop: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <div style={{ paddingTop: '12px', borderTop: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <button
                 onClick={() => setActiveTab('settings')}
                 className={`sidebar-nav-btn ${activeTab === 'settings' ? 'active' : ''}`}
               >
-                <Settings size={18} /> Settings & Profile
+                <Settings size={16} /> Settings
               </button>
             </div>
           </aside>
@@ -2795,66 +2764,68 @@ export default function App() {
             <PullToRefresh 
               onRefresh={() => fetchStartupData(true)} 
               pullingContent="" 
-              refreshingContent={<div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)' }}>Refreshing...</div>} 
+              refreshingContent={<div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)', font: "500 0.8rem 'DM Mono', monospace" }}>Refreshing telemetry...</div>} 
               disabled={activeTab === 'ai' || (typeof window !== 'undefined' && !('ontouchstart' in window) && navigator.maxTouchPoints <= 0)}
             >
-              <div style={{ padding: '24px 16px', minHeight: '100%' }}>
+              <div style={{ padding: '20px 16px', minHeight: '100%' }}>
             
             <div className="dashboard-header">
               <div>
+                <div className="dashboard-timestamp">
+                  {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                </div>
                 {activeTab === 'today' ? (
-                  <>
-                    <h2>
-                      Hey {userProfile.handle ? `@${userProfile.handle.replace('@', '')}` : (userProfile.name ? userProfile.name.split(' ')[0] : 'User')} – welcome!
-                    </h2>
-
-                  </>
+                  <h2>
+                    Good day, <em>{userProfile.handle ? `@${userProfile.handle.replace('@', '')}` : (userProfile.name ? userProfile.name.split(' ')[0] : 'Siddu')}.</em>
+                  </h2>
                 ) : (
                   <h2>
-                    {activeTab === 'today' ? "Today's Routine" :
-                     activeTab === 'habits' ? 'Daily Works & Habits' :
-                     (activeTab === 'gym' || activeTab === 'body') ? 'Body & Gym' : 
-                     activeTab === 'sleep' ? 'Sleep & Recovery' : 
-                     activeTab === 'water' ? 'Water Hydration' :
-                     activeTab === 'finance' ? 'Finance & Money' : 
-                     activeTab === 'notes' ? 'Notes & Diary' : 
+                    {activeTab === 'today' ? "Today's System" :
+                     activeTab === 'habits' ? 'Daily Habits' :
+                     (activeTab === 'gym' || activeTab === 'body') ? 'Training & Gym' : 
+                     activeTab === 'sleep' ? 'Sleep Recovery' : 
+                     activeTab === 'water' ? 'Hydration' :
+                     activeTab === 'finance' ? 'Cashflow & Money' : 
+                     activeTab === 'notes' ? 'Field Notes' : 
                      activeTab === 'calendar' ? 'Calendar' :
-                     activeTab === 'analytics' ? 'Master Analytics' :
+                     activeTab === 'analytics' ? 'Master Telemetry' :
                      activeTab === 'settings' ? 'Settings' : 
-                     activeTab === 'ai' ? aiName : 'Dashboard'}
+                     activeTab === 'ai' ? `${aiName} Copilot` : 'System'}
                   </h2>
                 )}
               </div>
 
-              <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+              <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                  <SyncStatusIndicator />
+
                   {activeTab !== 'ai' && (
                     <button
                       onClick={() => setIsAiSidePanelOpen(!isAiSidePanelOpen)}
                       className="ai-toggle-chip"
                       style={{
-                        background: isAiSidePanelOpen ? 'var(--accent-blue)' : 'var(--accent-blue-dim)',
-                        color: isAiSidePanelOpen ? '#ffffff' : 'var(--accent-blue)',
-                        border: `1px solid ${isAiSidePanelOpen ? 'var(--accent-blue)' : 'rgba(59,130,246,0.3)'}`,
-                        boxShadow: isAiSidePanelOpen ? '0 0 16px var(--accent-blue-dim)' : 'none'
+                        background: isAiSidePanelOpen ? 'var(--accent-blue)' : 'var(--bg-card)',
+                        color: isAiSidePanelOpen ? 'var(--accent-text)' : 'var(--text-main)',
+                        border: `1px solid var(--border-color)`,
+                        borderRadius: 'var(--radius-sm)'
                       }}
                       title="Toggle Persistent AI Side Panel"
                     >
-                      <Bot size={16} /> AI
+                      <Bot size={15} /> Copilot
                     </button>
                   )}
 
-                  <div ref={themeDropdownRef} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div ref={themeDropdownRef} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <button 
                       className="theme-toggle-btn"
-                      style={{ padding: '8px 14px', borderRadius: '30px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}
+                      style={{ padding: '7px 10px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}
                       onClick={() => setIsThemeMenuOpen(!isThemeMenuOpen)}
                       title="Change Theme Mode"
                     >
-                      {themeMode === 'dark' && <Moon size={16} />}
-                      {themeMode === 'light' && <Sun size={16} />}
-                      {themeMode === 'pc' && <Monitor size={16} />}
-                      {themeMode === 'night' && <Zap size={16} />}
-                      <ChevronDown size={14} style={{ transform: isThemeMenuOpen ? 'rotate(180deg)' : 'none', transition: '0.2s' }} />
+                      {themeMode === 'dark' && <Moon size={15} />}
+                      {themeMode === 'light' && <Sun size={15} />}
+                      {themeMode === 'pc' && <Monitor size={15} />}
+                      {themeMode === 'night' && <Zap size={15} />}
+                      <ChevronDown size={13} style={{ transform: isThemeMenuOpen ? 'rotate(180deg)' : 'none', transition: '0.2s' }} />
                     </button>
 
                     {isThemeMenuOpen && (() => {
@@ -2880,13 +2851,13 @@ export default function App() {
                             top: `${top}px`,
                             right: `${right}px`,
                             left: 'auto',
-                            minWidth: '165px',
+                            minWidth: '160px',
                             zIndex: 99999999,
-                            boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+                            boxShadow: 'var(--shadow-lg)',
                             background: 'var(--bg-card)',
                             border: '1px solid var(--border-color)',
-                            borderRadius: '16px',
-                            padding: '8px'
+                            borderRadius: 'var(--radius-sm)',
+                            padding: '6px'
                           }}
                         >
                           <button 
@@ -5362,12 +5333,15 @@ export default function App() {
           {/* PERSISTENT SIDE-BY-SIDE AI COACH PANEL (Always accessible across any tab) */}
           {isAiSidePanelOpen && activeTab !== 'ai' && (
               <aside className="animate-entrance ai-sidebar" style={{ width: '370px', height: '100vh', background: 'var(--bg-main)', borderLeft: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', overflow: 'hidden', flexShrink: 0, position: 'relative', zIndex: 50 }}>
-              <div style={{ padding: '20px 24px', background: 'var(--bg-card)', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ padding: '16px 20px', background: 'var(--bg-card)', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 8px #22c55e' }}></div>
-                  <h4 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--accent-blue)', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Bot size={18} /> {aiName}
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 8px #22c55e' }}></div>
+                  <h4 style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: '1.05rem', fontWeight: 600, color: 'var(--text-main)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Bot size={18} color="var(--accent-blue)" /> {aiName}
                   </h4>
+                  <span className="ai-timestamp" style={{ background: 'var(--bg-main)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border-color)', fontFamily: "'DM Mono', monospace", fontSize: '0.65rem' }}>
+                    ONLINE
+                  </span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <button 
@@ -5386,39 +5360,49 @@ export default function App() {
                 </div>
               </div>
 
-              <div ref={sideAiChatScrollRef} style={{ flex: 1, padding: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div ref={sideAiChatScrollRef} style={{ flex: 1, padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ textAlign: 'center', margin: '0 0 4px' }}>
+                  <span className="ai-timestamp" style={{ background: 'var(--bg-card)', padding: '4px 10px', borderRadius: '4px', border: '1px solid var(--border-color)', fontFamily: "'DM Mono', monospace", fontSize: '0.68rem', color: 'var(--text-muted)' }}>
+                    {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} • Interactive AI Studio
+                  </span>
+                </div>
 
                 {aiMessages.map(msg => (
                   <div 
                     key={msg.id} 
                     style={{ 
                       alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start',
-                      maxWidth: '90%',
+                      maxWidth: '88%',
                       background: msg.sender === 'user' ? 'var(--accent-blue)' : 'var(--bg-card)',
                       color: msg.sender === 'user' ? 'var(--accent-text)' : 'var(--text-main)',
-                      padding: '14px 16px',
-                      borderRadius: '16px',
+                      padding: '12px 14px',
+                      borderRadius: '6px',
                       border: msg.sender === 'ai' ? '1px solid var(--border-color)' : 'none',
-                      fontSize: '0.88rem',
+                      fontSize: '0.86rem',
                       lineHeight: '1.5',
                       whiteSpace: 'pre-line',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+                      boxShadow: '0 1px 4px rgba(0,0,0,0.1)'
                     }}
                   >
                     {msg.text}
+                    {msg.timestamp && (
+                      <div className="ai-timestamp" style={{ marginTop: '6px', textAlign: 'right', opacity: 0.75, fontFamily: "'DM Mono', monospace", fontSize: '0.62rem' }}>
+                        {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
 
-              <form onSubmit={handleSendAi} style={{ padding: '16px', background: 'var(--bg-card)', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '8px' }}>
+              <form onSubmit={handleSendAi} style={{ padding: '14px', background: 'var(--bg-card)', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '8px' }}>
                 <input 
                   type="text" 
                   placeholder="Chat anywhere, ask about diary..."
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
-                  style={{ flex: 1, padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', outline: 'none', fontSize: '0.88rem' }}
+                  style={{ flex: 1, padding: '10px 12px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', outline: 'none', fontSize: '0.86rem', fontFamily: "'DM Sans', sans-serif" }}
                 />
-                <button type="submit" className="blue-btn" style={{ padding: '0 16px' }}>
+                <button type="submit" className="blue-btn" style={{ padding: '0 14px', borderRadius: '6px' }}>
                   <Send size={16} />
                 </button>
               </form>
