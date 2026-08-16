@@ -145,8 +145,6 @@ export default function App() {
     if (path.includes('/auth') || path.includes('/login')) return 'auth';
     if (path.includes('/waitlist')) return 'waitlist';
     if (path.includes('/contact')) return 'contact';
-    if (path.includes('/about')) return 'about';
-    if (path.includes('/blog')) return 'blog';
     
     return 'landing';
   });
@@ -182,10 +180,6 @@ export default function App() {
         setCurrentPage('waitlist');
       } else if (path.includes('/contact')) {
         setCurrentPage('contact');
-      } else if (path.includes('/about')) {
-        setCurrentPage('about');
-      } else if (path.includes('/blog')) {
-        setCurrentPage('blog');
       } else {
         setCurrentPage(isAuth ? 'dashboard' : 'landing');
       }
@@ -2126,18 +2120,12 @@ export default function App() {
           </div>
 
           {/* STOREFRONT NAVIGATION LINKS */}
-          <div className="storefront-nav-links" style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div className="storefront-nav-links" style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
             <button 
-              className={`storefront-nav-link ${currentPage === 'about' ? 'active' : ''}`}
-              onClick={() => navigate('about', '/about')}
+              className={`storefront-nav-link ${currentPage === 'landing' ? 'active' : ''}`}
+              onClick={() => navigate('landing', '/')}
             >
-              About
-            </button>
-            <button 
-              className={`storefront-nav-link ${currentPage === 'blog' ? 'active' : ''}`}
-              onClick={() => navigate('blog', '/blog')}
-            >
-              Blog
+              Home
             </button>
             <button 
               className={`storefront-nav-link ${currentPage === 'waitlist' ? 'active' : ''}`}
@@ -2290,109 +2278,6 @@ export default function App() {
         />
       )}
 
-      {/* ABOUT PAGE (At /about) */}
-      {currentPage === 'about' && (
-        <main className="animate-entrance" style={{ maxWidth: '840px', margin: '40px auto 80px' }}>
-          <div className="glass-card" style={{ padding: '48px', border: '1px solid var(--border-color)', borderRadius: '24px' }}>
-            <div style={{ background: 'var(--accent-blue-dim)', width: '56px', height: '56px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px' }}>
-              <Sparkles size={28} color="var(--accent-blue)" />
-            </div>
-            <h1 style={{ fontSize: '2.8rem', fontWeight: 900, marginBottom: '12px', letterSpacing: '-0.02em', color: 'var(--text-main)' }}>
-              About LifeAgent
-            </h1>
-            <p style={{ fontSize: '1.2rem', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '36px' }}>
-              Building the personal AI operating system designed for human agency, high performance, and total life clarity.
-            </p>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '28px', color: 'var(--text-main)', lineHeight: 1.7, fontSize: '1rem' }}>
-              <div>
-                <h3 style={{ fontSize: '1.3rem', fontWeight: 800, marginBottom: '8px', color: 'var(--accent-blue)' }}>Our Philosophy</h3>
-                <p style={{ color: 'var(--text-muted)' }}>
-                  Modern productivity tools force you to switch between ten different apps for habits, expenses, sleep tracking, workouts, notes, and calendars. LifeAgent unifies all these critical streams into a single high-contrast workspace powered by an intelligent personal AI assistant.
-                </p>
-              </div>
-
-              <div>
-                <h3 style={{ fontSize: '1.3rem', fontWeight: 800, marginBottom: '8px', color: 'var(--accent-blue)' }}>Core Principles</h3>
-                <ul style={{ color: 'var(--text-muted)', paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <li><strong>High-Legibility Design</strong>: Sharp, crisp text with minimal clutter and generous whitespace.</li>
-                  <li><strong>Privacy First</strong>: Encrypted local data storage and user-owned API access.</li>
-                  <li><strong>High-Velocity Speed</strong>: Zero latency, keyboard shortcuts (`⌘K`), and instant responsiveness.</li>
-                  <li><strong>Unified Intelligence</strong>: AI that sees the full picture across your biometrics, budget, and daily logs.</li>
-                </ul>
-              </div>
-
-              <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '28px', display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
-                <button className="blue-btn" style={{ padding: '12px 28px' }} onClick={() => { setAuthMode('signup'); navigate('auth', '/auth'); }}>
-                  Get Started Free <ArrowRight size={16} />
-                </button>
-                <button className="secondary-btn" style={{ padding: '12px 24px' }} onClick={() => navigate('contact', '/contact')}>
-                  Contact Creator
-                </button>
-              </div>
-            </div>
-          </div>
-        </main>
-      )}
-
-      {/* BLOG PAGE (At /blog) */}
-      {currentPage === 'blog' && (
-        <main className="animate-entrance" style={{ maxWidth: '960px', margin: '40px auto 80px' }}>
-          <div style={{ textAlign: 'left', marginBottom: '40px' }}>
-            <h1 style={{ fontSize: '2.8rem', fontWeight: 900, marginBottom: '12px', letterSpacing: '-0.02em', color: 'var(--text-main)' }}>
-              LifeAgent Engineering & Product Blog
-            </h1>
-            <p style={{ fontSize: '1.1rem', color: 'var(--text-muted)' }}>
-              Articles on personal AI agents, health telemetry, privacy-first software, and daily habit science.
-            </p>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            {[
-              {
-                title: "Why Personal AI Agents Are the Future of Daily Productivity",
-                date: "August 12, 2026",
-                readTime: "5 min read",
-                author: "Zenitsu_T7",
-                tag: "AI Architecture",
-                excerpt: "Single-purpose apps cause context fragmentation. Explore how unifying biometrics, finances, and notes under a singular AI model unlocks peak cognitive bandwidth."
-              },
-              {
-                title: "Building a Privacy-First SQLite Telemetry Engine for Web & Mobile",
-                date: "July 28, 2026",
-                readTime: "8 min read",
-                author: "Engineering Team",
-                tag: "Engineering",
-                excerpt: "How we achieved under 10ms local queries and zero-latency offline synchronization using SQLite and indexed web storage."
-              },
-              {
-                title: "Optimizing Sleep Stages, Workout Volume, and Daily Energy with AI",
-                date: "June 19, 2026",
-                readTime: "6 min read",
-                author: "Health Lab",
-                tag: "Biometrics",
-                excerpt: "Practical data insights on combining sleep recovery scores with progressive workout overload to prevent burnout and maximize performance."
-              }
-            ].map((post, idx) => (
-              <div key={idx} className="glass-card" style={{ padding: '32px', border: '1px solid var(--border-color)', borderRadius: '20px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', flexWrap: 'wrap' }}>
-                  <span className="storefront-badge">{post.tag}</span>
-                  <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{post.date} • {post.readTime}</span>
-                </div>
-                <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '10px', color: 'var(--text-main)' }}>{post.title}</h2>
-                <p style={{ fontSize: '0.98rem', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '20px' }}>{post.excerpt}</p>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-                  <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)' }}>By {post.author}</span>
-                  <button className="secondary-btn" style={{ fontSize: '0.85rem', padding: '6px 16px' }} onClick={() => navigate('waitlist', '/waitlist')}>
-                    Read Full Article <ArrowRight size={14} />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </main>
-      )}
-
       {/* JOIN WAITLIST PAGE (At /waitlist) */}
       {currentPage === 'waitlist' && (
         <main className="animate-entrance" style={{ maxWidth: '520px', margin: '50px auto' }}>
@@ -2539,8 +2424,7 @@ export default function App() {
             <div>
               <h4 className="storefront-footer-col-title">Navigation</h4>
               <div className="storefront-footer-links">
-                <button className="storefront-footer-link" onClick={() => navigate('about', '/about')}>About</button>
-                <button className="storefront-footer-link" onClick={() => navigate('blog', '/blog')}>Blog</button>
+                <button className="storefront-footer-link" onClick={() => navigate('landing', '/')}>Home</button>
                 <button className="storefront-footer-link" onClick={() => navigate('waitlist', '/waitlist')}>Waitlist</button>
                 <button className="storefront-footer-link" onClick={() => navigate('contact', '/contact')}>Contact</button>
                 <button className="storefront-footer-link" onClick={() => { setAuthMode('login'); navigate('auth', '/auth'); }}>Sign In</button>
@@ -2789,170 +2673,93 @@ export default function App() {
         <div className="animate-entrance" style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg-main)' }}>
           
           {/* FIXED / STICKY LEFT SIDEBAR THAT NEVER SCROLLS */}
-          <aside className="desktop-sidebar" style={{
-            width: '240px',
-            height: '100vh',
-            position: 'sticky',
-            top: 0,
-            borderRight: '1px solid var(--border-color)',
-            background: 'var(--bg-card)',
-            padding: '24px 16px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            flexShrink: 0,
-            overflowY: 'auto',
-            zIndex: 50
-          }}>
+          <aside className="desktop-sidebar">
             <div>
               <div 
-                style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingBottom: '24px', borderBottom: '1px solid var(--border-color)', marginBottom: '20px', cursor: 'pointer' }}
+                style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingBottom: '18px', borderBottom: '1px solid var(--border-color)', marginBottom: '16px', cursor: 'pointer', paddingLeft: '4px' }}
                 onClick={() => navigate('landing', '/')}
               >
-                <div style={{ background: 'var(--accent-blue)', width: '32px', height: '32px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ background: 'var(--accent-blue)', width: '34px', height: '34px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 16px var(--accent-blue-dim)' }}>
                   <Sparkles size={18} color="var(--accent-text)" />
                 </div>
-                <h1 style={{ fontSize: '1.15rem', fontWeight: 900, letterSpacing: '-0.5px' }}>
-                  life<span style={{ fontWeight: 400 }}>agent</span>
-                </h1>
+                <div>
+                  <h1 style={{ fontSize: '1.2rem', fontWeight: 900, letterSpacing: '-0.5px', color: 'var(--text-main)', lineHeight: 1.1 }}>
+                    life<span style={{ fontWeight: 400, color: 'var(--accent-blue)' }}>agent</span>
+                  </h1>
+                  <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>STUDIO</span>
+                </div>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <button
                   onClick={() => setActiveTab('ai')}
-                  style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '12px 14px', borderRadius: '12px', border: 'none',
-                    background: activeTab === 'ai' ? 'var(--accent-blue-dim)' : 'transparent',
-                    color: activeTab === 'ai' ? 'var(--accent-blue)' : 'var(--text-muted)',
-                    fontWeight: activeTab === 'ai' ? 700 : 500, cursor: 'pointer',
-                    fontSize: '0.92rem', transition: 'all 0.2s', textAlign: 'left'
-                  }}
+                  className={`sidebar-nav-btn ${activeTab === 'ai' ? 'active' : ''}`}
                 >
                   <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <Bot size={18} /> {aiName} Mode
                   </span>
-                  <span style={{ background: 'var(--accent-blue)', color: 'var(--accent-text)', fontSize: '0.65rem', fontWeight: 800, padding: '2px 6px', borderRadius: '20px' }}>NEW</span>
+                  <span style={{ background: 'var(--accent-blue)', color: 'var(--accent-text)', fontSize: '0.65rem', fontWeight: 800, padding: '2px 7px', borderRadius: '20px' }}>AI</span>
                 </button>
 
                 <button 
                   onClick={() => setActiveTab('today')}
-                  style={{ 
-                    display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '12px', border: 'none',
-                    background: activeTab === 'today' ? 'var(--accent-blue-dim)' : 'transparent',
-                    color: activeTab === 'today' ? 'var(--accent-blue)' : 'var(--text-muted)',
-                    fontSize: '0.95rem', fontWeight: activeTab === 'today' ? 700 : 500, cursor: 'pointer', transition: 'all 0.2s', textAlign: 'left'
-                  }}
+                  className={`sidebar-nav-btn ${activeTab === 'today' ? 'active' : ''}`}
                 >
                   <Clock size={18} /> Today
                 </button>
 
                 <button 
                   onClick={() => setActiveTab('habits')}
-                  style={{ 
-                    display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '12px', border: 'none',
-                    background: activeTab === 'habits' ? 'var(--accent-blue-dim)' : 'transparent',
-                    color: activeTab === 'habits' ? 'var(--accent-blue)' : 'var(--text-muted)',
-                    fontSize: '0.95rem', fontWeight: activeTab === 'habits' ? 700 : 500, cursor: 'pointer', transition: 'all 0.2s', textAlign: 'left'
-                  }}
+                  className={`sidebar-nav-btn ${activeTab === 'habits' ? 'active' : ''}`}
                 >
                   <CheckCircle2 size={18} /> Daily Works
                 </button>
 
                 <button
                   onClick={() => setActiveTab('water')}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '12px',
-                    padding: '12px 14px', borderRadius: '12px', border: 'none',
-                    background: activeTab === 'water' ? 'var(--accent-blue-dim)' : 'transparent',
-                    color: activeTab === 'water' ? 'var(--accent-blue)' : 'var(--text-muted)',
-                    fontWeight: activeTab === 'water' ? 700 : 500, cursor: 'pointer',
-                    fontSize: '0.92rem', transition: 'all 0.2s', textAlign: 'left'
-                  }}
+                  className={`sidebar-nav-btn ${activeTab === 'water' ? 'active' : ''}`}
                 >
                   <Droplet size={18} /> Drink Water
                 </button>
 
                 <button
                   onClick={() => setActiveTab('notes')}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '12px',
-                    padding: '12px 14px', borderRadius: '12px', border: 'none',
-                    background: activeTab === 'notes' ? 'var(--accent-blue-dim)' : 'transparent',
-                    color: activeTab === 'notes' ? 'var(--accent-blue)' : 'var(--text-muted)',
-                    fontWeight: activeTab === 'notes' ? 700 : 500, cursor: 'pointer',
-                    fontSize: '0.92rem', transition: 'all 0.2s', textAlign: 'left'
-                  }}
+                  className={`sidebar-nav-btn ${activeTab === 'notes' ? 'active' : ''}`}
                 >
                   <BookOpen size={18} /> Notes & Diary
                 </button>
 
                 <button
                   onClick={() => setActiveTab('calendar')}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '12px',
-                    padding: '12px 14px', borderRadius: '12px', border: 'none',
-                    background: activeTab === 'calendar' ? 'var(--accent-blue-dim)' : 'transparent',
-                    color: activeTab === 'calendar' ? 'var(--accent-blue)' : 'var(--text-muted)',
-                    fontWeight: activeTab === 'calendar' ? 700 : 500, cursor: 'pointer',
-                    fontSize: '0.92rem', transition: 'all 0.2s', textAlign: 'left'
-                  }}
+                  className={`sidebar-nav-btn ${activeTab === 'calendar' ? 'active' : ''}`}
                 >
                   <Calendar size={18} /> Calendar
                 </button>
 
                 <button
                   onClick={() => setActiveTab('finance')}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '12px',
-                    padding: '12px 14px', borderRadius: '12px', border: 'none',
-                    background: activeTab === 'finance' ? 'var(--accent-blue-dim)' : 'transparent',
-                    color: activeTab === 'finance' ? 'var(--accent-blue)' : 'var(--text-muted)',
-                    fontWeight: activeTab === 'finance' ? 700 : 500, cursor: 'pointer',
-                    fontSize: '0.92rem', transition: 'all 0.2s', textAlign: 'left'
-                  }}
+                  className={`sidebar-nav-btn ${activeTab === 'finance' ? 'active' : ''}`}
                 >
                   <DollarSign size={18} /> Money Tracking
                 </button>
 
                 <button
                   onClick={() => setActiveTab('body')}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '12px',
-                    padding: '12px 14px', borderRadius: '12px', border: 'none',
-                    background: activeTab === 'body' ? 'var(--accent-blue-dim)' : 'transparent',
-                    color: activeTab === 'body' ? 'var(--accent-blue)' : 'var(--text-muted)',
-                    fontWeight: activeTab === 'body' ? 700 : 500, cursor: 'pointer',
-                    fontSize: '0.92rem', transition: 'all 0.2s', textAlign: 'left'
-                  }}
+                  className={`sidebar-nav-btn ${activeTab === 'body' ? 'active' : ''}`}
                 >
                   <Dumbbell size={18} /> Body & Gym
                 </button>
 
                 <button
                   onClick={() => setActiveTab('sleep')}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '12px',
-                    padding: '12px 14px', borderRadius: '12px', border: 'none',
-                    background: activeTab === 'sleep' ? 'var(--accent-blue-dim)' : 'transparent',
-                    color: activeTab === 'sleep' ? 'var(--accent-blue)' : 'var(--text-muted)',
-                    fontWeight: activeTab === 'sleep' ? 700 : 500, cursor: 'pointer',
-                    fontSize: '0.92rem', transition: 'all 0.2s', textAlign: 'left'
-                  }}
+                  className={`sidebar-nav-btn ${activeTab === 'sleep' ? 'active' : ''}`}
                 >
                   <SleepIcon size={18} /> Sleep Quality
                 </button>
 
                 <button
                   onClick={() => setActiveTab('analytics')}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '12px',
-                    padding: '12px 14px', borderRadius: '12px', border: 'none',
-                    background: activeTab === 'analytics' ? 'var(--accent-blue-dim)' : 'transparent',
-                    color: activeTab === 'analytics' ? 'var(--accent-blue)' : 'var(--text-muted)',
-                    fontWeight: activeTab === 'analytics' ? 700 : 500, cursor: 'pointer',
-                    fontSize: '0.92rem', transition: 'all 0.2s', textAlign: 'left'
-                  }}
+                  className={`sidebar-nav-btn ${activeTab === 'analytics' ? 'active' : ''}`}
                 >
                   <BarChart3 size={18} /> Analytics Hub
                 </button>
@@ -2960,26 +2767,17 @@ export default function App() {
               </div>
             </div>
 
-            <div style={{ paddingTop: '16px', borderTop: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {/* Settings Tab inside the bottom place where LifeAgent v2.4 was */}
+            <div style={{ paddingTop: '14px', borderTop: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <button
                 onClick={() => setActiveTab('settings')}
-                style={{
-                  width: '100%',
-                  display: 'flex', alignItems: 'center', gap: '12px',
-                  padding: '12px 16px', borderRadius: '12px', border: 'none',
-                  background: activeTab === 'settings' ? 'var(--accent-blue-dim)' : 'transparent',
-                  color: activeTab === 'settings' ? 'var(--accent-blue)' : 'var(--text-muted)',
-                  fontWeight: activeTab === 'settings' ? 700 : 500, cursor: 'pointer',
-                  fontSize: '0.95rem', transition: 'all 0.2s', textAlign: 'left'
-                }}
+                className={`sidebar-nav-btn ${activeTab === 'settings' ? 'active' : ''}`}
               >
                 <Settings size={18} /> Settings & Profile
               </button>
             </div>
           </aside>
 
-          {/* MAIN RIGHT AREA (MeraBaazar layout without Verified Pro, Live, or top Log Out) */}
+          {/* MAIN RIGHT AREA */}
           <section 
             ref={mainContentScrollRef}
             className={`main-layout-section ${activeTab === 'ai' ? 'ai-tab-active' : ''}`} 
@@ -3002,17 +2800,17 @@ export default function App() {
             >
               <div style={{ padding: '24px 16px', minHeight: '100%' }}>
             
-            <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px', position: 'relative', zIndex: 10000 }}>
+            <div className="dashboard-header">
               <div>
                 {activeTab === 'today' ? (
                   <>
-                    <h2 style={{ fontSize: '1.9rem', fontWeight: 900, letterSpacing: '-0.5px' }}>
+                    <h2>
                       Hey {userProfile.handle ? `@${userProfile.handle.replace('@', '')}` : (userProfile.name ? userProfile.name.split(' ')[0] : 'User')} – welcome!
                     </h2>
 
                   </>
                 ) : (
-                  <h2 style={{ fontSize: '1.9rem', fontWeight: 900, letterSpacing: '-0.5px', color: 'var(--text-main)' }}>
+                  <h2>
                     {activeTab === 'today' ? "Today's Routine" :
                      activeTab === 'habits' ? 'Daily Works & Habits' :
                      (activeTab === 'gym' || activeTab === 'body') ? 'Body & Gym' : 
@@ -3028,17 +2826,15 @@ export default function App() {
                 )}
               </div>
 
-              <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+              <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                   {activeTab !== 'ai' && (
                     <button
                       onClick={() => setIsAiSidePanelOpen(!isAiSidePanelOpen)}
+                      className="ai-toggle-chip"
                       style={{
-                        display: 'flex', alignItems: 'center', gap: '8px',
-                        padding: '8px 16px', borderRadius: '30px',
                         background: isAiSidePanelOpen ? 'var(--accent-blue)' : 'var(--accent-blue-dim)',
-                        color: isAiSidePanelOpen ? 'var(--accent-text)' : 'var(--accent-blue)',
-                        border: `1px solid ${isAiSidePanelOpen ? 'var(--accent-blue)' : 'var(--border-color)'}`,
-                        fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.2s',
+                        color: isAiSidePanelOpen ? '#ffffff' : 'var(--accent-blue)',
+                        border: `1px solid ${isAiSidePanelOpen ? 'var(--accent-blue)' : 'rgba(59,130,246,0.3)'}`,
                         boxShadow: isAiSidePanelOpen ? '0 0 16px var(--accent-blue-dim)' : 'none'
                       }}
                       title="Toggle Persistent AI Side Panel"
