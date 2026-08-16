@@ -227,6 +227,7 @@ export default function App() {
   }, [activeTab]);
 
   const setActiveTab = (tab) => {
+    if (isAuthenticated) setCurrentPage('dashboard');
     setActiveTabRaw(tab);
     setVisitedTabs(prev => new Set([...prev, tab]));
     if (TAB_SLUGS[tab]) {
@@ -3068,9 +3069,16 @@ export default function App() {
                           padding: '10px 20px', borderRadius: '30px', fontSize: '0.9rem', flexShrink: 0, whiteSpace: 'nowrap'
                         }}
                       >
-                        <Check size={18} /> Tick All Today
+                                                <Check size={18} /> Tick All Today
                       </button>
-
+                      <button
+                        type="button"
+                        className="secondary-btn today-habits-link"
+                        onClick={() => setActiveTab('habits')}
+                        style={{ padding: '10px 16px', borderRadius: '30px', fontSize: '0.9rem', flexShrink: 0, whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '7px' }}
+                      >
+                        <CheckCircle2 size={16} /> Manage Habits
+                      </button>
                       <div style={{ position: 'relative' }} ref={todayConfigDropdownRef}>
                         <button
                           onClick={() => setIsTodayConfigMenuOpen(!isTodayConfigMenuOpen)}
