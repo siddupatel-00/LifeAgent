@@ -2585,8 +2585,8 @@ export default function App() {
 
       {/* AUTHENTICATION & PASSWORD RESET PAGE (At /auth) */}
       {currentPage === 'auth' && (
-        <main className="animate-entrance" style={{ display: 'flex', minHeight: '80vh', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div style={{ background: 'var(--bg-card)', padding: '40px', borderRadius: '24px', border: '1px solid var(--border-color)', width: '100%', maxWidth: '440px', boxShadow: '0 8px 30px rgba(0,0,0,0.1)' }}>
+        <main className="animate-entrance auth-page" style={{ display: 'flex', minHeight: '80vh', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div className="auth-card" style={{ background: 'var(--bg-card)', padding: '40px', borderRadius: '24px', border: '1px solid var(--border-color)', width: '100%', maxWidth: '440px', boxShadow: '0 8px 30px rgba(0,0,0,0.1)' }}>
             
             {/* Header Title */}
             <div style={{ textAlign: 'center', marginBottom: '30px' }}>
