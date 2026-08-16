@@ -2256,3 +2256,49 @@ input[type="checkbox"]:checked::after {
   font-size: 0.82rem;
   color: var(--text-muted);
 }
+
+/* LifeAgent app-wide product polish: intentional surfaces, calmer controls, and responsive feedback. */
+:root { --app-radius: 14px; --app-focus: 0 0 0 3px color-mix(in srgb, var(--accent-blue) 22%, transparent); }
+button, input, textarea, select { font-family: inherit; }
+button { -webkit-tap-highlight-color: transparent; }
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: none; box-shadow: var(--app-focus); }
+button:not(:disabled) { transition: transform .18s ease, background-color .18s ease, border-color .18s ease, color .18s ease, box-shadow .18s ease; }
+button:not(:disabled):active { transform: translateY(1px); }
+button:disabled { cursor: not-allowed; }
+
+/* Auth route */
+.animate-entrance[style*="minHeight: '80vh'"] { background: radial-gradient(circle at 50% 0%, var(--accent-blue-dim), transparent 42%); }
+.animate-entrance[style*="minHeight: '80vh'"] > div { position: relative; overflow: hidden; border-radius: 18px !important; border-color: color-mix(in srgb, var(--border-color) 78%, var(--accent-blue)) !important; box-shadow: 0 24px 70px rgba(0,0,0,.14) !important; }
+.animate-entrance[style*="minHeight: '80vh'"] > div::before { content: ''; position: absolute; inset: 0 0 auto; height: 3px; background: linear-gradient(90deg, var(--accent-blue), var(--accent-blue-light)); }
+.animate-entrance[style*="minHeight: '80vh'"] input { transition: border-color .18s ease, background-color .18s ease, box-shadow .18s ease; }
+.animate-entrance[style*="minHeight: '80vh'"] input:hover { border-color: color-mix(in srgb, var(--accent-blue) 45%, var(--border-color)) !important; }
+.animate-entrance[style*="minHeight: '80vh'"] input:focus { border-color: var(--accent-blue) !important; box-shadow: var(--app-focus); }
+.blue-btn { min-height: 44px; border-radius: 10px !important; font-weight: 750 !important; letter-spacing: -.01em; }
+.blue-btn:not(:disabled):hover { filter: brightness(1.08); box-shadow: 0 8px 22px var(--accent-blue-dim); transform: translateY(-1px); }
+
+/* Dashboard shell */
+.desktop-sidebar { border-right-color: var(--border-color) !important; background: color-mix(in srgb, var(--bg-card) 92%, var(--bg-main)) !important; }
+.main-layout-section { background: var(--bg-main); }
+.dashboard-header { padding-bottom: 4px; }
+.dashboard-header h2 { letter-spacing: -.055em !important; }
+.glass-card, .motion-card { border-color: var(--border-color) !important; border-radius: var(--app-radius) !important; box-shadow: 0 8px 30px rgba(0,0,0,.04); }
+.glass-card:hover, .motion-card:hover { border-color: color-mix(in srgb, var(--accent-blue) 38%, var(--border-color)) !important; box-shadow: 0 12px 34px rgba(0,0,0,.08); }
+.header-actions button { min-height: 38px; }
+.theme-toggle-btn { cursor: pointer; color: var(--text-main); transition: border-color .18s ease, background-color .18s ease, transform .18s ease; }
+.theme-toggle-btn:hover { border-color: var(--accent-blue) !important; background: var(--accent-blue-dim) !important; }
+
+/* Prevent accidental jank from expensive shadows and broad repainting. */
+.motion-card, .glass-card, .ai-sidebar, .desktop-sidebar { will-change: auto; }
+.animate-tab-matter, .animate-entrance, .animate-tab-entrance { backface-visibility: hidden; }
+
+@media (max-width: 760px) {
+  .desktop-sidebar { width: 72px !important; }
+  .dashboard-header { align-items: flex-start !important; }
+  .dashboard-header h2 { font-size: 1.45rem !important; }
+  .header-actions { width: 100%; justify-content: flex-start !important; }
+  .animate-entrance[style*="minHeight: '80vh'"] { padding: 16px !important; }
+  .animate-entrance[style*="minHeight: '80vh'"] > div { padding: 28px 22px !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
