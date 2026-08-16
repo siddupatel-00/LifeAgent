@@ -2358,3 +2358,43 @@ button:disabled { cursor: not-allowed; }
 .storefront-badge { border-radius: 4px !important; background: var(--accent-blue-dim) !important; color: var(--accent-blue) !important; }
 .storefront-footer { border-top-color: var(--border-color) !important; }
 .storefront-footer-link:hover { color: var(--accent-blue) !important; }
+
+/* Canonical visual language: copied from the landing page, not a separate dashboard theme. */
+:root {
+  --bg-main: #f5f3ee;
+  --bg-card: #fffdf8;
+  --bg-card-hover: #ebe9df;
+  --border-color: #d9d6cd;
+  --accent-blue: #ef6f3e;
+  --accent-blue-light: #f58b63;
+  --accent-blue-dim: rgba(239,111,62,.11);
+  --accent-text: #f5f3ee;
+  --text-main: #11110f;
+  --text-muted: #77746c;
+  --font-sans: 'DM Sans', Inter, system-ui, sans-serif;
+  --font-serif: Fraunces, Georgia, serif;
+}
+body { background: var(--bg-main); color: var(--text-main); }
+.nav-bar { background: rgba(245,243,238,.9) !important; color: var(--text-main) !important; border-bottom-color: var(--border-color) !important; }
+.main-layout-section, .main-layout-section > div { background: var(--bg-main) !important; }
+.desktop-sidebar { background: #11110f !important; color: #f5f3ee !important; border-right-color: #2e3029 !important; }
+.desktop-sidebar button { color: #92958a !important; }
+.desktop-sidebar button:hover { background: rgba(216,242,119,.12) !important; color: #f5f3ee !important; }
+.desktop-sidebar button[style*="background: var(--accent-blue-dim)"] { background: rgba(216,242,119,.13) !important; color: #d8f277 !important; box-shadow: inset 3px 0 #d8f277; }
+.dashboard-header { border-bottom-color: var(--border-color) !important; }
+.dashboard-header h2, .glass-card, .motion-card, .tab-content-housing-box { color: var(--text-main); }
+.glass-card, .motion-card { background: var(--bg-card) !important; border-color: var(--border-color) !important; box-shadow: 0 10px 28px rgba(17,17,15,.06) !important; }
+.glass-card:hover, .motion-card:hover { border-color: var(--orange, #ef6f3e) !important; box-shadow: 0 14px 32px rgba(17,17,15,.1) !important; }
+.blue-btn { background: #11110f !important; color: #d8f277 !important; box-shadow: none !important; }
+.blue-btn:hover { background: #ef6f3e !important; color: #f5f3ee !important; }
+.secondary-btn { color: var(--text-main) !important; border-color: var(--border-color) !important; border-radius: 4px !important; }
+.secondary-btn:hover { background: var(--accent-blue-dim) !important; border-color: #ef6f3e !important; }
+.theme-toggle-btn { background: var(--bg-card) !important; color: var(--text-main) !important; border-color: var(--border-color) !important; }
+.mobile-bottom-nav { background: rgba(245,243,238,.96) !important; border-top-color: var(--border-color) !important; }
+.mobile-nav-btn { color: var(--text-muted) !important; }.mobile-nav-btn.active { color: #ef6f3e !important; }
+.auth-page { background: radial-gradient(circle at 50% 0, rgba(239,111,62,.1), transparent 42%) !important; }
+.auth-card { background: var(--bg-card) !important; border-color: var(--border-color) !important; box-shadow: 0 24px 70px rgba(17,17,15,.1) !important; }
+.auth-card::before { background: linear-gradient(90deg, #ef6f3e, #d8f277) !important; }
+.auth-card input { background: var(--paper, #f5f3ee) !important; color: var(--text-main) !important; border-color: var(--border-color) !important; }
+.storefront-section, .storefront-footer { background: var(--bg-main) !important; }
+.storefront-stat-card, .storefront-testimonial-card, .storefront-event-card { background: var(--bg-card) !important; border-color: var(--border-color) !important; color: var(--text-main) !important; box-shadow: 0 10px 28px rgba(17,17,15,.06) !important; }
