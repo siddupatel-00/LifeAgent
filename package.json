@@ -18,6 +18,7 @@
     "@libsql/client": "^0.17.4",
     "bcryptjs": "^3.0.3",
     "canvas-confetti": "^1.9.4",
+    "dexie": "^4.4.5",
     "dotenv": "^17.4.2",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^1.25.0",

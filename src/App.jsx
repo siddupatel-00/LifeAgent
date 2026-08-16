@@ -28,6 +28,7 @@ import TabErrorBoundary from './components/TabErrorBoundary';
 import { regenerateAllReminders, scheduleHabitReminders, scheduleEventReminders, cancelEntityReminders, isRegenNeeded, requestNotificationPermission } from './utils/reminderScheduler';
 import ReminderEditor from './components/ReminderEditor';
 import LandingPage from './components/landing/LandingPage';
+import SyncStatusIndicator from './components/SyncStatusIndicator';
 
 const getFormattedDateTitle = (dateStr) => {
   let targetDate = new Date();
