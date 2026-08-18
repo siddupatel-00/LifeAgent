@@ -1,7 +1,7 @@
 import { safeStorage } from '../utils/safeStorage';
 import React, { useState } from 'react';
 import TimeButton from './TimeButton';
-import { Check, User, Bot, Save, LogOut, AlertTriangle, Bell } from 'lucide-react';
+import { Check, User, Bot, Save, LogOut, AlertTriangle, Bell, Moon, Sun, Monitor, Zap } from 'lucide-react';
 import CustomSelect from './CustomSelect';
 import ConfirmModal from './ConfirmModal';
 import { getApiUrl } from '../utils/apiConfig';
@@ -36,6 +36,60 @@ const SettingsPanel = ({
   const [isResetting, setIsResetting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [testingGemini, setTestingGemini] = useState(false);
+  const [testingGroq, setTestingGroq] = useState(false);
+  const [geminiTestedOk, setGeminiTestedOk] = useState(null);
+  const [groqTestedOk, setGroqTestedOk] = useState(null);
+
+  const handleTestGemini = async () => {
+    if (!geminiApiKey?.trim()) {
+      showToast?.('Please enter a Gemini API key first', 'error');
+      return;
+    }
+    setTestingGemini(true);
+    try {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${geminiApiKey.trim()}`);
+      if (res.ok) {
+        setGeminiTestedOk(true);
+        showToast?.('✓ Gemini API Key verified successfully!', 'success');
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setGeminiTestedOk(false);
+        showToast?.(`Gemini Key Test Failed: ${err.error?.message || res.statusText}`, 'error');
+      }
+    } catch (e) {
+      setGeminiTestedOk(false);
+      showToast?.(`Connection Error: ${e.message}`, 'error');
+    } finally {
+      setTestingGemini(false);
+    }
+  };
+
+  const handleTestGroq = async () => {
+    if (!groqApiKey?.trim()) {
+      showToast?.('Please enter a Groq API key first', 'error');
+      return;
+    }
+    setTestingGroq(true);
+    try {
+      const res = await fetch('https://api.groq.com/openai/v1/models', {
+        headers: { 'Authorization': `Bearer ${groqApiKey.trim()}` }
+      });
+      if (res.ok) {
+        setGroqTestedOk(true);
+        showToast?.('✓ Groq API Key verified successfully!', 'success');
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setGroqTestedOk(false);
+        showToast?.(`Groq Key Test Failed: ${err.error?.message || res.statusText}`, 'error');
+      }
+    } catch (e) {
+      setGroqTestedOk(false);
+      showToast?.(`Connection Error: ${e.message}`, 'error');
+    } finally {
+      setTestingGroq(false);
+    }
+  };
 
   const handleConfirmReset = async () => {
     setIsResetting(true);
@@ -361,17 +415,45 @@ const SettingsPanel = ({
                 <div style={{ fontWeight: 600, fontSize: '0.92rem' }}>Display Theme Mode</div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Workspace appearance theme.</div>
               </div>
-              <CustomSelect 
-                value={themeMode || 'pc'}
-                onChange={(e) => setThemeMode(e.target.value)} 
-                className="settings-input"
-                options={[
-                  { value: "dark", label: "Dark Mode" },
-                  { value: "night", label: "🌙 Night Mode" },
-                  { value: "light", label: "Light Mode" },
-                  { value: "pc", label: "PC / System" }
-                ]}
-              />
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                {[
+                  { id: 'pc', label: 'System', icon: Monitor },
+                  { id: 'dark', label: 'Dark', icon: Moon },
+                  { id: 'light', label: 'Light', icon: Sun },
+                  { id: 'night', label: 'Night', icon: Zap }
+                ].map(item => {
+                  const Icon = item.icon;
+                  const isActive = (themeMode || 'pc') === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => {
+                        setThemeMode(item.id);
+                        safeStorage.setItem('themeMode', item.id);
+                      }}
+                      style={{
+                        padding: '8px 14px',
+                        borderRadius: '6px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        fontSize: '0.82rem',
+                        fontWeight: 600,
+                        fontFamily: "'DM Sans', sans-serif",
+                        border: isActive ? '1px solid #d8f277' : '1px solid var(--border-color)',
+                        background: isActive ? '#d8f277' : 'var(--bg-main)',
+                        color: isActive ? '#11110f' : 'var(--text-muted)',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      <Icon size={14} />
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="settings-row">
@@ -463,16 +545,38 @@ const SettingsPanel = ({
                 <div style={{ fontWeight: 600, fontSize: '0.92rem' }}>Gemini API Key</div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Free key from aistudio.google.com for Gemini Pro 2.5 intelligence.</div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', width: '100%', maxWidth: '380px' }}>
                 <input 
                   type="password" 
                   value={geminiApiKey} 
                   placeholder="AIzaSy..."
-                  onChange={(e) => setGeminiApiKey(e.target.value)} 
+                  onChange={(e) => { setGeminiApiKey(e.target.value); setGeminiTestedOk(null); }} 
                   className="settings-input"
-                  style={{ font: "500 0.85rem 'DM Mono', monospace" }}
+                  style={{ flex: 1, minWidth: '160px', font: "500 0.85rem 'DM Mono', monospace" }}
                 />
-                {geminiApiKey && <span style={{ font: "500 0.72rem 'DM Mono', monospace", color: '#d8f277' }}>● ACTIVE</span>}
+                <button
+                  type="button"
+                  onClick={handleTestGemini}
+                  disabled={testingGemini || !geminiApiKey}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    fontSize: '0.78rem',
+                    fontWeight: 600,
+                    fontFamily: "'DM Mono', monospace",
+                    border: geminiTestedOk ? '1px solid #d8f277' : '1px solid var(--border-color)',
+                    background: geminiTestedOk ? 'rgba(216, 242, 119, 0.15)' : 'var(--bg-main)',
+                    color: geminiTestedOk ? '#d8f277' : 'var(--text-main)',
+                    cursor: (!geminiApiKey || testingGemini) ? 'not-allowed' : 'pointer',
+                    opacity: (!geminiApiKey || testingGemini) ? 0.6 : 1,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  {testingGemini ? 'Testing...' : geminiTestedOk ? '✓ Valid' : 'Test Key'}
+                </button>
               </div>
             </div>
 
@@ -481,16 +585,38 @@ const SettingsPanel = ({
                 <div style={{ fontWeight: 600, fontSize: '0.92rem' }}>Groq API Key</div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Free key from console.groq.com for ultra-fast Llama-3-70b.</div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', width: '100%', maxWidth: '380px' }}>
                 <input 
                   type="password" 
                   value={groqApiKey} 
                   placeholder="gsk_..."
-                  onChange={(e) => setGroqApiKey(e.target.value)} 
+                  onChange={(e) => { setGroqApiKey(e.target.value); setGroqTestedOk(null); }} 
                   className="settings-input"
-                  style={{ font: "500 0.85rem 'DM Mono', monospace" }}
+                  style={{ flex: 1, minWidth: '160px', font: "500 0.85rem 'DM Mono', monospace" }}
                 />
-                {groqApiKey && <span style={{ font: "500 0.72rem 'DM Mono', monospace", color: '#d8f277' }}>● ACTIVE</span>}
+                <button
+                  type="button"
+                  onClick={handleTestGroq}
+                  disabled={testingGroq || !groqApiKey}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    fontSize: '0.78rem',
+                    fontWeight: 600,
+                    fontFamily: "'DM Mono', monospace",
+                    border: groqTestedOk ? '1px solid #d8f277' : '1px solid var(--border-color)',
+                    background: groqTestedOk ? 'rgba(216, 242, 119, 0.15)' : 'var(--bg-main)',
+                    color: groqTestedOk ? '#d8f277' : 'var(--text-main)',
+                    cursor: (!groqApiKey || testingGroq) ? 'not-allowed' : 'pointer',
+                    opacity: (!groqApiKey || testingGroq) ? 0.6 : 1,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  {testingGroq ? 'Testing...' : groqTestedOk ? '✓ Valid' : 'Test Key'}
+                </button>
               </div>
             </div>
 

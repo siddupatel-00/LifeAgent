@@ -5,6 +5,7 @@ import { getApiUrl } from '../utils/apiConfig';
 import MoneyCharts from './MoneyCharts';
 import CustomSelect from './CustomSelect';
 import Modal from './Modal';
+import ConfirmModal from './ConfirmModal';
 
 const SPEND_CATEGORIES = ['General', 'Food', 'Transport', 'Shopping', 'Bills', 'Entertainment', 'Education', 'Health', 'Other'];
 const EARNING_CATEGORIES = ['Job', 'Business', 'Freelancing', 'Startup', 'Other'];
@@ -51,6 +52,7 @@ export default function MoneyTracker({ transactions = [], setTransactions, token
   const [chartType, setChartType] = useState('bar');
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
 
   // Filter transactions according to active timeframe (e.g. 'today', '3d', '7d', etc.)
   const filteredTransactions = (() => {
@@ -239,7 +241,7 @@ export default function MoneyTracker({ transactions = [], setTransactions, token
         body: JSON.stringify(finalForm)
       });
       if (res.ok) {
-        setTransactions(prev => prev.map(t => t.id === editingId ? { ...t, ...editForm } : t));
+        setTransactions(prev => prev.map(t => t.id === editingId ? { ...t, ...finalForm } : t));
         showToast('Transaction Updated', 'success');
         setEditingId(null);
       }
@@ -345,7 +347,7 @@ export default function MoneyTracker({ transactions = [], setTransactions, token
                     </div>
                     <div style={{ display: 'flex', gap: '6px' }}>
                       <button onClick={() => startEdit(item)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '3px', borderRadius: '4px' }} title="Edit"><Edit2 size={14} /></button>
-                      <button onClick={() => deleteTransaction(item.id)} style={{ background: 'none', border: 'none', color: '#ef6f3e', cursor: 'pointer', padding: '3px', borderRadius: '4px' }} title="Delete"><Trash2 size={14} /></button>
+                      <button onClick={() => setDeleteConfirmId(item.id)} style={{ background: 'none', border: 'none', color: '#ef6f3e', cursor: 'pointer', padding: '3px', borderRadius: '4px' }} title="Delete"><Trash2 size={14} /></button>
                     </div>
                   </div>
                 </div>
@@ -555,6 +557,22 @@ export default function MoneyTracker({ transactions = [], setTransactions, token
           </div>
         </div>
       </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteConfirmId !== null}
+        title="Delete Transaction?"
+        message="Are you sure you want to delete this transaction record? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+        onConfirm={() => {
+          const id = deleteConfirmId;
+          setDeleteConfirmId(null);
+          if (id) deleteTransaction(id);
+        }}
+        onCancel={() => setDeleteConfirmId(null)}
+      />
     </div>
   );
 }

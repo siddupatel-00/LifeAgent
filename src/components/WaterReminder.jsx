@@ -8,7 +8,7 @@ import { todayKey } from '../utils/date';
 import { getApiUrl } from '../utils/apiConfig';
 import { scheduleWaterReminders, cancelAllOfType } from '../utils/reminderScheduler';
 
-const DEFAULT_PRESETS = [50, 150, 200];
+const DEFAULT_PRESETS = [50, 150, 200, 250, 500];
 
 export default function WaterReminder({ todayStat, onLogStat, showToast, userProfile }) {
   const todayDateStr = todayKey(userProfile?.timezone);
@@ -58,9 +58,10 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
   const [goalInput, setGoalInput] = useState('');
   const [goalInputError, setGoalInputError] = useState('');
 
-  // Custom Quick Presets
+  // Custom Quick Presets & Direct Custom Log
   const [presets, setPresets] = useState(DEFAULT_PRESETS);
   const [customMlInput, setCustomMlInput] = useState('');
+  const [directLogMl, setDirectLogMl] = useState('');
   const [isAddPresetOpen, setIsAddPresetOpen] = useState(false);
 
   // Reminder settings
@@ -429,9 +430,31 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '1.9rem', fontWeight: 900, color: 'var(--text-main)', fontFamily: "'DM Mono', monospace" }}>{hydrationLiters} L</span>
             
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px', fontFamily: "'DM Mono', monospace" }}>
-              / {targetGoal} L TARGET
-            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setModalTargetGoal(targetGoal.toString());
+                setModalReminderInterval(reminderIntervalMinutes.toString());
+                setIsSettingsOpen(true);
+              }}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                padding: '2px 6px',
+                color: 'var(--text-muted)',
+                fontWeight: 600,
+                fontSize: '0.85rem',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontFamily: "'DM Mono', monospace",
+                cursor: 'pointer',
+                borderRadius: '4px'
+              }}
+              title="Click to edit daily goal"
+            >
+              / {targetGoal} L TARGET <Edit2 size={12} color="#d8f277" />
+            </button>
           </div>
           <div style={{ fontSize: '0.88rem', fontWeight: 800, fontFamily: "'DM Mono', monospace", color: percentComplete >= 100 ? '#d8f277' : 'var(--text-main)' }}>
             {percentComplete}% {percentComplete >= 100 && '🎉 GOAL MET!'}
@@ -444,11 +467,11 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
         </div>
       </div>
 
-      {/* Quick Log Preset Buttons Section - Clean preset buttons (+50ml, +150ml, +200ml) with DM Mono and crisp 4px borders */}
+      {/* Quick Log Preset Buttons Section - Clean preset buttons (+50ml, +150ml, +200ml, +250ml, +500ml) with DM Mono and crisp borders */}
       <div style={{ marginBottom: '16px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
           <span style={{ fontSize: '0.75rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-            QUICK ADD PRESETS:
+            QUICK ADD WATER:
           </span>
           <button
             onClick={() => setIsAddPresetOpen(!isAddPresetOpen)}
@@ -464,12 +487,12 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
           </button>
         </div>
 
-        {/* Custom Preset Input Form */}
+        {/* Custom Preset Creator Form */}
         {isAddPresetOpen && (
           <form onSubmit={handleCreateCustomPreset} style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '12px', background: 'var(--bg-card)', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
             <input
               type="number"
-              placeholder="e.g. 500"
+              placeholder="e.g. 750"
               value={customMlInput}
               onChange={e => setCustomMlInput(e.target.value)}
               style={{
@@ -489,7 +512,7 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
           </form>
         )}
 
-        {/* Preset Buttons Grid - Crisp 4px-6px borders & DM Mono */}
+        {/* Preset Buttons Grid & Custom Log Input */}
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
           {presets.map((ml) => (
             <button
@@ -530,6 +553,43 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
           >
             <RotateCcw size={12} /> RESET 0L
           </button>
+        </div>
+
+        {/* Direct Custom Amount Logger */}
+        <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const val = parseInt(directLogMl.trim(), 10);
+              if (val && val > 0) {
+                handleAddWater(val);
+                setDirectLogMl('');
+              } else {
+                showToast?.('Please enter a valid ml amount', 'error');
+              }
+            }}
+            style={{ display: 'flex', gap: '6px', alignItems: 'center' }}
+          >
+            <input
+              type="number"
+              min="1"
+              placeholder="Custom ml (e.g. 350)"
+              value={directLogMl}
+              onChange={e => setDirectLogMl(e.target.value)}
+              style={{
+                width: '160px', padding: '7px 10px', borderRadius: '6px',
+                border: '1px solid var(--border-color)', background: 'var(--bg-card)',
+                color: 'var(--text-main)', fontSize: '0.82rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", outline: 'none'
+              }}
+            />
+            <button
+              type="submit"
+              className="blue-btn"
+              style={{ padding: '7px 14px', fontSize: '0.78rem', borderRadius: '6px', fontFamily: "'DM Mono', monospace", fontWeight: 700 }}
+            >
+              LOG WATER
+            </button>
+          </form>
         </div>
       </div>
 

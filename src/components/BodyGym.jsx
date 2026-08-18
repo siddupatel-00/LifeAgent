@@ -6,6 +6,7 @@ import { todayKey } from '../utils/date';
 import { getApiUrl } from '../utils/apiConfig';
 import CustomSelect from './CustomSelect';
 import Modal from './Modal';
+import ConfirmModal from './ConfirmModal';
 
 class BodyGymErrorBoundary extends React.Component {
   constructor(props) {
@@ -135,8 +136,10 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
   // Workout form state
   const [isAddWorkoutOpen, setIsAddWorkoutOpen] = useState(false);
   const [workoutForm, setWorkoutForm] = useState({
-    title: '', category: 'General', duration_mins: '', calories: '', notes: ''
+    title: '', category: 'General', duration_mins: '', calories: '', weight_kg: '', sets: '', reps: '', notes: ''
   });
+  const [deleteConfirmWorkoutId, setDeleteConfirmWorkoutId] = useState(null);
+  const [deleteConfirmStatId, setDeleteConfirmStatId] = useState(null);
 
   useEffect(() => {
     if (showForm) {
@@ -294,10 +297,24 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
   const handleAddWorkout = async (e) => {
     e.preventDefault();
     try {
+      let exerciseDetailStr = '';
+      if (workoutForm.weight_kg || workoutForm.sets || workoutForm.reps) {
+        const details = [];
+        if (workoutForm.weight_kg) details.push(`${workoutForm.weight_kg}kg`);
+        if (workoutForm.sets && workoutForm.reps) details.push(`${workoutForm.sets} sets × ${workoutForm.reps} reps`);
+        else if (workoutForm.sets) details.push(`${workoutForm.sets} sets`);
+        else if (workoutForm.reps) details.push(`${workoutForm.reps} reps`);
+        exerciseDetailStr = details.join(' • ');
+      }
+      
+      const fullNotes = [exerciseDetailStr, workoutForm.notes].filter(Boolean).join(' | ');
+
       const payload = {
-        ...workoutForm,
+        title: workoutForm.title,
+        category: workoutForm.category || 'General',
         duration_mins: Number(workoutForm.duration_mins) || 0,
         calories: Number(workoutForm.calories) || 0,
+        notes: fullNotes,
         date: todayKey()
       };
       
@@ -367,7 +384,7 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
 
   const closeWorkoutModal = () => {
     setIsAddWorkoutOpen(false);
-    setWorkoutForm({ title: '', category: 'General', duration_mins: '', calories: '', notes: '' });
+    setWorkoutForm({ title: '', category: 'General', duration_mins: '', calories: '', weight_kg: '', sets: '', reps: '', notes: '' });
     setShowForm?.(false);
   };
 
@@ -814,62 +831,80 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
           </div>
 
           {/* Active Workout Split Routine & Customizer */}
-          {hasCustomSplit && (
-          <div style={{ padding: '20px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', marginBottom: '20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+          {splitList.length > 0 ? (
+            <div style={{ padding: '20px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#d8f277', display: 'inline-block' }} />
+                    <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.02em' }}>
+                      {isWeekly ? 'Weekly Workout Routine' : `Workout Rotation Split (${splitList.length} Days)`}
+                    </h3>
+                  </div>
+                  <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px', fontFamily: "'DM Mono', monospace" }}>
+                    {isWeekly ? 'Scheduled workouts mapped to each day of the week.' : 'Workouts rotate sequentially day by day.'}
+                  </p>
+                </div>
+                <button 
+                  onClick={() => setIsEditSplitOpen(true)}
+                  style={{ background: 'rgba(216, 242, 119, 0.12)', color: '#d8f277', border: '1px solid #d8f277', padding: '6px 14px', fontSize: '0.8rem', borderRadius: '6px', fontWeight: 700, fontFamily: "'DM Mono', monospace", cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                >
+                  + EDIT SPLIT
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '6px' }}>
+                {splitList.map((dayObj, idx) => {
+                  const isCurrentToday = isWeekly ? idx === (dayOfWeek % splitList.length) : idx === todaySplitIdx;
+                  const dayName = typeof dayObj === 'string' ? dayObj : dayObj.name;
+                  const dayHeader = isWeekly ? (WEEKDAYS[idx] || `DAY ${idx + 1}`) : `DAY ${idx + 1}`;
+                  return (
+                    <div 
+                      key={idx} 
+                      onClick={() => !isWeekly && !isCurrentToday && handleSetDayActive(idx)}
+                      style={{ 
+                        flex: 1, minWidth: '120px', padding: '12px 14px', borderRadius: '6px',
+                        background: isCurrentToday ? 'rgba(216, 242, 119, 0.12)' : 'var(--bg-main)',
+                        border: `1px solid ${isCurrentToday ? '#d8f277' : 'var(--border-color)'}`,
+                        cursor: !isWeekly && !isCurrentToday ? 'pointer' : 'default',
+                        transition: 'all 0.15s ease'
+                      }}
+                      title={!isWeekly && !isCurrentToday ? "Click to set as Today's workout" : ""}
+                    >
+                      <div style={{ fontSize: '0.68rem', fontWeight: 800, color: isCurrentToday ? '#d8f277' : 'var(--text-muted)', textTransform: 'uppercase', fontFamily: "'DM Mono', monospace" }}>
+                        {isCurrentToday ? `🎯 TODAY (${dayHeader.slice(0, 3)})` : dayHeader.slice(0, 3)}
+                      </div>
+                      <div style={{ fontSize: '0.88rem', fontWeight: 700, marginTop: '4px', color: 'var(--text-main)' }}>
+                        {dayName}
+                      </div>
+                      {!isWeekly && !isCurrentToday && (
+                        <div style={{ fontSize: '0.66rem', color: '#ef6f3e', marginTop: '4px', fontWeight: 700, fontFamily: "'DM Mono', monospace" }}>
+                          👉 Set as Today
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div style={{ padding: '18px 20px', borderRadius: '8px', border: '1px dashed var(--border-color)', background: 'var(--bg-card)', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#d8f277', display: 'inline-block' }} />
-                  <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.02em' }}>
-                    {isWeekly ? 'Weekly Workout Routine' : `Workout Rotation Split (${splitList.length} Days)`}
-                  </h3>
+                  <Dumbbell size={16} color="#d8f277" />
+                  <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>Workout Split Routine</h3>
                 </div>
-                <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px', fontFamily: "'DM Mono', monospace" }}>
-                  {isWeekly ? 'Scheduled workouts mapped to each day of the week.' : 'Workouts rotate sequentially day by day.'}
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '4px', margin: 0, fontFamily: "'DM Mono', monospace" }}>
+                  Configure your weekly split (Push/Pull/Legs) or daily rotation schedule.
                 </p>
               </div>
               <button 
                 onClick={() => setIsEditSplitOpen(true)}
-                style={{ background: 'rgba(216, 242, 119, 0.12)', color: '#d8f277', border: '1px solid #d8f277', padding: '6px 14px', fontSize: '0.8rem', borderRadius: '6px', fontWeight: 700, fontFamily: "'DM Mono', monospace", cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                style={{ background: '#d8f277', color: '#11110f', border: '1px solid #c2de60', padding: '6px 14px', fontSize: '0.8rem', borderRadius: '6px', fontWeight: 700, fontFamily: "'DM Mono', monospace", cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
               >
-                + EDIT SPLIT
+                + ADD ROUTINE / SPLIT
               </button>
             </div>
-
-            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '6px' }}>
-              {splitList.map((dayObj, idx) => {
-                const isCurrentToday = isWeekly ? idx === (dayOfWeek % splitList.length) : idx === todaySplitIdx;
-                const dayName = typeof dayObj === 'string' ? dayObj : dayObj.name;
-                const dayHeader = isWeekly ? (WEEKDAYS[idx] || `DAY ${idx + 1}`) : `DAY ${idx + 1}`;
-                return (
-                  <div 
-                    key={idx} 
-                    onClick={() => !isWeekly && !isCurrentToday && handleSetDayActive(idx)}
-                    style={{ 
-                      flex: 1, minWidth: '120px', padding: '12px 14px', borderRadius: '6px',
-                      background: isCurrentToday ? 'rgba(216, 242, 119, 0.12)' : 'var(--bg-main)',
-                      border: `1px solid ${isCurrentToday ? '#d8f277' : 'var(--border-color)'}`,
-                      cursor: !isWeekly && !isCurrentToday ? 'pointer' : 'default',
-                      transition: 'all 0.15s ease'
-                    }}
-                    title={!isWeekly && !isCurrentToday ? "Click to set as Today's workout" : ""}
-                  >
-                    <div style={{ fontSize: '0.68rem', fontWeight: 800, color: isCurrentToday ? '#d8f277' : 'var(--text-muted)', textTransform: 'uppercase', fontFamily: "'DM Mono', monospace" }}>
-                      {isCurrentToday ? `🎯 TODAY (${dayHeader.slice(0, 3)})` : dayHeader.slice(0, 3)}
-                    </div>
-                    <div style={{ fontSize: '0.88rem', fontWeight: 700, marginTop: '4px', color: 'var(--text-main)' }}>
-                      {dayName}
-                    </div>
-                    {!isWeekly && !isCurrentToday && (
-                      <div style={{ fontSize: '0.66rem', color: '#ef6f3e', marginTop: '4px', fontWeight: 700, fontFamily: "'DM Mono', monospace" }}>
-                        👉 Set as Today
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
           )}
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
@@ -929,8 +964,9 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
                     </div>
                   </div>
                   <button 
-                    onClick={() => handleDeleteWorkout(workout.id)}
+                    onClick={() => setDeleteConfirmWorkoutId(workout.id)}
                     style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '6px', borderRadius: '4px' }}
+                    title="Delete Workout"
                   >
                     <Trash2 size={16} />
                   </button>
@@ -948,12 +984,12 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
         onClose={closeWorkoutModal}
         title="Log Workout"
         icon={Dumbbell}
-        maxWidth="400px"
+        maxWidth="440px"
       >
         <form onSubmit={handleAddWorkout}>
           <div className="input-group" style={{ marginBottom: '14px' }}>
-            <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.78rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", color: 'var(--text-muted)' }}>WORKOUT TITLE</label>
-            <input type="text" required className="glass-input" style={{ width: '100%', padding: '10px 12px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '8px', fontSize: '0.88rem' }} placeholder="Enter workout name..." value={workoutForm.title} onChange={e => setWorkoutForm({...workoutForm, title: e.target.value})} autoFocus />
+            <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.78rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", color: 'var(--text-muted)' }}>EXERCISE / WORKOUT TITLE</label>
+            <input type="text" required className="glass-input" style={{ width: '100%', padding: '10px 12px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '8px', fontSize: '0.88rem' }} placeholder="e.g. Bench Press, Leg Day, 5km Run..." value={workoutForm.title} onChange={e => setWorkoutForm({...workoutForm, title: e.target.value})} autoFocus />
           </div>
           
           <div className="input-group" style={{ marginBottom: '14px' }}>
@@ -965,12 +1001,27 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
               onChange={e => setWorkoutForm({...workoutForm, category: e.target.value})}
               options={[
                 { value: "General", label: "General" },
+                { value: "Strength", label: "Strength Training" },
                 { value: "Cardio", label: "Cardio" },
-                { value: "Strength", label: "Strength" },
                 { value: "Flexibility", label: "Flexibility" },
                 { value: "Sports", label: "Sports" }
               ]}
             />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '14px' }}>
+            <div className="input-group">
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.72rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", color: 'var(--accent-blue-light, #60a5fa)' }}>WEIGHT (KG)</label>
+              <input type="number" step="0.5" className="glass-input" style={{ width: '100%', padding: '8px 10px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '8px', fontSize: '0.85rem', fontFamily: "'DM Mono', monospace" }} placeholder="e.g. 70" value={workoutForm.weight_kg} onChange={e => setWorkoutForm({...workoutForm, weight_kg: e.target.value})} />
+            </div>
+            <div className="input-group">
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.72rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", color: '#d8f277' }}>SETS</label>
+              <input type="number" className="glass-input" style={{ width: '100%', padding: '8px 10px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '8px', fontSize: '0.85rem', fontFamily: "'DM Mono', monospace" }} placeholder="e.g. 4" value={workoutForm.sets} onChange={e => setWorkoutForm({...workoutForm, sets: e.target.value})} />
+            </div>
+            <div className="input-group">
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.72rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", color: '#d8f277' }}>REPS</label>
+              <input type="number" className="glass-input" style={{ width: '100%', padding: '8px 10px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '8px', fontSize: '0.85rem', fontFamily: "'DM Mono', monospace" }} placeholder="e.g. 10" value={workoutForm.reps} onChange={e => setWorkoutForm({...workoutForm, reps: e.target.value})} />
+            </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
@@ -1242,8 +1293,9 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
                         </div>
                       </div>
                       <button 
-                        onClick={() => handleDeleteStat(stat.id)}
+                        onClick={() => setDeleteConfirmStatId(stat.id)}
                         style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '6px', borderRadius: '4px' }}
+                        title="Delete Stat Entry"
                       >
                         <Trash2 size={16} />
                       </button>
@@ -1564,6 +1616,38 @@ function BodyGymInner({ token, showToast, workouts: initialWorkouts = [], bodySt
           </div>
         </div>
       </Modal>
+
+      {/* Delete Workout Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteConfirmWorkoutId !== null}
+        title="Delete Workout?"
+        message="Are you sure you want to delete this workout log? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+        onConfirm={() => {
+          const id = deleteConfirmWorkoutId;
+          setDeleteConfirmWorkoutId(null);
+          if (id) handleDeleteWorkout(id);
+        }}
+        onCancel={() => setDeleteConfirmWorkoutId(null)}
+      />
+
+      {/* Delete Body Stat Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteConfirmStatId !== null}
+        title="Delete Body Stat Record?"
+        message="Are you sure you want to delete this telemetry entry? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+        onConfirm={() => {
+          const id = deleteConfirmStatId;
+          setDeleteConfirmStatId(null);
+          if (id) handleDeleteStat(id);
+        }}
+        onCancel={() => setDeleteConfirmStatId(null)}
+      />
     </div>
   );
 }

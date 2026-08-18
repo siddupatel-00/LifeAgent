@@ -25,10 +25,10 @@ export default async function handler(req, res) {
     }
     
     if (req.method === 'PUT') {
-      const { id, title, amount, type, category, notes, time } = req.body;
+      const { id, title, amount, type, category, notes, time, date } = req.body;
       await db.execute({
-        sql: 'UPDATE transactions SET title = ?, amount = ?, type = ?, category = COALESCE(?, category), notes = COALESCE(?, notes), time = COALESCE(?, time) WHERE id = ? AND user_id = ?',
-        args: [title, amount, type, category, notes, time, id, userId]
+        sql: 'UPDATE transactions SET title = ?, amount = ?, type = ?, category = COALESCE(?, category), notes = COALESCE(?, notes), time = COALESCE(?, time), date = COALESCE(?, date) WHERE id = ? AND user_id = ?',
+        args: [title, amount, type, category, notes, time, date, id, userId]
       });
       return res.status(200).json({ success: true });
     }

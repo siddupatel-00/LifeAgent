@@ -278,7 +278,7 @@ export default function CalendarPanel({
           className="button button-primary" 
           onClick={() => {
             setIsAddEventFormOpen(true);
-            setNewEventDate(selectedCalendarDate || todayKey());
+            setNewEventDate(selectedCalendarDate || todayKey(userProfile?.timezone));
             setNewEventTitle('');
           }}
           style={{ padding: '10px 20px', fontSize: '0.84rem', borderRadius: '6px', font: "600 0.82rem 'DM Sans', sans-serif", background: 'var(--ink)', color: '#d8f277', border: '1px solid var(--border-color)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}

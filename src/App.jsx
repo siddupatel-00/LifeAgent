@@ -20,6 +20,7 @@ import BodyGym from './components/BodyGym';
 import MoneyTracker from './components/MoneyTracker';
 import SettingsPanel from './components/SettingsPanel';
 import CalendarPanel from './components/CalendarPanel';
+import NotesPanel from './components/NotesPanel';
 import ConfirmModal from './components/ConfirmModal';
 import Modal from './components/Modal';
 import { todayKey, localTimeZone, getWeekDays, isHabitScheduledOnDay, ALL_WEEK_DAYS } from './utils/date';
@@ -605,7 +606,7 @@ export default function App() {
   const [isAddHabitModalOpen, setIsAddHabitModalOpen] = useState(false);
   const [isEditHabitModalOpen, setIsEditHabitModalOpen] = useState(false);
   const [editingHabitData, setEditingHabitData] = useState(null);
-  const [newHabitData, setNewHabitData] = useState({ title: '', category: '', target: '', challengeMode: false, challengeDays: 30, durationMode: 'preset', frequency: 'daily', customDays: ['Mon', 'Wed', 'Fri'], intervalDays: 0, interval_days: 0 });
+  const [newHabitData, setNewHabitData] = useState({ title: '', category: '', target: '', challengeMode: false, challengeDays: 30, durationMode: 'preset', frequency: 'daily', customDays: ['Mon', 'Wed', 'Fri'], intervalDays: 0, interval_days: 0, reminders: [] });
   const [customPillarInput, setCustomPillarInput] = useState('');
   const [newTodayItemData, setNewTodayItemData] = useState({ title: '', category: 'Coding', time: '10:00 AM' });
   const [isAddTodayItemOpen, setIsAddTodayItemOpen] = useState(false);
@@ -1314,45 +1315,120 @@ export default function App() {
   // Universal sync helpers between Today routine and Daily Works (habits)
   // Sync is now 1:1 via habitId linkage
   const handleToggleTodayItem = (targetId) => {
-    setTodayItems(prev => prev.map(i => {
-      if (i.id !== targetId) return i;
-      const nextChecked = !i.checked;
-      
-      // Sync the linked habit by habitId
-      if (i.habitId) {
-        setHabits(prevHabits => prevHabits.map(h => {
-          if (h.id !== i.habitId) return h;
-          const newStreak = nextChecked ? h.streak + 1 : Math.max(0, h.streak - 1);
-          handleUpdateHabitDb(h.id, newStreak, nextChecked, h.pausedUntil);
-          return { ...h, checkedToday: nextChecked, streak: newStreak };
-        }));
+    // Check if targetId is a synced habit item (e.g. "synced-12")
+    const isSynced = typeof targetId === 'string' && targetId.startsWith('synced-');
+    const syncedHabitId = isSynced ? targetId.replace('synced-', '') : null;
+
+    if (isSynced) {
+      const habit = habits.find(h => String(h.id) === String(syncedHabitId));
+      if (!habit) return;
+
+      const nextChecked = !habit.checkedToday;
+      const newStreak = nextChecked ? (habit.streak || 0) + 1 : Math.max(0, (habit.streak || 0) - 1);
+
+      let isArchived = habit.archived;
+      let compAt = habit.completedAt;
+      if (nextChecked && habit.challengeDays > 0 && habit.startDate) {
+        const elapsed = Math.floor((new Date() - new Date(habit.startDate)) / (1000 * 60 * 60 * 24));
+        const daysStr = Math.min(Math.max(elapsed + 1, 1), habit.challengeDays);
+        if (daysStr >= habit.challengeDays) {
+          isArchived = true;
+          compAt = new Date().toISOString();
+        }
       }
 
-      handleUpdateTodayDb(i.id, nextChecked);
-      return { ...i, checked: nextChecked };
-    }));
+      handleUpdateHabitDb(habit.id, newStreak, nextChecked, habit.pausedUntil, isArchived, compAt);
+
+      setHabits(prev => prev.map(h => String(h.id) === String(habit.id) ? { ...h, checkedToday: nextChecked, streak: newStreak, archived: isArchived, completedAt: compAt } : h));
+
+      // Add or update entry in todayItems state & DB
+      setTodayItems(prev => {
+        const existingIdx = prev.findIndex(ti => String(ti.habitId) === String(habit.id) || ti.id === targetId || (ti.title && habit.title && ti.title.toLowerCase() === habit.title.toLowerCase()));
+        if (existingIdx >= 0) {
+          const updated = [...prev];
+          const existing = updated[existingIdx];
+          handleUpdateTodayDb(existing.id, nextChecked);
+          updated[existingIdx] = { ...existing, checked: nextChecked, habitId: habit.id };
+          return updated;
+        } else {
+          const newId = Date.now();
+          const newTodayItem = { id: newId, habitId: habit.id, title: habit.title, category: habit.category || '', checked: nextChecked, time: 'Daily' };
+          if (token) {
+            fetch(getApiUrl('/api/today'), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              body: JSON.stringify({ label: habit.title, category: habit.category || '', checked: nextChecked ? 1 : 0, habit_id: habit.id, time: 'Daily', client_date: todayKey(userProfile?.timezone) })
+            }).catch(console.error);
+          }
+          return [...prev, newTodayItem];
+        }
+      });
+
+      if (nextChecked) {
+        showToast?.(`🎉 Checked off "${habit.title}"! Streak: ${newStreak} days`, 'success');
+      } else {
+        showToast?.(`Unchecked "${habit.title}"`, 'info');
+      }
+      return;
+    }
+
+    // Standard today item
+    const currentItem = (todayItems || []).find(i => i.id === targetId);
+    const nextChecked = currentItem ? !currentItem.checked : true;
+
+    // Sync linked habit if present
+    const linkedHabitId = currentItem?.habitId || currentItem?.habit_id;
+    const linkedHabit = habits.find(h => (linkedHabitId && String(h.id) === String(linkedHabitId)) || (currentItem?.title && h.title && currentItem.title.toLowerCase() === h.title.toLowerCase()));
+
+    if (linkedHabit) {
+      const newStreak = nextChecked ? (linkedHabit.streak || 0) + 1 : Math.max(0, (linkedHabit.streak || 0) - 1);
+      handleUpdateHabitDb(linkedHabit.id, newStreak, nextChecked, linkedHabit.pausedUntil);
+      setHabits(prev => prev.map(h => String(h.id) === String(linkedHabit.id) ? { ...h, checkedToday: nextChecked, streak: newStreak } : h));
+    }
+
+    handleUpdateTodayDb(targetId, nextChecked);
+    setTodayItems(prev => prev.map(i => i.id === targetId ? { ...i, checked: nextChecked, habitId: linkedHabit ? linkedHabit.id : i.habitId } : i));
+
+    if (currentItem) {
+      if (nextChecked) {
+        showToast?.(`🎉 Checked off "${currentItem.title || currentItem.label || 'item'}"!`, 'success');
+      } else {
+        showToast?.(`Unchecked "${currentItem.title || currentItem.label || 'item'}"`, 'info');
+      }
+    }
   };
 
   const handleToggleAllToday = () => {
-    const allAreChecked = todayItems.every(i => i.checked);
+    const activeHabits = (Array.isArray(habits) ? habits : []).filter(h => !h.archived && !h.completedAt && !h.pausedUntil);
+    const rawToday = Array.isArray(todayItems) ? todayItems : [];
+    
+    // Determine targetState: if all active habits AND all today items are checked, uncheck all. Otherwise check all.
+    const allHabitsChecked = activeHabits.length > 0 ? activeHabits.every(h => !!h.checkedToday) : true;
+    const allTodayChecked = rawToday.length > 0 ? rawToday.every(i => !!i.checked) : true;
+    const totalCount = activeHabits.length + rawToday.length;
+    const allAreChecked = totalCount > 0 && allHabitsChecked && allTodayChecked;
     const targetState = !allAreChecked;
     
-    // 1. Sync Today Habits
-    setTodayItems(prev => prev.map(i => {
-      handleUpdateTodayDb(i.id, targetState);
-      return { ...i, checked: targetState };
-    }));
+    // 1. Sync all active habits
     setHabits(prevHabits => prevHabits.map(h => {
-      const linkedToday = todayItems.find(ti => ti.habitId === h.id);
-      if (!linkedToday) return h;
-      const newStreak = targetState ? h.streak + (h.checkedToday ? 0 : 1) : Math.max(0, h.streak - 1);
+      if (h.archived || h.completedAt || h.pausedUntil) return h;
+      const wasChecked = !!h.checkedToday;
+      let newStreak = h.streak || 0;
+      if (targetState && !wasChecked) newStreak += 1;
+      else if (!targetState && wasChecked) newStreak = Math.max(0, newStreak - 1);
       handleUpdateHabitDb(h.id, newStreak, targetState, h.pausedUntil);
       return { ...h, checkedToday: targetState, streak: newStreak };
     }));
 
+    // 2. Sync all today items
+    setTodayItems(prev => prev.map(i => {
+      handleUpdateTodayDb(i.id, targetState);
+      return { ...i, checked: targetState };
+    }));
+
     const todayStr = todayKey(userProfile?.timezone);
 
-    // 2. Mark Today's Gym Workout Split Complete
+    // 3. Mark Today's Gym Workout Split Complete if checking all
     if (targetState) {
       let splitList = [];
       try {
@@ -1384,18 +1460,18 @@ export default function App() {
         }
         setWorkouts(prev => [newWorkout, ...(Array.isArray(prev) ? prev : [])]);
       }
-    }
 
-    // 3. Mark Protein & Hydration Trackers to 100% Goal Target
-    if (targetState) {
-      const latestStat = Array.isArray(bodyStats) && bodyStats.length > 0 ? bodyStats[0] : (bodyStats || {});
-      const targetW = Number(latestStat?.target_weight) || 0;
-      const targetP = Number(latestStat?.target_protein) || 0;
-      const proteinGoal = targetP > 0 ? targetP : (targetW > 0 ? Math.round(targetW * 2) : 0);
-      const hydrationGoal = Number(latestStat?.hydration) || 3.0;
+      // 4. Mark Protein & Hydration Trackers to 100% Goal Target
+      const safeBodyStats = Array.isArray(bodyStats) ? bodyStats : (bodyStats ? [bodyStats] : []);
+      const todayStat = safeBodyStats.find(s => s && s.date === todayStr) || null;
+      const latestStat = safeBodyStats.length > 0 ? safeBodyStats[0] : null;
+      const targetW = Number(latestStat?.target_weight) || Number(todayStat?.target_weight) || 70;
+      const targetP = Number(latestStat?.target_protein) || Number(todayStat?.target_protein) || 0;
+      const proteinGoal = targetP > 0 ? targetP : (targetW > 0 ? Math.round(targetW * 2) : 140);
+      const hydrationGoal = Number(safeStorage.getItem('water_target_goal')) || Number(latestStat?.hydration) || 3.0;
 
       const payload = {
-        weight: Number(latestStat?.weight) || 0,
+        weight: Number(todayStat?.weight) || Number(latestStat?.weight) || 70,
         target_weight: targetW,
         protein: proteinGoal,
         target_protein: proteinGoal,
@@ -1403,8 +1479,8 @@ export default function App() {
         date: todayStr
       };
 
-      if (latestStat?.date === todayStr && latestStat?.id) {
-        payload.id = latestStat.id;
+      if (todayStat?.id) {
+        payload.id = todayStat.id;
       }
 
       if (token) {
@@ -1416,16 +1492,16 @@ export default function App() {
       }
 
       setBodyStats(prev => {
-        if (Array.isArray(prev)) {
-          const exists = prev.some(s => s.date === todayStr);
-          if (exists) return prev.map(s => s.date === todayStr ? { ...s, protein: proteinGoal, hydration: hydrationGoal } : s);
-          return [payload, ...prev];
-        }
-        return { ...prev, protein: proteinGoal, hydration: hydrationGoal };
+        const list = Array.isArray(prev) ? prev : [];
+        const exists = list.some(s => s && s.date === todayStr);
+        if (exists) return list.map(s => s && s.date === todayStr ? { ...s, protein: proteinGoal, hydration: hydrationGoal } : s);
+        return [{ ...payload, id: Date.now() }, ...list];
       });
-    }
 
-    showToast?.(targetState ? '🎉 Ticked All Today (Habits, Workout, Protein & Water)!' : 'Unchecked items for today', 'success');
+      showToast?.('🎉 Ticked All Today (Habits, Workout, Protein & Water)!', 'success');
+    } else {
+      showToast?.('Unchecked items for today', 'info');
+    }
   };
 
   const handleToggleHabitItem = (targetHabitId) => {
@@ -3175,10 +3251,9 @@ export default function App() {
 
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
                         {/* a) Today's Scheduled Workout Split */}
-                        {todayWidgetsConfig.showWorkout && Array.isArray(workouts) && workouts.length > 0 && (() => {
+                        {todayWidgetsConfig.showWorkout && ((Array.isArray(workouts) && workouts.length > 0) || !!userProfile?.workout_templates) && (() => {
                           const todayKeyStr = todayKey(userProfile?.timezone);
                           const isDone = Array.isArray(workouts) && workouts.some(w => w.date === todayKeyStr);
-                          if (!isDone) return null;
                           let splitList = [];
                           try {
                             if (userProfile?.workout_templates) splitList = JSON.parse(userProfile.workout_templates);
@@ -3210,7 +3285,7 @@ export default function App() {
                                       try {
                                         const res = await fetch(getApiUrl('/api/fitness?type=workouts'), {
                                           method: 'POST',
-                                          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                          headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
                                           body: JSON.stringify({ title: currentTitle, category: 'Strength', duration_mins: 45, calories: 320, notes: `Completed scheduled ${currentTitle}`, date: todayKeyStr })
                                         });
                                         if (res.ok) {
@@ -3239,58 +3314,64 @@ export default function App() {
 
                         {/* b) Daily Protein Tracker with Progress Bar */}
                         {todayWidgetsConfig.showProtein && (Array.isArray(bodyStats) && bodyStats.some(s => Number(s.target_protein) > 0 || Number(s.protein) > 0)) && (() => {
-                          const latestStat = Array.isArray(bodyStats) && bodyStats.length > 0 ? bodyStats[0] : null;
-                          const isToday = latestStat?.date === todayKey(userProfile?.timezone);
-                          const protein = isToday ? (Number(latestStat?.protein) || 0) : 0;
-                          const targetW = Number(latestStat?.target_weight) || 0;
-                          const targetP = Number(latestStat?.target_protein) || 0;
+                          const safeBodyStats = Array.isArray(bodyStats) ? bodyStats : (bodyStats ? [bodyStats] : []);
+                          const todayStr = todayKey(userProfile?.timezone);
+                          const todayStat = safeBodyStats.find(s => s && s.date === todayStr) || null;
+                          const latestStat = safeBodyStats.length > 0 ? safeBodyStats[0] : null;
+                          const protein = todayStat ? (Number(todayStat.protein) || 0) : (latestStat?.date === todayStr ? (Number(latestStat?.protein) || 0) : 0);
+                          const targetW = Number(latestStat?.target_weight) || Number(todayStat?.target_weight) || 0;
+                          const targetP = Number(latestStat?.target_protein) || Number(todayStat?.target_protein) || 0;
                           const goal = targetP > 0 ? targetP : (targetW > 0 ? Math.round(targetW * 2) : 0);
-                          const pct = Math.min(100, Math.max(0, Math.round((protein / goal) * 100)));
+                          const pct = goal > 0 ? Math.min(100, Math.max(0, Math.round((protein / goal) * 100))) : 0;
 
                           const handleAddProtein = async (amount) => {
                             try {
-                              const safeBodyStats = Array.isArray(bodyStats) ? bodyStats : (bodyStats ? [bodyStats] : []);
-                              const todayStr = todayKey(userProfile?.timezone);
-                              const todayStat = safeBodyStats.find(s => s && s.date === todayStr) || null;
-                              const latestStat = safeBodyStats.length > 0 ? safeBodyStats[0] : null;
-
                               const currentP = todayStat ? (Number(todayStat.protein) || 0) : (latestStat?.date === todayStr ? (Number(latestStat?.protein) || 0) : 0);
-                              const targetW = Number(latestStat?.target_weight) || 0;
-                              const targetP = Number(latestStat?.target_protein) || Number(todayStat?.target_protein) || 0;
-                              const goal = targetP > 0 ? targetP : (targetW > 0 ? Math.round(targetW * 2) : 0);
-
                               const newProtein = Math.max(0, currentP + amount);
 
                               const payload = {
                                 date: todayStr,
                                 protein: newProtein,
-                                target_protein: goal
+                                target_protein: goal,
+                                weight: Number(todayStat?.weight) || Number(latestStat?.weight) || 0,
+                                target_weight: targetW
                               };
 
-                              const tempId = todayStat?.id || Date.now();
+                              const isExistingToday = todayStat && todayStat.id;
+                              if (isExistingToday) {
+                                payload.id = todayStat.id;
+                              }
+
+                              const tempId = isExistingToday ? todayStat.id : Date.now();
                               setBodyStats(prev => {
                                 const list = Array.isArray(prev) ? prev : (prev ? [prev] : []);
                                 const exists = list.some(s => s && (s.id === tempId || s.date === todayStr));
                                 if (exists) {
                                   return list.map(s => (s && (s.id === tempId || s.date === todayStr)) ? { ...s, protein: newProtein, target_protein: goal } : s);
                                 }
-                                return [{ ...payload, id: tempId, weight: Number(latestStat?.weight) || 0, target_weight: targetW }, ...list];
+                                return [{ ...payload, id: tempId }, ...list];
                               });
 
-                              const res = await fetch(getApiUrl('/api/fitness'), {
-                                method: 'POST',
-                                headers: {
-                                  'Content-Type': 'application/json',
-                                  ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-                                },
-                                body: JSON.stringify(payload)
-                              });
+                              const sign = amount >= 0 ? '+' : '';
+                              showToast(`Protein logged: ${sign}${amount}g`, 'success');
 
-                              if (res.status === 200 || res.status === 201) {
-                                const sign = amount >= 0 ? '+' : '';
-                                showToast(`Protein logged: ${sign}${amount}g`, 'success');
-                              } else {
-                                console.error('Failed to log protein in App.jsx:', res.status, res.statusText);
+                              if (token) {
+                                const res = await fetch(getApiUrl('/api/fitness?type=body-stats'), {
+                                  method: isExistingToday ? 'PUT' : 'POST',
+                                  headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`
+                                  },
+                                  body: JSON.stringify(payload)
+                                });
+
+                                if (res.ok) {
+                                  const data = await res.json();
+                                  setBodyStats(prev => {
+                                    const list = Array.isArray(prev) ? prev : [];
+                                    return list.map(s => (s && (s.id === tempId || s.date === todayStr)) ? { ...s, ...data } : s);
+                                  });
+                                }
                               }
                             } catch (e) {
                               console.error('Error logging protein in App.jsx:', e);
@@ -3375,6 +3456,9 @@ export default function App() {
                                 return [{ ...payload, id: tempId }, ...(Array.isArray(prev) ? prev : [])];
                               }
                             });
+
+                            const sign = liters >= 0 ? '+' : '';
+                            showToast?.(`Hydration logged: ${sign}${liters}L`, 'success');
 
                             try {
                               if (token) {
@@ -3942,6 +4026,14 @@ export default function App() {
                         )}
                       </div>
 
+                      {/* HABIT REMINDERS */}
+                      <ReminderEditor
+                        reminders={newHabitData.reminders || []}
+                        onChange={(rems) => setNewHabitData({ ...newHabitData, reminders: rems })}
+                        mode="time"
+                        label="Reminders"
+                      />
+
                       <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
                         <button 
                           className="secondary-btn"
@@ -3965,6 +4057,7 @@ export default function App() {
                             const freq = newHabitData.frequency || 'daily';
                             const cDays = Array.isArray(newHabitData.customDays) ? newHabitData.customDays.join(',') : (newHabitData.customDays || '');
                             const iDays = freq === 'custom' ? Number(newHabitData.intervalDays || newHabitData.interval_days || 0) : 0;
+                            const habitRems = Array.isArray(newHabitData.reminders) ? newHabitData.reminders : [];
 
                             try {
                               const res = await fetch(getApiUrl('/api/habits'), {
@@ -3976,13 +4069,14 @@ export default function App() {
                                   target: newHabitData.target.trim() || 'Daily',
                                   frequency: freq,
                                   custom_days: cDays,
-                                  interval_days: iDays
+                                  interval_days: iDays,
+                                  reminders: habitRems
                                 })
                               });
 
                               if (res.ok) {
                                 const saved = await res.json();
-                                setHabits(prev => [...prev, {
+                                const newHabitObj = {
                                   id: saved.id,
                                   title: saved.label,
                                   category: saved.category,
@@ -3995,8 +4089,19 @@ export default function App() {
                                   customDays: saved.custom_days || cDays,
                                   custom_days: saved.custom_days || cDays,
                                   intervalDays: saved.interval_days || iDays,
-                                  interval_days: saved.interval_days || iDays
-                                }]);
+                                  interval_days: saved.interval_days || iDays,
+                                  reminders: habitRems
+                                };
+                                setHabits(prev => [...prev, newHabitObj]);
+
+                                if (habitRems.length > 0) {
+                                  const globalEnabled = userProfile?.remindersGlobalEnabled !== false && userProfile?.reminders_global_enabled !== 0;
+                                  scheduleHabitReminders({
+                                    habits: [...habits, newHabitObj],
+                                    daily7pmEnabled: habitNotificationsEnabled,
+                                    userName: userProfile?.name || 'User'
+                                  }, globalEnabled).catch(console.error);
+                                }
 
                                 try {
                                   const todayRes = await fetch(getApiUrl('/api/today'), {
@@ -4018,9 +4123,10 @@ export default function App() {
                                   console.error('Failed to create linked today item:', linkErr);
                                 }
 
-                                setNewHabitData({ title: '', category: '', target: '', challengeMode: false, challengeDays: 30, durationMode: 'preset', frequency: 'daily', customDays: ['Mon', 'Wed', 'Fri'] });
+                                setNewHabitData({ title: '', category: '', target: '', challengeMode: false, challengeDays: 30, durationMode: 'preset', frequency: 'daily', customDays: ['Mon', 'Wed', 'Fri'], intervalDays: 0, interval_days: 0, reminders: [] });
                                 setCustomPillarInput('');
                                 setIsAddHabitModalOpen(false);
+                                showToast('Habit added successfully!', 'success');
                               }
                             } catch (err) {
                               console.error(err);
@@ -4139,7 +4245,8 @@ export default function App() {
                                       ? (item.customDays || item.custom_days)
                                       : (typeof (item.customDays || item.custom_days) === 'string' && (item.customDays || item.custom_days)
                                           ? (item.customDays || item.custom_days).split(',').map(s=>s.trim()).filter(Boolean)
-                                          : ['Mon', 'Wed', 'Fri'])
+                                          : ['Mon', 'Wed', 'Fri']),
+                                    reminders: Array.isArray(item.reminders) ? item.reminders : []
                                   });
                                   if (isCustom) setCustomPillarInput(item.category);
                                   setIsEditHabitModalOpen(true);
@@ -4567,6 +4674,14 @@ export default function App() {
                           )}
                         </div>
                         
+                        {/* HABIT REMINDERS */}
+                        <ReminderEditor
+                          reminders={editingHabitData.reminders || []}
+                          onChange={(rems) => setEditingHabitData({ ...editingHabitData, reminders: rems })}
+                          mode="time"
+                          label="Reminders"
+                        />
+                        
                         <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
                           <button className="glass-button" style={{ flex: 1 }} onClick={() => setIsEditHabitModalOpen(false)}>Cancel</button>
                           <button 
@@ -4578,6 +4693,7 @@ export default function App() {
                               const freq = editingHabitData.frequency || 'daily';
                               const cDays = Array.isArray(editingHabitData.customDays) ? editingHabitData.customDays.join(',') : (editingHabitData.customDays || '');
                               const iDays = freq === 'custom' ? Number(editingHabitData.intervalDays || editingHabitData.interval_days || 0) : 0;
+                              const habitRems = Array.isArray(editingHabitData.reminders) ? editingHabitData.reminders : [];
 
                               try {
                                 if (token) {
@@ -4592,7 +4708,8 @@ export default function App() {
                                       challenge_days: challengeDays,
                                       frequency: freq,
                                       custom_days: cDays,
-                                      interval_days: iDays
+                                      interval_days: iDays,
+                                      reminders: habitRems
                                     })
                                   });
                                   if (!res.ok) {
@@ -4602,7 +4719,7 @@ export default function App() {
                                 }
 
                                 // Optimistically update local React state
-                                setHabits(prev => prev.map(h => h.id === editingHabitData.id ? {
+                                const nextHabits = habits.map(h => h.id === editingHabitData.id ? {
                                   ...h,
                                   title: editingHabitData.title,
                                   label: editingHabitData.title,
@@ -4616,8 +4733,17 @@ export default function App() {
                                   customDays: cDays,
                                   custom_days: cDays,
                                   intervalDays: iDays,
-                                  interval_days: iDays
-                                } : h));
+                                  interval_days: iDays,
+                                  reminders: habitRems
+                                } : h);
+                                setHabits(nextHabits);
+
+                                const globalEnabled = userProfile?.remindersGlobalEnabled !== false && userProfile?.reminders_global_enabled !== 0;
+                                scheduleHabitReminders({
+                                  habits: nextHabits,
+                                  daily7pmEnabled: habitNotificationsEnabled,
+                                  userName: userProfile?.name || 'User'
+                                }, globalEnabled).catch(console.error);
 
                                 setIsEditHabitModalOpen(false);
                                 showToast('Habit updated!', 'success');
@@ -4666,562 +4792,22 @@ export default function App() {
                 </TabErrorBoundary>
               )}
 
-              {/* 2.5) NOTES & DIARY TAB (With Personal AI Assistant Permission Sharing) */}
+              {/* 2.5) NOTES & DIARY TAB */}
               {activeTab === 'notes' && (
                 <TabErrorBoundary tabName="Notes & Diary">
-                <div className="animate-entrance">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px', flexWrap: 'wrap', gap: '16px' }}>
-                    <div>
-                      <h3 style={{ fontSize: '1.55rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <BookOpen size={24} color="var(--accent-blue)" /> Notes & Personal Diary
-                      </h3>
-                      <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: '4px' }}>
-                        Create daily logs, goals, and notes.
-                      </p>
-                    </div>
-                    <button 
-                      className="blue-btn"
-                      onClick={() => {
-                        const baseTitle = new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
-                        const count = notesList.filter(n => n.title && n.title.startsWith(baseTitle)).length;
-                        const defaultTitle = count > 0 ? `${baseTitle} (${count + 1})` : baseTitle;
-                        const tempId = Date.now();
-                        const tempNote = { id: tempId, title: defaultTitle, content: '', shareWithAi: true, date: new Date().toISOString() };
-                        
-                        // Instant 0ms UI update
-                        const updatedList = [tempNote, ...notesList];
-                        setNotesList(updatedList);
-                        setActiveNoteId(tempId);
-                        setExpandedNoteId(tempId);
-
-                        // Background DB creation
-                        handleCreateNoteDb(defaultTitle, '', true, (serverNote) => {
-                          setNotesList(prev => prev.map(n => n.id === tempId ? { ...n, id: serverNote.id } : n));
-                          setActiveNoteId(serverNote.id);
-                          setExpandedNoteId(serverNote.id);
-                        });
-                      }}
-                      style={{ padding: '10px 22px', fontSize: '0.92rem' }}
-                    >
-                      <Plus size={18} /> New Diary Page / Note
-                    </button>
-                  </div>
-
-                  <div className="notes-container" style={{ display: 'flex', gap: '24px', height: 'calc(100vh - 220px)', overflow: 'hidden' }}>
-                    {/* LEFT NOTEBOOK LIST / TRASH VIEW SWITCHER */}
-                    <div className="notes-left-col" style={{ flex: '0 0 320px', background: 'var(--bg-main)', borderRadius: '18px', border: '1px solid var(--border-color)', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px', height: '100%', overflowY: 'auto', paddingRight: '8px' }}>
-                      <div style={{ display: 'flex', gap: '6px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
-                        <button
-                          onClick={() => {
-                            setNotesViewMode('active');
-                            setActiveNoteId(null);
-                            setExpandedNoteId(null);
-                          }}
-                          style={{
-                            flex: 1, padding: '8px', borderRadius: '10px', border: 'none',
-                            background: notesViewMode === 'active' ? 'var(--accent-blue)' : 'transparent',
-                            color: notesViewMode === 'active' ? 'var(--accent-text)' : 'var(--text-muted)',
-                            fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', transition: 'all 0.2s'
-                          }}
-                        >
-                          📖 Active ({notesList.length})
-                        </button>
-                        <button
-                          onClick={() => {
-                            setNotesViewMode('trash');
-                            setActiveNoteId(null);
-                            setExpandedNoteId(null);
-                          }}
-                          style={{
-                            flex: 1, padding: '8px', borderRadius: '10px', border: 'none',
-                            background: notesViewMode === 'trash' ? 'rgba(239, 68, 68, 0.18)' : 'transparent',
-                            color: notesViewMode === 'trash' ? '#ef4444' : 'var(--text-muted)',
-                            fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', transition: 'all 0.2s'
-                          }}
-                        >
-                          🗑️ Trash ({trashNotes.length})
-                        </button>
-                      </div>
-
-                      {notesViewMode === 'active' ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto' }}>
-                          {notesList.length === 0 ? (
-                            <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                              No notes yet. Click + to add one.
-                            </div>
-                          ) : (
-                            notesList.map(note => {
-                              const isExpanded = expandedNoteId === note.id;
-                              const isActive = activeNoteId === note.id;
-                              return (
-                                <React.Fragment key={note.id}>
-                                  <div
-                                    onClick={() => {
-                                      setActiveNoteId(note.id);
-                                      setExpandedNoteId(prev => prev === note.id ? null : note.id);
-                                    }}
-                                    style={{
-                                      padding: '14px 16px',
-                                      borderRadius: '14px',
-                                      background: isActive ? 'var(--accent-blue)' : 'var(--bg-card)',
-                                      color: isActive ? 'var(--accent-text)' : 'var(--text-main)',
-                                      border: `1px solid ${isActive ? 'var(--accent-blue)' : 'var(--border-color)'}`,
-                                      cursor: 'pointer',
-                                      transition: 'all 0.2s',
-                                      display: 'flex', flexDirection: 'column', gap: '6px'
-                                    }}
-                                  >
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                      <span style={{ fontSize: '0.7rem', fontWeight: 800, background: isActive ? 'rgba(255,255,255,0.2)' : 'var(--bg-main)', padding: '2px 8px', borderRadius: '8px' }}>
-                                        {note.category}
-                                      </span>
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleUpdateNoteDb({ id: note.id, is_trashed: 1, deleted_at: new Date().toISOString() });
-                                            setTrashNotes([{ ...note, deletedAt: Date.now(), is_trashed: 1 }, ...trashNotes]);
-                                            const next = notesList.filter(n => n.id !== note.id);
-                                            setNotesList(next);
-                                            if (activeNoteId === note.id && next.length > 0) setActiveNoteId(next[0].id);
-                                            if (expandedNoteId === note.id) setExpandedNoteId(next.length > 0 ? next[0].id : null);
-                                            showToast('Note moved to Trash. Click 🗑️ Trash to restore anytime!');
-                                          }}
-                                          style={{ background: 'transparent', border: 'none', color: isActive ? 'var(--accent-text)' : '#ef4444', cursor: 'pointer', padding: '2px', opacity: 0.8 }}
-                                          title="Move to Trash (Kept for 49 days)"
-                                        >
-                                          <Trash2 size={15} />
-                                        </button>
-                                      </div>
-                                    </div>
-                                    <h5 style={{ fontSize: '0.96rem', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                      {note.title}
-                                    </h5>
-                                    <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>
-                                      Last updated: {note.date}
-                                    </span>
-                                  </div>
-
-                                  {/* MOBILE INLINE EXPANDED CONTENT EDITOR */}
-                                  {isExpanded && (
-                                    <div
-                                      className="notes-mobile-editor animate-entrance"
-                                      style={{
-                                        background: 'var(--bg-card)',
-                                        border: '1px solid var(--accent-blue)',
-                                        borderRadius: '14px',
-                                        padding: '14px',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        gap: '12px',
-                                        marginTop: '2px',
-                                        marginBottom: '6px'
-                                      }}
-                                    >
-                                      <input
-                                        type="text"
-                                        disabled={notesViewMode === 'trash'}
-                                        value={note.title}
-                                        onChange={(e) => {
-                                          const updatedTitle = e.target.value;
-                                          setNotesList(notesList.map(n => n.id === note.id ? { ...n, title: updatedTitle, date: todayKey(userProfile.timezone) } : n));
-                                        }}
-                                        onBlur={() => handleUpdateNoteDb(note)}
-                                        placeholder="Note title..."
-                                        style={{
-                                          width: '100%', fontSize: '1.1rem', fontWeight: 800,
-                                          background: 'var(--bg-main)', color: 'var(--text-main)',
-                                          border: '1px solid var(--border-color)', borderRadius: '10px',
-                                          padding: '10px 12px', outline: 'none'
-                                        }}
-                                      />
-                                      <textarea
-                                         ref={(el) => {
-                                           if (el) {
-                                             el.style.height = 'auto';
-                                             el.style.height = `${Math.max(120, el.scrollHeight)}px`;
-                                           }
-                                         }}
-                                         disabled={notesViewMode === 'trash'}
-                                         value={note.content}
-                                         onChange={(e) => {
-                                           e.target.style.height = 'auto';
-                                           e.target.style.height = `${Math.max(120, e.target.scrollHeight)}px`;
-                                           const updatedContent = e.target.value;
-                                           setNotesList(notesList.map(n => n.id === note.id ? { ...n, content: updatedContent, date: todayKey(userProfile.timezone) } : n));
-                                         }}
-                                         onBlur={() => handleUpdateNoteDb(note)}
-                                         placeholder="Write your diary entry, personal reflection, or goals..."
-                                         style={{
-                                           width: '100%', padding: '12px',
-                                           borderRadius: '10px', background: 'var(--bg-main)',
-                                           color: 'var(--text-main)', border: '1px solid var(--border-color)',
-                                           fontSize: '0.95rem', lineHeight: '1.6', outline: 'none', resize: 'none',
-                                           overflow: 'hidden'
-                                         }}
-                                       />
-                                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            const trashedNote = { ...note, deletedAt: Date.now(), is_trashed: 1 };
-                                            setTrashNotes([trashedNote, ...trashNotes]);
-                                            const nextList = notesList.filter(n => n.id !== note.id);
-                                            setNotesList(nextList);
-                                            handleUpdateNoteDb(trashedNote);
-                                            showToast('Note moved to Trash. Click 🗑️ Trash to restore anytime!');
-                                            if (nextList.length > 0) {
-                                              setActiveNoteId(nextList[0].id);
-                                              setExpandedNoteId(nextList[0].id);
-                                            } else {
-                                              setActiveNoteId(null);
-                                              setExpandedNoteId(null);
-                                            }
-                                          }}
-                                          style={{
-                                            display: 'flex', alignItems: 'center', gap: '6px',
-                                            padding: '8px 14px', borderRadius: '12px',
-                                            background: 'rgba(239, 68, 68, 0.12)', color: '#ef4444',
-                                            border: '1px solid rgba(239, 68, 68, 0.3)',
-                                            fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer'
-                                          }}
-                                          title="Move this note to Trash"
-                                        >
-                                          <Trash2 size={15} /> Delete Note
-                                        </button>
-                                        <button
-                                          type="button"
-                                          className="blue-btn"
-                                          onClick={async () => {
-                                            await handleUpdateNoteDb(note);
-                                            showToast('Successfully saved', 'success');
-                                          }}
-                                          style={{ padding: '8px 18px', fontSize: '0.88rem', fontWeight: 700, borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
-                                        >
-                                          <Save size={16} /> Save Note
-                                        </button>
-                                      </div>
-                                    </div>
-                                  )}
-                                </React.Fragment>
-                              );
-                            })
-                          )}
-                        </div>
-                      ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', overflowY: 'auto' }}>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: '1.4', background: 'rgba(239, 68, 68, 0.08)', padding: '10px', borderRadius: '10px', border: '1px dashed rgba(239, 68, 68, 0.3)' }}>
-                            🗑️ **Trash Bin:** Items here are permanently deleted after **49 days**, or if deleted directly from here.
-                          </div>
-                          {trashNotes.length === 0 ? (
-                            <div style={{ textAlign: 'center', padding: '30px 10px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                              Trash is currently empty.
-                            </div>
-                          ) : (
-                            trashNotes.map(tNote => {
-                              const isExpanded = expandedNoteId === tNote.id;
-                              const isActive = activeNoteId === tNote.id;
-                              const daysLeft = Math.max(0, 49 - Math.floor((Date.now() - (tNote.deletedAt || Date.now())) / (1000 * 60 * 60 * 24)));
-                              return (
-                                <React.Fragment key={tNote.id}>
-                                  <div
-                                    onClick={() => {
-                                      setActiveNoteId(tNote.id);
-                                      setExpandedNoteId(prev => prev === tNote.id ? null : tNote.id);
-                                    }}
-                                    style={{
-                                      padding: '14px 16px', borderRadius: '14px',
-                                      background: isActive ? 'rgba(239, 68, 68, 0.15)' : 'var(--bg-card)',
-                                      border: `1px solid ${isActive ? '#ef4444' : 'var(--border-color)'}`,
-                                      cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '8px'
-                                    }}
-                                  >
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                      <span style={{ fontSize: '0.72rem', color: '#ef4444', fontWeight: 800 }}>
-                                        ⏳ {daysLeft} days until deletion
-                                      </span>
-                                      <div style={{ display: 'flex', gap: '6px' }}>
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            const restoredNote = { ...tNote, is_trashed: 0, deletedAt: null, deleted_at: null };
-                                            handleUpdateNoteDb(restoredNote);
-                                            setNotesList(prev => [restoredNote, ...prev]);
-                                            const remainingTrash = trashNotes.filter(n => n.id !== tNote.id);
-                                            setTrashNotes(remainingTrash);
-                                            if (remainingTrash.length > 0) {
-                                              setActiveNoteId(remainingTrash[0].id);
-                                              setExpandedNoteId(remainingTrash[0].id);
-                                            } else {
-                                              setActiveNoteId(null);
-                                              setExpandedNoteId(null);
-                                            }
-                                            showToast('Note restored to active notes!');
-                                          }}
-                                          style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', border: 'none', borderRadius: '6px', padding: '4px 8px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}
-                                          title="Restore Note to Active"
-                                        >
-                                          ♻️ Restore
-                                        </button>
-                                        <button
-                                          onClick={async (e) => {
-                                            e.stopPropagation();
-                                            const remainingTrash = trashNotes.filter(n => n.id !== tNote.id);
-                                            setTrashNotes(remainingTrash);
-                                            if (activeNoteId === tNote.id) {
-                                              setActiveNoteId(remainingTrash.length > 0 ? remainingTrash[0].id : null);
-                                              setExpandedNoteId(remainingTrash.length > 0 ? remainingTrash[0].id : null);
-                                            }
-                                            try {
-                                              const delRes = await fetch(getApiUrl('/api/notes'), {
-                                                method: 'DELETE',
-                                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                                body: JSON.stringify({ id: tNote.id })
-                                              });
-                                              if (delRes.ok) {
-                                                showToast('Note permanently deleted', 'success');
-                                              } else {
-                                                showToast('Failed to delete note', 'error');
-                                              }
-                                            } catch (err) {
-                                              console.error(err);
-                                              showToast('Failed to delete note', 'error');
-                                            }
-                                          }}
-                                          style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: 'none', borderRadius: '6px', padding: '4px 8px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}
-                                          title="Permanently Delete Now"
-                                        >
-                                          ❌ Delete
-                                        </button>
-                                      </div>
-                                    </div>
-                                    <h5 style={{ fontSize: '0.94rem', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--text-main)' }}>
-                                      {tNote.title}
-                                    </h5>
-                                  </div>
-
-                                  {/* MOBILE INLINE EXPANDED VIEW FOR TRASH NOTE */}
-                                  {isExpanded && (
-                                    <div
-                                      className="notes-mobile-editor animate-entrance"
-                                      style={{
-                                        background: 'var(--bg-card)',
-                                        border: '1px solid #ef4444',
-                                        borderRadius: '14px',
-                                        padding: '14px',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        gap: '12px',
-                                        marginTop: '2px',
-                                        marginBottom: '6px'
-                                      }}
-                                    >
-                                      <div style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--text-main)' }}>{tNote.title}</div>
-                                      <textarea
-                                        disabled
-                                        rows={5}
-                                        value={tNote.content}
-                                        style={{
-                                          width: '100%', padding: '12px', borderRadius: '10px',
-                                          background: 'var(--bg-main)', color: 'var(--text-main)',
-                                          border: '1px solid var(--border-color)', fontSize: '0.95rem', lineHeight: '1.6', outline: 'none',
-                                          resize: 'none', opacity: 0.7
-                                        }}
-                                      />
-                                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
-                                        <span style={{ fontSize: '0.78rem', color: '#ef4444', fontWeight: 700 }}>In Trash Bin</span>
-                                        <div style={{ display: 'flex', gap: '8px' }}>
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              const restoredNote = { ...tNote, is_trashed: 0, deletedAt: null, deleted_at: null };
-                                              handleUpdateNoteDb(restoredNote);
-                                              setNotesList(prev => [restoredNote, ...prev]);
-                                              const remainingTrash = trashNotes.filter(n => n.id !== tNote.id);
-                                              setTrashNotes(remainingTrash);
-                                              if (remainingTrash.length > 0) {
-                                                setActiveNoteId(remainingTrash[0].id);
-                                                setExpandedNoteId(remainingTrash[0].id);
-                                              } else {
-                                                setActiveNoteId(null);
-                                                setExpandedNoteId(null);
-                                              }
-                                              showToast('Note restored to active notes!');
-                                            }}
-                                            className="blue-btn"
-                                            style={{ padding: '6px 14px', fontSize: '0.82rem' }}
-                                          >
-                                            ♻️ Restore Note
-                                          </button>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  )}
-                                </React.Fragment>
-                              );
-                            })
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* RIGHT NOTE CONTENT EDITOR */}
-                    {(() => {
-                      const currentList = notesViewMode === 'active' ? notesList : trashNotes;
-                      const currentNote = currentList.find(n => n.id === activeNoteId);
-                      if (!currentNote) {
-                        return (
-                          <div className="notes-right-col" style={{ flex: 1, background: 'var(--bg-main)', borderRadius: '18px', border: '1px solid var(--border-color)', padding: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', gap: '12px', height: '100%', overflowY: 'auto' }}>
-                            <BookOpen size={40} opacity={0.4} />
-                            <h4 style={{ fontSize: '1.1rem', fontWeight: 700 }}>No Note Selected</h4>
-                            <p style={{ fontSize: '0.85rem' }}>Select a note from the left panel or click "+ New Diary Page / Note".</p>
-                          </div>
-                        );
-                      }
-                      return (
-                        <div className="notes-right-col" style={{ flex: 1, background: 'var(--bg-main)', borderRadius: '18px', border: '1px solid var(--border-color)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px', height: '100%', overflowY: 'auto' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
-                            <div style={{ flex: 1, minWidth: '240px' }}>
-                              <input
-                                type="text"
-                                disabled={notesViewMode === 'trash'}
-                                value={currentNote.title}
-                                onChange={(e) => {
-                                  if (notesViewMode === 'active') {
-                                    setNotesList(notesList.map(n => n.id === currentNote.id ? { ...n, title: e.target.value, date: todayKey(userProfile.timezone) } : n));
-                                  }
-                                }}
-                                onBlur={() => handleUpdateNoteDb(currentNote)}
-                                style={{ width: '100%', fontSize: '1.3rem', fontWeight: 800, background: 'transparent', border: 'none', color: 'var(--text-main)', outline: 'none' }}
-                              />
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                              {notesViewMode === 'active' ? (
-                                <>
-                                  <button
-                                    onClick={() => {
-                                      const trashedNote = { ...currentNote, deletedAt: Date.now(), is_trashed: 1 };
-                                      setTrashNotes([trashedNote, ...trashNotes]);
-                                      const nextList = notesList.filter(n => n.id !== currentNote.id);
-                                      setNotesList(nextList);
-                                      handleUpdateNoteDb(trashedNote);
-                                      showToast('Note moved to Trash. Click 🗑️ Trash to restore anytime!');
-                                      if (nextList.length > 0) {
-                                        setActiveNoteId(nextList[0].id);
-                                      } else {
-                                        setActiveNoteId(null);
-                                      }
-                                    }}
-                                    style={{
-                                      display: 'flex', alignItems: 'center', gap: '6px',
-                                      padding: '8px 14px', borderRadius: '20px',
-                                      background: 'rgba(239, 68, 68, 0.12)', color: '#ef4444',
-                                      border: '1px solid rgba(239, 68, 68, 0.3)',
-                                      fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer',
-                                      transition: 'all 0.2s'
-                                    }}
-                                    title="Move this note to Trash"
-                                  >
-                                    <Trash2 size={16} /> Delete Note
-                                  </button>
-                                </>
-                              ) : (
-                                <div style={{ display: 'flex', gap: '10px' }}>
-                                  <button
-                                    onClick={() => {
-                                      const restoredNote = { ...currentNote, is_trashed: 0, deletedAt: null, deleted_at: null };
-                                      handleUpdateNoteDb(restoredNote);
-                                      setNotesList(prev => [restoredNote, ...prev]);
-                                      const remainingTrash = trashNotes.filter(n => n.id !== currentNote.id);
-                                      setTrashNotes(remainingTrash);
-                                      // Stay on trash tab; select next trash note if available
-                                      if (remainingTrash.length > 0) {
-                                        setActiveNoteId(remainingTrash[0].id);
-                                      } else {
-                                        setActiveNoteId(null);
-                                      }
-                                      showToast('Note restored to active notes!');
-                                    }}
-                                    className="blue-btn"
-                                    style={{ padding: '8px 16px', fontSize: '0.85rem' }}
-                                  >
-                                    ♻️ Restore Note
-                                  </button>
-                                  <button
-                                    onClick={async () => {
-                                      const noteId = currentNote.id;
-                                      const remainingTrash = trashNotes.filter(n => n.id !== noteId);
-                                      setTrashNotes(remainingTrash);
-                                      // Select next trash note or clear selection
-                                      setActiveNoteId(remainingTrash.length > 0 ? remainingTrash[0].id : null);
-                                      try {
-                                        const delRes = await fetch(getApiUrl('/api/notes'), {
-                                          method: 'DELETE',
-                                          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                          body: JSON.stringify({ id: noteId })
-                                        });
-                                        if (delRes.ok) {
-                                          showToast('Note permanently deleted', 'success');
-                                        } else {
-                                          showToast('Failed to delete note', 'error');
-                                        }
-                                      } catch(e){
-                                        console.error(e);
-                                        showToast('Failed to delete note', 'error');
-                                      }
-                                    }}
-                                    style={{ padding: '8px 16px', borderRadius: '20px', background: '#ef4444', color: '#fff', border: 'none', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}
-                                  >
-                                    ❌ Permanently Delete
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          <textarea
-                            ref={(el) => {
-                              if (el) {
-                                el.style.height = 'auto';
-                                el.style.height = `${Math.max(220, el.scrollHeight)}px`;
-                              }
-                            }}
-                            disabled={notesViewMode === 'trash'}
-                            value={currentNote.content}
-                            onChange={(e) => {
-                              e.target.style.height = 'auto';
-                              e.target.style.height = `${Math.max(220, e.target.scrollHeight)}px`;
-                              if (notesViewMode === 'active') {
-                                setNotesList(notesList.map(n => n.id === currentNote.id ? { ...n, content: e.target.value, date: todayKey(userProfile.timezone) } : n));
-                              }
-                            }}
-                            onBlur={() => handleUpdateNoteDb(currentNote)}
-                            placeholder="Write your diary entry, personal reflection, or goals..."
-                            style={{ width: '100%', padding: '18px', borderRadius: '14px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '1rem', lineHeight: '1.6', outline: 'none', resize: 'none', overflow: 'hidden', opacity: notesViewMode === 'trash' ? 0.7 : 1 }}
-                          />
-
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                            <span>{notesViewMode === 'active' ? '' : '🗑️ Viewing note in Trash. Restore it to edit or keep permanently.'}</span>
-                            {notesViewMode === 'active' ? (
-                              <button
-                                onClick={async () => {
-                                  await handleUpdateNoteDb(currentNote);
-                                  showToast('Successfully saved', 'success');
-                                }}
-                                className="blue-btn"
-                                style={{ padding: '8px 20px', fontSize: '0.88rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}
-                              >
-                                <Save size={16} /> Save Note
-                              </button>
-                            ) : (
-                              <span style={{ fontWeight: 700, color: '#ef4444' }}>In Trash Bin</span>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                </div>
+                  <NotesPanel
+                    notesList={notesList}
+                    setNotesList={setNotesList}
+                    activeNoteId={activeNoteId}
+                    setActiveNoteId={setActiveNoteId}
+                    trashNotes={trashNotes}
+                    setTrashNotes={setTrashNotes}
+                    notesViewMode={notesViewMode}
+                    setNotesViewMode={setNotesViewMode}
+                    token={token}
+                    showToast={showToast}
+                    userProfile={userProfile}
+                  />
                 </TabErrorBoundary>
               )}
 

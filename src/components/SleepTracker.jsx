@@ -2,15 +2,26 @@ import React, { useState, useEffect } from 'react';
 import TimeButton from './TimeButton';
 import { Plus, X, Trash2, Edit2, Moon, Clock, Calendar, Activity, Filter } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { todayKey } from '../utils/date';
+import { todayKey, formatDateStr } from '../utils/date';
 import { getApiUrl } from '../utils/apiConfig';
+import { safeStorage } from '../utils/safeStorage';
 
 import ConfirmModal from './ConfirmModal';
 import Modal from './Modal';
 import CustomSelect from './CustomSelect';
 
 export default function SleepTracker({ token, showToast, userProfile, todayStat, sleepLogs = [], setSleepLogs }) {
-  const [logs, setLogs] = useState(() => Array.isArray(sleepLogs) ? sleepLogs : []);
+  const [logs, setLogs] = useState(() => {
+    if (Array.isArray(sleepLogs) && sleepLogs.length > 0) return sleepLogs;
+    try {
+      const cached = safeStorage.getItem('cache_sleepLogs');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return [];
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingLogId, setEditingLogId] = useState(null);
@@ -33,8 +44,9 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
   const [chartType, setChartType] = useState('bar');
 
   useEffect(() => {
-    if (Array.isArray(sleepLogs)) {
+    if (Array.isArray(sleepLogs) && sleepLogs.length > 0) {
       setLogs(sleepLogs);
+      safeStorage.setItem('cache_sleepLogs', JSON.stringify(sleepLogs));
       setIsLoading(false);
     }
   }, [sleepLogs]);
@@ -119,12 +131,15 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
   const fetchLogs = async () => {
     try {
       const res = await fetch(getApiUrl('/api/fitness?type=sleep'), {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
       });
       if (res.ok) {
         const data = await res.json();
-        setLogs(data);
-        setSleepLogs?.(data);
+        if (Array.isArray(data)) {
+          setLogs(data);
+          setSleepLogs?.(data);
+          safeStorage.setItem('cache_sleepLogs', JSON.stringify(data));
+        }
       }
     } catch (error) {
       // quiet background error handling
@@ -135,80 +150,100 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
 
   const handleAddLog = async (e) => {
     e.preventDefault();
-    try {
-      const payload = {
-        ...formData,
-        hours: Number(formData.hours),
-        minutes: Number(formData.minutes)
-      };
+    const hoursNum = formData.hours === '' ? 0 : Number(formData.hours);
+    const minsNum = formData.minutes === '' ? 0 : Number(formData.minutes);
+    const payload = {
+      ...formData,
+      hours: hoursNum,
+      minutes: minsNum
+    };
 
-      if (editingLogId) {
-        payload.id = editingLogId;
-        const res = await fetch(getApiUrl('/api/fitness?type=sleep'), {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify(payload)
-        });
-        
-        if (res.ok) {
-          setLogs(prev => {
-            const next = prev.map(l => l.id === editingLogId ? { ...l, ...payload } : l).sort((a, b) => new Date(b.date) - new Date(a.date));
-            setSleepLogs?.(next);
-            return next;
+    if (editingLogId) {
+      payload.id = editingLogId;
+      const nextLogs = logs.map(l => l.id === editingLogId ? { ...l, ...payload } : l).sort((a, b) => new Date(b.date) - new Date(a.date));
+      
+      // Optimistic UI updates
+      setLogs(nextLogs);
+      setSleepLogs?.(nextLogs);
+      safeStorage.setItem('cache_sleepLogs', JSON.stringify(nextLogs));
+
+      setShowModal(false);
+      setEditingLogId(null);
+      showToast?.('Sleep Log Updated', 'success');
+
+      setFormData({
+        date: todayKey(userProfile?.timezone),
+        hours: 7,
+        minutes: 30,
+        sleep_time: '23:00',
+        wake_time: '06:30',
+        quality: 'Good',
+        notes: ''
+      });
+
+      if (token) {
+        try {
+          await fetch(getApiUrl('/api/fitness?type=sleep'), {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
           });
-          setShowModal(false);
-          setEditingLogId(null);
-          showToast?.('Sleep Log Updated', 'success');
-          setFormData({
-            date: todayKey(userProfile?.timezone),
-            hours: 7,
-            minutes: 30,
-            sleep_time: '23:00',
-            wake_time: '06:30',
-            quality: 'Good',
-            notes: ''
-          });
-        } else {
-          showToast?.('Failed to update log', 'error');
-        }
-      } else {
-        const res = await fetch(getApiUrl('/api/fitness?type=sleep'), {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify(payload)
-        });
-        
-        if (res.ok) {
-          const newLog = await res.json();
-          setLogs(prev => {
-            const next = [newLog, ...prev.filter(l => l.id !== newLog.id)].sort((a, b) => new Date(b.date) - new Date(a.date));
-            setSleepLogs?.(next);
-            return next;
-          });
-          setShowModal(false);
-          setEditingLogId(null);
-          showToast?.('Sleep Log Added', 'success');
-          setFormData({
-            date: todayKey(userProfile?.timezone),
-            hours: 7,
-            minutes: 30,
-            sleep_time: '23:00',
-            wake_time: '06:30',
-            quality: 'Good',
-            notes: ''
-          });
-        } else {
-          showToast?.('Failed to add log', 'error');
+        } catch (error) {
+          console.error('Failed to sync sleep update with server:', error);
         }
       }
-    } catch (error) {
-      showToast?.('Network error', 'error');
+    } else {
+      const tempId = Date.now();
+      const newLog = { ...payload, id: tempId };
+      const nextLogs = [newLog, ...logs.filter(l => l.id !== tempId)].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+      // Optimistic UI updates
+      setLogs(nextLogs);
+      setSleepLogs?.(nextLogs);
+      safeStorage.setItem('cache_sleepLogs', JSON.stringify(nextLogs));
+
+      setShowModal(false);
+      setEditingLogId(null);
+      showToast?.('Sleep Log Added', 'success');
+
+      setFormData({
+        date: todayKey(userProfile?.timezone),
+        hours: 7,
+        minutes: 30,
+        sleep_time: '23:00',
+        wake_time: '06:30',
+        quality: 'Good',
+        notes: ''
+      });
+
+      if (token) {
+        try {
+          const res = await fetch(getApiUrl('/api/fitness?type=sleep'), {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+          });
+          if (res.ok) {
+            const serverLog = await res.json();
+            if (serverLog && serverLog.id) {
+              setLogs(prev => {
+                const replaced = prev.map(l => l.id === tempId ? { ...l, id: serverLog.id } : l);
+                setSleepLogs?.(replaced);
+                safeStorage.setItem('cache_sleepLogs', JSON.stringify(replaced));
+                return replaced;
+              });
+            }
+          }
+        } catch (error) {
+          console.error('Failed to sync sleep add with server:', error);
+        }
+      }
     }
   };
 
@@ -218,28 +253,27 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
     if (!deleteConfirmId) return;
     const id = deleteConfirmId;
     setDeleteConfirmId(null);
-    try {
-      const res = await fetch(getApiUrl('/api/fitness?type=sleep'), {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ id })
-      });
-      
-      if (res.ok) {
-        setLogs(prev => {
-          const next = prev.filter(log => log.id !== id);
-          setSleepLogs?.(next);
-          return next;
+
+    const nextLogs = logs.filter(log => log.id !== id);
+    // Optimistic UI updates
+    setLogs(nextLogs);
+    setSleepLogs?.(nextLogs);
+    safeStorage.setItem('cache_sleepLogs', JSON.stringify(nextLogs));
+    showToast?.('Sleep log deleted', 'info');
+
+    if (token) {
+      try {
+        await fetch(getApiUrl('/api/fitness?type=sleep'), {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ id })
         });
-        showToast?.('Sleep log deleted', 'info');
-      } else {
-        showToast?.('Failed to delete log', 'error');
+      } catch (error) {
+        console.error('Failed to sync sleep deletion with server:', error);
       }
-    } catch (error) {
-      showToast?.('Network error', 'error');
     }
   };
 
@@ -809,7 +843,7 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
               type="date" 
               required 
               value={formData.date}
-              onChange={(e) => setFormData({...formData, date: e.target.value})}
+              onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
               style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.88rem', fontFamily: "'DM Mono', monospace", outline: 'none' }}
             />
           </div>
@@ -819,7 +853,6 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
             <div style={{ flex: 1 }}>
               <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", marginBottom: '6px', color: '#d8f277' }}>BED TIME</label>
               <TimeButton  
-                required
                 value={formData.sleep_time}
                 onChange={(val) => handleTimeChange('sleep_time', val)}
                 style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.92rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", outline: 'none' }}
@@ -828,7 +861,6 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
             <div style={{ flex: 1 }}>
               <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", marginBottom: '6px', color: '#ef6f3e' }}>WAKE TIME</label>
               <TimeButton  
-                required
                 value={formData.wake_time}
                 onChange={(val) => handleTimeChange('wake_time', val)}
                 style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.92rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", outline: 'none' }}
@@ -846,7 +878,7 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
                   min="0"
                   max="24"
                   value={formData.hours}
-                  onChange={(e) => setFormData(prev => ({ ...prev, hours: Math.max(0, parseInt(e.target.value) || 0) }))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, hours: e.target.value === '' ? '' : Math.max(0, parseInt(e.target.value) || 0) }))}
                   style={{ width: '64px', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.92rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", textAlign: 'center', outline: 'none' }}
                 />
                 <span style={{ fontSize: '0.78rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", color: 'var(--text-muted)' }}>HRS</span>
@@ -855,7 +887,7 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
                   min="0"
                   max="59"
                   value={formData.minutes}
-                  onChange={(e) => setFormData(prev => ({ ...prev, minutes: Math.min(59, Math.max(0, parseInt(e.target.value) || 0)) }))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, minutes: e.target.value === '' ? '' : Math.min(59, Math.max(0, parseInt(e.target.value) || 0)) }))}
                   style={{ width: '64px', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.92rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", textAlign: 'center', outline: 'none' }}
                 />
                 <span style={{ fontSize: '0.78rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", color: 'var(--text-muted)' }}>MINS</span>
@@ -865,7 +897,7 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
             <div style={{ textAlign: 'right' }}>
               <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, fontFamily: "'DM Mono', monospace", marginBottom: '4px', textTransform: 'uppercase' }}>SCORE</div>
               <div style={{ fontSize: '1.25rem', fontWeight: 800, fontFamily: "'DM Mono', monospace", color: '#d8f277' }}>
-                {Math.round(((formData.hours * 60 + formData.minutes) / 480) * 100)}%
+                {Math.min(100, Math.round((((Number(formData.hours) || 0) * 60 + (Number(formData.minutes) || 0)) / 480) * 100))}%
               </div>
             </div>
           </div>
@@ -874,7 +906,7 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
             <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, fontFamily: "'DM Mono', monospace", marginBottom: '6px', color: 'var(--text-muted)' }}>QUALITY</label>
             <CustomSelect 
               value={formData.quality} 
-              onChange={(e) => setFormData({...formData, quality: e.target.value})} 
+              onChange={(e) => setFormData(prev => ({ ...prev, quality: e.target.value }))} 
               style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.88rem', fontFamily: "'DM Mono', monospace" }}
               options={[
                 { value: "Excellent", label: "🌟 Excellent (8h+)" },
@@ -891,7 +923,7 @@ export default function SleepTracker({ token, showToast, userProfile, todayStat,
               type="text" 
               placeholder="e.g. Felt well rested, woke up once" 
               value={formData.notes}
-              onChange={(e) => setFormData({...formData, notes: e.target.value})}
+              onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
               style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.88rem', outline: 'none' }}
             />
           </div>

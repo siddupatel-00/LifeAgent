@@ -84,9 +84,14 @@ export default function NotesPanel({
             const baseTitle = getFormattedDateTitle();
             const count = notesList.filter(n => n.title === baseTitle || n.title.startsWith(`${baseTitle} (`)).length;
             const defaultTitle = count > 0 ? `${baseTitle} (${count + 1})` : baseTitle;
-            const defaultContent = 'Type your daily reflection, thoughts, or goals here...';
+            const defaultContent = '';
+            const tempId = Date.now();
+            const tempNote = { id: tempId, title: defaultTitle, content: defaultContent, category: 'Diary', shareWithAi: true, date: new Date().toISOString().split('T')[0] };
+            setNotesList([tempNote, ...notesList]);
+            setActiveNoteId(tempId);
+            setNotesViewMode('active');
             handleCreateNoteDb(defaultTitle, defaultContent, true, (newNote) => {
-              setNotesList([newNote, ...notesList]);
+              setNotesList(prev => prev.map(n => n.id === tempId ? { ...n, id: newNote.id } : n));
               setActiveNoteId(newNote.id);
             });
           }}
@@ -151,8 +156,14 @@ export default function NotesPanel({
                       const baseTitle = getFormattedDateTitle();
                       const count = notesList.filter(n => n.title === baseTitle || n.title.startsWith(`${baseTitle} (`)).length;
                       const defaultTitle = count > 0 ? `${baseTitle} (${count + 1})` : baseTitle;
-                      handleCreateNoteDb(defaultTitle, '', true, (newNote) => {
-                        setNotesList([newNote, ...notesList]);
+                      const defaultContent = '';
+                      const tempId = Date.now();
+                      const tempNote = { id: tempId, title: defaultTitle, content: defaultContent, category: 'Diary', shareWithAi: true, date: new Date().toISOString().split('T')[0] };
+                      setNotesList([tempNote, ...notesList]);
+                      setActiveNoteId(tempId);
+                      setNotesViewMode('active');
+                      handleCreateNoteDb(defaultTitle, defaultContent, true, (newNote) => {
+                        setNotesList(prev => prev.map(n => n.id === tempId ? { ...n, id: newNote.id } : n));
                         setActiveNoteId(newNote.id);
                       });
                     }}
@@ -231,6 +242,7 @@ export default function NotesPanel({
                             const updated = notesList.map(n => n.id === note.id ? { ...n, title: newTitle } : n);
                             setNotesList(updated);
                           }}
+                          onBlur={() => handleUpdateNoteDb(note)}
                           placeholder="Note title..."
                           style={{
                             width: '100%', padding: '8px 10px', borderRadius: '6px',
@@ -254,6 +266,7 @@ export default function NotesPanel({
                             const updated = notesList.map(n => n.id === note.id ? { ...n, content: newContent } : n);
                             setNotesList(updated);
                           }}
+                          onBlur={() => handleUpdateNoteDb(note)}
                           placeholder="Write your note, thoughts, or daily diary entry here..."
                           style={{
                             width: '100%', padding: '8px 10px', borderRadius: '6px',
@@ -374,6 +387,9 @@ export default function NotesPanel({
                         setNotesList(notesList.map(n => n.id === currentNote.id ? { ...n, title: newTitle, date: new Date().toISOString().split('T')[0] } : n));
                       }
                     }}
+                    onBlur={() => {
+                      if (notesViewMode === 'active') handleUpdateNoteDb(currentNote);
+                    }}
                     style={{ width: '100%', fontSize: '1.35rem', fontWeight: 600, background: 'transparent', border: 'none', color: 'var(--text-main)', outline: 'none', fontFamily: "Fraunces, Georgia, serif", letterSpacing: '-0.02em' }}
                   />
                 </div>
@@ -474,6 +490,9 @@ export default function NotesPanel({
                     }
                     setNotesList(notesList.map(n => n.id === currentNote.id ? { ...n, content: newContent, date: new Date().toISOString().split('T')[0] } : n));
                   }
+                }}
+                onBlur={() => {
+                  if (notesViewMode === 'active') handleUpdateNoteDb(currentNote);
                 }}
                 placeholder="Write your diary entry, personal reflection, or goals..."
                 style={{ width: '100%', padding: '16px', borderRadius: '6px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.95rem', lineHeight: '1.65', outline: 'none', resize: 'none', overflow: 'hidden', opacity: notesViewMode === 'trash' ? 0.7 : 1, fontFamily: "'DM Sans', sans-serif", boxSizing: 'border-box' }}
