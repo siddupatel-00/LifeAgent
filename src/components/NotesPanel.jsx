@@ -176,117 +176,52 @@ export default function NotesPanel({
                 [...notesList]
                   .filter(note => !searchQuery || note.title?.toLowerCase().includes(searchQuery.toLowerCase()) || note.content?.toLowerCase().includes(searchQuery.toLowerCase()))
                   .sort((a, b) => new Date(b.updated_at || b.date || 0) - new Date(a.updated_at || a.date || 0)).map(note => (
-                  <React.Fragment key={note.id}>
-                    <div
-                      onClick={() => setActiveNoteId(activeNoteId === note.id ? null : note.id)}
-                      style={{
-                        padding: '12px 14px',
-                        borderRadius: '6px',
-                        background: activeNoteId === note.id ? 'rgba(216, 242, 119, 0.08)' : 'var(--bg-main)',
-                        color: 'var(--text-main)',
-                        border: `1px solid ${activeNoteId === note.id ? '#d8f277' : 'var(--border-color)'}`,
-                        cursor: 'pointer',
-                        transition: 'all 0.15s',
-                        display: 'flex', flexDirection: 'column', gap: '5px'
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ font: "500 0.65rem 'DM Mono', monospace", background: '#d8f277', color: '#11110f', padding: '1px 6px', borderRadius: '3px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                          {note.category || 'General'}
-                        </span>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleUpdateNoteDb({ id: note.id, is_trashed: 1, deleted_at: new Date().toISOString() });
-                              setTrashNotes([{ ...note, deletedAt: Date.now() }, ...trashNotes]);
-                              const next = notesList.filter(n => n.id !== note.id);
-                              setNotesList(next);
-                              if (activeNoteId === note.id) setActiveNoteId(next[0]?.id || null);
-                            }}
-                            style={{ background: 'transparent', border: 'none', color: '#ef6f3e', cursor: 'pointer', padding: '2px', opacity: 0.8 }}
-                            title="Move to Trash"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </div>
-                      <h5 style={{ fontFamily: "Fraunces, Georgia, serif", fontSize: '0.92rem', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', margin: 0, letterSpacing: '-0.01em' }}>
-                        {note.title}
-                      </h5>
-                      <span style={{ font: "400 0.72rem 'DM Mono', monospace", color: 'var(--text-muted)' }}>
-                        {note.date || 'Today'}
+                  <div
+                    key={note.id}
+                    onClick={() => setActiveNoteId(note.id)}
+                    style={{
+                      padding: '12px 14px',
+                      borderRadius: '6px',
+                      background: activeNoteId === note.id ? 'rgba(216, 242, 119, 0.08)' : 'var(--bg-main)',
+                      color: 'var(--text-main)',
+                      border: `1px solid ${activeNoteId === note.id ? '#d8f277' : 'var(--border-color)'}`,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s',
+                      display: 'flex', flexDirection: 'column', gap: '6px',
+                      boxShadow: activeNoteId === note.id ? '0 2px 8px rgba(0,0,0,0.2)' : 'none'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ font: "500 0.65rem 'DM Mono', monospace", background: '#d8f277', color: '#11110f', padding: '1px 6px', borderRadius: '3px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        {note.category || 'DIARY'}
                       </span>
-                    </div>
-
-                    {/* INLINE EXPANDING NOTE EDITOR BOX UNDER SELECTED NOTE */}
-                    {activeNoteId === note.id && (
-                      <div
-                        className="notes-mobile-editor animate-entrance"
-                        style={{
-                          background: 'var(--bg-main)',
-                          border: '1px solid #d8f277',
-                          borderRadius: '6px',
-                          padding: '12px',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '8px',
-                          marginBottom: '6px'
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleUpdateNoteDb({ id: note.id, is_trashed: 1, deleted_at: new Date().toISOString() });
+                          setTrashNotes([{ ...note, deletedAt: Date.now() }, ...trashNotes]);
+                          const next = notesList.filter(n => n.id !== note.id);
+                          setNotesList(next);
+                          if (activeNoteId === note.id) setActiveNoteId(next[0]?.id || null);
                         }}
+                        style={{ background: 'transparent', border: 'none', color: '#ef6f3e', cursor: 'pointer', padding: '2px', opacity: 0.8 }}
+                        title="Move to Trash"
                       >
-                        <input
-                          type="text"
-                          value={note.title}
-                          onChange={(e) => {
-                            const newTitle = e.target.value;
-                            const updated = notesList.map(n => n.id === note.id ? { ...n, title: newTitle } : n);
-                            setNotesList(updated);
-                          }}
-                          onBlur={() => handleUpdateNoteDb(note)}
-                          placeholder="Note title..."
-                          style={{
-                            width: '100%', padding: '8px 10px', borderRadius: '6px',
-                            background: 'var(--bg-card)', color: 'var(--text-main)',
-                            border: '1px solid var(--border-color)', fontSize: '0.9rem', fontWeight: 600, outline: 'none',
-                            fontFamily: "Fraunces, Georgia, serif"
-                          }}
-                        />
-                        <textarea
-                          ref={(el) => {
-                            if (el) {
-                              el.style.height = 'auto';
-                              el.style.height = `${Math.max(100, el.scrollHeight)}px`;
-                            }
-                          }}
-                          value={note.content}
-                          onChange={(e) => {
-                            e.target.style.height = 'auto';
-                            e.target.style.height = `${Math.max(100, e.target.scrollHeight)}px`;
-                            const newContent = e.target.value;
-                            const updated = notesList.map(n => n.id === note.id ? { ...n, content: newContent } : n);
-                            setNotesList(updated);
-                          }}
-                          onBlur={() => handleUpdateNoteDb(note)}
-                          placeholder="Write your note, thoughts, or daily diary entry here..."
-                          style={{
-                            width: '100%', padding: '8px 10px', borderRadius: '6px',
-                            background: 'var(--bg-card)', color: 'var(--text-main)',
-                            border: '1px solid var(--border-color)', fontSize: '0.86rem', outline: 'none',
-                            resize: 'none', overflow: 'hidden', fontFamily: "'DM Sans', sans-serif"
-                          }}
-                        />
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-                          <button
-                            type="button"
-                            onClick={() => handleManualSave(note)}
-                            style={{ padding: '6px 14px', fontSize: '0.78rem', fontWeight: 600, borderRadius: '6px', background: '#d8f277', color: '#11110f', border: '1px solid #d8f277', cursor: 'pointer' }}
-                          >
-                            💾 Save Note
-                          </button>
-                        </div>
-                      </div>
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                    <h5 style={{ fontFamily: "Fraunces, Georgia, serif", fontSize: '0.94rem', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', margin: 0, letterSpacing: '-0.01em', color: 'var(--text-main)' }}>
+                      {note.title || 'Untitled Note'}
+                    </h5>
+                    {note.content && (
+                      <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: '1.4' }}>
+                        {note.content}
+                      </p>
                     )}
-                  </React.Fragment>
+                    <span style={{ font: "400 0.7rem 'DM Mono', monospace", color: 'var(--text-muted)' }}>
+                      {note.date || 'Today'}
+                    </span>
+                  </div>
                 ))
               )}
             </div>
