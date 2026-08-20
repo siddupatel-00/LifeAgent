@@ -29,13 +29,19 @@ export default async function handler(req, res) {
     }
   }
 
-  // GET /api/auth?action=founder -> Fetch messages & user timeline telemetry for owner
+  // GET /api/auth?action=founder -> Fetch messages, user list, telemetry & team members for founder
   if (req.method === 'GET' && (action === 'founder' || action === 'founder_telemetry')) {
+    const passcode = req.headers['x-founder-passcode'] || req.query.passcode;
     const userId = getUserId(req);
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const isMasterPasscode = passcode === '12345678' || (process.env.FOUNDER_PASSCODE && passcode === process.env.FOUNDER_PASSCODE);
+    const isFounderAuth = userId === 'founder_owner' || (typeof userId === 'string' && userId.startsWith('founder_'));
+
+    if (!isMasterPasscode && !isFounderAuth && !userId) {
+      return res.status(401).json({ error: 'Unauthorized founder access' });
+    }
 
     try {
-      const [messagesRes, usersCountRes, timelineRes, unreadRes] = await Promise.all([
+      const [messagesRes, usersCountRes, timelineRes, unreadRes, usersListRes, teamRes] = await Promise.all([
         db.execute({
           sql: 'SELECT id, name, email, message, created_at, is_read FROM founder_messages ORDER BY created_at DESC LIMIT 100'
         }),
@@ -47,12 +53,20 @@ export default async function handler(req, res) {
         }),
         db.execute({
           sql: 'SELECT count(*) as unread FROM founder_messages WHERE is_read = 0'
-        })
+        }),
+        db.execute({
+          sql: 'SELECT id, name, email, phone, handle, theme, ai_name, currency, created_at FROM users ORDER BY id DESC LIMIT 200'
+        }),
+        db.execute({
+          sql: 'SELECT * FROM founder_members ORDER BY id DESC'
+        }).catch(() => ({ rows: [] }))
       ]);
 
       const totalUsers = usersCountRes.rows?.[0]?.total || 0;
       const unreadCount = unreadRes.rows?.[0]?.unread || 0;
       const messages = messagesRes.rows || [];
+      const users = usersListRes.rows || [];
+      const teamMembers = teamRes.rows || [];
       const userTimeline = (timelineRes.rows || []).map(r => ({
         date: r.date || 'Unknown',
         count: Number(r.count) || 0
@@ -62,6 +76,8 @@ export default async function handler(req, res) {
         totalUsers,
         unreadCount,
         messages,
+        users,
+        teamMembers,
         userTimeline
       });
     } catch (err) {
@@ -70,12 +86,85 @@ export default async function handler(req, res) {
     }
   }
 
+  // POST /api/auth?action=founder_login -> Verify founder passcode or team login
+  if (req.method === 'POST' && action === 'founder_login') {
+    const { passcode, email, password } = body;
+    
+    // 1. Master Passcode Verification
+    if (passcode === '12345678' || (process.env.FOUNDER_PASSCODE && passcode === process.env.FOUNDER_PASSCODE)) {
+      const token = signToken('founder_owner');
+      return res.status(200).json({
+        success: true,
+        role: 'owner',
+        isOwner: true,
+        token,
+        message: 'Master Founder access granted.'
+      });
+    }
+
+    // 2. Active Founder Member Email Login
+    if (email) {
+      try {
+        const cleanEmail = email.trim().toLowerCase();
+        const memberRes = await db.execute({
+          sql: 'SELECT * FROM founder_members WHERE LOWER(email) = ?',
+          args: [cleanEmail]
+        });
+        if (memberRes.rows.length === 0) {
+          return res.status(401).json({ error: 'No founder/employee application found for this email.' });
+        }
+        const member = memberRes.rows[0];
+        if (member.status !== 'active') {
+          return res.status(403).json({ error: `Access is currently ${member.status}. Please await owner approval.` });
+        }
+
+        const token = signToken(`founder_member_${member.id}`);
+        return res.status(200).json({
+          success: true,
+          role: member.role || 'founder',
+          isOwner: false,
+          token,
+          message: 'Founder team access granted.'
+        });
+      } catch (err) {
+        return res.status(500).json({ error: 'Failed to authenticate founder member' });
+      }
+    }
+
+    return res.status(401).json({ error: 'Invalid founder passcode or credentials' });
+  }
+
+  // POST /api/auth?action=founder_apply -> Public application for founder / employee access
+  if (req.method === 'POST' && action === 'founder_apply') {
+    const { name, email, role, reason } = body;
+    if (!email || !email.trim()) {
+      return res.status(400).json({ error: 'Email address is required.' });
+    }
+    const cleanEmail = email.trim().toLowerCase();
+    try {
+      await db.execute({
+        sql: `INSERT INTO founder_members (name, email, role, reason, status, created_at, updated_at) 
+              VALUES (?, ?, ?, ?, 'pending', datetime('now'), datetime('now'))
+              ON CONFLICT(email) DO UPDATE SET name = excluded.name, role = excluded.role, reason = excluded.reason, status = 'pending', updated_at = datetime('now')`,
+        args: [name?.trim() || 'Team Member', cleanEmail, role?.trim() || 'founder', reason?.trim() || '']
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: 'Your founder/employee access application has been submitted. The owner will review and approve it.'
+      });
+    } catch (err) {
+      console.error('founder_apply error:', err);
+      return res.status(500).json({ error: 'Failed to submit application.' });
+    }
+  }
+
   // POST /api/auth?action=founder_message (or action=founder)
   if (req.method === 'POST' && (action === 'founder_message' || action === 'founder')) {
     const subAction = body.subAction || body.action || req.query.subAction;
 
     // Public visitor message
-    if (!subAction || subAction === 'send' || body.message) {
+    if (!subAction || subAction === 'send' || (body.message && !subAction)) {
       const { name, email, message } = body;
       if (!message || !message.trim()) {
         return res.status(400).json({ error: 'Message content is required.' });
@@ -92,9 +181,46 @@ export default async function handler(req, res) {
       });
     }
 
-    // Owner actions
+    // Owner/Founder actions
+    const passcode = req.headers['x-founder-passcode'] || req.query.passcode;
     const userId = getUserId(req);
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const isMasterPasscode = passcode === '12345678' || (process.env.FOUNDER_PASSCODE && passcode === process.env.FOUNDER_PASSCODE);
+    const isFounderAuth = userId === 'founder_owner' || (typeof userId === 'string' && userId.startsWith('founder_'));
+
+    if (!isMasterPasscode && !isFounderAuth && !userId) {
+      return res.status(401).json({ error: 'Unauthorized founder action' });
+    }
+
+    // Member approvals & management
+    if (subAction === 'approve_member') {
+      const memberId = body.id || req.query.id;
+      if (!memberId) return res.status(400).json({ error: 'Member ID required' });
+      await db.execute({
+        sql: 'UPDATE founder_members SET status = \'active\', updated_at = datetime(\'now\') WHERE id = ?',
+        args: [memberId]
+      });
+      return res.status(200).json({ success: true, message: 'Member approved and granted founder access.' });
+    }
+
+    if (subAction === 'revoke_member') {
+      const memberId = body.id || req.query.id;
+      if (!memberId) return res.status(400).json({ error: 'Member ID required' });
+      await db.execute({
+        sql: 'UPDATE founder_members SET status = \'revoked\', updated_at = datetime(\'now\') WHERE id = ?',
+        args: [memberId]
+      });
+      return res.status(200).json({ success: true, message: 'Member access revoked.' });
+    }
+
+    if (subAction === 'delete_member') {
+      const memberId = body.id || req.query.id;
+      if (!memberId) return res.status(400).json({ error: 'Member ID required' });
+      await db.execute({
+        sql: 'DELETE FROM founder_members WHERE id = ?',
+        args: [memberId]
+      });
+      return res.status(200).json({ success: true, message: 'Member deleted.' });
+    }
 
     if (subAction === 'mark_read') {
       const messageId = body.id || req.query.id;

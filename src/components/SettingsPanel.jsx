@@ -1,12 +1,11 @@
 import { safeStorage } from '../utils/safeStorage';
 import React, { useState } from 'react';
 import TimeButton from './TimeButton';
-import { Check, User, Bot, Save, LogOut, AlertTriangle, Bell, Moon, Sun, Monitor, Zap } from 'lucide-react';
+import { Check, User, Sparkles, Save, LogOut, AlertTriangle, Bell, Moon, Sun, Monitor, Zap } from 'lucide-react';
 import CustomSelect from './CustomSelect';
 import ConfirmModal from './ConfirmModal';
 import { getApiUrl } from '../utils/apiConfig';
 import { regenerateAllReminders } from '../utils/reminderScheduler';
-import FounderTelemetry from './FounderTelemetry';
 
 const SettingsPanel = ({
   userProfile,
@@ -486,7 +485,7 @@ const SettingsPanel = ({
         {/* SECTION 2: AI Agent & Features */}
         <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '22px' }}>
           <h4 style={{ fontFamily: "Fraunces, Georgia, serif", fontSize: '1.1rem', fontWeight: 600, marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-main)', letterSpacing: '-0.01em' }}>
-            <Bot size={17} color="#d8f277" /> AI Intelligence & Behavior
+            <Sparkles size={17} color="#d8f277" /> AI Intelligence & Behavior
           </h4>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             
@@ -916,9 +915,6 @@ const SettingsPanel = ({
         </div>
 
       </form>
-
-      {/* FOUNDER TELEMETRY & VISITOR MESSAGES */}
-      <FounderTelemetry token={token} showToast={showToast} />
 
       {/* SESSION & LOGOUT */}
       <div style={{ marginTop: '40px', borderTop: '1px dashed var(--border-color)', paddingTop: '24px' }}>

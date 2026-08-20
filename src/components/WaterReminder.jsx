@@ -58,8 +58,19 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
   const [goalInput, setGoalInput] = useState('');
   const [goalInputError, setGoalInputError] = useState('');
 
-  // Custom Quick Presets & Direct Custom Log
-  const [presets, setPresets] = useState(DEFAULT_PRESETS);
+  // Custom Quick Presets & Direct Custom Log (Persisted in safeStorage)
+  const [presets, setPresets] = useState(() => {
+    try {
+      const saved = safeStorage.getItem('water_quick_presets');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map(Number).filter(n => !isNaN(n) && n > 0);
+        }
+      }
+    } catch (e) {}
+    return DEFAULT_PRESETS;
+  });
   const [customMlInput, setCustomMlInput] = useState('');
   const [directLogMl, setDirectLogMl] = useState('');
   const [isAddPresetOpen, setIsAddPresetOpen] = useState(false);
@@ -245,6 +256,7 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
     }
     const updatedPresets = [...presets, ml].sort((a, b) => a - b);
     setPresets(updatedPresets);
+    safeStorage.setItem('water_quick_presets', JSON.stringify(updatedPresets));
     setCustomMlInput('');
     setIsAddPresetOpen(false);
     showToast?.(`Added new +${ml}ml quick button!`, 'success');
@@ -254,6 +266,7 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
     e.stopPropagation();
     const updatedPresets = presets.filter(p => p !== mlToDelete);
     setPresets(updatedPresets);
+    safeStorage.setItem('water_quick_presets', JSON.stringify(updatedPresets));
     showToast?.(`Removed +${mlToDelete}ml quick button`, 'info');
   };
 
@@ -483,7 +496,7 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
               fontFamily: "'DM Mono', monospace"
             }}
           >
-            <Plus size={12} /> {isAddPresetOpen ? 'CLOSE' : '+ CUSTOM PRESET'}
+            <Plus size={12} /> {isAddPresetOpen ? 'CLOSE' : 'CUSTOM PRESET'}
           </button>
         </div>
 
@@ -507,7 +520,7 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
               className="blue-btn"
               style={{ padding: '6px 12px', fontSize: '0.78rem', borderRadius: '6px', fontFamily: "'DM Mono', monospace" }}
             >
-              + ADD PRESET
+              ADD PRESET
             </button>
           </form>
         )}
@@ -526,7 +539,7 @@ export default function WaterReminder({ todayStat, onLogStat, showToast, userPro
                 position: 'relative'
               }}
             >
-              <Plus size={13} color="#d8f277" /> +{ml}ml
+              <Plus size={13} color="#d8f277" /> {ml}ml
               {!DEFAULT_PRESETS.includes(ml) && (
                 <span
                   onClick={(e) => handleDeletePreset(ml, e)}

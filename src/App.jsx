@@ -30,7 +30,7 @@ import { regenerateAllReminders, scheduleHabitReminders, scheduleEventReminders,
 import ReminderEditor from './components/ReminderEditor';
 import LandingPage from './components/landing/LandingPage';
 import Navbar from './components/landing/Navbar';
-import SyncStatusIndicator from './components/SyncStatusIndicator';
+import FounderPortal from './components/FounderPortal';
 
 const getFormattedDateTitle = (dateStr) => {
   let targetDate = new Date();
@@ -135,13 +135,13 @@ export default function App() {
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
   const themeDropdownRef = useRef(null);
 
-  // Sync initial page with URL pathname (/dashboard, /waitlist, /contact, or /)
+  // Sync initial page with URL pathname (/dashboard, /founder, /waitlist, /contact, or /)
   const [currentPage, setCurrentPage] = useState(() => {
     const path = window.location.pathname;
     const token = safeStorage.getItem('token');
     const isAuth = !!token;
     
-    // Logged in users bypass landing page and land directly on dashboard (Today tab)
+    if (path.includes('/founder')) return 'founder';
     if (isAuth) return 'dashboard';
     if (path.includes('/dashboard') || SLUG_TO_TAB[path]) return 'auth';
     if (path.includes('/auth') || path.includes('/login')) return 'auth';
@@ -153,6 +153,12 @@ export default function App() {
   // Helper to change page and URL address bar simultaneously
   const navigate = (page, path) => {
     const isAuth = !!safeStorage.getItem('token');
+    if (page === 'founder') {
+      setCurrentPage('founder');
+      window.history.pushState({}, '', '/founder');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
     if (page === 'auth' && isAuth) {
       setCurrentPage('dashboard');
       window.history.pushState({}, '', '/dashboard');
@@ -169,7 +175,9 @@ export default function App() {
       const path = window.location.pathname;
       const isAuth = !!safeStorage.getItem('token');
       
-      if (path.includes('/dashboard') || SLUG_TO_TAB[path]) {
+      if (path.includes('/founder')) {
+        setCurrentPage('founder');
+      } else if (path.includes('/dashboard') || SLUG_TO_TAB[path]) {
         if (!isAuth) window.history.replaceState({}, '', '/auth');
         setCurrentPage(isAuth ? 'dashboard' : 'auth');
         if (SLUG_TO_TAB[path] && isAuth) {
@@ -2180,7 +2188,7 @@ export default function App() {
   };
 
   return (
-    <div className={(currentPage === 'dashboard' || currentPage === 'landing' || currentPage === 'auth' || currentPage === 'message' || currentPage === 'contact' || currentPage === 'waitlist') ? '' : 'container'} style={(currentPage === 'dashboard' || currentPage === 'landing' || currentPage === 'auth' || currentPage === 'message' || currentPage === 'contact' || currentPage === 'waitlist') ? { minHeight: '100vh', background: 'var(--bg-main)' } : { paddingBottom: '60px' }}>
+    <div className={(currentPage === 'dashboard' || currentPage === 'landing' || currentPage === 'auth' || currentPage === 'message' || currentPage === 'contact' || currentPage === 'waitlist' || currentPage === 'founder') ? '' : 'container'} style={(currentPage === 'dashboard' || currentPage === 'landing' || currentPage === 'auth' || currentPage === 'message' || currentPage === 'contact' || currentPage === 'waitlist' || currentPage === 'founder') ? { minHeight: '100vh', background: 'var(--bg-main)' } : { paddingBottom: '60px' }}>
       
       {/* NAVBAR (For /message and landing pages) */}
       {(currentPage === 'message' || currentPage === 'contact' || currentPage === 'waitlist') && (
@@ -2341,7 +2349,7 @@ export default function App() {
       )}
 
       {/* STOREFRONT FOOTER (Only visible on waitlist and contact pages) */}
-      {currentPage !== 'dashboard' && currentPage !== 'landing' && currentPage !== 'auth' && (
+      {currentPage !== 'dashboard' && currentPage !== 'landing' && currentPage !== 'auth' && currentPage !== 'founder' && (
         <footer className="storefront-footer container">
           <div className="storefront-footer-grid">
             {/* Column 1: Brand */}
@@ -2399,6 +2407,14 @@ export default function App() {
             </div>
           </div>
         </footer>
+      )}
+
+      {/* DEDICATED FOUNDER COMMAND PORTAL (At /founder) */}
+      {currentPage === 'founder' && (
+        <FounderPortal
+          onNavigate={navigate}
+          showToast={showToast}
+        />
       )}
 
       {/* AUTHENTICATION & PASSWORD RESET PAGE (At /auth) */}
@@ -2643,7 +2659,7 @@ export default function App() {
                   className={`sidebar-nav-btn ${activeTab === 'ai' ? 'active' : ''}`}
                 >
                   <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <Bot size={16} /> {aiName} Copilot
+                    <Sparkles size={16} /> {aiName || 'AI'}
                   </span>
                   <span style={{ marginLeft: 'auto', background: 'var(--acid)', color: 'var(--ink)', fontSize: '0.62rem', font: "600 0.62rem 'DM Mono', monospace", padding: '1px 5px', borderRadius: '3px' }}>AI</span>
                 </button>
@@ -2768,14 +2784,12 @@ export default function App() {
                      activeTab === 'calendar' ? 'Calendar' :
                      activeTab === 'analytics' ? 'Master Telemetry' :
                      activeTab === 'settings' ? 'Settings' : 
-                     activeTab === 'ai' ? `${aiName} Copilot` : 'System'}
+                     activeTab === 'ai' ? (aiName || 'AI') : 'System'}
                   </h2>
                 )}
               </div>
 
               <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                  <SyncStatusIndicator />
-
                   {activeTab !== 'ai' && (
                     <button
                       onClick={() => setIsAiSidePanelOpen(!isAiSidePanelOpen)}
@@ -2786,9 +2800,9 @@ export default function App() {
                         border: `1px solid var(--border-color)`,
                         borderRadius: 'var(--radius-sm)'
                       }}
-                      title="Toggle Persistent AI Side Panel"
+                      title="Toggle AI Side Panel"
                     >
-                      <Bot size={15} /> Copilot
+                      <Sparkles size={15} /> {aiName || 'AI'}
                     </button>
                   )}
 
@@ -4832,7 +4846,7 @@ export default function App() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 8px #22c55e' }}></div>
                   <h4 style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: '1.05rem', fontWeight: 600, color: 'var(--text-main)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Bot size={18} color="var(--accent-blue)" /> {aiName}
+                    <Sparkles size={18} color="var(--accent-blue)" /> {aiName || 'AI'}
                   </h4>
                   <span className="ai-timestamp" style={{ background: 'var(--bg-main)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border-color)', fontFamily: "'DM Mono', monospace", fontSize: '0.65rem' }}>
                     ONLINE
@@ -4945,8 +4959,8 @@ export default function App() {
                     <span>Notes</span>
                   </button>
                   <button className={`drawer-btn ${activeTab === 'ai' ? 'active' : ''}`} onClick={() => { setActiveTab('ai'); setShowMobileMoreMenu(false); }}>
-                    <Bot size={20} />
-                    <span>AI</span>
+                    <Sparkles size={20} />
+                    <span>{aiName || 'AI'}</span>
                   </button>
                   <button className={`drawer-btn ${activeTab === 'water' ? 'active' : ''}`} onClick={() => { setActiveTab('water'); setShowMobileMoreMenu(false); }}>
                     <Droplet size={20} />
