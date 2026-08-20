@@ -493,12 +493,17 @@ textarea,
   color: var(--text-main) !important;
   border: 1px solid var(--border-color) !important;
   border-radius: var(--radius-sm) !important;
-  padding: 9px 12px !important;
+  padding: 9px 12px;
   font-family: var(--font-sans) !important;
   font-size: 0.88rem !important;
   font-weight: 500 !important;
   outline: none !important;
   transition: border-color 0.15s ease, background-color 0.15s ease !important;
+}
+
+input.has-left-icon,
+.has-left-icon {
+  padding-left: 38px !important;
 }
 
 input:focus,

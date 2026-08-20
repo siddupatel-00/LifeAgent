@@ -2179,138 +2179,19 @@ export default function App() {
   };
 
   return (
-    <div className={(currentPage === 'dashboard' || currentPage === 'landing' || currentPage === 'auth') ? '' : 'container'} style={(currentPage === 'dashboard' || currentPage === 'landing' || currentPage === 'auth') ? { minHeight: '100vh', background: 'var(--bg-main)' } : { paddingBottom: '60px' }}>
+    <div className={(currentPage === 'dashboard' || currentPage === 'landing' || currentPage === 'auth' || currentPage === 'message' || currentPage === 'contact' || currentPage === 'waitlist') ? '' : 'container'} style={(currentPage === 'dashboard' || currentPage === 'landing' || currentPage === 'auth' || currentPage === 'message' || currentPage === 'contact' || currentPage === 'waitlist') ? { minHeight: '100vh', background: 'var(--bg-main)' } : { paddingBottom: '60px' }}>
       
-      {/* STOREFRONT NAVIGATION BAR (Only visible on waitlist and contact pages) */}
-      {currentPage !== 'dashboard' && currentPage !== 'landing' && currentPage !== 'auth' && (
-        <nav className="nav-bar">
-          <button 
-            className="wordmark"
-            type="button"
-            onClick={() => navigate('landing', '/')}
-          >
-            <span className="wordmark-mark" aria-hidden="true">L</span>
-            <span>lifeagent</span>
-          </button>
-
-          {/* STOREFRONT NAVIGATION LINKS */}
-          <div className="storefront-nav-links" style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <button 
-              className={`storefront-nav-link ${currentPage === 'landing' ? 'active' : ''}`}
-              onClick={() => navigate('landing', '/')}
-            >
-              Systems
-            </button>
-            <button 
-              className={`storefront-nav-link ${currentPage === 'message' ? 'active' : ''}`}
-              onClick={() => navigate('message', '/message')}
-            >
-              Drop a Message
-            </button>
-          </div>
-
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <div className="landing-theme-controls" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <div className="theme-dropdown" ref={themeDropdownRef} style={{ position: 'relative' }}>
-                <button 
-                  className="theme-toggle-btn"
-                  style={{ padding: '8px 12px', borderRadius: 'var(--radius-sm)' }}
-                  onClick={() => setIsThemeMenuOpen(!isThemeMenuOpen)}
-                  title="Change Theme Mode"
-                >
-                  {themeMode === 'dark' && <Moon size={16} />}
-                  {themeMode === 'light' && <Sun size={16} />}
-                  {themeMode === 'pc' && <Monitor size={16} />}
-                  {themeMode === 'night' && <Zap size={16} />}
-                  <ChevronDown size={14} style={{ transform: isThemeMenuOpen ? 'rotate(180deg)' : 'none', transition: '0.2s' }} />
-                </button>
-
-                {isThemeMenuOpen && (() => {
-                  const rect = themeDropdownRef.current?.getBoundingClientRect();
-                  const top = rect ? rect.bottom + 8 : 60;
-                  const right = rect ? Math.max(16, window.innerWidth - rect.right) : 16;
-
-                  const handleSelectTheme = (mode, e) => {
-                    if (e) {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }
-                    setThemeMode(mode);
-                    safeStorage.setItem('themeMode', mode);
-                    setIsThemeMenuOpen(false);
-                  };
-
-                  return ReactDOM.createPortal(
-                    <div 
-                      className="theme-dropdown-menu"
-                      style={{ 
-                        position: 'fixed',
-                        top: `${top}px`,
-                        right: `${right}px`,
-                        left: 'auto',
-                        minWidth: '160px',
-                        zIndex: 99999999,
-                        boxShadow: 'var(--shadow-lg)',
-                        background: 'var(--bg-card)',
-                        border: '1px solid var(--border-color)',
-                        borderRadius: 'var(--radius-sm)',
-                        padding: '6px'
-                      }}
-                    >
-                      <button 
-                        className={`theme-dropdown-item ${themeMode === 'dark' ? 'active' : ''}`}
-                        onMouseDown={(e) => handleSelectTheme('dark', e)}
-                        onClick={(e) => handleSelectTheme('dark', e)}
-                      >
-                        <Moon size={14} /> Dark Mode
-                      </button>
-                      <button 
-                        className={`theme-dropdown-item ${themeMode === 'light' ? 'active' : ''}`}
-                        onMouseDown={(e) => handleSelectTheme('light', e)}
-                        onClick={(e) => handleSelectTheme('light', e)}
-                      >
-                        <Sun size={14} /> Light Mode
-                      </button>
-                      <button 
-                        className={`theme-dropdown-item ${themeMode === 'pc' ? 'active' : ''}`}
-                        onMouseDown={(e) => handleSelectTheme('pc', e)}
-                        onClick={(e) => handleSelectTheme('pc', e)}
-                      >
-                        <Monitor size={14} /> PC / System
-                      </button>
-                      <button 
-                        className={`theme-dropdown-item ${themeMode === 'night' ? 'active' : ''}`}
-                        onMouseDown={(e) => handleSelectTheme('night', e)}
-                        onClick={(e) => handleSelectTheme('night', e)}
-                      >
-                        <Zap size={14} /> 🌌 Night Mode
-                      </button>
-                    </div>,
-                    document.body
-                  );
-                })()}
-              </div>
-            </div>
-
-            {token ? (
-              <button 
-                className="blue-btn" 
-                style={{ padding: '9px 18px', fontSize: '0.85rem' }}
-                onClick={() => navigate('dashboard', '/dashboard')}
-              >
-                Open System <ArrowRight size={15} />
-              </button>
-            ) : (
-              <button 
-                className="blue-btn" 
-                style={{ padding: '9px 18px', fontSize: '0.85rem' }}
-                onClick={() => { setWaitlistSuccess(false); setAuthMode('login'); navigate('auth', '/auth'); }}
-              >
-                Sign In <ArrowRight size={15} />
-              </button>
-            )}
-          </div>
-        </nav>
+      {/* NAVBAR (For /message and landing pages) */}
+      {(currentPage === 'message' || currentPage === 'contact' || currentPage === 'waitlist') && (
+        <Navbar
+          onNavigate={navigate}
+          isAuthenticated={isAuthenticated}
+          onGetStarted={() => { setAuthMode('signup'); navigate('auth', '/auth'); }}
+          onSignIn={() => { setAuthMode('login'); navigate('auth', '/auth'); }}
+          themeMode={themeMode}
+          setThemeMode={setThemeMode}
+          currentPage="message"
+        />
       )}
 
       {/* MODULAR PRODUCTION-READY LANDING PAGE (At /) */}
@@ -2331,7 +2212,7 @@ export default function App() {
 
       {/* DROP A MESSAGE TO FOUNDER PAGE (At /message, /contact) */}
       {(currentPage === 'message' || currentPage === 'contact' || currentPage === 'waitlist') && (
-        <main className="animate-entrance" style={{ maxWidth: '580px', margin: '50px auto', padding: '0 16px' }}>
+        <main className="animate-entrance" style={{ maxWidth: '580px', margin: '40px auto 60px', padding: '0 16px' }}>
           <div className="glass-card" style={{ padding: '40px', textAlign: 'center', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--bg-card)' }}>
             <div style={{ margin: '0 auto 16px', display: 'flex', justifyContent: 'center', cursor: 'pointer' }} onClick={() => navigate('landing', '/')}>
               <span className="wordmark-mark" style={{ width: '48px', height: '48px', fontSize: '1.6rem' }}>L</span>
@@ -2353,16 +2234,17 @@ export default function App() {
                 <div>
                   <label className="micro-label" style={{ display: 'block', marginBottom: '6px' }}>Your Name (Optional)</label>
                   <div style={{ position: 'relative' }}>
-                    <User size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                    <User size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
                     <input 
                       type="text" 
                       placeholder="e.g. Alex"
                       value={founderMsgName} 
                       onChange={(e) => setFounderMsgName(e.target.value)} 
+                      className="has-left-icon"
                       style={{ 
-                        width: '100%', padding: '10px 12px 10px 38px', borderRadius: 'var(--radius-sm)', 
-                        border: '1px solid var(--border-color)', background: 'var(--bg-main)', 
-                        color: 'var(--text-main)', fontSize: '0.9rem', outline: 'none' 
+                        width: '100%', paddingLeft: '38px', paddingRight: '12px', paddingTop: '10px', paddingBottom: '10px',
+                        borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', 
+                        background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box'
                       }}
                     />
                   </div>
@@ -2371,16 +2253,17 @@ export default function App() {
                 <div>
                   <label className="micro-label" style={{ display: 'block', marginBottom: '6px' }}>Your Email or @Handle (Optional)</label>
                   <div style={{ position: 'relative' }}>
-                    <Mail size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                    <Mail size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
                     <input 
                       type="text" 
                       placeholder="e.g. alex@gmail.com or @alex_x"
                       value={founderMsgEmail} 
                       onChange={(e) => setFounderMsgEmail(e.target.value)} 
+                      className="has-left-icon"
                       style={{ 
-                        width: '100%', padding: '10px 12px 10px 38px', borderRadius: 'var(--radius-sm)', 
-                        border: '1px solid var(--border-color)', background: 'var(--bg-main)', 
-                        color: 'var(--text-main)', fontSize: '0.9rem', outline: 'none' 
+                        width: '100%', paddingLeft: '38px', paddingRight: '12px', paddingTop: '10px', paddingBottom: '10px',
+                        borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', 
+                        background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box'
                       }}
                     />
                   </div>
