@@ -2168,10 +2168,10 @@ export default function App() {
   };
 
   return (
-    <div className={(currentPage === 'dashboard' || currentPage === 'landing') ? '' : 'container'} style={(currentPage === 'dashboard' || currentPage === 'landing') ? { minHeight: '100vh', background: 'var(--bg-main)' } : { paddingBottom: '60px' }}>
+    <div className={(currentPage === 'dashboard' || currentPage === 'landing' || currentPage === 'auth') ? '' : 'container'} style={(currentPage === 'dashboard' || currentPage === 'landing' || currentPage === 'auth') ? { minHeight: '100vh', background: 'var(--bg-main)' } : { paddingBottom: '60px' }}>
       
-      {/* STOREFRONT NAVIGATION BAR (Only visible on other non-dashboard pages) */}
-      {currentPage !== 'dashboard' && currentPage !== 'landing' && (
+      {/* STOREFRONT NAVIGATION BAR (Only visible on waitlist and contact pages) */}
+      {currentPage !== 'dashboard' && currentPage !== 'landing' && currentPage !== 'auth' && (
         <nav className="nav-bar">
           <button 
             className="wordmark"
@@ -2451,8 +2451,8 @@ export default function App() {
         </main>
       )}
 
-      {/* STOREFRONT FOOTER (Only visible on other non-dashboard pages) */}
-      {currentPage !== 'dashboard' && currentPage !== 'landing' && (
+      {/* STOREFRONT FOOTER (Only visible on waitlist and contact pages) */}
+      {currentPage !== 'dashboard' && currentPage !== 'landing' && currentPage !== 'auth' && (
         <footer className="storefront-footer container">
           <div className="storefront-footer-grid">
             {/* Column 1: Brand */}
@@ -2516,12 +2516,12 @@ export default function App() {
 
       {/* AUTHENTICATION & PASSWORD RESET PAGE (At /auth) */}
       {currentPage === 'auth' && (
-        <main className="animate-entrance auth-page" style={{ display: 'flex', minHeight: '80vh', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+        <main className="animate-entrance auth-page" style={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', padding: '24px', boxSizing: 'border-box', background: 'var(--bg-main)' }}>
           <div className="auth-card" style={{ background: 'var(--bg-card)', padding: '36px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', width: '100%', maxWidth: '420px', boxShadow: 'var(--shadow-lg)' }}>
             
             {/* Header Title */}
             <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-              <div style={{ margin: '0 auto 14px', display: 'flex', justifyContent: 'center' }}>
+              <div style={{ margin: '0 auto 14px', display: 'flex', justifyContent: 'center', cursor: 'pointer' }} onClick={() => navigate('landing', '/')}>
                 <span className="wordmark-mark" style={{ width: '44px', height: '44px', fontSize: '1.5rem' }}>L</span>
               </div>
               <div className="eyebrow" style={{ justifyContent: 'center', marginBottom: '8px' }}>
@@ -2696,6 +2696,19 @@ export default function App() {
                   </button>
                 </>
               )}
+            </div>
+
+            {/* Back to Home Link */}
+            <div style={{ textAlign: 'center', marginTop: '14px', borderTop: '1px solid var(--border-color)', paddingTop: '12px' }}>
+              <button
+                type="button"
+                onClick={() => navigate('landing', '/')}
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.76rem', font: "500 0.76rem 'DM Mono', monospace", cursor: 'pointer', padding: '2px 0', transition: 'color 0.15s' }}
+                onMouseEnter={e => e.currentTarget.style.color = 'var(--text-main)'}
+                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+              >
+                ← Back to Home
+              </button>
             </div>
           </div>
         </main>
