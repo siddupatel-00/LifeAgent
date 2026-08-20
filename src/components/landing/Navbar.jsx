@@ -14,9 +14,11 @@ export default function Navbar({ onNavigate, isAuthenticated, onGetStarted, onSi
     onSection?.(id);
   };
 
+  const isLight = (typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'light') || themeMode === 'light';
+
   const toggleTheme = () => {
     if (!setThemeMode) return;
-    const next = themeMode === 'light' ? 'dark' : 'light';
+    const next = isLight ? 'dark' : 'light';
     setThemeMode(next);
     localStorage.setItem('themeMode', next);
   };
@@ -31,8 +33,7 @@ export default function Navbar({ onNavigate, isAuthenticated, onGetStarted, onSi
         <nav className={`nav-links ${open ? 'is-open' : ''}`} aria-label="Primary navigation">
           <button type="button" onClick={() => go('systems')}>Systems</button>
           <button type="button" onClick={() => go('stories')}>Field notes</button>
-          {setThemeMode && <button className="nav-icon" type="button" onClick={toggleTheme} aria-label="Toggle theme">{themeMode === 'light' ? <Moon size={17} /> : <Sun size={17} />}</button>}
-          <button type="button" onClick={() => { close(); onSignIn?.(); }}>Sign in</button>
+          {setThemeMode && <button className="nav-icon" type="button" onClick={toggleTheme} aria-label="Toggle theme" title={isLight ? 'Switch to Dark Mode' : 'Switch to Light Mode'}>{isLight ? <Moon size={17} /> : <Sun size={17} />}</button>}
           <button className="nav-cta" type="button" onClick={() => { close(); (isAuthenticated ? onNavigate?.('dashboard', '/dashboard') : onGetStarted?.()); }}>Start building <ArrowUpRight size={15} /></button>
         </nav>
         <button className="nav-menu" type="button" onClick={() => setOpen((value) => !value)} aria-label={open ? 'Close menu' : 'Open menu'} aria-expanded={open}>{open ? <X size={20} /> : <Menu size={20} />}</button>

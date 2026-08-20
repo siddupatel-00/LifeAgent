@@ -142,11 +142,9 @@ export default function App() {
     
     // Logged in users bypass landing page and land directly on dashboard (Today tab)
     if (isAuth) return 'dashboard';
-
     if (path.includes('/dashboard') || SLUG_TO_TAB[path]) return 'auth';
     if (path.includes('/auth') || path.includes('/login')) return 'auth';
-    if (path.includes('/waitlist')) return 'waitlist';
-    if (path.includes('/contact')) return 'contact';
+    if (path.includes('/message') || path.includes('/contact') || path.includes('/waitlist')) return 'message';
     
     return 'landing';
   });
@@ -178,10 +176,8 @@ export default function App() {
         }
       } else if (path.includes('/auth') || path === '/login') {
         setCurrentPage(isAuth ? 'dashboard' : 'auth');
-      } else if (path.includes('/waitlist')) {
-        setCurrentPage('waitlist');
-      } else if (path.includes('/contact')) {
-        setCurrentPage('contact');
+      } else if (path.includes('/message') || path.includes('/contact') || path.includes('/waitlist')) {
+        setCurrentPage('message');
       } else {
         setCurrentPage(isAuth ? 'dashboard' : 'landing');
       }
@@ -189,6 +185,18 @@ export default function App() {
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
+
+  // Form state for Drop a Message to Founder
+  const [founderMsgName, setFounderMsgName] = useState('');
+  const [founderMsgEmail, setFounderMsgEmail] = useState('');
+  const [founderMsgText, setFounderMsgText] = useState('');
+  const [founderMsgSending, setFounderMsgSending] = useState(false);
+  const [founderMsgSuccess, setFounderMsgSuccess] = useState(false);
+
+  // Form state for Waitlist Legacy
+  const [waitlistName, setWaitlistName] = useState('');
+  const [waitlistEmail, setWaitlistEmail] = useState('');
+  const [waitlistSuccess, setWaitlistSuccess] = useState(false);
 
   // Cycling text index for hero animation
   const cycleOptions = ["Money & Spendings", "Study & Pomodoros", "Daily Schedule & AI"];
@@ -207,11 +215,6 @@ export default function App() {
       window.hideSplash();
     }
   }, []);
-
-  // Form state for Waitlist Only
-  const [waitlistName, setWaitlistName] = useState('');
-  const [waitlistEmail, setWaitlistEmail] = useState('');
-  const [waitlistSuccess, setWaitlistSuccess] = useState(false);
 
   // Dashboard state & Global Timeframe Filter
   const [activeTabRaw, setActiveTabRaw] = useState(() => {
@@ -1666,27 +1669,35 @@ export default function App() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleWaitlistSubmit = async (e) => {
+  const handleSendFounderMessage = async (e) => {
     e.preventDefault();
-    if (!waitlistEmail.trim() || !waitlistName.trim()) return;
-    
+    if (!founderMsgText.trim()) {
+      showToast('Please enter a message.', 'error');
+      return;
+    }
+    setFounderMsgSending(true);
     try {
-      const response = await fetch(getApiUrl('/api/auth?action=waitlist'), {
+      const response = await fetch(getApiUrl('/api/founder?action=send'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: waitlistName, email: waitlistEmail })
+        body: JSON.stringify({
+          name: founderMsgName.trim() || 'Anonymous Visitor',
+          email: founderMsgEmail.trim(),
+          message: founderMsgText.trim()
+        })
       });
-      
       if (response.ok) {
-        setWaitlistSuccess(true);
+        setFounderMsgSuccess(true);
+        setFounderMsgText('');
+        showToast('✓ Message sent directly to the founder!', 'success');
       } else {
-        const errorData = await response.json();
-        console.error('Waitlist error:', errorData.error);
-        showToast(errorData.error || 'Failed to join waitlist. Please try again.', 'error');
+        const err = await response.json().catch(() => ({}));
+        showToast(err.error || 'Failed to send message. Please try again.', 'error');
       }
     } catch (err) {
-      console.error('Network error during waitlist submission:', err);
-      showToast('Network error. Please try again later.', 'error');
+      showToast('Connection error. Please try again later.', 'error');
+    } finally {
+      setFounderMsgSending(false);
     }
   };
 
@@ -2191,16 +2202,10 @@ export default function App() {
               Systems
             </button>
             <button 
-              className={`storefront-nav-link ${currentPage === 'waitlist' ? 'active' : ''}`}
-              onClick={() => navigate('waitlist', '/waitlist')}
+              className={`storefront-nav-link ${currentPage === 'message' ? 'active' : ''}`}
+              onClick={() => navigate('message', '/message')}
             >
-              Waitlist
-            </button>
-            <button 
-              className={`storefront-nav-link ${currentPage === 'contact' ? 'active' : ''}`}
-              onClick={() => navigate('contact', '/contact')}
-            >
-              Contact
+              Drop a Message
             </button>
           </div>
 
@@ -2324,128 +2329,128 @@ export default function App() {
         />
       )}
 
-      {/* JOIN WAITLIST PAGE (At /waitlist) */}
-      {currentPage === 'waitlist' && (
-        <main className="animate-entrance" style={{ maxWidth: '520px', margin: '50px auto' }}>
-          <div className="glass-card" style={{ padding: '48px', position: 'relative', border: '2px solid var(--accent-blue)', textAlign: 'center', borderRadius: '24px' }}>
-            <div style={{ background: 'var(--accent-blue-dim)', width: '64px', height: '64px', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
-              <Sparkles size={32} color="var(--accent-blue)" />
+      {/* DROP A MESSAGE TO FOUNDER PAGE (At /message, /contact) */}
+      {(currentPage === 'message' || currentPage === 'contact' || currentPage === 'waitlist') && (
+        <main className="animate-entrance" style={{ maxWidth: '580px', margin: '50px auto', padding: '0 16px' }}>
+          <div className="glass-card" style={{ padding: '40px', textAlign: 'center', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--bg-card)' }}>
+            <div style={{ margin: '0 auto 16px', display: 'flex', justifyContent: 'center', cursor: 'pointer' }} onClick={() => navigate('landing', '/')}>
+              <span className="wordmark-mark" style={{ width: '48px', height: '48px', fontSize: '1.6rem' }}>L</span>
+            </div>
+            
+            <div className="eyebrow" style={{ justifyContent: 'center', marginBottom: '10px' }}>
+              <span className="eyebrow-dot" /> direct note <span className="eyebrow-rule" /> to founder
             </div>
 
-            <h2 style={{ fontSize: '2.2rem', fontWeight: 800, marginBottom: '10px', letterSpacing: '-0.5px' }}>
-              Join the VIP Waitlist
+            <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '2rem', fontWeight: 500, letterSpacing: '-0.04em', marginBottom: '8px', color: 'var(--text-main)' }}>
+              Drop a message to <em>the founder.</em>
             </h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', marginBottom: '28px', lineHeight: 1.6 }}>
-              Enter your email address below to secure early VIP access to LifeAgent personal operating system.
+            <p style={{ color: 'var(--text-muted)', marginBottom: '28px', fontSize: '0.9rem', lineHeight: 1.6 }}>
+              Have feedback, ideas, feature requests, or questions? Send a direct note below. I read and respond to every message.
             </p>
 
-            {!waitlistSuccess ? (
-              <form onSubmit={handleWaitlistSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ textAlign: 'left' }}>
-                  <label className="micro-label" style={{ display: 'block', marginBottom: '6px' }}>Your Name *</label>
+            {!founderMsgSuccess ? (
+              <form onSubmit={handleSendFounderMessage} style={{ display: 'flex', flexDirection: 'column', gap: '14px', textAlign: 'left' }}>
+                <div>
+                  <label className="micro-label" style={{ display: 'block', marginBottom: '6px' }}>Your Name (Optional)</label>
                   <div style={{ position: 'relative' }}>
-                    <User size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                    <User size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                     <input 
                       type="text" 
-                      placeholder="Enter your name..."
-                      value={waitlistName} 
-                      onChange={(e) => setWaitlistName(e.target.value)} 
-                      required
+                      placeholder="e.g. Alex"
+                      value={founderMsgName} 
+                      onChange={(e) => setFounderMsgName(e.target.value)} 
                       style={{ 
-                        width: '100%', padding: '12px 14px 12px 42px', borderRadius: 'var(--radius-sm)', 
+                        width: '100%', padding: '10px 12px 10px 38px', borderRadius: 'var(--radius-sm)', 
                         border: '1px solid var(--border-color)', background: 'var(--bg-main)', 
-                        color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none' 
-                      }}
-                    />
-                  </div>
-                </div>
-                <div style={{ textAlign: 'left' }}>
-                  <label className="micro-label" style={{ display: 'block', marginBottom: '6px' }}>Email Address *</label>
-                  <div style={{ position: 'relative' }}>
-                    <Mail size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                    <input 
-                      type="email" 
-                      placeholder="Enter your email address..."
-                      value={waitlistEmail} 
-                      onChange={(e) => setWaitlistEmail(e.target.value)} 
-                      required
-                      style={{ 
-                        width: '100%', padding: '12px 14px 12px 42px', borderRadius: 'var(--radius-sm)', 
-                        border: '1px solid var(--border-color)', background: 'var(--bg-main)', 
-                        color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none' 
+                        color: 'var(--text-main)', fontSize: '0.9rem', outline: 'none' 
                       }}
                     />
                   </div>
                 </div>
 
-                <button type="submit" className="blue-btn" style={{ justifyContent: 'center', padding: '14px', fontSize: '0.95rem', marginTop: '6px' }}>
-                  Join Waitlist Now <ArrowRight size={16} />
+                <div>
+                  <label className="micro-label" style={{ display: 'block', marginBottom: '6px' }}>Your Email or @Handle (Optional)</label>
+                  <div style={{ position: 'relative' }}>
+                    <Mail size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                    <input 
+                      type="text" 
+                      placeholder="e.g. alex@gmail.com or @alex_x"
+                      value={founderMsgEmail} 
+                      onChange={(e) => setFounderMsgEmail(e.target.value)} 
+                      style={{ 
+                        width: '100%', padding: '10px 12px 10px 38px', borderRadius: 'var(--radius-sm)', 
+                        border: '1px solid var(--border-color)', background: 'var(--bg-main)', 
+                        color: 'var(--text-main)', fontSize: '0.9rem', outline: 'none' 
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="micro-label" style={{ display: 'block', marginBottom: '6px' }}>Your Message *</label>
+                  <textarea 
+                    rows={4}
+                    placeholder="Write your note, feedback, thoughts, or custom inquiries here..."
+                    value={founderMsgText} 
+                    onChange={(e) => setFounderMsgText(e.target.value)} 
+                    required
+                    style={{ 
+                      width: '100%', padding: '12px', borderRadius: 'var(--radius-sm)', 
+                      border: '1px solid var(--border-color)', background: 'var(--bg-main)', 
+                      color: 'var(--text-main)', fontSize: '0.9rem', outline: 'none', resize: 'vertical',
+                      fontFamily: "'DM Sans', sans-serif", minHeight: '110px'
+                    }}
+                  />
+                </div>
+
+                <button 
+                  type="submit" 
+                  disabled={founderMsgSending}
+                  className="blue-btn" 
+                  style={{ justifyContent: 'center', padding: '12px', fontSize: '0.92rem', marginTop: '6px' }}
+                >
+                  {founderMsgSending ? 'Sending Message...' : 'Send Message to Founder ✉️'}
                 </button>
               </form>
             ) : (
-              <div style={{ padding: '24px', background: 'var(--accent-blue-dim)', border: '1px solid var(--accent-blue)', borderRadius: 'var(--radius-sm)', textAlign: 'center' }}>
-                <CheckCircle2 color="var(--accent-blue)" size={44} style={{ margin: '0 auto 12px' }} />
-                <h4 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.4rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '8px' }}>
-                  You're on the VIP list.
+              <div style={{ padding: '24px', background: 'rgba(216, 242, 119, 0.08)', border: '1px solid #d8f277', borderRadius: 'var(--radius-sm)', textAlign: 'center' }}>
+                <CheckCircle2 color="#d8f277" size={44} style={{ margin: '0 auto 12px' }} />
+                <h4 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.35rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '8px' }}>
+                  Message delivered to founder.
                 </h4>
-                <p style={{ color: 'var(--text-muted)', marginBottom: '24px', lineHeight: 1.6, fontSize: '0.9rem' }}>
-                  We have saved <strong>{waitlistEmail}</strong>. We'll notify you the moment early access invites open.
+                <p style={{ color: 'var(--text-muted)', marginBottom: '20px', lineHeight: 1.6, fontSize: '0.88rem' }}>
+                  Thank you for reaching out! Your note has been received and will be reviewed shortly.
                 </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <button className="secondary-btn" style={{ width: '100%', justifyContent: 'center', padding: '12px' }} onClick={() => navigate('landing', '/')}>
+                <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                  <button 
+                    type="button"
+                    className="secondary-btn" 
+                    style={{ padding: '10px 18px', fontSize: '0.85rem' }} 
+                    onClick={() => { setFounderMsgSuccess(false); setFounderMsgText(''); }}
+                  >
+                    Send Another Note
+                  </button>
+                  <button 
+                    type="button"
+                    className="blue-btn" 
+                    style={{ padding: '10px 18px', fontSize: '0.85rem' }} 
+                    onClick={() => navigate('landing', '/')}
+                  >
                     Back to Home
                   </button>
                 </div>
               </div>
             )}
-          </div>
-        </main>
-      )}
 
-      {/* CONTACT US PAGE (At /contact) */}
-      {currentPage === 'contact' && (
-        <main className="animate-entrance" style={{ maxWidth: '640px', margin: '50px auto' }}>
-          <div className="glass-card" style={{ padding: '40px', textAlign: 'center', borderRadius: 'var(--radius-md)' }}>
-            <div style={{ margin: '0 auto 18px', display: 'flex', justifyContent: 'center' }}>
-              <span className="wordmark-mark" style={{ width: '48px', height: '48px', fontSize: '1.6rem' }}>L</span>
-            </div>
-            
-            <div className="eyebrow" style={{ justifyContent: 'center', marginBottom: '12px' }}>
-              <span className="eyebrow-dot" /> direct channel <span className="eyebrow-rule" /> contact
-            </div>
-
-            <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '2.2rem', fontWeight: 500, letterSpacing: '-0.04em', marginBottom: '10px', color: 'var(--text-main)' }}>
-              Connect with <em>the builder.</em>
-            </h2>
-            <p style={{ color: 'var(--text-muted)', marginBottom: '28px', fontSize: '0.95rem', lineHeight: 1.6 }}>
-              LifeAgent is personal software handcrafted for clarity. Reach out directly for support, feedback, or licensing.
-            </p>
-
-            <div className="glass-card" style={{ padding: '22px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '14px', borderRadius: 'var(--radius-sm)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', textAlign: 'left' }}>
-                <div style={{ background: 'var(--ink)', color: 'var(--acid)', width: '42px', height: '42px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '1.2rem', border: '1px solid var(--border-color)' }}>
-                  𝕏
-                </div>
-                <div>
-                  <div className="micro-label" style={{ marginBottom: '2px' }}>Official Creator Account</div>
-                  <div style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-main)', fontFamily: 'var(--font-mono)' }}>@Zenitsu_T7</div>
-                </div>
-              </div>
-              <a 
-                href="https://twitter.com/Zenitsu_T7" 
-                target="_blank" 
-                rel="noreferrer"
-                style={{ textDecoration: 'none' }}
+            <div style={{ marginTop: '24px', borderTop: '1px solid var(--border-color)', paddingTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+              <span>Official Creator: <strong style={{ color: 'var(--text-main)' }}>@Zenitsu_T7</strong></span>
+              <button 
+                type="button" 
+                onClick={() => navigate('landing', '/')}
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', font: "500 0.76rem 'DM Mono', monospace" }}
               >
-                <button className="blue-btn" style={{ padding: '9px 16px', fontSize: '0.85rem' }}>
-                  Message on X <ExternalLink size={14} />
-                </button>
-              </a>
-            </div>
-
-            <div style={{ textAlign: 'left', color: 'var(--text-muted)', fontSize: '0.86rem', lineHeight: 1.6, borderTop: '1px solid var(--border-color)', paddingTop: '18px' }}>
-              <span className="micro-label" style={{ display: 'block', marginBottom: '6px', color: 'var(--orange)' }}>Direct Support</span>
-              <p style={{ margin: 0 }}>For custom inquiries or feedback, send a direct message on X to <strong>@Zenitsu_T7</strong>. We read and respond to every note.</p>
+                ← Back to Home
+              </button>
             </div>
           </div>
         </main>
@@ -2474,8 +2479,7 @@ export default function App() {
               <h4 className="storefront-footer-col-title">Navigation</h4>
               <div className="storefront-footer-links">
                 <button className="storefront-footer-link" onClick={() => navigate('landing', '/')}>Systems</button>
-                <button className="storefront-footer-link" onClick={() => navigate('waitlist', '/waitlist')}>Waitlist</button>
-                <button className="storefront-footer-link" onClick={() => navigate('contact', '/contact')}>Contact</button>
+                <button className="storefront-footer-link" onClick={() => navigate('message', '/message')}>Drop a message to founder</button>
                 <button className="storefront-footer-link" onClick={() => { setAuthMode('login'); navigate('auth', '/auth'); }}>Sign In</button>
               </div>
             </div>
@@ -2497,8 +2501,7 @@ export default function App() {
               <h4 className="storefront-footer-col-title">Connect</h4>
               <div className="storefront-footer-links">
                 <a href="https://twitter.com/Zenitsu_T7" target="_blank" rel="noreferrer" className="storefront-footer-link">Creator X (@Zenitsu_T7)</a>
-                <button className="storefront-footer-link" onClick={() => navigate('contact', '/contact')}>Support</button>
-                <button className="storefront-footer-link" onClick={() => navigate('waitlist', '/waitlist')}>VIP Early Access</button>
+                <button className="storefront-footer-link" onClick={() => navigate('message', '/message')}>Drop a message to founder</button>
               </div>
             </div>
           </div>

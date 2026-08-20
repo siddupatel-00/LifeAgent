@@ -6,6 +6,7 @@ import CustomSelect from './CustomSelect';
 import ConfirmModal from './ConfirmModal';
 import { getApiUrl } from '../utils/apiConfig';
 import { regenerateAllReminders } from '../utils/reminderScheduler';
+import FounderTelemetry from './FounderTelemetry';
 
 const SettingsPanel = ({
   userProfile,
@@ -915,6 +916,9 @@ const SettingsPanel = ({
         </div>
 
       </form>
+
+      {/* FOUNDER TELEMETRY & VISITOR MESSAGES */}
+      <FounderTelemetry token={token} showToast={showToast} />
 
       {/* SESSION & LOGOUT */}
       <div style={{ marginTop: '40px', borderTop: '1px dashed var(--border-color)', paddingTop: '24px' }}>

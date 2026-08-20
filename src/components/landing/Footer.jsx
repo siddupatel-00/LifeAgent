@@ -29,11 +29,8 @@ export default function Footer({ onNavigate, onSignIn, onBackToTop }) {
               <a href="https://x.com" target="_blank" rel="noreferrer">
                 X / Twitter <ArrowUpRight size={13} />
               </a>
-              <button type="button" onClick={onSignIn}>
-                Sign in
-              </button>
-              <button type="button" onClick={() => onNavigate?.('contact', '/contact')}>
-                Contact
+              <button type="button" onClick={() => onNavigate?.('message', '/message')}>
+                Drop a message to founder
               </button>
             </div>
           </div>
