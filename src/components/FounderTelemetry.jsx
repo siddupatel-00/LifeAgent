@@ -16,7 +16,7 @@ export default function FounderTelemetry({ token, showToast }) {
     if (!token) return;
     setLoading(true);
     try {
-      const res = await fetch(getApiUrl('/api/founder'), {
+      const res = await fetch(getApiUrl('/api/auth?action=founder'), {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -38,13 +38,13 @@ export default function FounderTelemetry({ token, showToast }) {
 
   const handleMarkRead = async (msgId) => {
     try {
-      const res = await fetch(getApiUrl('/api/founder?action=mark_read'), {
+      const res = await fetch(getApiUrl('/api/auth?action=founder'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ id: msgId })
+        body: JSON.stringify({ subAction: 'mark_read', id: msgId })
       });
       if (res.ok) {
         setData(prev => ({
@@ -61,13 +61,13 @@ export default function FounderTelemetry({ token, showToast }) {
 
   const handleDeleteMessage = async (msgId) => {
     try {
-      const res = await fetch(getApiUrl('/api/founder?action=delete'), {
+      const res = await fetch(getApiUrl('/api/auth?action=founder'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ id: msgId })
+        body: JSON.stringify({ subAction: 'delete', id: msgId })
       });
       if (res.ok) {
         setData(prev => ({

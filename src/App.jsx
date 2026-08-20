@@ -1677,7 +1677,7 @@ export default function App() {
     }
     setFounderMsgSending(true);
     try {
-      const response = await fetch(getApiUrl('/api/founder?action=send'), {
+      const response = await fetch(getApiUrl('/api/auth?action=founder_message'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

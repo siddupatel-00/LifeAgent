@@ -29,6 +29,98 @@ export default async function handler(req, res) {
     }
   }
 
+  // GET /api/auth?action=founder -> Fetch messages & user timeline telemetry for owner
+  if (req.method === 'GET' && (action === 'founder' || action === 'founder_telemetry')) {
+    const userId = getUserId(req);
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+    try {
+      const [messagesRes, usersCountRes, timelineRes, unreadRes] = await Promise.all([
+        db.execute({
+          sql: 'SELECT id, name, email, message, created_at, is_read FROM founder_messages ORDER BY created_at DESC LIMIT 100'
+        }),
+        db.execute({
+          sql: 'SELECT count(*) as total FROM users'
+        }),
+        db.execute({
+          sql: `SELECT date(created_at) as date, count(*) as count FROM users WHERE created_at IS NOT NULL GROUP BY date(created_at) ORDER BY date DESC LIMIT 30`
+        }),
+        db.execute({
+          sql: 'SELECT count(*) as unread FROM founder_messages WHERE is_read = 0'
+        })
+      ]);
+
+      const totalUsers = usersCountRes.rows?.[0]?.total || 0;
+      const unreadCount = unreadRes.rows?.[0]?.unread || 0;
+      const messages = messagesRes.rows || [];
+      const userTimeline = (timelineRes.rows || []).map(r => ({
+        date: r.date || 'Unknown',
+        count: Number(r.count) || 0
+      }));
+
+      return res.status(200).json({
+        totalUsers,
+        unreadCount,
+        messages,
+        userTimeline
+      });
+    } catch (err) {
+      console.error('Founder telemetry error:', err);
+      return res.status(500).json({ error: 'Failed to fetch founder data' });
+    }
+  }
+
+  // POST /api/auth?action=founder_message (or action=founder)
+  if (req.method === 'POST' && (action === 'founder_message' || action === 'founder')) {
+    const subAction = body.subAction || body.action || req.query.subAction;
+
+    // Public visitor message
+    if (!subAction || subAction === 'send' || body.message) {
+      const { name, email, message } = body;
+      if (!message || !message.trim()) {
+        return res.status(400).json({ error: 'Message content is required.' });
+      }
+
+      await db.execute({
+        sql: 'INSERT INTO founder_messages (name, email, message, created_at, is_read) VALUES (?, ?, ?, datetime(\'now\'), 0)',
+        args: [name?.trim() || 'Anonymous Visitor', email?.trim() || '', message.trim()]
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: 'Your message has been sent directly to the founder. Thank you!'
+      });
+    }
+
+    // Owner actions
+    const userId = getUserId(req);
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+    if (subAction === 'mark_read') {
+      const messageId = body.id || req.query.id;
+      if (!messageId) return res.status(400).json({ error: 'Message ID is required.' });
+
+      await db.execute({
+        sql: 'UPDATE founder_messages SET is_read = 1 WHERE id = ?',
+        args: [messageId]
+      });
+
+      return res.status(200).json({ success: true, message: 'Message marked as read.' });
+    }
+
+    if (subAction === 'delete') {
+      const messageId = body.id || req.query.id;
+      if (!messageId) return res.status(400).json({ error: 'Message ID is required.' });
+
+      await db.execute({
+        sql: 'DELETE FROM founder_messages WHERE id = ?',
+        args: [messageId]
+      });
+
+      return res.status(200).json({ success: true, message: 'Message deleted.' });
+    }
+  }
+
   // GET /api/auth?action=me -> Session validation
   if (req.method === 'GET' && action === 'me') {
     const userId = getUserId(req);
