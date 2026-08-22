@@ -33,10 +33,11 @@ export default async function handler(req, res) {
   if (req.method === 'GET' && (action === 'founder' || action === 'founder_telemetry')) {
     const passcode = req.headers['x-founder-passcode'] || req.query.passcode;
     const userId = getUserId(req);
-    const isMasterPasscode = passcode === '12345678' || (process.env.FOUNDER_PASSCODE && passcode === process.env.FOUNDER_PASSCODE);
+    const isMasterPasscode = process.env.FOUNDER_PASSCODE && passcode === process.env.FOUNDER_PASSCODE;
     const isFounderAuth = userId === 'founder_owner' || (typeof userId === 'string' && userId.startsWith('founder_'));
 
-    if (!isMasterPasscode && !isFounderAuth && !userId) {
+    // Strict: only master passcode or founder-role tokens may access telemetry
+    if (!isMasterPasscode && !isFounderAuth) {
       return res.status(401).json({ error: 'Unauthorized founder access' });
     }
 
@@ -91,7 +92,7 @@ export default async function handler(req, res) {
     const { passcode, email, password } = body;
     
     // 1. Master Passcode Verification
-    if (passcode === '12345678' || (process.env.FOUNDER_PASSCODE && passcode === process.env.FOUNDER_PASSCODE)) {
+    if (process.env.FOUNDER_PASSCODE && passcode === process.env.FOUNDER_PASSCODE) {
       const token = signToken('founder_owner');
       return res.status(200).json({
         success: true,
@@ -102,8 +103,11 @@ export default async function handler(req, res) {
       });
     }
 
-    // 2. Active Founder Member Email Login
+    // 2. Active Founder Member Email Login (requires team passcode too)
     if (email) {
+      if (!process.env.FOUNDER_PASSCODE || passcode !== process.env.FOUNDER_PASSCODE) {
+        return res.status(401).json({ error: 'Invalid passcode' });
+      }
       try {
         const cleanEmail = email.trim().toLowerCase();
         const memberRes = await db.execute({
@@ -184,10 +188,10 @@ export default async function handler(req, res) {
     // Owner/Founder actions
     const passcode = req.headers['x-founder-passcode'] || req.query.passcode;
     const userId = getUserId(req);
-    const isMasterPasscode = passcode === '12345678' || (process.env.FOUNDER_PASSCODE && passcode === process.env.FOUNDER_PASSCODE);
+    const isMasterPasscode = process.env.FOUNDER_PASSCODE && passcode === process.env.FOUNDER_PASSCODE;
     const isFounderAuth = userId === 'founder_owner' || (typeof userId === 'string' && userId.startsWith('founder_'));
 
-    if (!isMasterPasscode && !isFounderAuth && !userId) {
+    if (!isMasterPasscode && !isFounderAuth) {
       return res.status(401).json({ error: 'Unauthorized founder action' });
     }
 

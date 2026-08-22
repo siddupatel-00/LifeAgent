@@ -13,15 +13,17 @@ export default async function handler(req, res) {
   if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
   try {
-    // ─── GET: Parallel fetch calendar_events + reminders (NO N+1 queries) ──────
+    // ─── GET: Mark past events expired, then fetch events + reminders ──────────
     if (req.method === 'GET') {
       const today = new Date().toISOString().split('T')[0];
 
-      const [_, eventsRes, remRes] = await Promise.all([
-        db.execute({
-          sql: `UPDATE calendar_events SET status = 'expired' WHERE user_id = ? AND date < ? AND (status = 'upcoming' OR status IS NULL) AND status != 'completed'`,
-          args: [userId, today]
-        }).catch(() => {}),
+      // Run status update first so the SELECT below reflects it
+      await db.execute({
+        sql: `UPDATE calendar_events SET status = 'expired' WHERE user_id = ? AND date < ? AND (status = 'upcoming' OR status IS NULL) AND status != 'completed'`,
+        args: [userId, today]
+      }).catch(() => {});
+
+      const [eventsRes, remRes] = await Promise.all([
         db.execute({ sql: 'SELECT * FROM calendar_events WHERE user_id = ? ORDER BY date ASC', args: [userId] }),
         db.execute({ sql: "SELECT * FROM reminders WHERE entity_type = 'event' AND user_id = ?", args: [userId] })
       ]);
@@ -97,7 +99,7 @@ export default async function handler(req, res) {
       }
 
       if (Array.isArray(reminders)) {
-        batchStatements.push({ sql: "DELETE FROM reminders WHERE entity_type = 'event' AND entity_id = ?", args: [id] });
+        batchStatements.push({ sql: "DELETE FROM reminders WHERE entity_type = 'event' AND entity_id = ? AND user_id = ?", args: [id, userId] });
         for (const rem of reminders) {
           const timeVal = rem.reminder_time || rem.time || rem.reminderTime || null;
           batchStatements.push({
@@ -111,15 +113,17 @@ export default async function handler(req, res) {
         await db.batch(batchStatements, 'write');
       }
 
-      return res.status(200).json({ success: true });
+      const updated = await db.execute({ sql: 'SELECT * FROM calendar_events WHERE id = ?', args: [id] });
+      return res.status(200).json(updated.rows[0] || { success: true });
     }
 
     // ─── DELETE: Delete event + reminders in 1 batch ───────────────────────────
     if (req.method === 'DELETE') {
-      const { id } = req.body;
+      const id = req.query?.id ?? req.body?.id;
+      if (!id) return res.status(400).json({ error: 'Event ID required' });
       await db.batch([
         { sql: 'DELETE FROM calendar_events WHERE id = ? AND user_id = ?', args: [id, userId] },
-        { sql: "DELETE FROM reminders WHERE entity_type = 'event' AND entity_id = ?", args: [id] }
+        { sql: "DELETE FROM reminders WHERE entity_type = 'event' AND entity_id = ? AND user_id = ?", args: [id, userId] }
       ], 'write');
       return res.status(200).json({ success: true });
     }

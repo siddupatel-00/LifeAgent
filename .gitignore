@@ -38,3 +38,6 @@ dist-ssr
 android/
 *.apk
 LifeAgent.apk
+
+local.db
+*.db

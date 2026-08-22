@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { Mail, Send, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Send, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { api } from '../services/api';
-import { safeStorage } from '../utils/safeStorage';
 
 export default function MessagePage() {
   const [activeForm, setActiveForm] = useState<'contact' | 'waitlist'>('contact');

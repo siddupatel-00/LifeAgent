@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { getApiUrl } from '../utils/apiUrl';
 import { safeStorage } from '../utils/safeStorage';
 import type { UserProfile, ThemeMode } from '../types';
 
@@ -76,19 +77,24 @@ export const initializeAuth = async () => {
     setLoading(false);
     return;
   }
-  
+
   try {
-    const response = await fetch(getApiUrl('/api/auth/me'), {
+    const response = await fetch(getApiUrl('/api/auth?action=me'), {
       headers: { 'Authorization': `Bearer ${token}` },
     });
     if (response.ok) {
-      const user = await response.json();
-      setUser(user);
-    } else {
+      const data = await response.json();
+      setUser(data.user ?? data);
+    } else if (response.status === 401) {
+      // Token is genuinely invalid - clear it
       useAuthStore.getState().logout();
+    } else {
+      // Transient server error - keep token, let user retry
+      setLoading(false);
+      return;
     }
   } catch {
-    useAuthStore.getState().logout();
+    // Network error - don't log out, user may be offline
   } finally {
     setLoading(false);
   }

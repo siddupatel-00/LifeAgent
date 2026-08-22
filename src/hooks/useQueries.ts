@@ -1,42 +1,43 @@
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../services/api';
-import { useDataStore } from '../stores/dataStore';
 import { useAuthStore } from '../stores/authStore';
-import { useUIStore } from '../stores/uiStore';
+import type { Habit, TodayItem, Transaction, Workout, BodyStat, SleepLog, CalendarEvent, Note } from '../types';
 
-export const useAuth = () => {
-  const { token, user, isAuthenticated, isLoading, setToken, setUser, logout, updateUserProfile } = useAuthStore();
-  return { token, user, isAuthenticated, isLoading, setToken, setUser, logout, updateUserProfile };
-};
+/** Shared hook options: only fetch when authenticated. */
+const authQuery = <T>(queryKey: string[], queryFn: () => Promise<T>, enabled: boolean) => ({
+  queryKey,
+  queryFn,
+  enabled,
+  staleTime: 60 * 1000,
+  retry: 1,
+});
 
 export const useHabits = () => {
-  const { token } = useAuthStore();
-  const { setHabits, addHabit, updateHabit, removeHabit } = useDataStore();
-  
-  const query = useQuery({
-    queryKey: ['habits'],
-    queryFn: () => api.habits.list(),
-    enabled: !!token,
-    staleTime: 5 * 60 * 1000,
-  });
+  const token = useAuthStore((s) => s.token);
+  const queryClient = useQueryClient();
+
+  const query = useQuery(authQuery(['habits'], () => api.habits.list(), !!token));
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['habits'] });
 
   const createMutation = useMutation({
     mutationFn: (data: Partial<Habit>) => api.habits.create(data),
-    onSuccess: (newHabit) => addHabit(newHabit),
+    onSuccess: invalidate,
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<Habit> }) => api.habits.update(id, data),
-    onSuccess: (updatedHabit) => updateHabit(updatedHabit.id, updatedHabit),
+    mutationFn: ({ id, data }: { id: number; data: Partial<Habit> }) => api.habits.update(id, data),
+    onSuccess: invalidate,
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.habits.delete(id),
-    onSuccess: (_, id) => removeHabit(id),
+    mutationFn: (id: number) => api.habits.delete(id),
+    onSuccess: invalidate,
   });
 
   return {
-    habits: query.data || [],
+    habits: (query.data || []) as Habit[],
     isLoading: query.isLoading,
     error: query.error,
     refetch: query.refetch,
@@ -47,83 +48,83 @@ export const useHabits = () => {
 };
 
 export const useTodayItems = (date?: string) => {
-  const { token } = useAuthStore();
-  const { setTodayItems, addTodayItem, updateTodayItem, removeTodayItem } = useDataStore();
-  
-  const query = useQuery({
-    queryKey: ['today', date],
-    queryFn: () => api.today.list(date),
-    enabled: !!token,
-    staleTime: 2 * 60 * 1000,
-  });
+  const token = useAuthStore((s) => s.token);
+  const queryClient = useQueryClient();
+
+  const query = useQuery(authQuery(['today', date || 'all'], () => api.today.list(date), !!token));
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['today'] });
+  const invalidateHabits = () => queryClient.invalidateQueries({ queryKey: ['habits'] });
 
   const createMutation = useMutation({
     mutationFn: (data: Partial<TodayItem>) => api.today.create(data),
-    onSuccess: (newItem) => addTodayItem(newItem),
+    onSuccess: () => { invalidate(); invalidateHabits(); },
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<TodayItem> }) => api.today.update(id, data),
-    onSuccess: (updatedItem) => updateTodayItem(updatedItem.id, updatedItem),
+    mutationFn: ({ id, data }: { id: number; data: Partial<TodayItem> }) => api.today.update(id, data),
+    onSuccess: invalidate,
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: ({ id, checked }: { id: number; checked: boolean }) => api.today.update(id, { checked }),
+    onMutate: async ({ id, checked }) => {
+      // Optimistic toggle for instant UI feedback
+      await queryClient.cancelQueries({ queryKey: ['today', date || 'all'] });
+      const previous = queryClient.getQueryData<any[]>(['today', date || 'all']);
+      queryClient.setQueryData<any[]>(['today', date || 'all'], (old) =>
+        old ? old.map(item => item.id === id ? { ...item, checked: checked ? 1 : 0 } : item) : old
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) queryClient.setQueryData(['today', date || 'all'], context.previous);
+    },
+    onSettled: invalidate,
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.today.delete(id),
-    onSuccess: (_, id) => removeTodayItem(id),
-  });
-
-  const completeMutation = useMutation({
-    mutationFn: (id: string) => api.today.complete(id),
-    onSuccess: (updatedItem) => updateTodayItem(updatedItem.id, updatedItem),
-  });
-
-  const uncompleteMutation = useMutation({
-    mutationFn: (id: string) => api.today.uncomplete(id),
-    onSuccess: (updatedItem) => updateTodayItem(updatedItem.id, updatedItem),
+    mutationFn: (id: number) => api.today.delete(id),
+    onSuccess: invalidate,
   });
 
   return {
-    items: query.data || [],
+    items: (query.data || []) as TodayItem[],
     isLoading: query.isLoading,
     error: query.error,
     refetch: query.refetch,
     createItem: createMutation.mutateAsync,
     updateItem: updateMutation.mutateAsync,
+    toggleItem: toggleMutation.mutateAsync,
     deleteItem: deleteMutation.mutateAsync,
-    completeItem: completeMutation.mutateAsync,
-    uncompleteItem: uncompleteMutation.mutateAsync,
   };
 };
 
 export const useTransactions = () => {
-  const { token } = useAuthStore();
-  const { setTransactions, addTransaction, updateTransaction, removeTransaction } = useDataStore();
-  const { timeRange } = useUIStore();
-  
-  const query = useQuery({
-    queryKey: ['transactions'],
-    queryFn: () => api.transactions.list(),
-    enabled: !!token,
-    staleTime: 5 * 60 * 1000,
-  });
+  const token = useAuthStore((s) => s.token);
+  const queryClient = useQueryClient();
+
+  const query = useQuery(authQuery(['transactions'], () => api.transactions.list(), !!token));
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['transactions'] });
 
   const createMutation = useMutation({
     mutationFn: (data: Partial<Transaction>) => api.transactions.create(data),
-    onSuccess: (newTransaction) => addTransaction(newTransaction),
+    onSuccess: invalidate,
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<Transaction> }) => api.transactions.update(id, data),
-    onSuccess: (updated) => updateTransaction(updated.id, updated),
+    mutationFn: ({ id, data }: { id: number; data: Partial<Transaction> }) => api.transactions.update(id, data),
+    onSuccess: invalidate,
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.transactions.delete(id),
-    onSuccess: (_, id) => removeTransaction(id),
+    mutationFn: (id: number) => api.transactions.delete(id),
+    onSuccess: invalidate,
   });
 
   return {
-    transactions: query.data || [],
+    transactions: (query.data || []) as Transaction[],
     isLoading: query.isLoading,
     error: query.error,
     refetch: query.refetch,
@@ -134,33 +135,30 @@ export const useTransactions = () => {
 };
 
 export const useWorkouts = () => {
-  const { token } = useAuthStore();
-  const { setWorkouts, addWorkout, updateWorkout, removeWorkout } = useDataStore();
-  
-  const query = useQuery({
-    queryKey: ['workouts'],
-    queryFn: () => api.fitness.workouts.list(),
-    enabled: !!token,
-    staleTime: 5 * 60 * 1000,
-  });
+  const token = useAuthStore((s) => s.token);
+  const queryClient = useQueryClient();
+
+  const query = useQuery(authQuery(['workouts'], () => api.fitness.workouts.list(), !!token));
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['workouts'] });
 
   const createMutation = useMutation({
     mutationFn: (data: Partial<Workout>) => api.fitness.workouts.create(data),
-    onSuccess: (newWorkout) => addWorkout(newWorkout),
+    onSuccess: invalidate,
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<Workout> }) => api.fitness.workouts.update(id, data),
-    onSuccess: (updated) => updateWorkout(updated.id, updated),
+    mutationFn: ({ id, data }: { id: number; data: Partial<Workout> }) => api.fitness.workouts.update(id, data),
+    onSuccess: invalidate,
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.fitness.workouts.delete(id),
-    onSuccess: (_, id) => removeWorkout(id),
+    mutationFn: (id: number) => api.fitness.workouts.delete(id),
+    onSuccess: invalidate,
   });
 
   return {
-    workouts: query.data || [],
+    workouts: (query.data || []) as Workout[],
     isLoading: query.isLoading,
     error: query.error,
     refetch: query.refetch,
@@ -171,33 +169,30 @@ export const useWorkouts = () => {
 };
 
 export const useBodyStats = () => {
-  const { token } = useAuthStore();
-  const { setBodyStats, addBodyStat, updateBodyStat, removeBodyStat } = useDataStore();
-  
-  const query = useQuery({
-    queryKey: ['bodyStats'],
-    queryFn: () => api.fitness.bodyStats.list(),
-    enabled: !!token,
-    staleTime: 5 * 60 * 1000,
-  });
+  const token = useAuthStore((s) => s.token);
+  const queryClient = useQueryClient();
+
+  const query = useQuery(authQuery(['bodyStats'], () => api.fitness.bodyStats.list(), !!token));
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['bodyStats'] });
 
   const createMutation = useMutation({
     mutationFn: (data: Partial<BodyStat>) => api.fitness.bodyStats.create(data),
-    onSuccess: (newStat) => addBodyStat(newStat),
+    onSuccess: invalidate,
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<BodyStat> }) => api.fitness.bodyStats.update(id, data),
-    onSuccess: (updated) => updateBodyStat(updated.id, updated),
+    mutationFn: ({ id, data }: { id: number; data: Partial<BodyStat> }) => api.fitness.bodyStats.update(id, data),
+    onSuccess: invalidate,
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.fitness.bodyStats.delete(id),
-    onSuccess: (_, id) => removeBodyStat(id),
+    mutationFn: (id: number) => api.fitness.bodyStats.delete(id),
+    onSuccess: invalidate,
   });
 
   return {
-    bodyStats: query.data || [],
+    bodyStats: (query.data || []) as BodyStat[],
     isLoading: query.isLoading,
     error: query.error,
     refetch: query.refetch,
@@ -208,33 +203,30 @@ export const useBodyStats = () => {
 };
 
 export const useSleepLogs = () => {
-  const { token } = useAuthStore();
-  const { setSleepLogs, addSleepLog, updateSleepLog, removeSleepLog } = useDataStore();
-  
-  const query = useQuery({
-    queryKey: ['sleepLogs'],
-    queryFn: () => api.fitness.sleep.list(),
-    enabled: !!token,
-    staleTime: 5 * 60 * 1000,
-  });
+  const token = useAuthStore((s) => s.token);
+  const queryClient = useQueryClient();
+
+  const query = useQuery(authQuery(['sleepLogs'], () => api.fitness.sleep.list(), !!token));
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['sleepLogs'] });
 
   const createMutation = useMutation({
     mutationFn: (data: Partial<SleepLog>) => api.fitness.sleep.create(data),
-    onSuccess: (newLog) => addSleepLog(newLog),
+    onSuccess: invalidate,
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<SleepLog> }) => api.fitness.sleep.update(id, data),
-    onSuccess: (updated) => updateSleepLog(updated.id, updated),
+    mutationFn: ({ id, data }: { id: number; data: Partial<SleepLog> }) => api.fitness.sleep.update(id, data),
+    onSuccess: invalidate,
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.fitness.sleep.delete(id),
-    onSuccess: (_, id) => removeSleepLog(id),
+    mutationFn: (id: number) => api.fitness.sleep.delete(id),
+    onSuccess: invalidate,
   });
 
   return {
-    sleepLogs: query.data || [],
+    sleepLogs: (query.data || []) as SleepLog[],
     isLoading: query.isLoading,
     error: query.error,
     refetch: query.refetch,
@@ -245,33 +237,30 @@ export const useSleepLogs = () => {
 };
 
 export const useCalendarEvents = () => {
-  const { token } = useAuthStore();
-  const { setCalendarEvents, addCalendarEvent, updateCalendarEvent, removeCalendarEvent } = useDataStore();
-  
-  const query = useQuery({
-    queryKey: ['calendarEvents'],
-    queryFn: () => api.calendar.list(),
-    enabled: !!token,
-    staleTime: 5 * 60 * 1000,
-  });
+  const token = useAuthStore((s) => s.token);
+  const queryClient = useQueryClient();
+
+  const query = useQuery(authQuery(['calendarEvents'], () => api.calendar.list(), !!token));
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['calendarEvents'] });
 
   const createMutation = useMutation({
     mutationFn: (data: Partial<CalendarEvent>) => api.calendar.create(data),
-    onSuccess: (newEvent) => addCalendarEvent(newEvent),
+    onSuccess: invalidate,
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<CalendarEvent> }) => api.calendar.update(id, data),
-    onSuccess: (updated) => updateCalendarEvent(updated.id, updated),
+    mutationFn: ({ id, data }: { id: number; data: Partial<CalendarEvent> }) => api.calendar.update(id, data),
+    onSuccess: invalidate,
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.calendar.delete(id),
-    onSuccess: (_, id) => removeCalendarEvent(id),
+    mutationFn: (id: number) => api.calendar.delete(id),
+    onSuccess: invalidate,
   });
 
   return {
-    events: query.data || [],
+    events: (query.data || []) as CalendarEvent[],
     isLoading: query.isLoading,
     error: query.error,
     refetch: query.refetch,
@@ -282,97 +271,65 @@ export const useCalendarEvents = () => {
 };
 
 export const useNotes = () => {
-  const { token } = useAuthStore();
-  const { setNotes, addNote, updateNote, removeNote } = useDataStore();
-  
-  const query = useQuery({
-    queryKey: ['notes'],
-    queryFn: () => api.notes.list(),
-    enabled: !!token,
-    staleTime: 5 * 60 * 1000,
-  });
+  const token = useAuthStore((s) => s.token);
+  const queryClient = useQueryClient();
+
+  const query = useQuery(authQuery(['notes'], () => api.notes.list(), !!token));
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['notes'] });
 
   const createMutation = useMutation({
     mutationFn: (data: Partial<Note>) => api.notes.create(data),
-    onSuccess: (newNote) => addNote(newNote),
+    onSuccess: invalidate,
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<Note> }) => api.notes.update(id, data),
-    onSuccess: (updated) => updateNote(updated.id, updated),
+    mutationFn: ({ id, data }: { id: number; data: Partial<Note> }) => api.notes.update(id, data),
+    onSuccess: invalidate,
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.notes.delete(id),
-    onSuccess: (_, id) => removeNote(id),
-  });
-
-  const togglePinMutation = useMutation({
-    mutationFn: (id: string) => api.notes.togglePin(id),
-    onSuccess: (updated) => updateNote(updated.id, updated),
-  });
-
-  const toggleArchiveMutation = useMutation({
-    mutationFn: (id: string) => api.notes.toggleArchive(id),
-    onSuccess: (updated) => updateNote(updated.id, updated),
+    mutationFn: (id: number) => api.notes.delete(id),
+    onSuccess: invalidate,
   });
 
   return {
-    notes: query.data || [],
+    notes: (query.data || []) as Note[],
     isLoading: query.isLoading,
     error: query.error,
     refetch: query.refetch,
     createNote: createMutation.mutateAsync,
     updateNote: updateMutation.mutateAsync,
     deleteNote: deleteMutation.mutateAsync,
-    togglePin: togglePinMutation.mutateAsync,
-    toggleArchive: toggleArchiveMutation.mutateAsync,
   };
 };
 
 export const useSettings = () => {
-  const { token } = useAuthStore();
-  const { updateUserProfile } = useAuthStore();
-  
-  const query = useQuery({
-    queryKey: ['settings'],
-    queryFn: () => api.settings.get(),
-    enabled: !!token,
-    staleTime: 10 * 60 * 1000,
-  });
+  const token = useAuthStore((s) => s.token);
+  const updateUserProfile = useAuthStore((s) => s.updateUserProfile);
 
-  const updateMutation = useMutation({
-    mutationFn: (data: Partial<any>) => api.settings.update(data),
-    onSuccess: (updatedSettings) => updateUserProfile(updatedSettings),
-  });
+  const query = useQuery(authQuery(['settings'], () => api.settings.get(), !!token));
 
-  const deleteAccountMutation = useMutation({
-    mutationFn: () => api.settings.deleteAccount(),
-  });
-
-  const resetDataMutation = useMutation({
-    mutationFn: () => api.settings.resetData(),
-    onSuccess: () => {
-      useDataStore.getState().clearAll();
-    },
-  });
+  // Keep the auth store profile in sync with fetched settings
+  useEffect(() => {
+    if (query.data) {
+      updateUserProfile(query.data);
+    }
+  }, [query.data, updateUserProfile]);
 
   return {
     settings: query.data,
     isLoading: query.isLoading,
     error: query.error,
-    updateSettings: updateMutation.mutateAsync,
-    deleteAccount: deleteAccountMutation.mutateAsync,
-    resetData: resetDataMutation.mutateAsync,
   };
 };
 
 export const useAIChat = () => {
-  const { user } = useAuthStore();
-  
+  const user = useAuthStore((s) => s.user);
+
   const mutation = useMutation({
-    mutationFn: ({ messages }: { messages: any[] }) => 
-      api.ai.chat(messages, user?.ai_provider || 'gemini', user?.gemini_api_key || user?.groq_api_key || ''),
+    mutationFn: ({ message }: { message: string }) =>
+      api.ai.chat(message, user?.ai_provider, undefined),
   });
 
   return {

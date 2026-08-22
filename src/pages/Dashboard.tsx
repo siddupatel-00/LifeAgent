@@ -3,12 +3,10 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { useUIStore } from '../stores/uiStore';
 import { useReminders } from '../hooks/useUtils';
-import { useHabits, useTodayItems, useTransactions, useWorkouts, useBodyStats, useSleepLogs, useCalendarEvents, useNotes, useSettings } from '../hooks/useQueries';
 import Sidebar from '../components/layout/Sidebar';
 import MobileBottomNav from '../components/layout/MobileBottomNav';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import TabContent from '../components/layout/TabContent';
-import { safeStorage } from '../utils/safeStorage';
 
 const TAB_ROUTES = {
   today: '/dashboard/today',
@@ -51,6 +49,14 @@ export default function Dashboard() {
     setMobileDrawerOpen(false);
   };
 
+  const handleMenuClick = () => {
+    if (window.matchMedia('(max-width: 768px)').matches) {
+      setMobileDrawerOpen(true);
+    } else {
+      setSidebarOpen(true);
+    }
+  };
+
   const handleLogout = () => {
     logout();
     navigate('/auth', { replace: true });
@@ -62,19 +68,20 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard-container">
-      <Sidebar 
-        activeTab={activeTab} 
+      <Sidebar
+        activeTab={activeTab}
         onTabChange={handleTabChange}
         isOpen={isSidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        onLogout={handleLogout}
         user={user}
       />
-      
+
       <div className="dashboard-main">
-        <DashboardHeader 
+        <DashboardHeader
           activeTab={activeTab}
           user={user}
-          onMenuClick={() => setMobileDrawerOpen(true)}
+          onMenuClick={handleMenuClick}
           onLogout={handleLogout}
         />
         

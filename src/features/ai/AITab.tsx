@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAIChat } from '../../hooks/useQueries';
-import { Send, Loader2, Sparkles, Copy, Check, X, MessageSquare } from 'lucide-react';
+import { useAuthStore } from '../../stores/authStore';
+import { Send, Loader2, Sparkles, Copy, Check, X } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -9,93 +10,96 @@ interface Message {
   timestamp: Date;
 }
 
-export function AITab({ user }: { user: any }) {
+const SUGGESTED_PROMPTS = [
+  { label: 'Analyze my habits', text: 'Analyze my habits and suggest improvements' },
+  { label: 'Workout plan', text: 'Create a workout plan for this week' },
+  { label: 'Spending review', text: 'Review my spending patterns' },
+  { label: 'Plan my day', text: 'Help me plan my day' },
+];
+
+export function AITab() {
+  const user = useAuthStore((s) => s.user);
   const { sendMessage, isLoading, error } = useAIChat();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
-  const [isStreaming, setIsStreaming] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isLoading]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || isLoading) return;
+  const send = async (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed || isLoading) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
-      content: input,
+      content: trimmed,
       timestamp: new Date(),
     };
 
     setMessages(prev => [...prev, userMessage]);
-    const currentInput = input;
     setInput('');
-    setIsStreaming(true);
 
     try {
-      const response = await sendMessage({ messages: [...messages, userMessage] });
-      
-      const assistantMessage: Message = {
+      const response = await sendMessage({ message: trimmed });
+      setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
         content: response.response || 'Sorry, I could not generate a response.',
         timestamp: new Date(),
-      };
-      
-      setMessages(prev => [...prev, assistantMessage]);
-    } catch (err) {
-      console.error('AI Chat error:', err);
-      const errorMessage: Message = {
+      }]);
+    } catch (err: any) {
+      setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: 'Sorry, something went wrong. Please try again.',
+        content: err.message || 'Sorry, something went wrong. Please try again.',
         timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, errorMessage]);
-    } finally {
-      setIsStreaming(false);
+      }]);
     }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    send(input);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSubmit(e);
+      send(input);
     }
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
+  const copyToClipboard = async (id: string, text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 1500);
+    } catch {}
   };
 
   return (
     <div className="ai-tab">
       <div className="tab-header">
-        <h2 className="tab-title">AI Coach</h2>
+        <h2 className="tab-title">{user?.ai_name || 'AI Coach'}</h2>
         <p className="tab-subtitle">Your personal assistant</p>
       </div>
 
       <div className="ai-chat-container">
         <div className="chat-messages" role="log" aria-live="polite">
-          {messages.length === 0 && (
+          {messages.length === 0 && !isLoading && (
             <div className="chat-welcome">
-              <div className="welcome-icon"><Sparkles size={48} /></div>
-              <h3>Hey! I'm {user?.ai_name || 'AI'}</h3>
+              <div className="welcome-icon"><Sparkles size={40} /></div>
+              <h3>Hey! I'm {user?.ai_name || 'your AI coach'}</h3>
               <p>Ask me anything about your habits, finances, fitness, or just chat!</p>
               <div className="suggested-prompts">
-                <button onClick={() => { setInput('Analyze my habits and suggest improvements'); handleSubmit(new Event('submit') as any); }}>Analyze my habits</button>
-                <button onClick={() => { setInput('Create a workout plan for this week'); handleSubmit(new Event('submit') as any); }}>Workout plan</button>
-                <button onClick={() => { setInput('Review my spending patterns'); handleSubmit(new Event('submit') as any); }}>Spending review</button>
-                <button onClick={() => { setInput('Help me plan my day'); handleSubmit(new Event('submit') as any); }}>Plan my day</button>
+                {SUGGESTED_PROMPTS.map(({ label, text }) => (
+                  <button key={label} onClick={() => send(text)}>{label}</button>
+                ))}
               </div>
             </div>
           )}
@@ -103,7 +107,7 @@ export function AITab({ user }: { user: any }) {
           {messages.map((message) => (
             <div key={message.id} className={`chat-message ${message.role}`}>
               <div className="message-avatar">
-                {message.role === 'user' ? <span>U</span> : <Sparkles size={20} />}
+                {message.role === 'user' ? <span>{(user?.name || 'U').charAt(0).toUpperCase()}</span> : <Sparkles size={18} />}
               </div>
               <div className="message-content">
                 <div className="message-bubble">
@@ -111,8 +115,8 @@ export function AITab({ user }: { user: any }) {
                   <time className="message-time">{message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time>
                 </div>
                 {message.role === 'assistant' && (
-                  <button onClick={() => copyToClipboard(message.content)} className="copy-btn" aria-label="Copy message">
-                    <Copy size={14} />
+                  <button onClick={() => copyToClipboard(message.id, message.content)} className="copy-btn" aria-label="Copy message">
+                    {copiedId === message.id ? <Check size={14} /> : <Copy size={14} />}
                   </button>
                 )}
               </div>
@@ -121,7 +125,7 @@ export function AITab({ user }: { user: any }) {
 
           {isLoading && (
             <div className="chat-message assistant streaming">
-              <div className="message-avatar"><Sparkles size={20} /></div>
+              <div className="message-avatar"><Sparkles size={18} /></div>
               <div className="message-content">
                 <div className="message-bubble typing">
                   <span className="typing-dots"><span>.</span><span>.</span><span>.</span></span>
@@ -153,10 +157,12 @@ export function AITab({ user }: { user: any }) {
 
       {error && (
         <div className="chat-error">
-          <span>Error: {error.message}</span>
-          <button onClick={() => setMessages([])}><X size={16} /></button>
+          <span>{error.message}</span>
+          <button onClick={() => setInput('')}><X size={16} /></button>
         </div>
       )}
     </div>
   );
 }
+
+export default AITab;

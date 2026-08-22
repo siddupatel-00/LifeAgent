@@ -51,8 +51,8 @@ export default async function handler(req, res) {
       // 1. Reminders batch
       if (Array.isArray(req.body.reminders)) {
         batchStatements.push({
-          sql: "DELETE FROM reminders WHERE entity_type = 'habit' AND entity_id = ?",
-          args: [id]
+          sql: "DELETE FROM reminders WHERE entity_type = 'habit' AND entity_id = ? AND user_id = ?",
+          args: [id, userId]
         });
         for (const rem of req.body.reminders) {
           const timeVal = rem.reminder_time || rem.time || rem.reminderTime || '08:00';
@@ -158,11 +158,12 @@ export default async function handler(req, res) {
 
     // ─── DELETE: Batch deletion in 1 roundtrip ──────────────────────────────────
     if (req.method === 'DELETE') {
-      const { id } = req.body;
+      const id = req.query?.id ?? req.body?.id;
+      if (!id) return res.status(400).json({ error: 'Habit ID required' });
       await db.batch([
         { sql: 'DELETE FROM habits WHERE id = ? AND user_id = ?', args: [id, userId] },
         { sql: 'DELETE FROM today_items WHERE habit_id = ? AND user_id = ?', args: [id, userId] },
-        { sql: "DELETE FROM reminders WHERE entity_type = 'habit' AND entity_id = ?", args: [id] }
+        { sql: "DELETE FROM reminders WHERE entity_type = 'habit' AND entity_id = ? AND user_id = ?", args: [id, userId] }
       ], 'write');
       return res.status(200).json({ success: true });
     }

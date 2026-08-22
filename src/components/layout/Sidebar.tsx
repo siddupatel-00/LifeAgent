@@ -1,12 +1,12 @@
-import { 
-  Home, Bot, CheckSquare, Droplet, FileText, Calendar, DollarSign, 
-  Dumbbell, Moon, BarChart3, Settings, LogOut, User, ChevronLeft, X
+import {
+  Home, Sparkles, CheckSquare, Droplet, FileText, Calendar, DollarSign,
+  Dumbbell, Moon, BarChart3, Settings as SettingsIcon, LogOut, Sun, Monitor
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 
-const TABS = [
+const getTabs = (aiName?: string) => [
   { key: 'today', label: 'Today', icon: Home },
-  { key: 'ai', label: 'AI Coach', icon: Bot },
+  { key: 'ai', label: aiName || 'AI', icon: Sparkles },
   { key: 'habits', label: 'Habits', icon: CheckSquare },
   { key: 'water', label: 'Water', icon: Droplet },
   { key: 'notes', label: 'Notes', icon: FileText },
@@ -15,19 +15,23 @@ const TABS = [
   { key: 'body', label: 'Body & Gym', icon: Dumbbell },
   { key: 'sleep', label: 'Sleep', icon: Moon },
   { key: 'analytics', label: 'Analytics', icon: BarChart3 },
-  { key: 'settings', label: 'Settings', icon: Settings },
+  { key: 'settings', label: 'Settings', icon: SettingsIcon },
 ] as const;
+
+const THEMES = ['dark', 'light', 'pc'] as const;
 
 interface SidebarProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
   isOpen: boolean;
   onClose: () => void;
+  onLogout: () => void;
   user: any;
 }
 
-export default function Sidebar({ activeTab, onTabChange, isOpen, onClose, user }: SidebarProps) {
-  const { themeMode, setThemeMode } = useAuthStore();
+export default function Sidebar({ activeTab, onTabChange, isOpen, onLogout, user }: SidebarProps) {
+  const themeMode = useAuthStore((s) => s.themeMode);
+  const setThemeMode = useAuthStore((s) => s.setThemeMode);
 
   if (!isOpen) return null;
 
@@ -38,20 +42,17 @@ export default function Sidebar({ activeTab, onTabChange, isOpen, onClose, user 
           <span className="wordmark-mark">L</span>
           <span>LifeAgent</span>
         </div>
-        <button onClick={onClose} className="sidebar-close" aria-label="Close sidebar">
-          <X size={20} />
-        </button>
       </div>
 
       <nav className="sidebar-nav" aria-label="Main tabs">
-        {TABS.map(({ key, label, icon: Icon }) => (
+        {getTabs(user?.ai_name).map(({ key, label, icon: Icon }) => (
           <button
             key={key}
             onClick={() => onTabChange(key)}
             className={`sidebar-nav-btn ${activeTab === key ? 'active' : ''}`}
             aria-current={activeTab === key ? 'page' : undefined}
           >
-            <Icon size={20} />
+            <Icon size={19} />
             <span>{label}</span>
           </button>
         ))}
@@ -68,29 +69,27 @@ export default function Sidebar({ activeTab, onTabChange, isOpen, onClose, user 
           </div>
         </div>
 
-        <div className="sidebar-theme">
-          <span className="theme-label">Theme</span>
-          <div className="theme-options">
-            {['dark', 'light', 'pc'].map((mode) => (
-              <button
-                key={mode}
-                onClick={() => setThemeMode(mode as any)}
-                className={`theme-option ${themeMode === mode ? 'active' : ''}`}
-                aria-pressed={themeMode === mode}
-              >
-                {mode === 'dark' && <Moon size={16} />}
-                {mode === 'light' && <Sun size={16} />}
-                {mode === 'pc' && <Monitor size={16} />}
-                <span>{mode.charAt(0).toUpperCase() + mode.slice(1)}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <button onClick={onClose} className="sidebar-logout secondary-btn">
-          <LogOut size={18} />
+        <button onClick={onLogout} className="sidebar-logout secondary-btn">
+          <LogOut size={17} />
           <span>Sign Out</span>
         </button>
+
+        <div className="sidebar-theme-row" role="radiogroup" aria-label="Theme">
+          {THEMES.map((mode) => (
+            <button
+              key={mode}
+              onClick={() => setThemeMode(mode)}
+              className={`theme-pill ${themeMode === mode ? 'active' : ''}`}
+              aria-pressed={themeMode === mode}
+              aria-label={`${mode} theme`}
+              title={mode === 'pc' ? 'System' : mode.charAt(0).toUpperCase() + mode.slice(1)}
+            >
+              {mode === 'dark' && <Moon size={15} />}
+              {mode === 'light' && <Sun size={15} />}
+              {mode === 'pc' && <Monitor size={15} />}
+            </button>
+          ))}
+        </div>
       </div>
     </aside>
   );

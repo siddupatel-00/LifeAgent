@@ -24,48 +24,40 @@ export default async function handler(req, res) {
         const sTime = sleep_time || '23:00';
         const wTime = wake_time || '07:00';
         if (hours === undefined || minutes === undefined) {
-          const sleepDate = new Date(`2000-01-01T${sTime}`);
-          let wakeDate = new Date(`2000-01-01T${wTime}`);
-          if (wakeDate <= sleepDate) wakeDate.setDate(wakeDate.getDate() + 1);
-          const diffMs = wakeDate - sleepDate;
-          hours = Math.floor(diffMs / (1000 * 60 * 60));
-          minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+          [hours, minutes] = computeSleepDuration(sTime, wTime);
         }
+        const logDate = date || new Date().toISOString().split('T')[0];
         const result = await db.execute({
           sql: 'INSERT INTO sleep_logs (user_id, sleep_time, wake_time, hours, minutes, quality, notes, date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-          args: [userId, sTime, wTime, hours, minutes, quality || 'Good', notes || '', date || new Date().toISOString().split('T')[0]]
+          args: [userId, sTime, wTime, hours, minutes, quality || 'Good', notes || '', logDate]
         });
-        return res.status(201).json({ id: Number(result.lastInsertRowid), sleep_time: sTime, wake_time: wTime, hours, minutes, quality: quality || 'Good', notes, date: date || new Date().toISOString().split('T')[0] });
+        return res.status(201).json({ id: Number(result.lastInsertRowid), sleep_time: sTime, wake_time: wTime, hours, minutes, quality: quality || 'Good', notes: notes || '', date: logDate });
       }
       if (req.method === 'PUT') {
-        const { id, sleep_time, wake_time, quality, notes, date } = req.body;
-        let hours = req.body.hours !== undefined ? Number(req.body.hours) : undefined;
-        let minutes = req.body.minutes !== undefined ? Number(req.body.minutes) : undefined;
-        const sTime = sleep_time || '23:00';
-        const wTime = wake_time || '07:00';
-        if (hours === undefined || minutes === undefined) {
-          const sleepDate = new Date(`2000-01-01T${sTime}`);
-          let wakeDate = new Date(`2000-01-01T${wTime}`);
-          if (wakeDate <= sleepDate) wakeDate.setDate(wakeDate.getDate() + 1);
-          const diffMs = wakeDate - sleepDate;
-          hours = Math.floor(diffMs / (1000 * 60 * 60));
-          minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-        }
-        if (date) {
-          await db.execute({
-            sql: 'UPDATE sleep_logs SET sleep_time = ?, wake_time = ?, hours = ?, minutes = ?, quality = ?, notes = ?, date = ? WHERE id = ? AND user_id = ?',
-            args: [sTime, wTime, hours, minutes, quality, notes, date, id, userId]
-          });
-        } else {
-          await db.execute({
-            sql: 'UPDATE sleep_logs SET sleep_time = ?, wake_time = ?, hours = ?, minutes = ?, quality = ?, notes = ? WHERE id = ? AND user_id = ?',
-            args: [sTime, wTime, hours, minutes, quality, notes, id, userId]
-          });
-        }
-        return res.status(200).json({ success: true });
+        const id = req.query?.id ?? req.body?.id;
+        if (!id) return res.status(400).json({ error: 'Sleep log ID required' });
+
+        const currentRes = await db.execute({ sql: 'SELECT * FROM sleep_logs WHERE id = ? AND user_id = ?', args: [id, userId] });
+        if (currentRes.rows.length === 0) return res.status(404).json({ error: 'Sleep log not found' });
+        const current = currentRes.rows[0];
+        const { sleep_time, wake_time, quality, notes } = req.body || {};
+
+        const sTime = sleep_time !== undefined ? sleep_time : current.sleep_time;
+        const wTime = wake_time !== undefined ? wake_time : current.wake_time;
+        const [hours, minutes] = computeSleepDuration(sTime, wTime);
+        const newQuality = quality !== undefined ? quality : current.quality;
+        const newNotes = notes !== undefined ? notes : current.notes;
+
+        await db.execute({
+          sql: 'UPDATE sleep_logs SET sleep_time = ?, wake_time = ?, hours = ?, minutes = ?, quality = ?, notes = ? WHERE id = ? AND user_id = ?',
+          args: [sTime, wTime, hours, minutes, newQuality, newNotes, id, userId]
+        });
+        const updated = await db.execute({ sql: 'SELECT * FROM sleep_logs WHERE id = ?', args: [id] });
+        return res.status(200).json(updated.rows[0]);
       }
       if (req.method === 'DELETE') {
-        const { id } = req.body;
+        const id = req.query?.id ?? req.body?.id;
+        if (!id) return res.status(400).json({ error: 'Sleep log ID required' });
         await db.execute({ sql: 'DELETE FROM sleep_logs WHERE id = ? AND user_id = ?', args: [id, userId] });
         return res.status(200).json({ success: true });
       }
@@ -78,22 +70,41 @@ export default async function handler(req, res) {
       }
       if (req.method === 'POST') {
         const { title, category, duration_mins, calories, notes, date } = req.body;
+        if (!title || !String(title).trim()) return res.status(400).json({ error: 'Workout title is required' });
+        const logDate = date || new Date().toISOString().split('T')[0];
         const result = await db.execute({
           sql: 'INSERT INTO workouts (user_id, title, category, duration_mins, calories, notes, date) VALUES (?, ?, ?, ?, ?, ?, ?)',
-          args: [userId, title, category || 'General', duration_mins || 0, calories || 0, notes || '', date || new Date().toISOString().split('T')[0]]
+          args: [userId, String(title).trim(), category || 'General', Number(duration_mins) || 0, Number(calories) || 0, notes || '', logDate]
         });
-        return res.status(201).json({ id: Number(result.lastInsertRowid), title, category, duration_mins, calories, notes, date });
+        return res.status(201).json({ id: Number(result.lastInsertRowid), title: String(title).trim(), category: category || 'General', duration_mins: Number(duration_mins) || 0, calories: Number(calories) || 0, notes: notes || '', date: logDate });
       }
       if (req.method === 'PUT') {
-        const { id, title, category, duration_mins, calories, notes } = req.body;
+        const id = req.query?.id ?? req.body?.id;
+        if (!id) return res.status(400).json({ error: 'Workout ID required' });
+
+        const currentRes = await db.execute({ sql: 'SELECT * FROM workouts WHERE id = ? AND user_id = ?', args: [id, userId] });
+        if (currentRes.rows.length === 0) return res.status(404).json({ error: 'Workout not found' });
+        const current = currentRes.rows[0];
+        const { title, category, duration_mins, calories, notes, date } = req.body || {};
+
         await db.execute({
-          sql: 'UPDATE workouts SET title = ?, category = ?, duration_mins = ?, calories = ?, notes = ? WHERE id = ? AND user_id = ?',
-          args: [title, category, duration_mins, calories, notes, id, userId]
+          sql: 'UPDATE workouts SET title = ?, category = ?, duration_mins = ?, calories = ?, notes = ?, date = ? WHERE id = ? AND user_id = ?',
+          args: [
+            title !== undefined ? title : current.title,
+            category !== undefined ? category : current.category,
+            duration_mins !== undefined && duration_mins !== '' ? Number(duration_mins) : current.duration_mins,
+            calories !== undefined && calories !== '' ? Number(calories) : current.calories,
+            notes !== undefined ? notes : current.notes,
+            date !== undefined ? date : current.date,
+            id, userId
+          ]
         });
-        return res.status(200).json({ success: true });
+        const updated = await db.execute({ sql: 'SELECT * FROM workouts WHERE id = ?', args: [id] });
+        return res.status(200).json(updated.rows[0]);
       }
       if (req.method === 'DELETE') {
-        const { id } = req.body;
+        const id = req.query?.id ?? req.body?.id;
+        if (!id) return res.status(400).json({ error: 'Workout ID required' });
         await db.execute({ sql: 'DELETE FROM workouts WHERE id = ? AND user_id = ?', args: [id, userId] });
         return res.status(200).json({ success: true });
       }
@@ -144,7 +155,8 @@ export default async function handler(req, res) {
         }
       }
       if (req.method === 'DELETE') {
-        const { id } = req.body;
+        const id = req.query?.id ?? req.body?.id;
+        if (!id) return res.status(400).json({ error: 'Body stat ID required' });
         await db.execute({ sql: 'DELETE FROM body_stats WHERE id = ? AND user_id = ?', args: [id, userId] });
         return res.status(200).json({ success: true });
       }
@@ -154,4 +166,16 @@ export default async function handler(req, res) {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+}
+
+function computeSleepDuration(sleepTime, wakeTime) {
+  const parse = (t) => {
+    const [h, m] = String(t || '00:00').split(':').map(Number);
+    return (h || 0) * 60 + (m || 0);
+  };
+  let start = parse(sleepTime);
+  let end = parse(wakeTime);
+  if (end <= start) end += 24 * 60;
+  const diff = end - start;
+  return [Math.floor(diff / 60), diff % 60];
 }

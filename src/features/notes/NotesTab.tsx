@@ -1,16 +1,19 @@
 import { useState } from 'react';
 import { useNotes } from '../../hooks/useQueries';
-import { Plus, Edit2, Trash2, Pin, PinOff, Archive, Search, Filter } from 'lucide-react';
+import { useAuthStore } from '../../stores/authStore';
+import { Plus, Edit2, Trash2, Pin, PinOff, Archive, ArchiveRestore, Search } from 'lucide-react';
 import Modal from '../../components/ui/Modal';
 import ConfirmModal from '../../components/ui/ConfirmModal';
 
-export function NotesTab({ user }: { user: any }) {
-  const { notes, isLoading, createNote, updateNote, deleteNote, togglePin, toggleArchive } = useNotes();
+export function NotesTab() {
+  const { notes, isLoading, createNote, updateNote, deleteNote } = useNotes();
+  const user = useAuthStore((s) => s.user);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingNote, setEditingNote] = useState<any>(null);
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<'all' | 'pinned' | 'archived'>('all');
+  const [actionError, setActionError] = useState('');
   const [formData, setFormData] = useState({ title: '', content: '' });
 
   const filteredNotes = notes
@@ -19,7 +22,8 @@ export function NotesTab({ user }: { user: any }) {
       if (filter === 'archived') return note.is_archived;
       return !note.is_archived;
     })
-    .filter(note => 
+    .filter(note =>
+      !searchQuery ||
       note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       note.content.toLowerCase().includes(searchQuery.toLowerCase())
     );
@@ -27,37 +31,63 @@ export function NotesTab({ user }: { user: any }) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title.trim()) return;
+    setActionError('');
 
     try {
       if (editingNote) {
         await updateNote(editingNote.id, formData);
       } else {
-        await createNote({ ...formData, is_pinned: false, is_archived: false });
+        await createNote(formData);
       }
       setShowAddModal(false);
       setEditingNote(null);
       resetForm();
-    } catch (err) {
-      console.error('Failed to save note:', err);
+    } catch (err: any) {
+      setActionError(err.message || 'Failed to save note');
     }
   };
 
-  const resetForm = () => {
-    setFormData({ title: '', content: '' });
-  };
+  const resetForm = () => setFormData({ title: '', content: '' });
 
   const handleEdit = (note: any) => {
     setEditingNote(note);
-    setFormData({ title: note.title, content: note.content });
+    setFormData({ title: note.title, content: note.content || '' });
     setShowAddModal(true);
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: number) => {
     try {
       await deleteNote(id);
       setDeleteConfirmId(null);
-    } catch (err) {
-      console.error('Failed to delete note:', err);
+    } catch (err: any) {
+      setActionError(err.message || 'Failed to delete note');
+    }
+  };
+
+  const handleTogglePin = async (note: any) => {
+    try {
+      await updateNote(note.id, { is_pinned: !note.is_pinned });
+    } catch (err: any) {
+      setActionError(err.message || 'Failed to update note');
+    }
+  };
+
+  const handleToggleArchive = async (note: any) => {
+    try {
+      await updateNote(note.id, { is_archived: !note.is_archived });
+    } catch (err: any) {
+      setActionError(err.message || 'Failed to update note');
+    }
+  };
+
+  const formatNoteDate = (note: any): string => {
+    const raw = note.created_at || note.date;
+    if (!raw) return '';
+    try {
+      const d = new Date(raw.includes('T') ? raw : `${raw}T00:00:00`);
+      return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    } catch {
+      return '';
     }
   };
 
@@ -67,8 +97,10 @@ export function NotesTab({ user }: { user: any }) {
     <div className="notes-tab">
       <div className="tab-header">
         <h2 className="tab-title">Notes</h2>
-        <p className="tab-subtitle">{filteredNotes.length} notes</p>
+        <p className="tab-subtitle">{filteredNotes.length} {filteredNotes.length === 1 ? 'note' : 'notes'}</p>
       </div>
+
+      {actionError && <div className="form-error">{actionError}</div>}
 
       <div className="notes-toolbar">
         <div className="search-box">
@@ -91,7 +123,7 @@ export function NotesTab({ user }: { user: any }) {
         </div>
       </div>
 
-      <button onClick={() => { resetForm(); setShowAddModal(true); }} className="blue-btn add-note-btn">
+      <button onClick={() => { resetForm(); setEditingNote(null); setShowAddModal(true); }} className="blue-btn add-note-btn">
         <Plus size={18} />
         <span>New Note</span>
       </button>
@@ -109,24 +141,22 @@ export function NotesTab({ user }: { user: any }) {
               <div className="note-header">
                 <h3 className="note-title">{note.title}</h3>
                 <div className="note-actions">
-                  <button onClick={() => togglePin(note.id)} className="icon-btn" aria-label={note.is_pinned ? 'Unpin' : 'Pin'}>
-                    {note.is_pinned ? <PinOff size={16} /> : <Pin size={16} />}
+                  <button onClick={() => handleTogglePin(note)} className={`icon-btn ${note.is_pinned ? 'accent' : ''}`} aria-label={note.is_pinned ? 'Unpin' : 'Pin'}>
+                    {note.is_pinned ? <PinOff size={15} /> : <Pin size={15} />}
                   </button>
-                  <button onClick={() => toggleArchive(note.id)} className="icon-btn" aria-label={note.is_archived ? 'Unarchive' : 'Archive'}>
-                    <Archive size={16} />
+                  <button onClick={() => handleToggleArchive(note)} className="icon-btn" aria-label={note.is_archived ? 'Unarchive' : 'Archive'}>
+                    {note.is_archived ? <ArchiveRestore size={15} /> : <Archive size={15} />}
                   </button>
                   <button onClick={() => handleEdit(note)} className="icon-btn" aria-label="Edit">
-                    <Edit2 size={16} />
+                    <Edit2 size={15} />
                   </button>
                   <button onClick={() => setDeleteConfirmId(note.id)} className="icon-btn" aria-label="Delete">
-                    <Trash2 size={16} />
+                    <Trash2 size={15} />
                   </button>
                 </div>
               </div>
               <p className="note-content">{note.content || '(empty)'}</p>
-              <time className="note-date">
-                {new Date(note.created_at).toLocaleDateString()}
-              </time>
+              <time className="note-date">{formatNoteDate(note)}</time>
             </article>
           ))}
         </div>
@@ -180,3 +210,5 @@ export function NotesTab({ user }: { user: any }) {
     </div>
   );
 }
+
+export default NotesTab;

@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { useTransactions } from '../../hooks/useQueries';
 import { useAuthStore } from '../../stores/authStore';
-import { useUIStore } from '../../stores/uiStore';
-import { useDate } from '../../hooks/useUtils';
-import { Plus, Edit2, Trash2, DollarSign, TrendingUp, ArrowDown, ArrowUp, Filter } from 'lucide-react';
+import { useDate, formatDate } from '../../hooks/useUtils';
+import { Plus, Edit2, Trash2, DollarSign, ArrowDown, ArrowUp } from 'lucide-react';
 import Modal from '../../components/ui/Modal';
 import ConfirmModal from '../../components/ui/ConfirmModal';
 import CustomSelect from '../../components/ui/CustomSelect';
@@ -11,14 +10,19 @@ import CustomSelect from '../../components/ui/CustomSelect';
 const SPEND_CATEGORIES = ['Food', 'Transport', 'Shopping', 'Bills', 'Entertainment', 'Education', 'Health', 'Other'];
 const EARN_CATEGORIES = ['Salary', 'Freelance', 'Business', 'Investments', 'Gifts', 'Other'];
 
-export function FinanceTab({ user }: { user: any }) {
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  USD: '$', EUR: '\u20AC', GBP: '\u00A3', INR: '\u20B9', CAD: 'C$', AUD: 'A$', JPY: '\u00A5', CNY: '\u00A5',
+};
+
+export function FinanceTab() {
   const { transactions, isLoading, createTransaction, updateTransaction, deleteTransaction } = useTransactions();
-  const { timeRange } = useUIStore();
-  const { todayKey, formatDate } = useDate();
+  const user = useAuthStore((s) => s.user);
+  const { todayKey } = useDate();
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<any>(null);
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-  const [rightPanelView, setRightPanelView] = useState<'charts' | 'add' | 'list'>('charts');
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const [listFilter, setListFilter] = useState<'today' | 'all'>('today');
+  const [actionError, setActionError] = useState('');
   const [formData, setFormData] = useState({
     title: '',
     amount: '',
@@ -28,34 +32,37 @@ export function FinanceTab({ user }: { user: any }) {
     notes: '',
   });
 
+  const currencySymbol = user?.currency
+    ? (CURRENCY_SYMBOLS[user.currency] || user.currency)
+    : '$';
+
   const today = todayKey();
-  const filteredTransactions = transactions.filter(t => t.date === today);
-  
-  const totalEarned = filteredTransactions.filter(t => t.type === 'earn').reduce((acc, t) => acc + Number(t.amount), 0);
-  const totalSpent = filteredTransactions.filter(t => t.type === 'spend').reduce((acc, t) => acc + Number(t.amount), 0);
+  const todayTxns = transactions.filter(t => t.date === today);
+  const visibleTxns = listFilter === 'today' ? todayTxns : transactions;
+
+  const totalEarned = todayTxns.filter(t => t.type === 'earn').reduce((acc, t) => acc + Number(t.amount || 0), 0);
+  const totalSpent = todayTxns.filter(t => t.type === 'spend').reduce((acc, t) => acc + Number(t.amount || 0), 0);
   const balance = totalEarned - totalSpent;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title.trim() || !formData.amount) return;
+    setActionError('');
 
     try {
       const amount = parseFloat(formData.amount);
-      if (isNaN(amount)) return;
+      if (Number.isNaN(amount)) return;
 
-      const data = { ...formData, amount };
-      
       if (editingTransaction) {
-        await updateTransaction(editingTransaction.id, data);
+        await updateTransaction(editingTransaction.id, formData);
       } else {
-        await createTransaction(data);
+        await createTransaction(formData);
       }
       setShowAddModal(false);
       setEditingTransaction(null);
-      setRightPanelView('charts');
       resetForm();
-    } catch (err) {
-      console.error('Failed to save transaction:', err);
+    } catch (err: any) {
+      setActionError(err.message || 'Failed to save transaction');
     }
   };
 
@@ -69,20 +76,19 @@ export function FinanceTab({ user }: { user: any }) {
       title: transaction.title,
       amount: String(transaction.amount),
       type: transaction.type,
-      category: transaction.category,
+      category: transaction.category || 'Other',
       date: transaction.date,
       notes: transaction.notes || '',
     });
     setShowAddModal(true);
-    setRightPanelView('add');
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: number) => {
     try {
       await deleteTransaction(id);
       setDeleteConfirmId(null);
-    } catch (err) {
-      console.error('Failed to delete transaction:', err);
+    } catch (err: any) {
+      setActionError(err.message || 'Failed to delete transaction');
     }
   };
 
@@ -97,84 +103,70 @@ export function FinanceTab({ user }: { user: any }) {
         <p className="tab-subtitle">{formatDate(today)}</p>
       </div>
 
+      {actionError && <div className="form-error">{actionError}</div>}
+
       <div className="finance-summary">
         <div className="summary-card income">
-          <div className="summary-icon"><ArrowUp size={24} /></div>
+          <div className="summary-icon"><ArrowUp size={22} /></div>
           <div className="summary-info">
             <span className="summary-label">Income</span>
-            <span className="summary-value">{user?.currency || '$'}{totalEarned.toFixed(2)}</span>
+            <span className="summary-value">{currencySymbol}{totalEarned.toFixed(2)}</span>
           </div>
         </div>
         <div className="summary-card expense">
-          <div className="summary-icon"><ArrowDown size={24} /></div>
+          <div className="summary-icon"><ArrowDown size={22} /></div>
           <div className="summary-info">
             <span className="summary-label">Expenses</span>
-            <span className="summary-value">{user?.currency || '$'}{totalSpent.toFixed(2)}</span>
+            <span className="summary-value">{currencySymbol}{totalSpent.toFixed(2)}</span>
           </div>
         </div>
         <div className="summary-card balance">
-          <div className="summary-icon"><DollarSign size={24} /></div>
+          <div className="summary-icon"><DollarSign size={22} /></div>
           <div className="summary-info">
             <span className="summary-label">Balance</span>
-            <span className="summary-value">{user?.currency || '$'}{balance.toFixed(2)}</span>
+            <span className={`summary-value ${balance < 0 ? 'negative' : ''}`}>{currencySymbol}{balance.toFixed(2)}</span>
           </div>
         </div>
       </div>
 
       <div className="finance-actions">
-        <button onClick={() => { resetForm(); setShowAddModal(true); setRightPanelView('add'); }} className="blue-btn">
+        <button onClick={() => { resetForm(); setEditingTransaction(null); setShowAddModal(true); }} className="blue-btn">
           <Plus size={18} />
           <span>Add Transaction</span>
         </button>
-        <button onClick={() => setRightPanelView('list')} className="secondary-btn">
-          <Filter size={18} />
-          <span>View All</span>
-        </button>
+        <div className="filter-tabs">
+          <button className={listFilter === 'today' ? 'active' : ''} onClick={() => setListFilter('today')}>Today</button>
+          <button className={listFilter === 'all' ? 'active' : ''} onClick={() => setListFilter('all')}>All Time</button>
+        </div>
       </div>
 
-      {rightPanelView === 'charts' && (
-        <div className="finance-charts">
-          <div className="chart-placeholder">
-            <h3>Spending Overview</h3>
-            <p>Charts coming soon...</p>
-          </div>
-        </div>
-      )}
+      <ul className="transactions-list-full">
+        {visibleTxns.length === 0 ? (
+          <li className="empty-hint">No transactions{listFilter === 'today' ? ' for today' : ''}</li>
+        ) : (
+          visibleTxns.slice(0, 50).map((tx) => (
+            <li key={tx.id} className="transaction-item">
+              <div className="tx-info">
+                <span className="tx-title">{tx.title}</span>
+                <span className="tx-meta">{[tx.category, tx.date !== today ? formatDate(tx.date) : null].filter(Boolean).join(' · ')}</span>
+              </div>
+              <span className={`tx-amount ${tx.type === 'earn' ? 'positive' : 'negative'}`}>
+                {tx.type === 'earn' ? '+' : '−'}{currencySymbol}{Number(tx.amount).toFixed(2)}
+              </span>
+              <div className="tx-actions">
+                <button onClick={() => handleEdit(tx)} className="icon-btn" aria-label="Edit">
+                  <Edit2 size={16} />
+                </button>
+                <button onClick={() => setDeleteConfirmId(tx.id)} className="icon-btn" aria-label="Delete">
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            </li>
+          ))
+        )}
+      </ul>
 
-      {rightPanelView === 'list' && (
-        <div className="transactions-list-full">
-          <h3>All Transactions</h3>
-          {filteredTransactions.length === 0 ? (
-            <p className="empty-hint">No transactions for today</p>
-          ) : (
-            <ul>
-              {filteredTransactions.map((tx) => (
-                <li key={tx.id} className="transaction-item">
-                  <div className="tx-info">
-                    <span className="tx-title">{tx.title}</span>
-                    <span className="tx-category">{tx.category}</span>
-                  </div>
-                  <div className="tx-amount">
-                    <span className={tx.type === 'earn' ? 'positive' : 'negative'}>
-                      {tx.type === 'earn' ? '+' : '-'}{user?.currency || '$'}{Number(tx.amount).toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="tx-actions">
-                    <button onClick={() => handleEdit(tx)} className="icon-btn" aria-label="Edit">
-                      <Edit2 size={16} />
-                    </button>
-                    <button onClick={() => setDeleteConfirmId(tx.id)} className="icon-btn" aria-label="Delete">
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
-
-      <Modal isOpen={showAddModal} onClose={() => { setShowAddModal(false); resetForm(); setRightPanelView('charts'); }} title={editingTransaction ? 'Edit Transaction' : 'Add Transaction'} size="lg">
+      <Modal isOpen={showAddModal} onClose={() => { setShowAddModal(false); resetForm(); }} title={editingTransaction ? 'Edit Transaction' : 'Add Transaction'} size="lg">
         <form onSubmit={handleSubmit} className="modal-form">
           <div className="form-row">
             <div className="form-field">
@@ -182,7 +174,7 @@ export function FinanceTab({ user }: { user: any }) {
               <CustomSelect
                 id="type"
                 value={formData.type}
-                onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value as any }))}
+                onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value as any, category: e.target.value === 'earn' ? 'Salary' : 'Food' }))}
                 options={[
                   { value: 'spend', label: 'Expense' },
                   { value: 'earn', label: 'Income' },
@@ -215,23 +207,25 @@ export function FinanceTab({ user }: { user: any }) {
               autoFocus
             />
           </div>
-          <div className="form-field">
-            <label htmlFor="category">Category</label>
-            <CustomSelect
-              id="category"
-              value={formData.category}
-              onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-              options={categories.map(cat => ({ value: cat, label: cat }))}
-            />
-          </div>
-          <div className="form-field">
-            <label htmlFor="date">Date</label>
-            <input
-              id="date"
-              type="date"
-              value={formData.date}
-              onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
-            />
+          <div className="form-row">
+            <div className="form-field">
+              <label htmlFor="category">Category</label>
+              <CustomSelect
+                id="category"
+                value={formData.category}
+                onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
+                options={categories.map(cat => ({ value: cat, label: cat }))}
+              />
+            </div>
+            <div className="form-field">
+              <label htmlFor="date">Date</label>
+              <input
+                id="date"
+                type="date"
+                value={formData.date}
+                onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
+              />
+            </div>
           </div>
           <div className="form-field">
             <label htmlFor="notes">Notes (optional)</label>
@@ -244,7 +238,7 @@ export function FinanceTab({ user }: { user: any }) {
             />
           </div>
           <div className="modal-actions">
-            <button type="button" onClick={() => { setShowAddModal(false); resetForm(); setRightPanelView('charts'); }} className="secondary-btn">
+            <button type="button" onClick={() => { setShowAddModal(false); resetForm(); }} className="secondary-btn">
               Cancel
             </button>
             <button type="submit" className="blue-btn">
@@ -267,3 +261,5 @@ export function FinanceTab({ user }: { user: any }) {
     </div>
   );
 }
+
+export default FinanceTab;

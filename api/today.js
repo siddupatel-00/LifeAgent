@@ -125,25 +125,43 @@ export default async function handler(req, res) {
     }
     
     if (req.method === 'PUT') {
-      const { id, checked } = req.body;
+      const { id } = req.query?.id ? req.query : req.body;
+      const { label, category, time, checked, date } = req.body || {};
+      if (!id) return res.status(400).json({ error: 'Item ID required' });
+
+      const currentRes = await db.execute({ sql: 'SELECT * FROM today_items WHERE id = ? AND user_id = ?', args: [id, userId] });
+      if (currentRes.rows.length === 0) return res.status(404).json({ error: 'Item not found' });
+      const current = currentRes.rows[0];
+
       await db.execute({
-        sql: 'UPDATE today_items SET checked = ? WHERE id = ? AND user_id = ?',
-        args: [checked ? 1 : 0, id, userId]
+        sql: 'UPDATE today_items SET label = ?, category = ?, time = ?, checked = ?, date = ? WHERE id = ? AND user_id = ?',
+        args: [
+          label !== undefined ? label : current.label,
+          category !== undefined ? category : current.category,
+          time !== undefined ? time : current.time,
+          checked !== undefined ? (checked ? 1 : 0) : current.checked,
+          date !== undefined ? date : current.date,
+          id, userId
+        ]
       });
-      return res.status(200).json({ success: true });
+      const updated = await db.execute({ sql: 'SELECT * FROM today_items WHERE id = ?', args: [id] });
+      return res.status(200).json(updated.rows[0]);
     }
     if (req.method === 'POST') {
       const { label, category, time, habit_id, date } = req.body;
+      if (!label || !String(label).trim()) return res.status(400).json({ error: 'Title is required' });
       // Use client-provided date or default to server's date
       const itemDate = date || new Date().toISOString().split('T')[0];
+      const cleanLabel = String(label).trim();
       const result = await db.execute({
         sql: 'INSERT INTO today_items (user_id, label, category, time, habit_id, date) VALUES (?, ?, ?, ?, ?, ?)',
-        args: [userId, label, category || '', time || '', habit_id || null, itemDate]
+        args: [userId, cleanLabel, category || '', time || '', habit_id || null, itemDate]
       });
-      return res.status(201).json({ id: Number(result.lastInsertRowid), label, category, time, habit_id: habit_id || null, date: itemDate });
+      return res.status(201).json({ id: Number(result.lastInsertRowid), label: cleanLabel, category: category || '', time: time || '', habit_id: habit_id || null, date: itemDate, checked: 0 });
     }
     if (req.method === 'DELETE') {
-      const { id } = req.body;
+      const id = req.query?.id ?? req.body?.id;
+      if (!id) return res.status(400).json({ error: 'Item ID required' });
       await db.execute({
         sql: 'DELETE FROM today_items WHERE id = ? AND user_id = ?',
         args: [id, userId]

@@ -25,16 +25,34 @@ export default async function handler(req, res) {
     }
     
     if (req.method === 'PUT') {
-      const { id, title, amount, type, category, notes, time, date } = req.body;
+      const id = req.query?.id ?? req.body?.id;
+      if (!id) return res.status(400).json({ error: 'Transaction ID required' });
+
+      const currentRes = await db.execute({ sql: 'SELECT * FROM transactions WHERE id = ? AND user_id = ?', args: [id, userId] });
+      if (currentRes.rows.length === 0) return res.status(404).json({ error: 'Transaction not found' });
+      const current = currentRes.rows[0];
+      const { title, amount, type, category, notes, time, date } = req.body || {};
+
       await db.execute({
-        sql: 'UPDATE transactions SET title = ?, amount = ?, type = ?, category = COALESCE(?, category), notes = COALESCE(?, notes), time = COALESCE(?, time), date = COALESCE(?, date) WHERE id = ? AND user_id = ?',
-        args: [title, amount, type, category, notes, time, date, id, userId]
+        sql: 'UPDATE transactions SET title = ?, amount = ?, type = ?, category = ?, notes = ?, time = ?, date = ? WHERE id = ? AND user_id = ?',
+        args: [
+          title !== undefined ? title : current.title,
+          amount !== undefined && amount !== null && amount !== '' ? Number(amount) : current.amount,
+          type !== undefined ? type : current.type,
+          category !== undefined ? category : current.category,
+          notes !== undefined ? notes : current.notes,
+          time !== undefined ? time : current.time,
+          date !== undefined ? date : current.date,
+          id, userId
+        ]
       });
-      return res.status(200).json({ success: true });
+      const updated = await db.execute({ sql: 'SELECT * FROM transactions WHERE id = ?', args: [id] });
+      return res.status(200).json(updated.rows[0]);
     }
     
     if (req.method === 'DELETE') {
-      const { id } = req.body;
+      const id = req.query?.id ?? req.body?.id;
+      if (!id) return res.status(400).json({ error: 'Transaction ID required' });
       await db.execute({ sql: 'DELETE FROM transactions WHERE id = ? AND user_id = ?', args: [id, userId] });
       return res.status(200).json({ success: true });
     }

@@ -39,7 +39,7 @@ export default function FounderPortal({ onNavigate, showToast }) {
   // Fetch founder data
   const fetchFounderData = async () => {
     const token = safeStorage.getItem('founder_session_token');
-    const storedPasscode = safeStorage.getItem('founder_passcode') || '12345678';
+    const storedPasscode = safeStorage.getItem('founder_passcode');
     
     setLoading(true);
     try {
@@ -147,7 +147,7 @@ export default function FounderPortal({ onNavigate, showToast }) {
   // Approve / Revoke / Delete Member
   const handleMemberAction = async (memberId, action) => {
     const token = safeStorage.getItem('founder_session_token');
-    const storedPasscode = safeStorage.getItem('founder_passcode') || '12345678';
+    const storedPasscode = safeStorage.getItem('founder_passcode');
 
     try {
       const res = await fetch(getApiUrl('/api/auth?action=founder'), {
@@ -174,7 +174,7 @@ export default function FounderPortal({ onNavigate, showToast }) {
   // Mark Read / Delete Visitor Message
   const handleMessageAction = async (msgId, action) => {
     const token = safeStorage.getItem('founder_session_token');
-    const storedPasscode = safeStorage.getItem('founder_passcode') || '12345678';
+    const storedPasscode = safeStorage.getItem('founder_passcode');
 
     try {
       const res = await fetch(getApiUrl('/api/auth?action=founder'), {
@@ -251,7 +251,7 @@ export default function FounderPortal({ onNavigate, showToast }) {
             <div>
               <input
                 type="password"
-                placeholder="Enter Passcode (e.g. 12345678)..."
+                placeholder="Enter Founder Passcode..."
                 value={passcode}
                 onChange={e => setPasscode(e.target.value)}
                 autoFocus

@@ -1,51 +1,61 @@
 import { useState } from 'react';
 import { useCalendarEvents } from '../../hooks/useQueries';
-import { useAuthStore } from '../../stores/authStore';
-import { useUIStore } from '../../stores/uiStore';
-import { useDate } from '../../hooks/useUtils';
-import { Plus, Calendar, Edit2, Trash2, Clock, Bell } from 'lucide-react';
+import { useDate, formatTime } from '../../hooks/useUtils';
+import { Plus, Edit2, Trash2 } from 'lucide-react';
 import Modal from '../../components/ui/Modal';
 import ConfirmModal from '../../components/ui/ConfirmModal';
 
-export function CalendarTab({ user }: { user: any }) {
+const CATEGORIES = ['Personal', 'Work', 'Health', 'Social', 'Other'];
+const EVENT_COLORS = ['#3b82f6', '#ef6f3e', '#22c55e', '#8b5cf6', '#ec4899'];
+
+export function CalendarTab() {
   const { events, isLoading, createEvent, updateEvent, deleteEvent } = useCalendarEvents();
   const { todayKey, formatDate, getWeekDays } = useDate();
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState<any>(null);
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState(todayKey());
+  const [actionError, setActionError] = useState('');
   const [formData, setFormData] = useState({
     title: '',
     date: todayKey(),
-    start_time: '09:00',
-    end_time: '10:00',
+    time: '',
     category: 'Personal',
+    color: EVENT_COLORS[0],
   });
 
   const today = todayKey();
   const weekDays = getWeekDays(today);
-  const todayEvents = events.filter(e => e.date === selectedDate).sort((a, b) => a.start_time.localeCompare(b.start_time));
+  const dayEvents = events
+    .filter(e => e.date === selectedDate)
+    .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title.trim()) return;
+    setActionError('');
+    const payload: any = {
+      title: formData.title,
+      date: formData.date,
+      time: formData.time,
+      color: formData.color,
+    };
     try {
       if (editingEvent) {
-        await updateEvent(editingEvent.id, formData);
+        await updateEvent(editingEvent.id, payload);
       } else {
-        await createEvent(formData);
+        await createEvent(payload);
       }
       setShowAddModal(false);
       setEditingEvent(null);
       resetForm();
-    } catch (err) {
-      console.error('Failed to save event:', err);
+    } catch (err: any) {
+      setActionError(err.message || 'Failed to save event');
     }
   };
 
   const resetForm = () => {
-    setFormData({ title: '', date: todayKey(), start_time: '09:00', end_time: '10:00', category: 'Personal' });
+    setFormData({ title: '', date: selectedDate, time: '', category: 'Personal', color: EVENT_COLORS[0] });
   };
 
   const handleEdit = (event: any) => {
@@ -53,19 +63,19 @@ export function CalendarTab({ user }: { user: any }) {
     setFormData({
       title: event.title,
       date: event.date,
-      start_time: event.start_time,
-      end_time: event.end_time,
-      category: event.category,
+      time: event.time || '',
+      category: event.category || 'Personal',
+      color: event.color || EVENT_COLORS[0],
     });
     setShowAddModal(true);
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: number) => {
     try {
       await deleteEvent(id);
       setDeleteConfirmId(null);
-    } catch (err) {
-      console.error('Failed to delete event:', err);
+    } catch (err: any) {
+      setActionError(err.message || 'Failed to delete event');
     }
   };
 
@@ -75,10 +85,7 @@ export function CalendarTab({ user }: { user: any }) {
     <div className="calendar-tab">
       <div className="tab-header">
         <h2 className="tab-title">Calendar</h2>
-        <div className="view-toggle">
-          <button className={viewMode === 'week' ? 'active' : ''} onClick={() => setViewMode('week')}>Week</button>
-          <button className={viewMode === 'month' ? 'active' : ''} onClick={() => setViewMode('month')}>Month</button>
-        </div>
+        <p className="tab-subtitle">{events.filter(e => e.date >= today).length} upcoming events</p>
       </div>
 
       <div className="calendar-week">
@@ -86,19 +93,21 @@ export function CalendarTab({ user }: { user: any }) {
           const dayEvents = events.filter(e => e.date === day);
           const isToday = day === today;
           const isSelected = day === selectedDate;
+          const [y, m, d] = day.split('-').map(Number);
+          const dateObj = new Date(y, m - 1, d);
           return (
             <button
               key={day}
               onClick={() => setSelectedDate(day)}
               className={`day-column ${isToday ? 'today' : ''} ${isSelected ? 'selected' : ''}`}
             >
-              <span className="day-name">{new Date(day + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' })}</span>
-              <span className="day-number">{new Date(day + 'T00:00:00').getDate()}</span>
+              <span className="day-name">{dateObj.toLocaleDateString('en-US', { weekday: 'short' })}</span>
+              <span className="day-number">{d}</span>
               <div className="day-events">
                 {dayEvents.slice(0, 3).map((event) => (
-                  <div key={event.id} className="mini-event">{event.title}</div>
+                  <div key={event.id} className="mini-event" style={{ borderLeftColor: event.color }}>{event.title}</div>
                 ))}
-                {dayEvents.length > 3 && <span className="more-events">+{dayEvents.length - 3} more</span>}
+                {dayEvents.length > 3 && <span className="more-events">+{dayEvents.length - 3}</span>}
               </div>
             </button>
           );
@@ -106,28 +115,33 @@ export function CalendarTab({ user }: { user: any }) {
       </div>
 
       <div className="day-detail">
-        <h3>{formatDate(selectedDate)}</h3>
-        <button onClick={() => { resetForm(); setFormData(prev => ({ ...prev, date: selectedDate })); setShowAddModal(true); }} className="blue-btn add-event-btn">
-          <Plus size={18} />
-          <span>Add Event</span>
-        </button>
-        
-        {todayEvents.length === 0 ? (
+        <div className="day-detail-header">
+          <h3>{formatDate(selectedDate)}</h3>
+          <button onClick={() => { resetForm(); setEditingEvent(null); setFormData(prev => ({ ...prev, date: selectedDate })); setShowAddModal(true); }} className="blue-btn add-event-btn">
+            <Plus size={18} />
+            <span>Add Event</span>
+          </button>
+        </div>
+
+        {actionError && <div className="form-error">{actionError}</div>}
+
+        {dayEvents.length === 0 ? (
           <p className="empty-hint">No events scheduled</p>
         ) : (
           <ul className="events-list">
-            {todayEvents.map((event) => (
-              <li key={event.id} className="event-item">
+            {dayEvents.map((event) => (
+              <li key={event.id} className={`event-item ${event.status === 'expired' ? 'expired' : ''}`}>
+                <span className="event-color-dot" style={{ background: event.color }} />
                 <div className="event-time">
-                  <span>{event.start_time} - {event.end_time}</span>
+                  <span>{formatTime(event.time)}</span>
+                  {event.status && <span className="event-status">{event.status}</span>}
                 </div>
                 <div className="event-info">
                   <span className="event-title">{event.title}</span>
-                  <span className="event-category">{event.category}</span>
                 </div>
                 <div className="event-actions">
-                  <button onClick={() => handleEdit(event)} className="icon-btn"><Edit2 size={16} /></button>
-                  <button onClick={() => setDeleteConfirmId(event.id)} className="icon-btn"><Trash2 size={16} /></button>
+                  <button onClick={() => handleEdit(event)} className="icon-btn" aria-label="Edit"><Edit2 size={16} /></button>
+                  <button onClick={() => setDeleteConfirmId(event.id)} className="icon-btn" aria-label="Delete"><Trash2 size={16} /></button>
                 </div>
               </li>
             ))}
@@ -147,24 +161,23 @@ export function CalendarTab({ user }: { user: any }) {
               <input id="date" type="date" value={formData.date} onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))} />
             </div>
             <div className="form-field">
-              <label htmlFor="category">Category</label>
-              <select id="category" value={formData.category} onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}>
-                <option value="Personal">Personal</option>
-                <option value="Work">Work</option>
-                <option value="Health">Health</option>
-                <option value="Social">Social</option>
-                <option value="Other">Other</option>
-              </select>
+              <label htmlFor="time">Time</label>
+              <input id="time" type="time" value={formData.time} onChange={(e) => setFormData(prev => ({ ...prev, time: e.target.value }))} />
             </div>
           </div>
-          <div className="form-row">
-            <div className="form-field">
-              <label htmlFor="start_time">Start Time</label>
-              <input id="start_time" type="time" value={formData.start_time} onChange={(e) => setFormData(prev => ({ ...prev, start_time: e.target.value }))} />
-            </div>
-            <div className="form-field">
-              <label htmlFor="end_time">End Time</label>
-              <input id="end_time" type="time" value={formData.end_time} onChange={(e) => setFormData(prev => ({ ...prev, end_time: e.target.value }))} />
+          <div className="form-field">
+            <label>Color</label>
+            <div className="color-picker-row">
+              {EVENT_COLORS.map(color => (
+                <button
+                  key={color}
+                  type="button"
+                  className={`color-swatch ${formData.color === color ? 'selected' : ''}`}
+                  style={{ background: color }}
+                  onClick={() => setFormData(prev => ({ ...prev, color }))}
+                  aria-label={`Choose ${color}`}
+                />
+              ))}
             </div>
           </div>
           <div className="modal-actions">
@@ -187,3 +200,5 @@ export function CalendarTab({ user }: { user: any }) {
     </div>
   );
 }
+
+export default CalendarTab;
