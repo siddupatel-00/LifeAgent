@@ -2890,56 +2890,73 @@ export default function App() {
 
             {/* Timeframe Dropdown Selector (Hide when on Settings or AI Chat tab) */}
             {(activeTab === 'finance') && (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', position: 'relative' }} ref={timeDropdownRef}>
-                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)' }}>Timeframe:</span>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', fontFamily: "'DM Mono', monospace", letterSpacing: '0.04em' }}>Timeframe:</span>
                   
-                  <button
-                    onClick={() => setIsTimeMenuOpen(!isTimeMenuOpen)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: '10px',
-                      padding: '10px 18px', borderRadius: '30px', border: '1px solid var(--border-color)',
-                      background: 'var(--bg-card)', color: 'var(--text-main)',
-                      fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.08)', transition: 'all 0.2s'
-                    }}
-                  >
-                    <Calendar size={16} color="var(--accent-blue)" />
-                    <span>{timeOptions.find(o => o.id === timeRange)?.label || 'Today'}</span>
-                    <ChevronDown size={14} style={{ transform: isTimeMenuOpen ? 'rotate(180deg)' : 'none', transition: '0.2s' }} />
-                  </button>
+                  <div style={{ position: 'relative' }} ref={timeDropdownRef}>
+                    <button
+                      onClick={() => setIsTimeMenuOpen(!isTimeMenuOpen)}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '8px',
+                        padding: '7px 14px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)',
+                        background: 'var(--bg-card)', color: 'var(--text-main)',
+                        fontSize: '0.84rem', fontWeight: 600, cursor: 'pointer',
+                        transition: 'all 0.15s'
+                      }}
+                    >
+                      <Calendar size={14} color="var(--accent-blue)" />
+                      <span>{timeOptions.find(o => o.id === timeRange)?.label || 'Today'}</span>
+                      <ChevronDown size={13} style={{ transform: isTimeMenuOpen ? 'rotate(180deg)' : 'none', transition: '0.2s', opacity: 0.7 }} />
+                    </button>
 
-                  {isTimeMenuOpen && (
-                    <div className="theme-dropdown-menu" style={{ left: '110px', right: 'auto', top: '100%', marginTop: '6px', minWidth: '180px', maxHeight: '300px', overflowY: 'auto', zIndex: 100 }}>
-                      {timeOptions.map((opt) => (
-                        <button
-                          key={opt.id}
-                          className={`theme-dropdown-item ${timeRange === opt.id ? 'active' : ''}`}
-                          onClick={() => { 
-                            setTimeRange(opt.id); 
-                            setIsTimeMenuOpen(false); 
-                          }}
-                          style={{ fontWeight: timeRange === opt.id ? 800 : 500 }}
-                        >
-                          <Calendar size={14} /> {opt.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                    {isTimeMenuOpen && (
+                      <div
+                        className="theme-dropdown-menu"
+                        style={{
+                          position: 'absolute',
+                          left: 0,
+                          top: 'calc(100% + 4px)',
+                          minWidth: '160px',
+                          maxHeight: '260px',
+                          overflowY: 'auto',
+                          zIndex: 100,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '2px'
+                        }}
+                      >
+                        {timeOptions.map((opt) => (
+                          <button
+                            key={opt.id}
+                            className={`theme-dropdown-item ${timeRange === opt.id ? 'active' : ''}`}
+                            onClick={() => { 
+                              setTimeRange(opt.id); 
+                              setIsTimeMenuOpen(false); 
+                            }}
+                            style={{ fontWeight: timeRange === opt.id ? 700 : 500, fontSize: '0.82rem', padding: '7px 10px' }}
+                          >
+                            <Calendar size={13} /> {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
                   {timeRange === 'custom' && (
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginLeft: '8px' }}>
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginLeft: '4px' }}>
                       <input 
                         type="date" 
                         value={customStartDate}
                         onChange={(e) => setCustomStartDate(e.target.value)}
-                        style={{ padding: '8px 12px', borderRadius: '20px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.85rem' }} 
+                        style={{ padding: '6px 10px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.8rem', fontFamily: "'DM Mono', monospace" }} 
                       />
-                      <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>-</span>
+                      <span style={{ color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.8rem' }}>-</span>
                       <input 
                         type="date" 
                         value={customEndDate}
                         onChange={(e) => setCustomEndDate(e.target.value)}
-                        style={{ padding: '8px 12px', borderRadius: '20px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.85rem' }} 
+                        style={{ padding: '6px 10px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontSize: '0.8rem', fontFamily: "'DM Mono', monospace" }} 
                       />
                     </div>
                   )}
@@ -2948,9 +2965,9 @@ export default function App() {
                 <button
                   onClick={() => setShowFinanceForm(true)}
                   className="blue-btn"
-                  style={{ padding: '10px 18px', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '8px', borderRadius: '30px', fontWeight: 700 }}
+                  style={{ padding: '7px 14px', fontSize: '0.84rem', display: 'inline-flex', alignItems: 'center', gap: '6px', borderRadius: 'var(--radius-sm)', fontWeight: 600 }}
                 >
-                  <Plus size={16} /> Record Entry
+                  <Plus size={15} /> Record Entry
                 </button>
               </div>
             )}
