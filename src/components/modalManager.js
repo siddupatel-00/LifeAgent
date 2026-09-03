@@ -29,11 +29,11 @@ export function unregisterModal(modalId) {
     activeModalStack.splice(index, 1);
   }
 
-  openModalsCount = Math.max(0, openModalsCount - 1);
+  openModalsCount = activeModalStack.length;
 
   if (openModalsCount === 0) {
-    document.body.style.overflow = originalOverflow;
-    document.body.style.paddingRight = originalPaddingRight;
+    document.body.style.overflow = originalOverflow || '';
+    document.body.style.paddingRight = originalPaddingRight || '';
   }
 }
 

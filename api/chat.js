@@ -56,6 +56,98 @@ export default async function handler(req, res) {
     }
     
     if (req.method === 'POST') {
+      const action = req.query?.action || req.body?.action;
+
+      // Handle AI Completion / Generation directly on backend
+      if (action === 'generate') {
+        const { prompt, systemPrompt, provider, apiKey } = req.body;
+        const userText = prompt || req.body.message || '';
+        
+        let activeProvider = provider || 'gemini';
+        let key = apiKey;
+
+        if (!key) {
+          const userRow = await db.execute({ sql: 'SELECT gemini_api_key, groq_api_key, ai_provider FROM users WHERE id = ?', args: [userId] });
+          if (userRow.rows.length > 0) {
+            const u = userRow.rows[0];
+            activeProvider = provider || u.ai_provider || 'gemini';
+            key = activeProvider === 'groq' ? u.groq_api_key : u.gemini_api_key;
+          }
+        }
+
+        if (!key) {
+          if (activeProvider === 'groq' && process.env.GROQ_API_KEY) {
+            key = process.env.GROQ_API_KEY;
+          } else if (process.env.GEMINI_API_KEY) {
+            key = process.env.GEMINI_API_KEY;
+            activeProvider = 'gemini';
+          } else if (process.env.GROQ_API_KEY) {
+            key = process.env.GROQ_API_KEY;
+            activeProvider = 'groq';
+          }
+        }
+
+        if (!key) {
+          return res.status(400).json({ error: 'No Gemini or Groq API key configured. Please enter your API key in Settings.' });
+        }
+
+        let responseText = '';
+
+        if (activeProvider === 'groq') {
+          const groqModels = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768'];
+          let groqErr = null;
+          for (const m of groqModels) {
+            try {
+              const gRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  model: m,
+                  messages: [
+                    ...(systemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
+                    { role: 'user', content: userText }
+                  ]
+                })
+              });
+              const gData = await gRes.json();
+              if (gData.error) throw new Error(gData.error.message);
+              responseText = gData.choices?.[0]?.message?.content || '';
+              if (responseText) break;
+            } catch (e) {
+              groqErr = e;
+            }
+          }
+          if (!responseText) throw groqErr || new Error('Groq AI generation failed.');
+        } else {
+          const geminiModels = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.5-flash'];
+          let geminiErr = null;
+          for (const m of geminiModels) {
+            try {
+              const gRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${key}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  ...(systemPrompt ? { system_instruction: { parts: [{ text: systemPrompt }] } } : {}),
+                  contents: [{ role: 'user', parts: [{ text: userText }] }]
+                })
+              });
+              const gData = await gRes.json();
+              if (gData.error) throw new Error(gData.error.message || 'Gemini error');
+              const candidate = gData.candidates?.[0]?.content?.parts?.[0]?.text;
+              if (candidate) {
+                responseText = candidate;
+                break;
+              }
+            } catch (e) {
+              geminiErr = e;
+            }
+          }
+          if (!responseText) throw geminiErr || new Error('Gemini AI generation failed.');
+        }
+
+        return res.status(200).json({ text: responseText, success: true });
+      }
+
       // Allow batch inserting multiple messages (e.g., user + ai response together)
       const messages = Array.isArray(req.body) ? req.body : [req.body];
       

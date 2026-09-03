@@ -1,6 +1,5 @@
 import { getApiUrl } from './utils/apiUrl';
 import React, { useState, useEffect, useRef } from 'react';
-import PullToRefresh from 'react-simple-pull-to-refresh';
 import ReactDOM from 'react-dom';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { 
@@ -584,18 +583,17 @@ export default function App() {
 
   // Auto-scroll ONLY inside the AI chat box containers whenever new messages arrive (does not scroll website/window)
   useEffect(() => {
-    if (mainAiChatScrollRef.current) {
-      mainAiChatScrollRef.current.scrollTo({
-        top: mainAiChatScrollRef.current.scrollHeight,
-        behavior: 'smooth'
-      });
-    }
-    if (sideAiChatScrollRef.current) {
-      sideAiChatScrollRef.current.scrollTo({
-        top: sideAiChatScrollRef.current.scrollHeight,
-        behavior: 'smooth'
-      });
-    }
+    const scrollChatToBottom = (ref) => {
+      if (ref?.current) {
+        requestAnimationFrame(() => {
+          if (ref.current) {
+            ref.current.scrollTop = ref.current.scrollHeight;
+          }
+        });
+      }
+    };
+    scrollChatToBottom(mainAiChatScrollRef);
+    scrollChatToBottom(sideAiChatScrollRef);
   }, [aiMessages]);
 
   // Command+J shortcut to toggle AI side panel
@@ -1769,14 +1767,6 @@ export default function App() {
                               groqApiKey ? 'groq' :
                               geminiApiKey ? 'gemini' : null;
 
-    if (!effectiveProvider) {
-      const fallbackReply = "Please provide your Gemini or Groq API key in the settings to use the AI Assistant.";
-      const aiMsg = { id: Date.now() + 1, sender: 'ai', text: fallbackReply, time: nowTime };
-      setAiMessages(prev => [...prev, aiMsg]);
-      fetch(getApiUrl('/api/chat'), { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify([newMsg, aiMsg]) }).catch(err => console.error(err));
-      return;
-    }
-
     setAiLoading(true);
     setAiMessages(prev => [...prev, { id: 'loading', sender: 'ai', text: 'Thinking...', time: nowTime }]);
     
@@ -1839,41 +1829,92 @@ export default function App() {
       `;
       
       let responseText = "";
+      let aiError = null;
 
-      if (effectiveProvider === 'groq') {
-        const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${groqApiKey}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            model: "llama-3.3-70b-versatile",
-            messages: [
-              { role: "system", content: systemPrompt },
-              { role: "user", content: userMsgText }
-            ]
-          })
-        });
-        const data = await res.json();
-        if (data.error) throw new Error(data.error.message);
-        responseText = data.choices[0].message.content;
-      } else {
-        const genAI = new GoogleGenerativeAI(geminiApiKey);
-        const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash"];
-        let result = null;
-        let lastErr = null;
-        for (const mName of modelsToTry) {
+      // 1. Direct Groq if configured
+      if ((effectiveProvider === 'groq' || (!geminiApiKey && groqApiKey)) && groqApiKey) {
+        const groqModels = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768"];
+        for (const m of groqModels) {
           try {
-            const model = genAI.getGenerativeModel({ model: mName, systemInstruction: systemPrompt });
-            result = await model.generateContent(userMsgText);
-            if (result) break;
+            const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+              method: "POST",
+              headers: {
+                "Authorization": `Bearer ${groqApiKey}`,
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                model: m,
+                messages: [
+                  { role: "system", content: systemPrompt },
+                  { role: "user", content: userMsgText }
+                ]
+              })
+            });
+            const data = await res.json();
+            if (data.choices?.[0]?.message?.content) {
+              responseText = data.choices[0].message.content;
+              break;
+            }
           } catch (e) {
-            lastErr = e;
+            aiError = e;
           }
         }
-        if (!result) throw lastErr || new Error("All Gemini models failed.");
-        responseText = result.response.text();
+      }
+
+      // 2. Direct Gemini REST API if configured
+      if (!responseText && geminiApiKey) {
+        const geminiModels = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.5-flash"];
+        for (const mName of geminiModels) {
+          try {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${mName}:generateContent?key=${geminiApiKey}`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                system_instruction: { parts: [{ text: systemPrompt }] },
+                contents: [{ role: "user", parts: [{ text: userMsgText }] }]
+              })
+            });
+            const data = await res.json();
+            const candidateText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (candidateText) {
+              responseText = candidateText;
+              break;
+            }
+          } catch (e) {
+            aiError = e;
+          }
+        }
+      }
+
+      // 3. Fallback to server endpoint
+      if (!responseText) {
+        try {
+          const res = await fetch(getApiUrl('/api/chat?action=generate'), {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              prompt: userMsgText,
+              systemPrompt,
+              provider: effectiveProvider || aiProvider || 'gemini',
+              apiKey: effectiveProvider === 'groq' ? groqApiKey : geminiApiKey
+            })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.text) {
+              responseText = data.text;
+            }
+          }
+        } catch (e) {
+          aiError = e;
+        }
+      }
+
+      if (!responseText) {
+        throw aiError || new Error("Please verify your Gemini or Groq API key in Settings to use the AI Assistant.");
       }
       
       let finalReply = responseText;
@@ -2746,8 +2787,8 @@ export default function App() {
             className={`main-layout-section ${activeTab === 'ai' ? 'ai-tab-active' : ''}`} 
             style={{ 
               flex: 1, 
-              height: '100vh', 
-              maxHeight: '100vh',
+              height: '100dvh', 
+              maxHeight: '100dvh',
               overflowY: activeTab === 'ai' ? 'hidden' : 'auto',
               overflowX: 'hidden',
               overscrollBehaviorY: 'contain',
@@ -2755,13 +2796,7 @@ export default function App() {
               position: 'relative'
             }}
           >
-            <PullToRefresh 
-              onRefresh={() => fetchStartupData(true)} 
-              pullingContent="" 
-              refreshingContent={<div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)', font: "500 0.8rem 'DM Mono', monospace" }}>Refreshing telemetry...</div>} 
-              disabled={activeTab === 'ai' || (typeof window !== 'undefined' && !('ontouchstart' in window) && navigator.maxTouchPoints <= 0)}
-            >
-              <div style={{ padding: '20px 16px', minHeight: '100%' }}>
+            <div style={{ padding: '20px 16px 100px 16px', minHeight: '100%' }}>
             
             <div className="dashboard-header">
               <div>
@@ -4853,7 +4888,6 @@ export default function App() {
 
             </div>
             </div>
-          </PullToRefresh>
           </section>
 
           {/* PERSISTENT SIDE-BY-SIDE AI COACH PANEL (Always accessible across any tab) */}
