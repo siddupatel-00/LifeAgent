@@ -123,12 +123,13 @@ export default async function handler(req, res) {
           let geminiErr = null;
           for (const m of geminiModels) {
             try {
+              const fullPrompt = systemPrompt ? `${systemPrompt}\n\nUser Request: ${userText}` : userText;
               const gRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${key}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                  ...(systemPrompt ? { system_instruction: { parts: [{ text: systemPrompt }] } } : {}),
-                  contents: [{ role: 'user', parts: [{ text: userText }] }]
+                  contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
+                  generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
                 })
               });
               const gData = await gRes.json();

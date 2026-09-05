@@ -1844,16 +1844,18 @@ export default function App() {
       
       let responseText = "";
       let aiError = null;
+      const cleanGeminiKey = (geminiApiKey || '').trim();
+      const cleanGroqKey = (groqApiKey || '').trim();
 
       // 1. Direct Groq if configured
-      if ((effectiveProvider === 'groq' || (!geminiApiKey && groqApiKey)) && groqApiKey) {
+      if ((effectiveProvider === 'groq' || (!cleanGeminiKey && cleanGroqKey)) && cleanGroqKey) {
         const groqModels = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768"];
         for (const m of groqModels) {
           try {
             const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
               method: "POST",
               headers: {
-                "Authorization": `Bearer ${groqApiKey}`,
+                "Authorization": `Bearer ${cleanGroqKey}`,
                 "Content-Type": "application/json"
               },
               body: JSON.stringify({
@@ -1868,6 +1870,8 @@ export default function App() {
             if (data.choices?.[0]?.message?.content) {
               responseText = data.choices[0].message.content;
               break;
+            } else if (data.error) {
+              aiError = new Error(data.error.message || 'Groq error');
             }
           } catch (e) {
             aiError = e;
@@ -1876,16 +1880,17 @@ export default function App() {
       }
 
       // 2. Direct Gemini REST API if configured
-      if (!responseText && geminiApiKey) {
-        const geminiModels = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.5-flash"];
+      if (!responseText && cleanGeminiKey) {
+        const geminiModels = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.5-flash", "gemini-pro"];
         for (const mName of geminiModels) {
           try {
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${mName}:generateContent?key=${geminiApiKey}`, {
+            const fullPrompt = `${systemPrompt}\n\nUser Request: ${userMsgText}`;
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${mName}:generateContent?key=${cleanGeminiKey}`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                system_instruction: { parts: [{ text: systemPrompt }] },
-                contents: [{ role: "user", parts: [{ text: userMsgText }] }]
+                contents: [{ role: "user", parts: [{ text: fullPrompt }] }],
+                generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
               })
             });
             const data = await res.json();
@@ -1893,6 +1898,22 @@ export default function App() {
             if (candidateText) {
               responseText = candidateText;
               break;
+            } else if (data.error) {
+              aiError = new Error(data.error.message || `Gemini ${mName} error`);
+            }
+          } catch (e) {
+            aiError = e;
+          }
+        }
+
+        // Direct SDK fallback
+        if (!responseText) {
+          try {
+            const genAI = new GoogleGenerativeAI(cleanGeminiKey);
+            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            const result = await model.generateContent(`${systemPrompt}\n\nUser: ${userMsgText}`);
+            if (result && result.response) {
+              responseText = result.response.text();
             }
           } catch (e) {
             aiError = e;
@@ -1910,17 +1931,18 @@ export default function App() {
               'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({
+              action: 'generate',
               prompt: userMsgText,
               systemPrompt,
               provider: effectiveProvider || aiProvider || 'gemini',
-              apiKey: effectiveProvider === 'groq' ? groqApiKey : geminiApiKey
+              apiKey: effectiveProvider === 'groq' ? cleanGroqKey : cleanGeminiKey
             })
           });
-          if (res.ok) {
-            const data = await res.json();
-            if (data.text) {
-              responseText = data.text;
-            }
+          const data = await res.json().catch(() => ({}));
+          if (res.ok && data.text) {
+            responseText = data.text;
+          } else if (data.error) {
+            aiError = new Error(data.error);
           }
         } catch (e) {
           aiError = e;
