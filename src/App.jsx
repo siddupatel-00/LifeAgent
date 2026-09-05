@@ -1,5 +1,5 @@
 import { getApiUrl } from './utils/apiUrl';
-import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import {
   Sparkles, TrendingUp, Calendar, BookOpen, Bot, DollarSign,
@@ -12,17 +12,15 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import CustomSelect from './components/CustomSelect';
-// Heavy route-level panels are code-split so the initial bundle stays lean.
-// recharts-heavy panels (Analytics, Money, Body, Sleep) each become their own chunk.
-const AnalyticsPanel = lazy(() => import('./components/AnalyticsPanel'));
-const SleepTracker = lazy(() => import('./components/SleepTracker'));
-const BodyGym = lazy(() => import('./components/BodyGym'));
-const MoneyTracker = lazy(() => import('./components/MoneyTracker'));
-const SettingsPanel = lazy(() => import('./components/SettingsPanel'));
-const CalendarPanel = lazy(() => import('./components/CalendarPanel'));
-const NotesPanel = lazy(() => import('./components/NotesPanel'));
-const FounderPortal = lazy(() => import('./components/FounderPortal'));
-const LandingPage = lazy(() => import('./components/landing/LandingPage'));
+import AnalyticsPanel from './components/AnalyticsPanel';
+import SleepTracker from './components/SleepTracker';
+import BodyGym from './components/BodyGym';
+import MoneyTracker from './components/MoneyTracker';
+import SettingsPanel from './components/SettingsPanel';
+import CalendarPanel from './components/CalendarPanel';
+import NotesPanel from './components/NotesPanel';
+import FounderPortal from './components/FounderPortal';
+import LandingPage from './components/landing/LandingPage';
 import ConfirmModal from './components/ConfirmModal';
 import Modal from './components/Modal';
 import { todayKey, localTimeZone, getWeekDays, isHabitScheduledOnDay, ALL_WEEK_DAYS } from './utils/date';
@@ -32,13 +30,11 @@ import { regenerateAllReminders, scheduleHabitReminders, scheduleEventReminders,
 import ReminderEditor from './components/ReminderEditor';
 import Navbar from './components/landing/Navbar';
 
-function PanelFallback({ label = 'Loading panel…' }) {
-  return (
-    <div role="status" aria-live="polite" aria-label={label} style={{ padding: '48px 24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-      <div style={{ width: '28px', height: '28px', margin: '0 auto 12px', borderRadius: '50%', border: '2px solid var(--border-color)', borderTopColor: 'var(--acid)', animation: 'splashPulse 1s infinite linear' }} />
-      {label}
-    </div>
-  );
+// Auto-reload on stale Vite chunk errors across deployments
+if (typeof window !== 'undefined') {
+  window.addEventListener('vite:preloadError', () => {
+    window.location.reload();
+  });
 }
 
 const getFormattedDateTitle = (dateStr) => {
@@ -2282,20 +2278,18 @@ export default function App() {
 
       {/* MODULAR PRODUCTION-READY LANDING PAGE (At /) */}
       {currentPage === 'landing' && (
-        <Suspense fallback={<PanelFallback label="Loading LifeAgent…" />}>
-          <LandingPage
-            navigate={navigate}
-            onNavigate={navigate}
-            onGetStarted={() => { setWaitlistSuccess(false); setAuthMode('signup'); navigate('auth', '/auth'); }}
-            onSignIn={() => { setWaitlistSuccess(false); setAuthMode('login'); navigate('auth', '/auth'); }}
-            onJoinWaitlist={() => navigate('waitlist', '/waitlist')}
-            token={token}
-            isAuthenticated={isAuthenticated}
-            themeMode={themeMode}
-            setThemeMode={setThemeMode}
-            themeColor={themeColor}
-          />
-        </Suspense>
+        <LandingPage
+          navigate={navigate}
+          onNavigate={navigate}
+          onGetStarted={() => { setWaitlistSuccess(false); setAuthMode('signup'); navigate('auth', '/auth'); }}
+          onSignIn={() => { setWaitlistSuccess(false); setAuthMode('login'); navigate('auth', '/auth'); }}
+          onJoinWaitlist={() => navigate('waitlist', '/waitlist')}
+          token={token}
+          isAuthenticated={isAuthenticated}
+          themeMode={themeMode}
+          setThemeMode={setThemeMode}
+          themeColor={themeColor}
+        />
       )}
 
       {/* DROP A MESSAGE TO FOUNDER PAGE (At /message, /contact) */}
@@ -2490,12 +2484,10 @@ export default function App() {
 
       {/* DEDICATED FOUNDER COMMAND PORTAL (At /founder) */}
       {currentPage === 'founder' && (
-        <Suspense fallback={<PanelFallback label="Loading founder portal…" />}>
-          <FounderPortal
-            onNavigate={navigate}
-            showToast={showToast}
-          />
-        </Suspense>
+        <FounderPortal
+          onNavigate={navigate}
+          showToast={showToast}
+        />
       )}
 
       {/* AUTHENTICATION & PASSWORD RESET PAGE (At /auth) */}
@@ -4787,7 +4779,6 @@ export default function App() {
               {/* 2.5) CALENDAR TAB */}
               {activeTab === 'calendar' && (
                 <TabErrorBoundary tabName="Calendar">
-                  <Suspense fallback={<PanelFallback label="Loading calendar…" />}>
                   <CalendarPanel
                     calendarEvents={calendarEvents}
                     setCalendarEvents={setCalendarEvents}
@@ -4799,14 +4790,12 @@ export default function App() {
                     showToast={showToast}
                     userProfile={userProfile}
                   />
-                  </Suspense>
                 </TabErrorBoundary>
               )}
 
               {/* 2.5) NOTES & DIARY TAB */}
               {activeTab === 'notes' && (
                 <TabErrorBoundary tabName="Notes & Diary">
-                  <Suspense fallback={<PanelFallback label="Loading notes…" />}>
                   <NotesPanel
                     notesList={notesList}
                     setNotesList={setNotesList}
@@ -4820,7 +4809,6 @@ export default function App() {
                     showToast={showToast}
                     userProfile={userProfile}
                   />
-                  </Suspense>
                 </TabErrorBoundary>
               )}
 
@@ -4828,7 +4816,6 @@ export default function App() {
               {visitedTabs.has('finance') && (
                 <div style={{ display: activeTab === 'finance' ? 'block' : 'none' }}>
                   <TabErrorBoundary tabName="Finance & Money">
-                    <Suspense fallback={<PanelFallback label="Loading money tracker…" />}>
                     <MoneyTracker
                       transactions={transactions}
                       setTransactions={setTransactions}
@@ -4844,7 +4831,6 @@ export default function App() {
                       customStartDate={customStartDate}
                       customEndDate={customEndDate}
                     />
-                    </Suspense>
                   </TabErrorBoundary>
                 </div>
               )}
@@ -4853,7 +4839,6 @@ export default function App() {
               {(visitedTabs.has('body') || visitedTabs.has('gym')) && (
                 <div style={{ display: (activeTab === 'body' || activeTab === 'gym') ? 'block' : 'none' }}>
                   <TabErrorBoundary tabName="Body & Gym">
-                    <Suspense fallback={<PanelFallback label="Loading body & gym…" />}>
                     <BodyGym
                       token={token}
                       showToast={showToast}
@@ -4868,7 +4853,6 @@ export default function App() {
                       isEditSplitOpen={isEditSplitOpen}
                       setIsEditSplitOpen={setIsEditSplitOpen}
                     />
-                    </Suspense>
                   </TabErrorBoundary>
                 </div>
               )}
@@ -4877,7 +4861,6 @@ export default function App() {
               {visitedTabs.has('sleep') && (
                 <div style={{ display: activeTab === 'sleep' ? 'block' : 'none' }}>
                   <TabErrorBoundary tabName="Sleep & Recovery">
-                    <Suspense fallback={<PanelFallback label="Loading sleep tracker…" />}>
                     <SleepTracker
                       token={token}
                       showToast={showToast}
@@ -4886,7 +4869,6 @@ export default function App() {
                       sleepLogs={sleepLogs}
                       setSleepLogs={setSleepLogs}
                     />
-                    </Suspense>
                   </TabErrorBoundary>
                 </div>
               )}
@@ -4895,7 +4877,6 @@ export default function App() {
               {visitedTabs.has('analytics') && (
                 <div style={{ display: activeTab === 'analytics' ? 'block' : 'none' }}>
                   <TabErrorBoundary tabName="Master Analytics">
-                    <Suspense fallback={<PanelFallback label="Loading analytics…" />}>
                     <AnalyticsPanel
                       token={token}
                       showToast={showToast}
@@ -4903,7 +4884,6 @@ export default function App() {
                       timeRange={timeRange}
                       userProfile={userProfile}
                     />
-                    </Suspense>
                   </TabErrorBoundary>
                 </div>
               )}
@@ -4912,7 +4892,6 @@ export default function App() {
               {(visitedTabs.has('settings') || activeTab === 'settings') && (
                 <div style={{ display: activeTab === 'settings' ? 'block' : 'none' }}>
                   <TabErrorBoundary tabName="Settings">
-                  <Suspense fallback={<PanelFallback label="Loading settings…" />}>
                   <SettingsPanel
                     userProfile={userProfile}
                     setUserProfile={setUserProfile}
@@ -4938,7 +4917,6 @@ export default function App() {
                     habits={habits}
                     calendarEvents={calendarEvents}
                   />
-                  </Suspense>
                 </TabErrorBoundary>
               </div>
               )}

@@ -16,6 +16,10 @@ export default class TabErrorBoundary extends React.Component {
   }
 
   handleReset = () => {
+    if (this.state.error?.message?.includes('dynamically imported') || this.state.error?.message?.includes('fetch') || this.state.error?.message?.includes('chunk')) {
+      window.location.reload();
+      return;
+    }
     this.setState({ hasError: false, error: null });
   };
 
