@@ -119,7 +119,7 @@ export default async function handler(req, res) {
           }
           if (!responseText) throw groqErr || new Error('Groq AI generation failed.');
         } else {
-          const geminiModels = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.5-flash'];
+          const geminiModels = ['gemini-1.5-flash', 'gemini-1.5-flash-latest', 'gemini-1.5-pro', 'gemini-1.5-flash-8b', 'gemini-2.0-flash-exp', 'gemini-pro'];
           let geminiErr = null;
           for (const m of geminiModels) {
             try {

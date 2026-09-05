@@ -1881,7 +1881,7 @@ export default function App() {
 
       // 2. Direct Gemini REST API if configured
       if (!responseText && cleanGeminiKey) {
-        const geminiModels = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.5-flash", "gemini-pro"];
+        const geminiModels = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-1.5-pro", "gemini-1.5-flash-8b", "gemini-2.0-flash-exp", "gemini-pro"];
         for (const mName of geminiModels) {
           try {
             const fullPrompt = `${systemPrompt}\n\nUser Request: ${userMsgText}`;
