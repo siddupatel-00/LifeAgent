@@ -1,10 +1,9 @@
 import { getApiUrl } from './utils/apiUrl';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import ReactDOM from 'react-dom';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { 
-  Sparkles, TrendingUp, Calendar, BookOpen, Bot, DollarSign, 
-  CheckCircle2, ArrowRight, XCircle, ShieldCheck, Mail, User, 
+import {
+  Sparkles, TrendingUp, Calendar, BookOpen, Bot, DollarSign,
+  CheckCircle2, ArrowRight, XCircle, ShieldCheck, Mail, User,
   Send, Plus, Clock, Award, Trash2, ChevronRight, LogIn, ExternalLink,
   Sun, Moon, Monitor, ChevronDown, Lock, Phone, AtSign, Activity, Zap, Check, X,
   Dumbbell, Moon as SleepIcon, BarChart3, PieChart, Flame, Heart, Target, Filter, Droplet,
@@ -13,13 +12,17 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import CustomSelect from './components/CustomSelect';
-import AnalyticsPanel from './components/AnalyticsPanel';
-import SleepTracker from './components/SleepTracker';
-import BodyGym from './components/BodyGym';
-import MoneyTracker from './components/MoneyTracker';
-import SettingsPanel from './components/SettingsPanel';
-import CalendarPanel from './components/CalendarPanel';
-import NotesPanel from './components/NotesPanel';
+// Heavy route-level panels are code-split so the initial bundle stays lean.
+// recharts-heavy panels (Analytics, Money, Body, Sleep) each become their own chunk.
+const AnalyticsPanel = lazy(() => import('./components/AnalyticsPanel'));
+const SleepTracker = lazy(() => import('./components/SleepTracker'));
+const BodyGym = lazy(() => import('./components/BodyGym'));
+const MoneyTracker = lazy(() => import('./components/MoneyTracker'));
+const SettingsPanel = lazy(() => import('./components/SettingsPanel'));
+const CalendarPanel = lazy(() => import('./components/CalendarPanel'));
+const NotesPanel = lazy(() => import('./components/NotesPanel'));
+const FounderPortal = lazy(() => import('./components/FounderPortal'));
+const LandingPage = lazy(() => import('./components/landing/LandingPage'));
 import ConfirmModal from './components/ConfirmModal';
 import Modal from './components/Modal';
 import { todayKey, localTimeZone, getWeekDays, isHabitScheduledOnDay, ALL_WEEK_DAYS } from './utils/date';
@@ -27,9 +30,16 @@ import WaterReminder from './components/WaterReminder';
 import TabErrorBoundary from './components/TabErrorBoundary';
 import { regenerateAllReminders, scheduleHabitReminders, scheduleEventReminders, cancelEntityReminders, isRegenNeeded, requestNotificationPermission } from './utils/reminderScheduler';
 import ReminderEditor from './components/ReminderEditor';
-import LandingPage from './components/landing/LandingPage';
 import Navbar from './components/landing/Navbar';
-import FounderPortal from './components/FounderPortal';
+
+function PanelFallback({ label = 'Loading panel…' }) {
+  return (
+    <div role="status" aria-live="polite" aria-label={label} style={{ padding: '48px 24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+      <div style={{ width: '28px', height: '28px', margin: '0 auto 12px', borderRadius: '50%', border: '2px solid var(--border-color)', borderTopColor: 'var(--acid)', animation: 'splashPulse 1s infinite linear' }} />
+      {label}
+    </div>
+  );
+}
 
 const getFormattedDateTitle = (dateStr) => {
   let targetDate = new Date();
@@ -1142,7 +1152,9 @@ export default function App() {
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ id, checked })
       });
-    } catch(e) {}
+    } catch (e) {
+      if (import.meta.env.DEV) console.warn('Today sync failed (offline-first, will retry):', e);
+    }
   };
 
   const handleUpdateHabitDb = async (id, streak, checked_today, paused_until, archived, completed_at) => {
@@ -1156,7 +1168,9 @@ export default function App() {
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify(payload)
         });
-      } catch(e) {}
+      } catch (e) {
+        if (import.meta.env.DEV) console.warn('Habit sync failed (offline-first, will retry):', e);
+      }
     };
 
   // Requirement 1: On initial login / app mount when isAuthenticated is true, fetch ONLY essential startup data
@@ -2246,18 +2260,20 @@ export default function App() {
 
       {/* MODULAR PRODUCTION-READY LANDING PAGE (At /) */}
       {currentPage === 'landing' && (
-        <LandingPage
-          navigate={navigate}
-          onNavigate={navigate}
-          onGetStarted={() => { setWaitlistSuccess(false); setAuthMode('signup'); navigate('auth', '/auth'); }}
-          onSignIn={() => { setWaitlistSuccess(false); setAuthMode('login'); navigate('auth', '/auth'); }}
-          onJoinWaitlist={() => navigate('waitlist', '/waitlist')}
-          token={token}
-          isAuthenticated={isAuthenticated}
-          themeMode={themeMode}
-          setThemeMode={setThemeMode}
-          themeColor={themeColor}
-        />
+        <Suspense fallback={<PanelFallback label="Loading LifeAgent…" />}>
+          <LandingPage
+            navigate={navigate}
+            onNavigate={navigate}
+            onGetStarted={() => { setWaitlistSuccess(false); setAuthMode('signup'); navigate('auth', '/auth'); }}
+            onSignIn={() => { setWaitlistSuccess(false); setAuthMode('login'); navigate('auth', '/auth'); }}
+            onJoinWaitlist={() => navigate('waitlist', '/waitlist')}
+            token={token}
+            isAuthenticated={isAuthenticated}
+            themeMode={themeMode}
+            setThemeMode={setThemeMode}
+            themeColor={themeColor}
+          />
+        </Suspense>
       )}
 
       {/* DROP A MESSAGE TO FOUNDER PAGE (At /message, /contact) */}
@@ -2452,10 +2468,12 @@ export default function App() {
 
       {/* DEDICATED FOUNDER COMMAND PORTAL (At /founder) */}
       {currentPage === 'founder' && (
-        <FounderPortal
-          onNavigate={navigate}
-          showToast={showToast}
-        />
+        <Suspense fallback={<PanelFallback label="Loading founder portal…" />}>
+          <FounderPortal
+            onNavigate={navigate}
+            showToast={showToast}
+          />
+        </Suspense>
       )}
 
       {/* AUTHENTICATION & PASSWORD RESET PAGE (At /auth) */}
@@ -3223,7 +3241,10 @@ export default function App() {
                           let splitList = [];
                           try {
                             if (userProfile?.workout_templates) splitList = JSON.parse(userProfile.workout_templates);
-                          } catch (e) {}
+                          } catch (e) {
+                            if (import.meta.env.DEV) console.warn('Invalid workout_templates JSON:', e);
+                            splitList = [];
+                          }
                           const startCount = Number(userProfile?.workout_start_count || 0);
                           const manualOffset = Number(userProfile?.manual_day_offset || 0);
                           const workoutsDone = Math.max(0, (Array.isArray(workouts) ? workouts.length : 0) - startCount);
@@ -4744,6 +4765,7 @@ export default function App() {
               {/* 2.5) CALENDAR TAB */}
               {activeTab === 'calendar' && (
                 <TabErrorBoundary tabName="Calendar">
+                  <Suspense fallback={<PanelFallback label="Loading calendar…" />}>
                   <CalendarPanel
                     calendarEvents={calendarEvents}
                     setCalendarEvents={setCalendarEvents}
@@ -4755,12 +4777,14 @@ export default function App() {
                     showToast={showToast}
                     userProfile={userProfile}
                   />
+                  </Suspense>
                 </TabErrorBoundary>
               )}
 
               {/* 2.5) NOTES & DIARY TAB */}
               {activeTab === 'notes' && (
                 <TabErrorBoundary tabName="Notes & Diary">
+                  <Suspense fallback={<PanelFallback label="Loading notes…" />}>
                   <NotesPanel
                     notesList={notesList}
                     setNotesList={setNotesList}
@@ -4774,6 +4798,7 @@ export default function App() {
                     showToast={showToast}
                     userProfile={userProfile}
                   />
+                  </Suspense>
                 </TabErrorBoundary>
               )}
 
@@ -4781,6 +4806,7 @@ export default function App() {
               {visitedTabs.has('finance') && (
                 <div style={{ display: activeTab === 'finance' ? 'block' : 'none' }}>
                   <TabErrorBoundary tabName="Finance & Money">
+                    <Suspense fallback={<PanelFallback label="Loading money tracker…" />}>
                     <MoneyTracker
                       transactions={transactions}
                       setTransactions={setTransactions}
@@ -4796,6 +4822,7 @@ export default function App() {
                       customStartDate={customStartDate}
                       customEndDate={customEndDate}
                     />
+                    </Suspense>
                   </TabErrorBoundary>
                 </div>
               )}
@@ -4804,6 +4831,7 @@ export default function App() {
               {(visitedTabs.has('body') || visitedTabs.has('gym')) && (
                 <div style={{ display: (activeTab === 'body' || activeTab === 'gym') ? 'block' : 'none' }}>
                   <TabErrorBoundary tabName="Body & Gym">
+                    <Suspense fallback={<PanelFallback label="Loading body & gym…" />}>
                     <BodyGym
                       token={token}
                       showToast={showToast}
@@ -4818,6 +4846,7 @@ export default function App() {
                       isEditSplitOpen={isEditSplitOpen}
                       setIsEditSplitOpen={setIsEditSplitOpen}
                     />
+                    </Suspense>
                   </TabErrorBoundary>
                 </div>
               )}
@@ -4826,6 +4855,7 @@ export default function App() {
               {visitedTabs.has('sleep') && (
                 <div style={{ display: activeTab === 'sleep' ? 'block' : 'none' }}>
                   <TabErrorBoundary tabName="Sleep & Recovery">
+                    <Suspense fallback={<PanelFallback label="Loading sleep tracker…" />}>
                     <SleepTracker
                       token={token}
                       showToast={showToast}
@@ -4834,6 +4864,7 @@ export default function App() {
                       sleepLogs={sleepLogs}
                       setSleepLogs={setSleepLogs}
                     />
+                    </Suspense>
                   </TabErrorBoundary>
                 </div>
               )}
@@ -4842,6 +4873,7 @@ export default function App() {
               {visitedTabs.has('analytics') && (
                 <div style={{ display: activeTab === 'analytics' ? 'block' : 'none' }}>
                   <TabErrorBoundary tabName="Master Analytics">
+                    <Suspense fallback={<PanelFallback label="Loading analytics…" />}>
                     <AnalyticsPanel
                       token={token}
                       showToast={showToast}
@@ -4849,6 +4881,7 @@ export default function App() {
                       timeRange={timeRange}
                       userProfile={userProfile}
                     />
+                    </Suspense>
                   </TabErrorBoundary>
                 </div>
               )}
@@ -4857,6 +4890,7 @@ export default function App() {
               {(visitedTabs.has('settings') || activeTab === 'settings') && (
                 <div style={{ display: activeTab === 'settings' ? 'block' : 'none' }}>
                   <TabErrorBoundary tabName="Settings">
+                  <Suspense fallback={<PanelFallback label="Loading settings…" />}>
                   <SettingsPanel
                     userProfile={userProfile}
                     setUserProfile={setUserProfile}
@@ -4882,6 +4916,7 @@ export default function App() {
                     habits={habits}
                     calendarEvents={calendarEvents}
                   />
+                  </Suspense>
                 </TabErrorBoundary>
               </div>
               )}

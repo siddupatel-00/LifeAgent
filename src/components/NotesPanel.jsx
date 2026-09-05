@@ -393,7 +393,10 @@ export default function NotesPanel({
                               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                               body: JSON.stringify({ id: currentNote.id })
                             });
-                          } catch(e){}
+                          } catch (err) {
+                            console.warn('Failed to permanently delete note:', err);
+                            showToast?.('Could not sync delete — it will retry on next load.', 'error');
+                          }
                         }}
                         style={{ padding: '7px 14px', borderRadius: '6px', background: '#ef6f3e', color: '#fff', border: 'none', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}
                       >

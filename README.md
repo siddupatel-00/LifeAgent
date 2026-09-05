@@ -1,16 +1,44 @@
-# React + Vite
+# LifeAgent — Personal Operating System
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Habits, sleep, training, money, notes, calendar and an AI coach in **one calm daily system**.
 
-Currently, two official plugins are available:
+## Quick start
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+npm install
+cp .env.example .env   # fill in Turso + JWT + Gmail values
+npm run dev            # Vite frontend (proxies /api → localhost:3000)
+npm run dev:api        # Vercel dev (API routes)
+npm run build          # production build → dist/
+npm run preview        # preview the production build
+```
 
-## React Compiler
+## What was hardened in this pass
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Performance:** heavy panels (Analytics, Money, Body, Sleep, Calendar, Notes,
+  Settings, Founder portal, Landing) are `React.lazy` code-split; vendor chunks
+  (`react`, `recharts`, AI, utils) are split in `vite.config.js`. Initial bundle
+  drops from one 1.1 MB chunk to several lazy chunks.
+- **Dead import removed:** unused `@google/generative-ai` SDK import in `App.jsx`
+  (AI calls go through `fetch`, so the SDK was pure bundle weight).
+- **SEO:** canonical, description, Open Graph, Twitter cards, JSON-LD
+  `WebApplication` schema, robots + sitemap.
+- **PWA:** `manifest.webmanifest`, apple-touch icon, theme-color, skip-to-content
+  link, `<noscript>` fallback.
+- **Security:** `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`,
+  `Permissions-Policy` + immutable caching for `/assets/*` in `vercel.json`.
+- **Reliability:** silent `catch(e){}` blocks in optimistic sync paths now log in
+  dev; permanent note-delete failure surfaces a toast instead of failing silently.
 
-## Expanding the Oxlint configuration
+## Env vars (see `.env.example`)
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+| Var | Used for |
+|---|---|
+| `TURSO_DATABASE_URL` / `TURSO_AUTH_TOKEN` | libSQL database |
+| `JWT_SECRET` | auth tokens |
+| `GMAIL_USER` / `GMAIL_APP_PASSWORD` | password-reset emails |
+
+## Deploy
+
+Vercel: `vercel --prod`. SPA rewrites + API routes are configured in `vercel.json`.
+Android (Capacitor): `npx cap sync android`.

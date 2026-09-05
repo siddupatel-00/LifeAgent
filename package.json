@@ -3,11 +3,12 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "description": "LifeAgent — all-in-one personal progress tracker and AI coach",
   "scripts": {
     "dev": "vite",
     "dev:api": "vercel dev",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview --port 4173"
   },
   "dependencies": {
     "@capacitor/android": "^8.4.2",

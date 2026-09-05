@@ -1,0 +1,19 @@
+{
+  "name": "LifeAgent — Personal Operating System",
+  "short_name": "LifeAgent",
+  "description": "Habits, sleep, training, money, notes, calendar and an AI coach in one calm daily system.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#111310",
+  "theme_color": "#111310",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
